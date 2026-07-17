@@ -150,9 +150,15 @@
   .wordChip.removed { background:#ffebee; border-color:#ffcdd2; text-decoration:line-through; color:#b71c1c; }
   .wordChip button { border:none; background:none; cursor:pointer; font-size:13px; padding:0; line-height:1; color:#c62828; }
   .wordChip.removed button { color:#2e7d32; text-decoration:none; }
-  #wordsAddRow { display:flex; gap:8px; padding:12px 16px; border-top:2px solid #eef2f6; }
+  #wordsAddRow { display:flex; gap:8px; padding:12px 16px 6px; border-top:2px solid #eef2f6; }
+  #wordsAddCat { max-width:130px; padding:10px 8px; border:2px solid #e3e8ee; border-radius:10px; font-size:14px; font-weight:700; background:#f8fafc; }
   #wordsAddInput { flex:1; min-width:0; padding:10px 12px; border:2px solid #e3e8ee; border-radius:10px; font-size:15px; }
-  #wordsAddBtn { padding:10px 18px; border:none; border-radius:10px; background:var(--green); color:#fff; font-weight:700; cursor:pointer; }
+  #wordsAddBtn { padding:10px 14px; border:none; border-radius:10px; background:var(--green); color:#fff; font-weight:700; cursor:pointer; white-space:nowrap; }
+  #wordsCatRow { display:flex; gap:8px; padding:6px 16px 14px; }
+  #catAddInput { flex:1; min-width:0; padding:10px 12px; border:2px solid #e3e8ee; border-radius:10px; font-size:14px; }
+  #catAddBtn { padding:10px 14px; border:none; border-radius:10px; background:var(--purple); color:#fff; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .catChip.removedCat { background:#ffebee; color:#b71c1c; text-decoration:line-through; }
+  .catChip b { font-weight:900; cursor:pointer; }
 
   @media (max-width: 900px) {
     #mainArea { flex-direction:column; }
@@ -339,8 +345,13 @@
     <div id="wordsCats"></div>
     <div id="wordsGrid"></div>
     <div id="wordsAddRow">
+      <select id="wordsAddCat" title="الفئة"></select>
       <input id="wordsAddInput" maxlength="30" placeholder="أضف كلمة جديدة...">
       <button id="wordsAddBtn">إضافة ➕</button>
+    </div>
+    <div id="wordsCatRow">
+      <input id="catAddInput" maxlength="20" placeholder="اسم فئة جديدة (مثال: أنمي، أفلام...)">
+      <button id="catAddBtn">فئة جديدة 🗂️</button>
     </div>
   </div>
 </div>
@@ -485,11 +496,21 @@ $("customWordsInput").onchange = () => socket.emit("setCustomWords", $("customWo
 
 const MODE_NAMES = { classic: "كلاسيكي", teams: "فريقين 🔴🔵", vote: "الكل يرسم 🗳️" };
 
-// ===== إدارة الكلمات (للقائد) =====
+// ===== إدارة الكلمات والفئات (للقائد) =====
 let wordsData = null, wordsCat = "الكل", wordsQuery = "";
 
 function normArabic(t) {
   return (t || "").trim().replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").toLowerCase();
+}
+
+// أسماء الفئات: الأصلية + المضافة (مع أو بدون المحذوفة)
+function wdCatNames(includeRemoved) {
+  const builtinNames = Object.keys(wordsData.builtin);
+  const removedCats = new Set(wordsData.removedCats);
+  const extraNames = Object.keys(wordsData.extra).filter(n => !builtinNames.includes(n));
+  let names = [...builtinNames, ...extraNames];
+  if (!includeRemoved) names = names.filter(n => !removedCats.has(n));
+  return names;
 }
 
 function openWordsModal() {
@@ -504,47 +525,88 @@ function openWordsModal() {
 
 function renderWords() {
   if (!wordsData) return;
-  const catNames = ["الكل", ...Object.keys(wordsData.categories), "➕ المضافة"];
-  $("wordsCats").innerHTML = catNames.map(c =>
-    `<button class="catChip ${c === wordsCat ? "active" : ""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("");
-  document.querySelectorAll(".catChip").forEach(b => b.onclick = () => { wordsCat = b.dataset.cat; renderWords(); });
+  const removedCats = new Set(wordsData.removedCats);
+  const removedWords = new Set(wordsData.removedWords);
+  const isOwner = !!state?.players.find(p => p.id === myId)?.isOwner;
 
-  let list;
-  if (wordsCat === "➕ المضافة") list = [...wordsData.added];
-  else if (wordsCat === "الكل") list = [...Object.values(wordsData.categories).flat(), ...wordsData.added];
-  else list = [...(wordsData.categories[wordsCat] || [])];
+  // شريط الفئات (المحذوفة تظهر مشطوبة مع زر استرجاع)
+  const allNames = ["الكل", ...wdCatNames(true)];
+  $("wordsCats").innerHTML = allNames.map(c => {
+    const isRem = removedCats.has(c);
+    const act = isOwner && c !== "الكل"
+      ? (isRem ? ` <b data-catrestore="${esc(c)}" title="استرجاع الفئة">↩</b>` : ` <b data-catdel="${esc(c)}" title="حذف الفئة">✖</b>`)
+      : "";
+    return `<button class="catChip ${c === wordsCat ? "active" : ""} ${isRem ? "removedCat" : ""}" data-cat="${esc(c)}">${esc(c)}${act}</button>`;
+  }).join("");
+  document.querySelectorAll(".catChip").forEach(b => b.onclick = e => {
+    if (e.target.dataset.catdel || e.target.dataset.catrestore) return;
+    wordsCat = b.dataset.cat;
+    renderWords();
+  });
+  document.querySelectorAll("[data-catdel]").forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const c = b.dataset.catdel;
+    if (!confirm(`حذف فئة "${c}" بكل كلماتها؟`)) return;
+    socket.emit("removeCategory", c);
+    if (wordsData.builtin[c] && !wordsData.removedCats.includes(c)) wordsData.removedCats.push(c);
+    delete wordsData.extra[c];
+    if (wordsCat === c) wordsCat = "الكل";
+    renderWords();
+  });
+  document.querySelectorAll("[data-catrestore]").forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const c = b.dataset.catrestore;
+    socket.emit("restoreCategory", c);
+    wordsData.removedCats = wordsData.removedCats.filter(x => x !== c);
+    renderWords();
+  });
 
-  const removed = new Set(wordsData.removed);
+  // بناء قائمة الكلمات
+  const activeNames = wdCatNames(false);
+  const catsToShow = wordsCat === "الكل" ? activeNames : (removedCats.has(wordsCat) ? [] : [wordsCat]);
+  let entries = [];
+  catsToShow.forEach(c => {
+    (wordsData.builtin[c] || []).forEach(w => entries.push({ w, added: false, removed: removedWords.has(w) }));
+    (wordsData.extra[c] || []).forEach(w => entries.push({ w, added: true, removed: false }));
+  });
   const q = normArabic(wordsQuery);
-  if (q) list = list.filter(w => normArabic(w).includes(q));
+  if (q) entries = entries.filter(e2 => normArabic(e2.w).includes(q));
 
-  const total = [...Object.values(wordsData.categories).flat(), ...wordsData.added].filter(w => !removed.has(w)).length;
+  const total = activeNames.reduce((a, c) =>
+    a + (wordsData.builtin[c] || []).filter(w => !removedWords.has(w)).length + (wordsData.extra[c] || []).length, 0);
   $("wordsCount").textContent = `(${total} كلمة فعالة)`;
 
-  const isOwner = !!state?.players.find(p => p.id === myId)?.isOwner;
   $("wordsAddRow").style.display = isOwner ? "flex" : "none";
+  $("wordsCatRow").style.display = isOwner ? "flex" : "none";
 
-  $("wordsGrid").innerHTML = list.length ? list.map(w => {
-    const isRemoved = removed.has(w);
-    const isAdded = wordsData.added.includes(w);
-    const btn = !isOwner ? "" : isRemoved
-      ? `<button data-restore="${esc(w)}" title="استرجاع">↩</button>`
-      : `<button data-del="${esc(w)}" title="حذف">✖</button>`;
-    return `<span class="wordChip ${isRemoved ? "removed" : isAdded ? "added" : ""}">${esc(w)} ${btn}</span>`;
-  }).join("") : `<div style="color:#888;padding:20px;text-align:center;width:100%;">لا توجد نتائج</div>`;
+  // قائمة اختيار الفئة عند الإضافة (تتبع الفئة المعروضة حاليًا)
+  const sel = $("wordsAddCat");
+  const prev = sel.value;
+  sel.innerHTML = activeNames.map(c => `<option>${esc(c)}</option>`).join("");
+  sel.value = activeNames.includes(wordsCat) ? wordsCat : (activeNames.includes(prev) ? prev : activeNames[0] || "");
+
+  $("wordsGrid").innerHTML = entries.length ? entries.map(e2 => {
+    const btn = !isOwner ? "" : e2.removed
+      ? `<button data-restore="${esc(e2.w)}" title="استرجاع">↩</button>`
+      : `<button data-del="${esc(e2.w)}" title="حذف">✖</button>`;
+    return `<span class="wordChip ${e2.removed ? "removed" : e2.added ? "added" : ""}">${esc(e2.w)} ${btn}</span>`;
+  }).join("") : `<div style="color:#888;padding:20px;text-align:center;width:100%;">لا توجد كلمات هنا — أضف أول كلمة من الأسفل 👇</div>`;
 
   document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
     const w = b.dataset.del;
     socket.emit("removeWord", w);
-    const i = wordsData.added.indexOf(w);
-    if (i >= 0) wordsData.added.splice(i, 1);
-    else wordsData.removed.push(w);
+    let inExtra = false;
+    Object.keys(wordsData.extra).forEach(c => {
+      const i = wordsData.extra[c].indexOf(w);
+      if (i >= 0) { wordsData.extra[c].splice(i, 1); inExtra = true; }
+    });
+    if (!inExtra) wordsData.removedWords.push(w);
     renderWords();
   });
   document.querySelectorAll("[data-restore]").forEach(b => b.onclick = () => {
     const w = b.dataset.restore;
     socket.emit("restoreWord", w);
-    wordsData.removed = wordsData.removed.filter(x => x !== w);
+    wordsData.removedWords = wordsData.removedWords.filter(x => x !== w);
     renderWords();
   });
 }
@@ -556,19 +618,38 @@ $("wordsSearch").oninput = e => { wordsQuery = e.target.value; renderWords(); };
 
 function addNewWord() {
   const w = $("wordsAddInput").value.trim();
-  if (w.length < 2) return;
-  socket.emit("addWord", w, res => {
+  const cat = $("wordsAddCat").value;
+  if (w.length < 2 || !cat) return;
+  socket.emit("addWord", { word: w, cat }, res => {
     if (res?.ok) {
       $("wordsAddInput").value = "";
-      if (!wordsData.added.includes(w) && !Object.values(wordsData.categories).flat().includes(w)) wordsData.added.push(w);
-      wordsData.removed = wordsData.removed.filter(x => x !== w);
-      wordsCat = "➕ المضافة";
+      if (res.restored) wordsData.removedWords = wordsData.removedWords.filter(x => x !== w);
+      else (wordsData.extra[cat] = wordsData.extra[cat] || []).push(w);
+      wordsCat = cat;
       renderWords();
-    }
+      $("wordsAddInput").focus();
+    } else if (res?.error) alert(res.error);
   });
 }
 $("wordsAddBtn").onclick = addNewWord;
 $("wordsAddInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addNewWord(); } });
+
+function addNewCat() {
+  const c = $("catAddInput").value.trim();
+  if (c.length < 2) return;
+  socket.emit("addCategory", c, res => {
+    if (res?.ok) {
+      $("catAddInput").value = "";
+      wordsData.removedCats = wordsData.removedCats.filter(x => x !== c);
+      if (!wordsData.builtin[c]) wordsData.extra[c] = wordsData.extra[c] || [];
+      wordsCat = c;
+      renderWords();
+      $("wordsAddInput").focus();
+    } else if (res?.error) alert(res.error);
+  });
+}
+$("catAddBtn").onclick = addNewCat;
+$("catAddInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addNewCat(); } });
 
 // ===== حالة الغرفة =====
 const overlays = ["pickOverlay","waitOverlay","turnEndOverlay","gameEndOverlay","lobbyOverlay","galleryOverlay"];
@@ -611,6 +692,14 @@ socket.on("roomState", s => {
       $("setMode").value = set.mode;
       $("setRounds").value = set.rounds;
       $("setTime").value = set.turnTime;
+      // قائمة الفئات ديناميكية (تشمل الفئات المضافة)
+      if (s.categories) {
+        const want = ["الكل", ...s.categories];
+        const cur = [...$("setCategory").options].map(o => o.value);
+        if (JSON.stringify(want) !== JSON.stringify(cur)) {
+          $("setCategory").innerHTML = want.map(c => `<option>${esc(c)}</option>`).join("");
+        }
+      }
       $("setCategory").value = set.category;
     }
   } else if (s.state === "picking") {

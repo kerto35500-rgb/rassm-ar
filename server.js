@@ -71,13 +71,27 @@ function makeRoomId() {
 }
 
 // ====== الكلمات ======
+// فئات الغرفة الفعلية: الأصلية (بدون المحذوف) + المضافة
+function roomCategories(room) {
+  const out = {};
+  for (const [name, words] of Object.entries(CATEGORIES)) {
+    if (room.removedCats.has(name)) continue;
+    out[name] = [...words.filter(w => !room.removedWords.has(w)), ...(room.extraWords[name] || [])];
+  }
+  for (const [name, words] of Object.entries(room.extraWords)) {
+    if (!(name in CATEGORIES)) out[name] = [...words];
+  }
+  return out;
+}
+
 function wordPool(room) {
-  let base;
-  if (room.customWords.length >= 5) base = room.customWords;
-  else if (room.settings.category !== "الكل" && CATEGORIES[room.settings.category]) base = CATEGORIES[room.settings.category];
-  else base = ALL_WORDS;
-  const pool = [...new Set([...base, ...room.addedWords])].filter(w => !room.removedWords.has(w));
-  return pool.length ? pool : base;
+  if (room.customWords.length >= 5) return room.customWords;
+  const cats = roomCategories(room);
+  let base = (room.settings.category !== "الكل" && cats[room.settings.category])
+    ? cats[room.settings.category]
+    : Object.values(cats).flat();
+  base = [...new Set(base)];
+  return base.length ? base : ALL_WORDS;
 }
 
 function pickWords(room, n) {
@@ -92,12 +106,13 @@ function pickWords(room, n) {
   return picks;
 }
 
-function sanitizeSettings(s, old) {
+function sanitizeSettings(s, old, room) {
   s = s || {};
+  const catOk = s.category === "الكل" || !!roomCategories(room)[s.category];
   return {
     rounds: [1, 2, 3, 5, 10].includes(+s.rounds) ? +s.rounds : old.rounds,
     turnTime: Number.isFinite(+s.turnTime) ? Math.min(300, Math.max(10, Math.round(+s.turnTime))) : old.turnTime,
-    category: (s.category === "الكل" || CATEGORY_NAMES.includes(s.category)) ? s.category : old.category,
+    category: catOk ? s.category : old.category,
     mode: ["classic", "teams", "vote"].includes(s.mode) ? s.mode : old.mode
   };
 }
@@ -123,6 +138,7 @@ function roomState(room) {
     round: room.round,
     totalRounds: room.settings.rounds,
     settings: room.settings,
+    categories: Object.keys(roomCategories(room)),
     customWordsCount: room.customWords.length,
     drawerId: room.drawerId,
     drawerName: room.players.find(p => p.id === room.drawerId)?.name || null,
@@ -516,7 +532,7 @@ io.on("connection", (socket) => {
       guessedIds: new Set(), usedWords: new Set(),
       timeLeft: 0, timer: null, canvasOps: [], botTimers: [],
       settings: { ...DEFAULT_SETTINGS }, customWords: [],
-      addedWords: [], removedWords: new Set(),
+      extraWords: {}, removedWords: new Set(), removedCats: new Set(),
       drawings: new Map(), votes: new Map()
     };
     rooms.set(id, room);
@@ -550,7 +566,7 @@ io.on("connection", (socket) => {
   socket.on("updateSettings", (s) => {
     if (!room || socket.id !== room.ownerId) return;
     if (room.state !== "lobby" && room.state !== "gameEnd") return;
-    room.settings = sanitizeSettings(s, room.settings);
+    room.settings = sanitizeSettings(s, room.settings, room);
     broadcast(room);
   });
 
@@ -596,32 +612,77 @@ io.on("connection", (socket) => {
     io.to(room.id).emit("canvasHistory", room.canvasOps);
   });
 
-  // ---- إدارة الكلمات (للقائد) ----
+  // ---- إدارة الكلمات والفئات (للقائد) ----
   socket.on("wordsList", (cb) => {
     if (typeof cb !== "function" || !room) return;
-    cb({ categories: CATEGORIES, added: room.addedWords, removed: [...room.removedWords] });
+    cb({
+      builtin: CATEGORIES,
+      extra: room.extraWords,
+      removedWords: [...room.removedWords],
+      removedCats: [...room.removedCats]
+    });
   });
 
-  socket.on("addWord", (word, cb) => {
+  socket.on("addWord", (data, cb) => {
     if (!room || socket.id !== room.ownerId) return;
-    word = String(word || "").trim().slice(0, 30);
-    if (word.length < 2) return typeof cb === "function" && cb({ ok: false, error: "الكلمة قصيرة جدًا" });
-    room.removedWords.delete(word);
-    if (!ALL_WORDS.includes(word) && !room.addedWords.includes(word)) room.addedWords.push(word);
-    if (typeof cb === "function") cb({ ok: true });
+    const done = r => typeof cb === "function" && cb(r);
+    const word = String(data?.word || "").trim().slice(0, 30);
+    const cat = String(data?.cat || "").trim();
+    if (word.length < 2) return done({ ok: false, error: "الكلمة قصيرة جدًا" });
+    const cats = roomCategories(room);
+    if (!cats[cat]) return done({ ok: false, error: "الفئة غير موجودة" });
+    // لو كانت الكلمة محذوفة من نفس الفئة الأصلية: استرجاع
+    if (room.removedWords.has(word) && (CATEGORIES[cat] || []).includes(word)) {
+      room.removedWords.delete(word);
+      return done({ ok: true, restored: true });
+    }
+    if (cats[cat].includes(word)) return done({ ok: false, error: "الكلمة موجودة في هذه الفئة" });
+    (room.extraWords[cat] = room.extraWords[cat] || []).push(word);
+    done({ ok: true });
   });
 
   socket.on("removeWord", (word) => {
     if (!room || socket.id !== room.ownerId) return;
     word = String(word || "").trim();
-    const i = room.addedWords.indexOf(word);
-    if (i >= 0) room.addedWords.splice(i, 1);
-    else if (ALL_WORDS.includes(word)) room.removedWords.add(word);
+    let inExtra = false;
+    for (const cat of Object.keys(room.extraWords)) {
+      const i = room.extraWords[cat].indexOf(word);
+      if (i >= 0) { room.extraWords[cat].splice(i, 1); inExtra = true; }
+    }
+    if (!inExtra && ALL_WORDS.includes(word)) room.removedWords.add(word);
   });
 
   socket.on("restoreWord", (word) => {
     if (!room || socket.id !== room.ownerId) return;
     room.removedWords.delete(String(word || "").trim());
+  });
+
+  socket.on("addCategory", (name, cb) => {
+    if (!room || socket.id !== room.ownerId) return;
+    const done = r => typeof cb === "function" && cb(r);
+    name = String(name || "").trim().slice(0, 20);
+    if (name.length < 2) return done({ ok: false, error: "اسم الفئة قصير جدًا" });
+    if (name === "الكل") return done({ ok: false, error: "اسم محجوز" });
+    if (room.removedCats.has(name)) { room.removedCats.delete(name); broadcast(room); return done({ ok: true }); }
+    if (roomCategories(room)[name]) return done({ ok: false, error: "الفئة موجودة أصلًا" });
+    room.extraWords[name] = room.extraWords[name] || [];
+    broadcast(room);
+    done({ ok: true });
+  });
+
+  socket.on("removeCategory", (name) => {
+    if (!room || socket.id !== room.ownerId) return;
+    name = String(name || "").trim();
+    if (CATEGORIES[name]) room.removedCats.add(name);
+    delete room.extraWords[name];
+    if (room.settings.category === name) room.settings.category = "الكل";
+    broadcast(room);
+  });
+
+  socket.on("restoreCategory", (name) => {
+    if (!room || socket.id !== room.ownerId) return;
+    room.removedCats.delete(String(name || "").trim());
+    broadcast(room);
   });
 
   // ---- وضع التصويت ----
