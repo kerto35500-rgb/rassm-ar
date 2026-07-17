@@ -1,0 +1,17 @@
+{
+  "name": "rassm-ar",
+  "version": "1.0.0",
+  "description": "لعبة رسم وتخمين عربية - نسخة عربية من skribbl.io",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.11.5",
+    "socket.io": "^4.7.5"
+  }
+}
