@@ -26,7 +26,6 @@ const PORT = process.env.PORT || 3000;
 const PICK_TIME = 15;
 const WORD_CHOICES = 3;
 const MAX_PLAYERS = 12;
-const MAX_BOTS = 4;
 const VOTE_TIME = 25;
 
 const CATEGORY_NAMES = Object.keys(CATEGORIES);
@@ -138,59 +137,6 @@ function clearTimers(room) {
   room.botTimers = [];
 }
 
-// ====== البوتات ======
-function addBot(room) {
-  const bots = room.players.filter(p => p.isBot && p.connected);
-  if (bots.length >= MAX_BOTS) return sysMsg(room, `الحد الأقصى ${MAX_BOTS} بوتات`);
-  if (room.players.filter(p => p.connected).length >= MAX_PLAYERS) return;
-  const bot = {
-    id: "bot-" + Math.random().toString(36).slice(2, 9),
-    name: `🤖 بوت ${bots.length + 1}`,
-    score: 0, hasDrawn: false, connected: true, isBot: true
-  };
-  room.players.push(bot);
-  sysMsg(room, `${bot.name} انضم إلى الغرفة`, "join");
-  broadcast(room);
-}
-
-function startBotBehaviors(room) {
-  const word = room.currentWord;
-  const T = room.settings.turnTime;
-  room.players.filter(p => p.isBot && p.connected).forEach(bot => {
-    if (bot.id === room.drawerId) {
-      let x = 0.3 + Math.random() * 0.4, y = 0.3 + Math.random() * 0.4;
-      const colors = ["#222222", "#e53935", "#1e88e5", "#43a047", "#fb8c00"];
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      let first = true;
-      const t = setInterval(() => {
-        if (room.state !== "drawing" || room.drawerId !== bot.id) return;
-        const nx = Math.min(0.95, Math.max(0.05, x + (Math.random() - 0.5) * 0.15));
-        const ny = Math.min(0.95, Math.max(0.05, y + (Math.random() - 0.5) * 0.15));
-        const op = { x1: x, y1: y, x2: nx, y2: ny, color, size: 5, eraser: false, start: first };
-        first = false;
-        room.canvasOps.push(op);
-        io.to(room.id).emit("draw", op);
-        x = nx; y = ny;
-      }, 250);
-      room.botTimers.push(t);
-    } else {
-      const wrong = setInterval(() => {
-        if (room.state !== "drawing" || room.guessedIds.has(bot.id)) return;
-        const w = ALL_WORDS[Math.floor(Math.random() * ALL_WORDS.length)];
-        if (normalizeArabic(w) === normalizeArabic(word)) return;
-        handleChat(room, bot, w);
-      }, 8000 + Math.random() * 7000);
-      room.botTimers.push(wrong);
-      if (Math.random() < 0.75) {
-        const t = setTimeout(() => {
-          if (room.state === "drawing" && !room.guessedIds.has(bot.id)) handleChat(room, bot, word);
-        }, Math.min(T * 1000 * 0.8, 12000 + Math.random() * 40000));
-        room.botTimers.push(t);
-      }
-    }
-  });
-}
-
 // ====== بدء اللعبة ======
 function startGame(room) {
   room.round = 0;
@@ -252,12 +198,6 @@ function nextTurn(room) {
   sysMsg(room, `${next.name} يختار الكلمة...`);
   broadcast(room);
 
-  if (next.isBot) {
-    room.botTimers.push(setTimeout(() => {
-      chooseWord(room, next.id, room.wordOptions[Math.floor(Math.random() * room.wordOptions.length)]);
-    }, 2500));
-  }
-
   room.timer = setInterval(() => {
     room.timeLeft--;
     if (room.timeLeft <= 0) chooseWord(room, next.id, room.wordOptions[0]);
@@ -281,7 +221,6 @@ function chooseWord(room, playerId, word) {
   io.to(room.id).emit("clearCanvas");
   sysMsg(room, "بدأ الرسم! خمنوا الكلمة ✏️");
   broadcast(room);
-  startBotBehaviors(room);
 
   const revealTimes = [Math.floor(T * 0.5), Math.floor(T * 0.25)];
 
@@ -382,15 +321,6 @@ function startGallery(room) {
     io.to(room.id).emit("gallery", { entries, word: room.currentWord });
     sysMsg(room, "صوّتوا لأفضل رسمة! 🗳️ (لا يمكنك التصويت لنفسك)");
     broadcast(room);
-
-    // البوتات تصوت عشوائيًا
-    room.players.filter(p => p.isBot && p.connected).forEach(bot => {
-      const t = setTimeout(() => {
-        const ids = entries.map(e => e.id).filter(id => id !== bot.id);
-        if (ids.length) castVote(room, bot.id, ids[Math.floor(Math.random() * ids.length)]);
-      }, 2000 + Math.random() * 6000);
-      room.botTimers.push(t);
-    });
 
     room.timer = setInterval(() => {
       room.timeLeft--;
@@ -634,15 +564,7 @@ io.on("connection", (socket) => {
     if (room.state !== "lobby" && room.state !== "gameEnd") return;
     const conn = room.players.filter(p => p.connected);
     if (conn.length < 2) return socket.emit("chat", { system: true, text: "تحتاج لاعبين اثنين على الأقل لبدء اللعبة" });
-    if (room.settings.mode === "vote" && conn.filter(p => !p.isBot).length < 2)
-      return socket.emit("chat", { system: true, text: "وضع التصويت يحتاج لاعبين حقيقيين اثنين على الأقل (البوت لا يرسم)" });
     startGame(room);
-  });
-
-  socket.on("addBot", () => {
-    if (!room || socket.id !== room.ownerId) return;
-    if (room.state !== "lobby" && room.state !== "gameEnd") return;
-    addBot(room);
   });
 
   socket.on("chooseWord", (word) => { if (room) chooseWord(room, socket.id, word); });

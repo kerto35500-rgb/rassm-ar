@@ -99,7 +99,7 @@
   .rankRow { background:rgba(255,255,255,.12); padding:9px 22px; border-radius:10px; font-size:18px; font-weight:700; min-width:250px; display:flex; justify-content:space-between; gap:20px; }
   .rankRow.team-red { border-right:5px solid #e53935; }
   .rankRow.team-blue { border-right:5px solid #1e88e5; }
-  #startBtn, #addBotBtn { display:none; }
+  #startBtn { display:none; }
   #waitingNote { color:#fff; background:rgba(0,0,0,.35); padding:8px 16px; border-radius:10px; font-size:14px; }
 
   /* إعدادات الغرفة */
@@ -256,7 +256,6 @@
 
           <div id="settingsSummary"></div>
           <button class="btn btn-green" id="startBtn">ابدأ اللعبة ▶️</button>
-          <button class="btn btn-blue" id="addBotBtn">إضافة بوت تجريبي 🤖</button>
         </div>
       </div>
 
@@ -360,16 +359,21 @@ $("lbBtn").onclick = () => {
 };
 
 // ===== الدخول للغرف =====
+let joinedRoomId = null, joinedName = null;
+
 function enterGame(roomId) {
   $("lobbyScreen").style.display = "none";
   $("gameScreen").style.display = "flex";
   $("roomCodeText").textContent = roomId;
   resizeCanvas();
+  setTimeout(resizeCanvas, 300); // ضمان القياس الصحيح على الجوال
 }
 $("createBtn").onclick = () => {
   const name = $("nameInput").value.trim();
   if (!name) return $("joinError").textContent = "اكتب اسمك أولًا";
-  socket.emit("createRoom", { name }, res => { if (res.ok) enterGame(res.roomId); });
+  socket.emit("createRoom", { name }, res => {
+    if (res.ok) { joinedRoomId = res.roomId; joinedName = name; enterGame(res.roomId); }
+  });
 };
 $("joinBtn").onclick = () => {
   const name = $("nameInput").value.trim();
@@ -377,10 +381,25 @@ $("joinBtn").onclick = () => {
   if (!name) return $("joinError").textContent = "اكتب اسمك أولًا";
   if (!roomId) return $("joinError").textContent = "اكتب رمز الغرفة";
   socket.emit("joinRoom", { name, roomId }, res => {
-    if (res.ok) enterGame(res.roomId);
+    if (res.ok) { joinedRoomId = roomId; joinedName = name; enterGame(roomId); }
     else $("joinError").textContent = res.error;
   });
 };
+
+// إعادة الانضمام تلقائيًا عند عودة الاتصال (مهم للجوال: الشاشة تطفي أو تتنقل بين التطبيقات)
+socket.io.on("reconnect", () => {
+  if (!joinedRoomId) return;
+  socket.emit("joinRoom", { name: joinedName, roomId: joinedRoomId }, res => {
+    if (!res.ok) { alert("انقطع الاتصال والغرفة انتهت"); location.reload(); }
+  });
+});
+// عند رجوع التطبيق للواجهة، تأكد من الاتصال وحدّث القياس
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    if (joinedRoomId && !socket.connected) socket.connect();
+    resizeCanvas();
+  }
+});
 $("roomCodeBox").onclick = () => {
   navigator.clipboard?.writeText($("roomCodeText").textContent);
   $("roomCodeBox").style.background = "#c8e6c9";
@@ -440,7 +459,6 @@ socket.on("roomState", s => {
     showOverlay("lobbyOverlay");
     const owner = !!me?.isOwner;
     $("startBtn").style.display = owner ? "block" : "none";
-    $("addBotBtn").style.display = owner ? "block" : "none";
     $("settingsBox").style.display = owner ? "flex" : "none";
     if (owner) {
       $("setMode").value = set.mode;
@@ -568,7 +586,6 @@ socket.on("gameEnd", ({ ranking, teams }) => {
 
 $("startBtn").onclick = () => socket.emit("startGame");
 $("playAgainBtn").onclick = () => socket.emit("startGame");
-$("addBotBtn").onclick = () => socket.emit("addBot");
 
 socket.on("guessedCorrectly", () => {
   $("chatInput").placeholder = "خمنتها! دردش مع من خمنوا ✅";
@@ -637,16 +654,24 @@ document.querySelectorAll("[data-size]").forEach((b, i) => {
 $("undoBtn").onclick = () => socket.emit("undo");
 $("clearBtn").onclick = () => socket.emit("clearCanvas");
 
+let localOps = []; // سجل العمليات لإعادة الرسم عند تغير المقاس (أدق من تكبير الصورة)
+
+function redrawAll() {
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  localOps.forEach(op => renderOp(op));
+}
+
 function resizeCanvas() {
   const rect = $("canvasContainer").getBoundingClientRect();
-  const old = document.createElement("canvas");
-  old.width = canvas.width; old.height = canvas.height;
-  old.getContext("2d").drawImage(canvas, 0, 0);
-  canvas.width = rect.width; canvas.height = rect.height;
-  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-  if (old.width) ctx.drawImage(old, 0, 0, canvas.width, canvas.height);
+  const w = Math.round(rect.width), h = Math.round(rect.height);
+  if (w < 10 || h < 10) return; // تجاهل القياسات غير الجاهزة
+  if (canvas.width === w && canvas.height === h) return;
+  canvas.width = w; canvas.height = h;
+  redrawAll();
 }
 window.addEventListener("resize", resizeCanvas);
+window.addEventListener("orientationchange", () => setTimeout(resizeCanvas, 300));
 
 function getPos(e) {
   const rect = canvas.getBoundingClientRect();
@@ -656,7 +681,7 @@ function getPos(e) {
 
 function drawSegment(op) {
   ctx.strokeStyle = op.eraser ? "#ffffff" : op.color;
-  ctx.lineWidth = op.size * (canvas.width / 800);
+  ctx.lineWidth = Math.max(2, op.size * (canvas.width / 800)); // حد أدنى للوضوح على الشاشات الصغيرة
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.beginPath();
@@ -695,7 +720,12 @@ function floodFillAt(op) {
   ctx.putImageData(img, 0, 0);
 }
 
-function applyOp(op) { if (op.fill) floodFillAt(op); else drawSegment(op); }
+function renderOp(op) { if (op.fill) floodFillAt(op); else drawSegment(op); }
+function applyOp(op) {
+  if (canvas.width < 10) resizeCanvas(); // ضمان جاهزية اللوحة (مهم للجوال)
+  localOps.push(op);
+  renderOp(op);
+}
 
 function sendOp(op) {
   // في وضع "الكل يرسم" الرسم محلي فقط
@@ -753,11 +783,8 @@ canvas.addEventListener("touchmove", moveDraw, { passive: false });
 canvas.addEventListener("touchend", endDraw);
 
 socket.on("draw", op => applyOp(op));
-socket.on("clearCanvas", () => { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height); });
-socket.on("canvasHistory", ops => {
-  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ops.forEach(applyOp);
-});
+socket.on("clearCanvas", () => { localOps = []; redrawAll(); });
+socket.on("canvasHistory", ops => { localOps = [...ops]; redrawAll(); });
 </script>
 </body>
 </html>
