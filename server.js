@@ -72,9 +72,12 @@ function makeRoomId() {
 
 // ====== الكلمات ======
 function wordPool(room) {
-  if (room.customWords.length >= 5) return room.customWords;
-  if (room.settings.category !== "الكل" && CATEGORIES[room.settings.category]) return CATEGORIES[room.settings.category];
-  return ALL_WORDS;
+  let base;
+  if (room.customWords.length >= 5) base = room.customWords;
+  else if (room.settings.category !== "الكل" && CATEGORIES[room.settings.category]) base = CATEGORIES[room.settings.category];
+  else base = ALL_WORDS;
+  const pool = [...new Set([...base, ...room.addedWords])].filter(w => !room.removedWords.has(w));
+  return pool.length ? pool : base;
 }
 
 function pickWords(room, n) {
@@ -513,6 +516,7 @@ io.on("connection", (socket) => {
       guessedIds: new Set(), usedWords: new Set(),
       timeLeft: 0, timer: null, canvasOps: [], botTimers: [],
       settings: { ...DEFAULT_SETTINGS }, customWords: [],
+      addedWords: [], removedWords: new Set(),
       drawings: new Map(), votes: new Map()
     };
     rooms.set(id, room);
@@ -588,8 +592,36 @@ io.on("connection", (socket) => {
     let i = room.canvasOps.length - 1;
     while (i >= 0 && !room.canvasOps[i].start) i--;
     if (i >= 0) room.canvasOps.splice(i);
-    io.to(room.id).emit("clearCanvas");
+    // حدث واحد فقط = إعادة رسم سلسة بدون وميض
     io.to(room.id).emit("canvasHistory", room.canvasOps);
+  });
+
+  // ---- إدارة الكلمات (للقائد) ----
+  socket.on("wordsList", (cb) => {
+    if (typeof cb !== "function" || !room) return;
+    cb({ categories: CATEGORIES, added: room.addedWords, removed: [...room.removedWords] });
+  });
+
+  socket.on("addWord", (word, cb) => {
+    if (!room || socket.id !== room.ownerId) return;
+    word = String(word || "").trim().slice(0, 30);
+    if (word.length < 2) return typeof cb === "function" && cb({ ok: false, error: "الكلمة قصيرة جدًا" });
+    room.removedWords.delete(word);
+    if (!ALL_WORDS.includes(word) && !room.addedWords.includes(word)) room.addedWords.push(word);
+    if (typeof cb === "function") cb({ ok: true });
+  });
+
+  socket.on("removeWord", (word) => {
+    if (!room || socket.id !== room.ownerId) return;
+    word = String(word || "").trim();
+    const i = room.addedWords.indexOf(word);
+    if (i >= 0) room.addedWords.splice(i, 1);
+    else if (ALL_WORDS.includes(word)) room.removedWords.add(word);
+  });
+
+  socket.on("restoreWord", (word) => {
+    if (!room || socket.id !== room.ownerId) return;
+    room.removedWords.delete(String(word || "").trim());
   });
 
   // ---- وضع التصويت ----
