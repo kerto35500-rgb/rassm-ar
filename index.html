@@ -75,6 +75,8 @@
   .playerRow .pname { font-weight:700; font-size:14px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .playerRow .pscore { font-size:13px; color:#666; font-weight:700; }
   .playerRow .badge { font-size:15px; }
+  .kickBtn { border:none; background:#ffe0e0; color:#c62828; border-radius:6px; width:22px; height:22px; font-size:12px; cursor:pointer; flex-shrink:0; }
+  .kickBtn:hover { background:#ffcdd2; }
 
   #canvasWrap { flex:1; background:var(--panel); border-radius:12px; display:flex; flex-direction:column; min-width:0; position:relative; }
   #canvasContainer { flex:1; position:relative; min-height:0; }
@@ -101,7 +103,18 @@
   #chatForm { display:flex; padding:8px; gap:6px; border-top:2px solid #eee; }
   #chatInput { flex:1; padding:9px 12px; border:2px solid #ddd; border-radius:8px; font-size:15px; }
   #chatInput:focus { outline:none; border-color:var(--accent2); }
-  #chatForm button { padding:9px 14px; border:none; border-radius:8px; background:var(--accent2); color:#fff; font-weight:700; cursor:pointer; }
+  #chatForm button[type=submit] { padding:9px 14px; border:none; border-radius:8px; background:var(--accent2); color:#fff; font-weight:700; cursor:pointer; }
+  #kbBtn { padding:9px 11px; border:none; border-radius:8px; background:#eef2f6; cursor:pointer; font-size:16px; }
+  #kbBtn.on { background:var(--accent2); }
+  /* لوحة المفاتيح العربية على الشاشة */
+  #vkb { display:none; padding:6px; background:#dfe6ee; border-top:2px solid #cbd5e1; flex-direction:column; gap:5px; }
+  #vkb .krow { display:flex; gap:4px; justify-content:center; }
+  #vkb .k { flex:1 1 0; min-width:0; padding:9px 0; background:#fff; border:1px solid #c4d0dc; border-radius:6px; font-size:17px; font-weight:700; cursor:pointer; color:#1e3a5f; text-align:center; user-select:none; }
+  #vkb .k:active { background:#c8d6e5; }
+  #vkb .k.wide { flex:3; }
+  #vkb .k.act { background:#e3f2fd; }
+  #vkb .k.del { background:#ffe0e0; color:#c62828; }
+  #vkb .k.send { background:var(--green); color:#fff; }
 
   /* ===== النوافذ ===== */
   .overlay { position:absolute; inset:0; background:rgba(30,58,95,.9); border-radius:12px; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; z-index:10; color:#fff; text-align:center; padding:16px; overflow-y:auto; }
@@ -373,7 +386,9 @@
 
     <div id="chatPanel">
       <div id="messages"></div>
+      <div id="vkb"></div>
       <form id="chatForm">
+        <button type="button" id="kbBtn" title="لوحة مفاتيح عربية">⌨️</button>
         <input id="chatInput" maxlength="100" placeholder="اكتب تخمينك هنا..." autocomplete="off">
         <button type="submit">إرسال</button>
       </form>
@@ -407,11 +422,16 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-const socket = io();
+const socket = io({ reconnection: true, reconnectionDelay: 800, reconnectionAttempts: Infinity });
 const $ = id => document.getElementById(id);
 
 let myId = null, isDrawer = false, canDraw = false, state = null, prevState = "lobby";
 let voteMode = false, myVoted = false;
+
+// نبض إبقاء السيرفر حيًا (يمنع الخطة المجانية من النوم أثناء اللعب الطويل)
+setInterval(() => {
+  if (joinedRoomId) fetch("/healthz", { cache: "no-store" }).catch(() => {});
+}, 4 * 60 * 1000);
 
 socket.on("connect", () => { myId = socket.id; });
 
@@ -514,6 +534,13 @@ socket.io.on("reconnect", () => {
   socket.emit("joinRoom", { name: joinedName, roomId: joinedRoomId }, res => {
     if (!res.ok) { alert("انقطع الاتصال والغرفة انتهت"); location.reload(); }
   });
+});
+
+// عند الطرد: أوقف إعادة الانضمام وارجع للصفحة الرئيسية
+socket.on("kicked", () => {
+  joinedRoomId = null;
+  alert("تم طردك من الغرفة بواسطة القائد 🚫");
+  location.reload();
 });
 // عند رجوع التطبيق للواجهة، تأكد من الاتصال وحدّث القياس
 document.addEventListener("visibilitychange", () => {
@@ -719,12 +746,17 @@ socket.on("roomState", s => {
   prevState = s.state;
 
   // اللاعبون
+  const iAmOwner = !!s.players.find(p => p.id === myId)?.isOwner;
   $("playersPanel").innerHTML = s.players.filter(p => p.connected).map(p => `
     <div class="playerRow ${p.isDrawer ? "drawer" : ""} ${p.guessed ? "guessed" : ""} ${p.team ? "team-" + p.team : ""}">
       <span class="badge">${p.isDrawer ? "✏️" : p.guessed ? "✅" : p.isOwner ? "👑" : p.isBot ? "🤖" : "👤"}</span>
       <span class="pname">${esc(p.name)}${p.id === myId ? " (أنت)" : ""}</span>
       <span class="pscore">${p.score}</span>
+      ${iAmOwner && p.id !== myId ? `<button class="kickBtn" data-kick="${esc(p.id)}" title="طرد">✖</button>` : ""}
     </div>`).join("");
+  document.querySelectorAll("[data-kick]").forEach(b => b.onclick = () => {
+    if (confirm("طرد هذا اللاعب من الغرفة؟")) socket.emit("kickPlayer", b.dataset.kick);
+  });
 
   const me = s.players.find(p => p.id === myId);
   const set = s.settings;
@@ -990,6 +1022,71 @@ $("chatForm").onsubmit = e => {
   if (t) socket.emit("chat", t);
   $("chatInput").value = "";
 };
+
+// ===== لوحة مفاتيح عربية على الشاشة =====
+const KB_ROWS = [
+  ["ض","ص","ث","ق","ف","غ","ع","ه","خ","ح","ج","د"],
+  ["ش","س","ي","ب","ل","ا","ت","ن","م","ك","ط"],
+  ["ذ","ئ","ء","ؤ","ر","لا","ى","ة","و","ز","ظ"],
+  ["أ","إ","آ","لأ","ﻻ","،","ـ"]
+];
+function buildKeyboard() {
+  const vkb = $("vkb");
+  vkb.innerHTML = "";
+  KB_ROWS.forEach(row => {
+    const div = document.createElement("div");
+    div.className = "krow";
+    row.forEach(ch => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "k"; b.textContent = ch;
+      b.onmousedown = e => { e.preventDefault(); kbInsert(ch); };
+      div.appendChild(b);
+    });
+    vkb.appendChild(div);
+  });
+  // صف التحكم: مسافة + مسح + إرسال
+  const ctrl = document.createElement("div");
+  ctrl.className = "krow";
+  const space = document.createElement("button");
+  space.type = "button"; space.className = "k wide act"; space.textContent = "مسافة";
+  space.onmousedown = e => { e.preventDefault(); kbInsert(" "); };
+  const del = document.createElement("button");
+  del.type = "button"; del.className = "k del"; del.textContent = "⌫";
+  del.onmousedown = e => { e.preventDefault(); kbBackspace(); };
+  const send = document.createElement("button");
+  send.type = "button"; send.className = "k send"; send.textContent = "إرسال";
+  send.onmousedown = e => { e.preventDefault(); $("chatForm").requestSubmit(); };
+  ctrl.appendChild(del); ctrl.appendChild(space); ctrl.appendChild(send);
+  vkb.appendChild(ctrl);
+}
+function kbInsert(ch) {
+  const inp = $("chatInput");
+  if (inp.disabled) return;
+  const s = inp.selectionStart ?? inp.value.length, e = inp.selectionEnd ?? inp.value.length;
+  if (inp.value.length - (e - s) + ch.length > 100) return;
+  inp.value = inp.value.slice(0, s) + ch + inp.value.slice(e);
+  const pos = s + ch.length;
+  inp.setSelectionRange(pos, pos);
+}
+function kbBackspace() {
+  const inp = $("chatInput");
+  if (inp.disabled) return;
+  let s = inp.selectionStart ?? inp.value.length, e = inp.selectionEnd ?? inp.value.length;
+  if (s === e && s > 0) s--;
+  inp.value = inp.value.slice(0, s) + inp.value.slice(e);
+  inp.setSelectionRange(s, s);
+}
+let kbOpen = false;
+$("kbBtn").onclick = () => {
+  kbOpen = !kbOpen;
+  $("vkb").style.display = kbOpen ? "flex" : "none";
+  $("kbBtn").classList.toggle("on", kbOpen);
+  // منع ظهور كيبورد الجهاز عند تفعيل الكيبورد الداخلي
+  $("chatInput").inputMode = kbOpen ? "none" : "text";
+  if (kbOpen && !$("vkb").hasChildNodes()) buildKeyboard();
+  if (kbOpen) $("messages").scrollTop = $("messages").scrollHeight;
+};
+buildKeyboard();
 
 socket.on("chat", m => {
   const div = document.createElement("div");

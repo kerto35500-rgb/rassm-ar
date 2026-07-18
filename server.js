@@ -43,6 +43,8 @@ app.get("/", (req, res) => {
   if (admin) admin.trackVisit();
   res.sendFile(indexFile);
 });
+// نقطة إبقاء حيّة (تمنع السيرفر المجاني من النوم أثناء اللعب الطويل)
+app.get("/healthz", (req, res) => res.type("text").send("ok"));
 if (fs.existsSync(path.join(pubDir, "index.html"))) app.use(express.static(pubDir));
 
 const PORT = process.env.PORT || 3000;
@@ -692,6 +694,29 @@ io.on("connection", (socket) => {
     room.currentWord = null;
     room.hint = "";
     sysMsg(room, "رجع القائد لغرفة الإعدادات ⚙️");
+    broadcast(room);
+  });
+
+  // طرد لاعب (للقائد فقط)
+  socket.on("kickPlayer", (targetId) => {
+    if (!room || socket.id !== room.ownerId) return;
+    targetId = String(targetId || "");
+    if (targetId === socket.id) return; // لا يطرد نفسه
+    const target = room.players.find(p => p.id === targetId && p.connected);
+    if (!target) return;
+    sysMsg(room, `تم طرد ${target.name} من الغرفة 🚫`, "leave");
+    target.connected = false;
+    room.kicked = room.kicked || new Set();
+    room.kicked.add(targetId);
+    io.to(targetId).emit("kicked");
+    // إذا كان الرسام الحالي، انتقل للدور التالي
+    if (room.drawerId === targetId && (room.state === "drawing" || room.state === "picking")) {
+      clearTimers(room);
+      setTimeout(() => { if (rooms.has(room.id)) nextTurn(room); }, 1500);
+    }
+    // افصل السوكِت فعليًا
+    const sock = io.sockets.sockets.get(targetId);
+    if (sock) sock.disconnect(true);
     broadcast(room);
   });
 
