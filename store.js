@@ -39,6 +39,9 @@ class JsonStore {
   }
   async getWords() { return this.db.words || null; }
   async saveWords(obj) { this.db.words = obj; this._save(); }
+  async getMetrics() { return this.db.metrics || null; }
+  async saveMetrics(obj) { this.db.metrics = obj; this._save(); }
+  async countUsers() { return Object.keys(this.db.users).length; }
 }
 
 class PgStore {
@@ -75,6 +78,19 @@ class PgStore {
     await this.pool.query(
       "INSERT INTO kv (key, value) VALUES ('words', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
       [JSON.stringify(obj)]);
+  }
+  async getMetrics() {
+    const r = await this.pool.query("SELECT value FROM kv WHERE key = 'metrics'");
+    return r.rows[0] ? JSON.parse(r.rows[0].value) : null;
+  }
+  async saveMetrics(obj) {
+    await this.pool.query(
+      "INSERT INTO kv (key, value) VALUES ('metrics', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
+      [JSON.stringify(obj)]);
+  }
+  async countUsers() {
+    const r = await this.pool.query("SELECT COUNT(*)::int AS n FROM users");
+    return r.rows[0].n;
   }
   async getUser(name) {
     const r = await this.pool.query(

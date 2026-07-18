@@ -7,18 +7,43 @@ const crypto = require("crypto");
 const { Server } = require("socket.io");
 const CATEGORIES = require("./words");
 const { createStore } = require("./store");
+const { setupAdmin } = require("./admin");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" }, maxHttpBufferSize: 1e6 });
 
+let admin = null; // يُهيأ بعد الاتصال بقاعدة البيانات
+
+// إحصائيات حية للوحة المراقبة
+function getLiveStats() {
+  let online = 0;
+  const roomList = [];
+  rooms.forEach(r => {
+    const conn = r.players.filter(p => p.connected && !p.isBot);
+    online += conn.length;
+    if (conn.length > 0) {
+      roomList.push({
+        id: r.id,
+        state: r.state,
+        mode: r.settings.mode,
+        players: conn.length,
+        owner: r.players.find(p => p.id === r.ownerId)?.name || null
+      });
+    }
+  });
+  return { online, rooms: roomList };
+}
+
 // دعم هيكلين: index.html داخل public/ أو في جذر المشروع
 const pubDir = path.join(__dirname, "public");
-if (fs.existsSync(path.join(pubDir, "index.html"))) {
-  app.use(express.static(pubDir));
-} else {
-  app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
-}
+const indexFile = fs.existsSync(path.join(pubDir, "index.html")) ? path.join(pubDir, "index.html") : path.join(__dirname, "index.html");
+// تتبع الزيارات (طلب صفحة اللعبة الرئيسية)
+app.get("/", (req, res) => {
+  if (admin) admin.trackVisit();
+  res.sendFile(indexFile);
+});
+if (fs.existsSync(path.join(pubDir, "index.html"))) app.use(express.static(pubDir));
 
 const PORT = process.env.PORT || 3000;
 
@@ -173,6 +198,7 @@ function clearTimers(room) {
 
 // ====== بدء اللعبة ======
 function startGame(room) {
+  if (admin) admin.trackGame();
   room.round = 0;
   room.usedWords = new Set();
   room.players = room.players.filter(p => p.connected); // تنظيف المغادرين
@@ -502,6 +528,7 @@ io.on("connection", (socket) => {
       if (await store.getUser(name)) return cb({ ok: false, error: "الاسم مستخدم، جرب تسجيل الدخول" });
       const salt = crypto.randomBytes(16).toString("hex");
       await store.createUser(name, salt, hashPass(pass, salt));
+      if (admin) admin.trackNewUser();
       socket.userName = name;
       cb({ ok: true, stats: { name, wins: 0, games: 0, totalScore: 0 } });
     } catch (e) {
@@ -764,6 +791,8 @@ createStore()
         console.log(`📚 كلمات مخصصة محفوظة: ${extraCount} كلمة، ${Object.keys(GW.extra).length} فئة`);
       }
     } catch (e) { console.error("words load:", e.message); }
+    // تفعيل لوحة المراقبة
+    admin = setupAdmin(app, { getLiveStats, store });
     server.listen(PORT, () => {
       console.log(`🎨 لعبة ارسمها! تعمل على المنفذ ${PORT}`);
     });
