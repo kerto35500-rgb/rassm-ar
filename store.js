@@ -37,6 +37,8 @@ class JsonStore {
       .sort((a, b) => b.wins - a.wins || b.totalScore - a.totalScore)
       .slice(0, n);
   }
+  async getWords() { return this.db.words || null; }
+  async saveWords(obj) { this.db.words = obj; this._save(); }
 }
 
 class PgStore {
@@ -59,6 +61,20 @@ class PgStore {
         total_score INT NOT NULL DEFAULT 0,
         created BIGINT
       )`);
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS kv (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )`);
+  }
+  async getWords() {
+    const r = await this.pool.query("SELECT value FROM kv WHERE key = 'words'");
+    return r.rows[0] ? JSON.parse(r.rows[0].value) : null;
+  }
+  async saveWords(obj) {
+    await this.pool.query(
+      "INSERT INTO kv (key, value) VALUES ('words', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
+      [JSON.stringify(obj)]);
   }
   async getUser(name) {
     const r = await this.pool.query(
