@@ -52,7 +52,14 @@
   #timerBox.low { background:var(--red); animation:pulse .6s infinite alternate; }
   @keyframes pulse { to { transform:scale(1.12); } }
   #roundInfo { font-size:14px; color:#666; font-weight:700; }
-  #hintBox { font-size:24px; font-weight:900; letter-spacing:6px; direction:rtl; }
+  #hintBox { display:flex; flex-direction:row-reverse; gap:5px; align-items:center; flex-wrap:wrap; direction:rtl; }
+  #hintBox .slot { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:30px; padding:0 4px; font-size:20px; font-weight:900; color:#1e3a5f; background:#e8eef5; border-bottom:3px solid #b8c6d6; border-radius:5px; }
+  #hintBox .slot.filled { background:#fff3e0; border-bottom-color:var(--accent); color:#c2410c; }
+  #hintBox .slot.reveal { animation:pop .45s ease; }
+  #hintBox .space { width:16px; }
+  #hintBox .plain { font-size:18px; font-weight:900; color:#1e3a5f; }
+  @keyframes pop { 0%{ transform:scale(.4); opacity:0 } 60%{ transform:scale(1.25) } 100%{ transform:scale(1) } }
+  #chatInput:disabled { background:#f0f0f0; cursor:not-allowed; }
   #roomCodeBox { font-size:13px; color:#666; cursor:pointer; background:#f0f4f8; padding:6px 12px; border-radius:8px; }
   #roomCodeBox b { color:var(--accent2); font-size:16px; }
   #muteBtn { font-size:20px; background:none; border:none; cursor:pointer; }
@@ -295,6 +302,16 @@
               </select>
             </div>
             <div class="setRow">
+              <label>⏳ قفل التخمين</label>
+              <select id="setLock">
+                <option value="0" selected>بدون</option>
+                <option value="3">3 ثواني</option>
+                <option value="5">5 ثواني</option>
+                <option value="10">10 ثواني</option>
+                <option value="15">15 ثانية</option>
+              </select>
+            </div>
+            <div class="setRow">
               <label>📚 فئة الكلمات</label>
               <select id="setCategory"><option>الكل</option></select>
             </div>
@@ -309,9 +326,12 @@
 
       <div id="toolbar">
         <div id="colors" style="display:inline-flex;gap:4px;flex-wrap:wrap;"></div>
+        <button class="toolBtn" id="paletteBtn" title="تبديل لوحة الألوان">🎨</button>
         <label class="toolBtn" id="pickerWrap" title="اختر أي لون">🌈<input type="color" id="colorPicker" value="#222222"></label>
         <button class="toolBtn active" id="penBtn" title="قلم">✏️</button>
         <button class="toolBtn" id="lineBtn" title="خط مستقيم">📏</button>
+        <button class="toolBtn" id="rectBtn" title="مربع">⬛</button>
+        <button class="toolBtn" id="circleBtn" title="دائرة">⚪</button>
         <button class="toolBtn" id="fillBtn" title="تعبئة">🪣</button>
         <button class="toolBtn" id="eraserBtn" title="ممحاة">🧽</button>
         <button class="toolBtn" data-size="3" title="خط رفيع"><span class="sizeDot" style="width:6px;height:6px"></span></button>
@@ -488,10 +508,11 @@ function sendSettings() {
     mode: $("setMode").value,
     rounds: $("setRounds").value,
     turnTime: $("setTime").value,
-    category: $("setCategory").value
+    category: $("setCategory").value,
+    guessLock: $("setLock").value
   });
 }
-["setMode","setRounds","setTime","setCategory"].forEach(id => $(id).onchange = sendSettings);
+["setMode","setRounds","setTime","setCategory","setLock"].forEach(id => $(id).onchange = sendSettings);
 $("customWordsInput").onchange = () => socket.emit("setCustomWords", $("customWordsInput").value);
 
 const MODE_NAMES = { classic: "كلاسيكي", teams: "فريقين 🔴🔵", vote: "الكل يرسم 🗳️" };
@@ -701,17 +722,20 @@ socket.on("roomState", s => {
         }
       }
       $("setCategory").value = set.category;
+      $("setLock").value = set.guessLock ?? 0;
     }
   } else if (s.state === "picking") {
     $("roundInfo").textContent = `الجولة ${s.round + 1} من ${s.totalRounds}`;
-    $("hintBox").textContent = "";
+    renderHint("");
     if (!isDrawer) {
       $("waitText").textContent = `${s.drawerName} يختار الكلمة... 🤔`;
       showOverlay("waitOverlay");
     }
   } else if (s.state === "drawing") {
     $("roundInfo").textContent = `الجولة ${s.round + 1} من ${s.totalRounds} — ${isDrawer ? "أنت ترسم!" : s.drawerName + " يرسم"}`;
-    if (!isDrawer) $("hintBox").textContent = s.hint.split("").join(" ");
+    if (!isDrawer) renderHint(s.hint);
+    // قفل التخمين عند إعادة الاتصال أو الانضمام المتأخر
+    if (!isDrawer && s.guessLockRemaining > 0) applyGuessLock(s.guessLockRemaining);
     showOverlay(null);
   } else if (s.state === "drawAll") {
     $("roundInfo").textContent = `الكلمة ${s.round + 1} من ${s.totalRounds} — الجميع يرسم!`;
@@ -721,6 +745,51 @@ socket.on("roomState", s => {
   }
   // voting و turnEnd و gameEnd تُدار من أحداثها الخاصة
   updateTimer(s.timeLeft);
+});
+
+// ===== عرض التلميح: خانات منفصلة + مسافات واضحة + أنميشن عند كشف حرف =====
+let prevHint = "";
+function renderHint(hint) {
+  if (hint === undefined || hint === null) hint = "";
+  const box = $("hintBox");
+  if (!hint) { box.innerHTML = ""; prevHint = ""; return; }
+  const prev = prevHint;
+  box.innerHTML = hint.split("").map((c, i) => {
+    if (c === " ") return `<span class="space"></span>`;
+    const filled = c !== "_";
+    // أنميشن فقط للحرف اللي انكشف الآن (كان "_" وصار حرف)
+    const justRevealed = filled && prev[i] === "_";
+    return `<span class="slot ${filled ? "filled" : ""} ${justRevealed ? "reveal" : ""}">${filled ? esc(c) : ""}</span>`;
+  }).join("");
+  if (filledCount(hint) > 0 && filledCount(hint) > filledCount(prev)) sndTick();
+  prevHint = hint;
+}
+function filledCount(h) { return (h || "").split("").filter(c => c !== "_" && c !== " ").length; }
+
+// ===== قفل التخمين =====
+let guessLockTimer = null;
+function applyGuessLock(seconds) {
+  clearInterval(guessLockTimer);
+  const input = $("chatInput");
+  if (isDrawer) return; // الرسام لا يتأثر
+  let rem = seconds;
+  input.disabled = true;
+  const tick = () => {
+    if (rem <= 0) {
+      clearInterval(guessLockTimer);
+      input.disabled = false;
+      input.placeholder = "اكتب تخمينك هنا...";
+      return;
+    }
+    input.placeholder = `⏳ التخمين يفتح بعد ${rem}...`;
+    rem--;
+  };
+  tick();
+  guessLockTimer = setInterval(tick, 1000);
+}
+socket.on("guessLock", ({ seconds }) => {
+  if (seconds > 0) applyGuessLock(seconds);
+  else { clearInterval(guessLockTimer); $("chatInput").disabled = false; $("chatInput").placeholder = "اكتب تخمينك هنا..."; }
 });
 
 socket.on("tick", t => {
@@ -746,11 +815,14 @@ socket.on("chooseWord", ({ options }) => {
 });
 
 socket.on("yourWord", ({ word }) => {
-  $("hintBox").textContent = "ارسم: " + word;
+  $("hintBox").innerHTML = `<span class="plain">ارسم: ${esc(word)}</span>`;
   showOverlay(null);
 });
 
 socket.on("turnEnd", ({ word }) => {
+  clearInterval(guessLockTimer);
+  $("chatInput").disabled = false;
+  $("chatInput").placeholder = "اكتب تخمينك هنا...";
   $("turnEndTitle").textContent = "الكلمة كانت:";
   $("revealedWord").textContent = word;
   $("turnEndExtra").innerHTML = "";
@@ -760,7 +832,7 @@ socket.on("turnEnd", ({ word }) => {
 // ===== وضع "الكل يرسم" =====
 socket.on("voteWord", ({ word }) => {
   myVoted = false;
-  $("hintBox").textContent = "ارسم: " + word;
+  $("hintBox").innerHTML = `<span class="plain">ارسم: ${esc(word)}</span>`;
   showOverlay(null);
 });
 
@@ -852,22 +924,34 @@ function esc(s) { const d = document.createElement("div"); d.textContent = s; re
 const canvas = $("board");
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
 let drawing = false, lastX = 0, lastY = 0, startX = 0, startY = 0;
-let color = "#222222", size = 3, tool = "pen"; // pen | line | fill | eraser
+let color = "#222222", size = 3, tool = "pen"; // pen | line | rect | circle | fill | eraser
 let snapshot = null;
 
-const COLORS = ["#222222","#ffffff","#e53935","#fb8c00","#fdd835","#43a047","#1e88e5","#8e24aa","#6d4c41","#f48fb1","#90a4ae","#00acc1"];
-COLORS.forEach((c, i) => {
-  const b = document.createElement("button");
-  b.className = "colorBtn" + (i === 0 ? " active" : "");
-  b.style.background = c;
-  b.onclick = () => {
-    color = c;
-    if (tool === "eraser") setTool("pen");
-    document.querySelectorAll(".colorBtn").forEach(x => x.classList.remove("active"));
-    b.classList.add("active");
-  };
-  $("colors").appendChild(b);
-});
+// لوحتا ألوان جاهزتان: أساسية + إضافية للكسالة
+const PALETTES = [
+  ["#222222","#ffffff","#e53935","#fb8c00","#fdd835","#43a047","#1e88e5","#8e24aa","#6d4c41","#f48fb1","#90a4ae","#00acc1"],
+  ["#000000","#795548","#d32f2f","#c2185b","#7b1fa2","#512da8","#303f9f","#0288d1","#00796b","#388e3c","#afb42b","#f57c00",
+   "#ff8a80","#ff80ab","#b388ff","#8c9eff","#80d8ff","#a7ffeb","#ccff90","#ffff8d","#ffd180","#d7ccc8","#cfd8dc","#ffffff"]
+];
+let paletteIdx = 0;
+function buildColors() {
+  $("colors").innerHTML = "";
+  PALETTES[paletteIdx].forEach((c, i) => {
+    const b = document.createElement("button");
+    b.className = "colorBtn" + (c === color ? " active" : (paletteIdx === 0 && i === 0 && color === "#222222" ? " active" : ""));
+    b.style.background = c;
+    b.title = c;
+    b.onclick = () => {
+      color = c;
+      if (tool === "eraser") setTool("pen");
+      document.querySelectorAll(".colorBtn").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+    };
+    $("colors").appendChild(b);
+  });
+}
+buildColors();
+$("paletteBtn").onclick = () => { paletteIdx = (paletteIdx + 1) % PALETTES.length; buildColors(); };
 
 // لوحة الألوان الكاملة: اختر أي لون
 $("colorPicker").oninput = e => {
@@ -880,11 +964,13 @@ $("colorPicker").oninput = e => {
 
 function setTool(t) {
   tool = t;
-  ["penBtn","lineBtn","fillBtn","eraserBtn"].forEach(id => $(id).classList.remove("active"));
-  $({ pen:"penBtn", line:"lineBtn", fill:"fillBtn", eraser:"eraserBtn" }[t]).classList.add("active");
+  ["penBtn","lineBtn","rectBtn","circleBtn","fillBtn","eraserBtn"].forEach(id => $(id).classList.remove("active"));
+  $({ pen:"penBtn", line:"lineBtn", rect:"rectBtn", circle:"circleBtn", fill:"fillBtn", eraser:"eraserBtn" }[t]).classList.add("active");
 }
 $("penBtn").onclick = () => setTool("pen");
 $("lineBtn").onclick = () => setTool("line");
+$("rectBtn").onclick = () => setTool("rect");
+$("circleBtn").onclick = () => setTool("circle");
 $("fillBtn").onclick = () => setTool("fill");
 $("eraserBtn").onclick = () => setTool("eraser");
 
@@ -965,7 +1051,30 @@ function floodFillAt(op) {
   ctx.putImageData(img, 0, 0);
 }
 
-function renderOp(op) { if (op.fill) floodFillAt(op); else drawSegment(op); }
+// رسم الأشكال: خط مستقيم، مربع، دائرة
+function drawShape(op) {
+  ctx.strokeStyle = op.color;
+  ctx.lineWidth = Math.max(2, op.size * (canvas.width / 800));
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  const x1 = op.x1 * canvas.width, y1 = op.y1 * canvas.height;
+  const x2 = op.x2 * canvas.width, y2 = op.y2 * canvas.height;
+  ctx.beginPath();
+  if (op.shape === "line") { ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
+  else if (op.shape === "rect") { ctx.rect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)); }
+  else if (op.shape === "circle") {
+    const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+    ctx.ellipse(cx, cy, Math.abs(x2 - x1) / 2, Math.abs(y2 - y1) / 2, 0, 0, Math.PI * 2);
+  }
+  ctx.stroke();
+}
+
+const SHAPE_TOOLS = ["line", "rect", "circle"];
+function renderOp(op) {
+  if (op.fill) floodFillAt(op);
+  else if (op.shape) drawShape(op);
+  else drawSegment(op);
+}
 function applyOp(op) {
   if (canvas.width < 10) resizeCanvas(); // ضمان جاهزية اللوحة (مهم للجوال)
   localOps.push(op);
@@ -989,7 +1098,8 @@ function startDraw(e) {
   }
   drawing = true;
   lastX = startX = p.x; lastY = startY = p.y;
-  if (tool === "line") {
+  // الأشكال (خط/مربع/دائرة): معاينة حية ثم تُثبّت عند الإفلات
+  if (SHAPE_TOOLS.includes(tool)) {
     snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
     return;
   }
@@ -1000,9 +1110,9 @@ function moveDraw(e) {
   if (!drawing || !canDraw) return;
   e.preventDefault();
   const p = getPos(e);
-  if (tool === "line") {
+  if (SHAPE_TOOLS.includes(tool)) {
     ctx.putImageData(snapshot, 0, 0);
-    drawSegment({ x1: startX, y1: startY, x2: p.x, y2: p.y, color, size });
+    drawShape({ shape: tool, x1: startX, y1: startY, x2: p.x, y2: p.y, color, size });
     lastX = p.x; lastY = p.y;
     return;
   }
@@ -1011,9 +1121,9 @@ function moveDraw(e) {
   lastX = p.x; lastY = p.y;
 }
 function endDraw() {
-  if (drawing && tool === "line" && snapshot) {
+  if (drawing && SHAPE_TOOLS.includes(tool) && snapshot) {
     ctx.putImageData(snapshot, 0, 0);
-    const op = { x1: startX, y1: startY, x2: lastX, y2: lastY, color, size, start: true };
+    const op = { shape: tool, x1: startX, y1: startY, x2: lastX, y2: lastY, color, size, start: true };
     applyOp(op); sendOp(op);
     snapshot = null;
   }

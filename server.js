@@ -56,7 +56,8 @@ const VOTE_TIME = 25;
 const CATEGORY_NAMES = Object.keys(CATEGORIES);
 const ALL_WORDS = CATEGORY_NAMES.flatMap(c => CATEGORIES[c]);
 
-const DEFAULT_SETTINGS = { rounds: 3, turnTime: 80, category: "الكل", mode: "classic" };
+const DEFAULT_SETTINGS = { rounds: 3, turnTime: 80, category: "الكل", mode: "classic", guessLock: 0 };
+const MAX_POINTS = 10; // أعلى نقاط للسؤال الواحد
 
 const rooms = new Map();
 
@@ -153,7 +154,8 @@ function sanitizeSettings(s, old, room) {
     rounds: [1, 2, 3, 5, 10].includes(+s.rounds) ? +s.rounds : old.rounds,
     turnTime: Number.isFinite(+s.turnTime) ? Math.min(300, Math.max(10, Math.round(+s.turnTime))) : old.turnTime,
     category: catOk ? s.category : old.category,
-    mode: ["classic", "teams", "vote"].includes(s.mode) ? s.mode : old.mode
+    mode: ["classic", "teams", "vote"].includes(s.mode) ? s.mode : old.mode,
+    guessLock: [0, 3, 5, 10, 15].includes(+s.guessLock) ? +s.guessLock : (old.guessLock || 0)
   };
 }
 
@@ -183,7 +185,9 @@ function roomState(room) {
     drawerId: room.drawerId,
     drawerName: room.players.find(p => p.id === room.drawerId)?.name || null,
     hint: room.hint,
-    timeLeft: room.timeLeft
+    timeLeft: room.timeLeft,
+    guessLockRemaining: (room.state === "drawing" && room.guessOpenAt && Date.now() < room.guessOpenAt)
+      ? Math.ceil((room.guessOpenAt - Date.now()) / 1000) : 0
   };
 }
 
@@ -277,9 +281,14 @@ function chooseWord(room, playerId, word) {
   room.hint = word.replace(/[^ ]/g, "_");
   room.revealedIdx = new Set();
 
+  // قفل التخمين: لا أحد يقدر يخمّن إلا بعد مرور المدة المحددة
+  const lock = room.settings.guessLock || 0;
+  room.guessOpenAt = Date.now() + lock * 1000;
+
   io.to(playerId).emit("yourWord", { word });
   io.to(room.id).emit("clearCanvas");
-  sysMsg(room, "بدأ الرسم! خمنوا الكلمة ✏️");
+  io.to(room.id).emit("guessLock", { seconds: lock });
+  sysMsg(room, lock > 0 ? `بدأ الرسم! التخمين يفتح بعد ${lock} ثواني ✏️` : "بدأ الرسم! خمنوا الكلمة ✏️");
   broadcast(room);
 
   const revealTimes = [Math.floor(T * 0.5), Math.floor(T * 0.25)];
@@ -307,9 +316,10 @@ function endTurn(room, reason) {
   clearTimers(room);
   room.state = "turnEnd";
 
+  // نقاط الرسام: تصاعديًا حسب عدد من خمّن، بحد أقصى 10
   const drawer = room.players.find(p => p.id === room.drawerId);
   const guessers = room.guessedIds.size;
-  if (drawer && guessers > 0) drawer.score += 25 + guessers * 25;
+  if (drawer && guessers > 0) drawer.score += Math.min(MAX_POINTS, guessers * 3);
 
   const word = room.currentWord;
   io.to(room.id).emit("turnEnd", { word, reason });
@@ -474,14 +484,23 @@ function handleChat(room, player, text) {
   const alreadyGuessed = room.guessedIds.has(player.id);
 
   if (room.state === "drawing" && !isDrawer && !alreadyGuessed) {
+    // قفل التخمين: امنع التخمين قبل فتح الوقت
+    if (room.guessOpenAt && Date.now() < room.guessOpenAt) {
+      const rem = Math.ceil((room.guessOpenAt - Date.now()) / 1000);
+      io.to(player.id).emit("chat", { system: true, cls: "close", text: `⏳ التخمين يفتح بعد ${rem} ثانية` });
+      return;
+    }
+
     const guess = normalizeArabic(text);
     const answer = normalizeArabic(room.currentWord);
 
     if (guess === answer) {
       room.guessedIds.add(player.id);
-      const points = Math.max(50, Math.round(200 * (room.timeLeft / room.settings.turnTime)) + 50);
+      // نقاط بالترتيب: الأول 10، الثاني 9 ... العاشر فما بعده 1
+      const rank = room.guessedIds.size; // ترتيب هذا اللاعب
+      const points = Math.max(1, MAX_POINTS + 1 - rank);
       player.score += points;
-      io.to(room.id).emit("chat", { system: true, cls: "correct", text: `${player.name} خمّن الكلمة! ✅ (+${points})` });
+      io.to(room.id).emit("chat", { system: true, cls: "correct", text: `${player.name} خمّن الكلمة! ✅ (المركز ${rank} • +${points})` });
       io.to(player.id).emit("guessedCorrectly");
       broadcast(room);
 
