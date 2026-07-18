@@ -286,7 +286,10 @@
           <h2>🏆 النتائج النهائية</h2>
           <div id="teamResult" style="display:none;font-size:20px;font-weight:900;"></div>
           <div id="ranking" style="display:flex;flex-direction:column;gap:8px;"></div>
-          <button class="btn btn-green" id="playAgainBtn" style="display:none;">لعب مرة أخرى 🔄</button>
+          <div class="row2" style="width:100%;max-width:320px;">
+            <button class="btn btn-green" id="playAgainBtn" style="display:none;">لعب مرة أخرى 🔄</button>
+            <button class="btn btn-blue" id="backLobbyBtn" style="display:none;">⚙️ الإعدادات</button>
+          </div>
         </div>
 
         <!-- اللوبي -->
@@ -326,6 +329,8 @@
                 <option value="5">5 ثواني</option>
                 <option value="10">10 ثواني</option>
                 <option value="15">15 ثانية</option>
+                <option value="25">25 ثانية</option>
+                <option value="30">30 ثانية</option>
               </select>
             </div>
             <div class="setRow">
@@ -965,11 +970,14 @@ socket.on("gameEnd", ({ ranking, teams }) => {
   $("ranking").innerHTML = ranking.map((r, i) =>
     `<div class="rankRow ${r.team ? "team-" + r.team : ""}"><span>${medals[i] || (i+1)}‏ ${esc(r.name)}</span><span>${r.score}</span></div>`).join("");
   showOverlay("gameEndOverlay");
-  if (state?.players.find(p => p.id === myId)?.isOwner) $("playAgainBtn").style.display = "block";
+  const owner = !!state?.players.find(p => p.id === myId)?.isOwner;
+  $("playAgainBtn").style.display = owner ? "block" : "none";
+  $("backLobbyBtn").style.display = owner ? "block" : "none";
 });
 
 $("startBtn").onclick = () => socket.emit("startGame");
 $("playAgainBtn").onclick = () => socket.emit("startGame");
+$("backLobbyBtn").onclick = () => socket.emit("backToLobby");
 
 socket.on("guessedCorrectly", () => {
   $("chatInput").placeholder = "خمنتها! دردش مع من خمنوا ✅";

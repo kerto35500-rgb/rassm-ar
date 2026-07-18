@@ -155,7 +155,7 @@ function sanitizeSettings(s, old, room) {
     turnTime: Number.isFinite(+s.turnTime) ? Math.min(300, Math.max(10, Math.round(+s.turnTime))) : old.turnTime,
     category: catOk ? s.category : old.category,
     mode: ["classic", "teams", "vote"].includes(s.mode) ? s.mode : old.mode,
-    guessLock: [0, 3, 5, 10, 15].includes(+s.guessLock) ? +s.guessLock : (old.guessLock || 0),
+    guessLock: [0, 3, 5, 10, 15, 25, 30].includes(+s.guessLock) ? +s.guessLock : (old.guessLock || 0),
     roundGallery: typeof s.roundGallery === "boolean" ? s.roundGallery : (old.roundGallery || false)
   };
 }
@@ -680,6 +680,19 @@ io.on("connection", (socket) => {
     const conn = room.players.filter(p => p.connected);
     if (conn.length < 2) return socket.emit("chat", { system: true, text: "تحتاج لاعبين اثنين على الأقل لبدء اللعبة" });
     startGame(room);
+  });
+
+  // العودة لغرفة الانتظار/الإعدادات (للقائد بعد نهاية اللعبة)
+  socket.on("backToLobby", () => {
+    if (!room || socket.id !== room.ownerId) return;
+    if (room.state !== "gameEnd") return;
+    clearTimers(room);
+    room.state = "lobby";
+    room.drawerId = null;
+    room.currentWord = null;
+    room.hint = "";
+    sysMsg(room, "رجع القائد لغرفة الإعدادات ⚙️");
+    broadcast(room);
   });
 
   socket.on("chooseWord", (word) => { if (room) chooseWord(room, socket.id, word); });
