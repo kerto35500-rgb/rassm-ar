@@ -52,7 +52,7 @@
   #timerBox.low { background:var(--red); animation:pulse .6s infinite alternate; }
   @keyframes pulse { to { transform:scale(1.12); } }
   #roundInfo { font-size:14px; color:#666; font-weight:700; }
-  #hintBox { display:flex; flex-direction:row-reverse; gap:5px; align-items:center; flex-wrap:wrap; direction:rtl; }
+  #hintBox { display:flex; gap:5px; align-items:center; flex-wrap:wrap; direction:rtl; }
   #hintBox .slot { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:30px; padding:0 4px; font-size:20px; font-weight:900; color:#1e3a5f; background:#e8eef5; border-bottom:3px solid #b8c6d6; border-radius:5px; }
   #hintBox .slot.filled { background:#fff3e0; border-bottom-color:var(--accent); color:#c2410c; }
   #hintBox .slot.reveal { animation:pop .45s ease; }
@@ -132,6 +132,17 @@
   .voteBtn { padding:6px 18px; border:none; border-radius:8px; background:var(--green); color:#fff; font-weight:700; cursor:pointer; font-size:14px; }
   .voteBtn:disabled { background:#bbb; cursor:default; }
   .voteBtn.voted { background:var(--yellow); color:#333; }
+  .rgItem { background:#fff; border-radius:10px; padding:8px; color:#222; display:flex; flex-direction:column; gap:6px; align-items:center; width:230px; }
+  .rgItem img { width:214px; height:150px; object-fit:contain; background:#fff; border:1px solid #eee; border-radius:6px; }
+  .rgItem .cap { font-size:13px; color:#444; }
+  .rgItem .cap b { color:#c2410c; }
+  .rgActions { display:flex; gap:6px; }
+  .rgBtn { padding:6px 12px; border:none; border-radius:8px; font-weight:800; cursor:pointer; font-size:14px; color:#fff; }
+  .rgLike { background:var(--green); }
+  .rgDislike { background:var(--red); }
+  .rgDl { background:var(--accent2); text-decoration:none; display:inline-flex; align-items:center; }
+  .rgBtn:disabled { opacity:.55; cursor:default; }
+  @media (max-width:480px){ .rgItem{width:100%} .rgItem img{width:100%;height:130px} }
   #turnEndExtra { display:flex; flex-direction:column; gap:6px; }
 
   /* لوحة الألوان الكاملة */
@@ -264,6 +275,12 @@
           <div id="galleryGrid"></div>
         </div>
 
+        <!-- معرض نهاية الجولة (إعجاب/عدم إعجاب/تحميل) -->
+        <div class="overlay" id="roundGalleryOverlay">
+          <h2>🖼️ معرض رسمات الجولة</h2>
+          <div id="rgGrid" style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;"></div>
+        </div>
+
         <!-- نهاية اللعبة -->
         <div class="overlay" id="gameEndOverlay">
           <h2>🏆 النتائج النهائية</h2>
@@ -309,6 +326,13 @@
                 <option value="5">5 ثواني</option>
                 <option value="10">10 ثواني</option>
                 <option value="15">15 ثانية</option>
+              </select>
+            </div>
+            <div class="setRow">
+              <label>🖼️ معرض نهاية الجولة</label>
+              <select id="setGallery">
+                <option value="0" selected>معطّل</option>
+                <option value="1">مفعّل</option>
               </select>
             </div>
             <div class="setRow">
@@ -509,10 +533,11 @@ function sendSettings() {
     rounds: $("setRounds").value,
     turnTime: $("setTime").value,
     category: $("setCategory").value,
-    guessLock: $("setLock").value
+    guessLock: $("setLock").value,
+    roundGallery: $("setGallery").value === "1"
   });
 }
-["setMode","setRounds","setTime","setCategory","setLock"].forEach(id => $(id).onchange = sendSettings);
+["setMode","setRounds","setTime","setCategory","setLock","setGallery"].forEach(id => $(id).onchange = sendSettings);
 $("customWordsInput").onchange = () => socket.emit("setCustomWords", $("customWordsInput").value);
 
 const MODE_NAMES = { classic: "كلاسيكي", teams: "فريقين 🔴🔵", vote: "الكل يرسم 🗳️" };
@@ -673,7 +698,7 @@ $("catAddBtn").onclick = addNewCat;
 $("catAddInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addNewCat(); } });
 
 // ===== حالة الغرفة =====
-const overlays = ["pickOverlay","waitOverlay","turnEndOverlay","gameEndOverlay","lobbyOverlay","galleryOverlay"];
+const overlays = ["pickOverlay","waitOverlay","turnEndOverlay","gameEndOverlay","lobbyOverlay","galleryOverlay","roundGalleryOverlay"];
 function showOverlay(id) { overlays.forEach(o => $(o).style.display = (o === id ? "flex" : "none")); }
 
 socket.on("roomState", s => {
@@ -723,6 +748,7 @@ socket.on("roomState", s => {
       }
       $("setCategory").value = set.category;
       $("setLock").value = set.guessLock ?? 0;
+      $("setGallery").value = set.roundGallery ? "1" : "0";
     }
   } else if (s.state === "picking") {
     $("roundInfo").textContent = `الجولة ${s.round + 1} من ${s.totalRounds}`;
@@ -742,8 +768,10 @@ socket.on("roomState", s => {
     showOverlay(null);
   } else if (s.state === "collecting") {
     $("roundInfo").textContent = "جمع الرسمات... 📥";
+  } else if (s.state === "roundGallery") {
+    $("roundInfo").textContent = "معرض رسمات الجولة 🖼️";
   }
-  // voting و turnEnd و gameEnd تُدار من أحداثها الخاصة
+  // voting و turnEnd و gameEnd و roundGallery تُدار من أحداثها الخاصة
   updateTimer(s.timeLeft);
 });
 
@@ -839,6 +867,54 @@ socket.on("voteWord", ({ word }) => {
 socket.on("requestDrawing", () => {
   try { socket.emit("submitDrawing", canvas.toDataURL("image/jpeg", 0.6)); } catch (e) {}
 });
+
+// ===== معرض نهاية الجولة =====
+// الرسام يرسل رسمته عند انتهاء دوره (إن كان المعرض مفعّلًا)
+socket.on("captureDrawing", () => {
+  try { socket.emit("turnDrawing", canvas.toDataURL("image/jpeg", 0.65)); } catch (e) {}
+});
+
+let rgVoted = {}; // منع تكرار التصويت محليًا
+socket.on("roundGallery", ({ drawings, reacts }) => {
+  rgVoted = {};
+  renderRoundGallery(drawings, reacts);
+  showOverlay("roundGalleryOverlay");
+});
+socket.on("galleryReacts", reacts => {
+  reacts.forEach((r, i) => {
+    const l = $("rgLike" + i), d = $("rgDislike" + i);
+    if (l) l.textContent = "👍 " + r.like;
+    if (d) d.textContent = "👎 " + r.dislike;
+  });
+});
+
+function renderRoundGallery(drawings, reacts) {
+  $("rgGrid").innerHTML = "";
+  if (!drawings.length) { $("rgGrid").innerHTML = "<div class='muted'>لا توجد رسمات</div>"; return; }
+  drawings.forEach((dr, i) => {
+    const r = reacts[i] || { like: 0, dislike: 0 };
+    const div = document.createElement("div");
+    div.className = "rgItem";
+    div.innerHTML =
+      `<img src="${dr.img}" alt="">
+       <div class="cap">${esc(dr.name)} — <b>${esc(dr.word)}</b></div>
+       <div class="rgActions">
+         <button class="rgBtn rgLike" id="rgLike${i}">👍 ${r.like}</button>
+         <button class="rgBtn rgDislike" id="rgDislike${i}">👎 ${r.dislike}</button>
+         <a class="rgBtn rgDl" href="${dr.img}" download="رسمة-${esc(dr.word)}.jpg">⬇️</a>
+       </div>`;
+    $("rgGrid").appendChild(div);
+    $("rgLike" + i).onclick = () => rgReact(i, "like");
+    $("rgDislike" + i).onclick = () => rgReact(i, "dislike");
+  });
+}
+function rgReact(i, type) {
+  if (rgVoted[i]) return;
+  rgVoted[i] = true;
+  socket.emit("reactDrawing", { index: i, type });
+  $("rgLike" + i).disabled = true;
+  $("rgDislike" + i).disabled = true;
+}
 
 socket.on("gallery", ({ entries, word }) => {
   $("galleryWord").textContent = `الكلمة: ${word}`;

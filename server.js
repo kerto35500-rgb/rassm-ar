@@ -56,7 +56,7 @@ const VOTE_TIME = 25;
 const CATEGORY_NAMES = Object.keys(CATEGORIES);
 const ALL_WORDS = CATEGORY_NAMES.flatMap(c => CATEGORIES[c]);
 
-const DEFAULT_SETTINGS = { rounds: 3, turnTime: 80, category: "الكل", mode: "classic", guessLock: 0 };
+const DEFAULT_SETTINGS = { rounds: 3, turnTime: 80, category: "الكل", mode: "classic", guessLock: 0, roundGallery: false };
 const MAX_POINTS = 10; // أعلى نقاط للسؤال الواحد
 
 const rooms = new Map();
@@ -155,7 +155,8 @@ function sanitizeSettings(s, old, room) {
     turnTime: Number.isFinite(+s.turnTime) ? Math.min(300, Math.max(10, Math.round(+s.turnTime))) : old.turnTime,
     category: catOk ? s.category : old.category,
     mode: ["classic", "teams", "vote"].includes(s.mode) ? s.mode : old.mode,
-    guessLock: [0, 3, 5, 10, 15].includes(+s.guessLock) ? +s.guessLock : (old.guessLock || 0)
+    guessLock: [0, 3, 5, 10, 15].includes(+s.guessLock) ? +s.guessLock : (old.guessLock || 0),
+    roundGallery: typeof s.roundGallery === "boolean" ? s.roundGallery : (old.roundGallery || false)
   };
 }
 
@@ -205,6 +206,8 @@ function startGame(room) {
   if (admin) admin.trackGame();
   room.round = 0;
   room.usedWords = new Set();
+  room.roundDrawings = [];
+  room.galleryDone = false;
   room.players = room.players.filter(p => p.connected); // تنظيف المغادرين
   room.players.forEach(p => { p.score = 0; p.hasDrawn = false; p.team = null; });
 
@@ -222,6 +225,29 @@ function startGame(room) {
   sysMsg(room, "بدأت اللعبة! 🎨");
   if (room.settings.mode === "vote") nextVoteRound(room);
   else nextTurn(room);
+}
+
+// ====== معرض رسمات نهاية الجولة ======
+const ROUND_GALLERY_TIME = 20;
+function showRoundGallery(room) {
+  clearTimers(room);
+  room.state = "roundGallery";
+  const drawings = room.roundDrawings || [];
+  room.galleryReacts = drawings.map(() => ({ like: 0, dislike: 0 }));
+  room.galleryVotes = {};
+  io.to(room.id).emit("roundGallery", { drawings, reacts: room.galleryReacts, time: ROUND_GALLERY_TIME });
+  sysMsg(room, "معرض رسمات الجولة! 👍👎 وحمّلوا اللي يعجبكم");
+  room.timeLeft = ROUND_GALLERY_TIME;
+  broadcast(room);
+  room.timer = setInterval(() => {
+    room.timeLeft--;
+    io.to(room.id).emit("tick", room.timeLeft);
+    if (room.timeLeft <= 0) {
+      clearTimers(room);
+      room.galleryDone = true;
+      nextTurn(room);
+    }
+  }, 1000);
 }
 
 // ====== الوضع الكلاسيكي / الفرق ======
@@ -242,6 +268,13 @@ function nextTurn(room) {
 
   let next = connected.find(p => !p.hasDrawn);
   if (!next) {
+    // انتهت الجولة — اعرض المعرض أولًا إن كان مفعّلًا
+    if (room.settings.roundGallery && room.settings.mode !== "vote"
+        && room.roundDrawings && room.roundDrawings.length && !room.galleryDone) {
+      return showRoundGallery(room);
+    }
+    room.galleryDone = false;
+    room.roundDrawings = [];
     room.round++;
     if (room.round >= room.settings.rounds) return endGame(room);
     room.players.forEach(p => p.hasDrawn = false);
@@ -316,12 +349,14 @@ function endTurn(room, reason) {
   clearTimers(room);
   room.state = "turnEnd";
 
-  // نقاط الرسام: تصاعديًا حسب عدد من خمّن، بحد أقصى 10
-  const drawer = room.players.find(p => p.id === room.drawerId);
-  const guessers = room.guessedIds.size;
-  if (drawer && guessers > 0) drawer.score += Math.min(MAX_POINTS, guessers * 3);
-
+  // الرسام لا يأخذ نقاط
   const word = room.currentWord;
+
+  // التقاط رسمة الجولة إن كان معرض الجولة مفعّلًا
+  if (room.settings.roundGallery && room.settings.mode !== "vote") {
+    io.to(room.drawerId).emit("captureDrawing", { word });
+  }
+
   io.to(room.id).emit("turnEnd", { word, reason });
   if (reason === "all") sysMsg(room, `الجميع خمّن الكلمة! كانت: ${word} ✅`, "correct");
   else sysMsg(room, `انتهى الوقت! الكلمة كانت: ${word}`);
@@ -762,6 +797,27 @@ io.on("connection", (socket) => {
   socket.on("vote", (targetId) => {
     if (!room) return;
     castVote(room, socket.id, String(targetId || ""));
+  });
+
+  // ---- معرض نهاية الجولة ----
+  socket.on("turnDrawing", (img) => {
+    if (!room || socket.id !== room.drawerId) return;
+    if (typeof img !== "string" || !img.startsWith("data:image/") || img.length > 500000) return;
+    if (!room.roundDrawings) room.roundDrawings = [];
+    room.roundDrawings.push({ name: player?.name || "؟", word: room.currentWord, img });
+  });
+
+  socket.on("reactDrawing", ({ index, type } = {}) => {
+    if (!room || room.state !== "roundGallery" || !room.galleryReacts) return;
+    const i = +index;
+    if (!room.galleryReacts[i]) return;
+    room.galleryVotes = room.galleryVotes || {};
+    const key = socket.id + ":" + i;
+    if (room.galleryVotes[key]) return; // صوت واحد لكل لاعب لكل رسمة
+    room.galleryVotes[key] = true;
+    if (type === "dislike") room.galleryReacts[i].dislike++;
+    else room.galleryReacts[i].like++;
+    io.to(room.id).emit("galleryReacts", room.galleryReacts);
   });
 
   // ---- الشات ----
