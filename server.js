@@ -245,6 +245,7 @@ function showRoundGallery(room) {
 // ====== الوضع الكلاسيكي / الفرق ======
 function nextTurn(room) {
   clearTimers(room);
+  if (room.drawerGrace) { clearTimeout(room.drawerGrace); room.drawerGrace = null; }
   room.guessedIds = new Set();
   room.currentWord = null;
   room.hint = "";
@@ -258,7 +259,13 @@ function nextTurn(room) {
     return;
   }
 
-  let next = connected.find(p => !p.hasDrawn);
+  // أولوية للرسام اللي انقطع ورجع (دوره محفوظ)
+  let next = null;
+  if (room.pendingDrawer && room.pendingDrawer.connected && !room.pendingDrawer.hasDrawn) {
+    next = room.pendingDrawer;
+  }
+  room.pendingDrawer = null;
+  if (!next) next = connected.find(p => !p.hasDrawn);
   if (!next) {
     // انتهت الجولة — اعرض المعرض أولًا إن كان مفعّلًا
     if (room.settings.roundGallery && room.settings.mode !== "vote"
@@ -648,6 +655,13 @@ io.on("connection", (socket) => {
       if (socket.userName) existing.userName = socket.userName;
       player = existing;
       sysMsg(room, `${name} رجع للغرفة 🔄 (نقاطه محفوظة: ${existing.score})`, "join");
+      // إذا كان الرسام المنقطع ورجع خلال المهلة: يستأنف دوره فورًا
+      if (room.pendingDrawer === existing && room.drawerGrace) {
+        clearTimeout(room.drawerGrace);
+        room.drawerGrace = null;
+        sysMsg(room, `${name} رجع في وقته — دوره في الرسم يبدأ الآن ✏️`);
+        setTimeout(() => { if (rooms.has(room.id)) nextTurn(room); }, 1000);
+      }
     } else {
       player = { id: socket.id, name, userName: socket.userName || null, score: 0, hasDrawn: false, connected: true };
       room.players.push(player);
@@ -889,9 +903,21 @@ io.on("connection", (socket) => {
     }
 
     if (room.drawerId === socket.id && (room.state === "drawing" || room.state === "picking")) {
-      sysMsg(room, "الرسام غادر! ننتقل للدور التالي...");
+      // دور الرسام محفوظ: نرجّع له حق الرسم وننتظره 20 ثانية
       clearTimers(room);
-      setTimeout(() => { if (rooms.has(room.id)) nextTurn(room); }, 2000);
+      player.hasDrawn = false;
+      room.pendingDrawer = player;
+      room.state = "turnEnd";
+      room.currentWord = null;
+      room.hint = "";
+      sysMsg(room, `${player.name} (الرسام) انقطع — دوره محفوظ، ننتظر رجوعه 20 ثانية ⏳`);
+      room.drawerGrace = setTimeout(() => {
+        room.drawerGrace = null;
+        if (rooms.has(room.id)) {
+          sysMsg(room, "ما رجع، نكمل — بياخذ دوره أول ما يرجع 👍");
+          nextTurn(room);
+        }
+      }, 20000);
     }
 
     broadcast(room);
