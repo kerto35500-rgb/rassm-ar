@@ -100,11 +100,11 @@
   .msg.join { background:#e8f5e9; color:#388e3c; }
   .msg.leave { background:#ffebee; color:#c62828; }
   .msg.guessedChat { background:#e0f2f1; color:#00695c; }
-  #chatForm { display:flex; padding:8px; gap:6px; border-top:2px solid #eee; }
-  #chatInput { flex:1; padding:9px 12px; border:2px solid #ddd; border-radius:8px; font-size:15px; }
+  #chatForm { display:flex; padding:8px; gap:6px; border-top:2px solid #eee; width:100%; box-sizing:border-box; }
+  #chatInput { flex:1 1 0; min-width:0; padding:9px 12px; border:2px solid #ddd; border-radius:8px; font-size:15px; direction:rtl; }
   #chatInput:focus { outline:none; border-color:var(--accent2); }
-  #chatForm button[type=submit] { padding:9px 14px; border:none; border-radius:8px; background:var(--accent2); color:#fff; font-weight:700; cursor:pointer; }
-  #kbBtn { padding:9px 11px; border:none; border-radius:8px; background:#eef2f6; cursor:pointer; font-size:16px; }
+  #chatForm button[type=submit] { flex-shrink:0; padding:9px 12px; border:none; border-radius:8px; background:var(--accent2); color:#fff; font-weight:700; cursor:pointer; }
+  #kbBtn { flex-shrink:0; padding:9px 10px; border:none; border-radius:8px; background:#eef2f6; cursor:pointer; font-size:16px; }
   #kbBtn.on { background:var(--accent2); }
   /* لوحة المفاتيح العربية على الشاشة */
   #vkb { display:none; padding:6px; background:#dfe6ee; border-top:2px solid #cbd5e1; flex-direction:column; gap:5px; }
@@ -292,6 +292,8 @@
         <div class="overlay" id="roundGalleryOverlay">
           <h2>🖼️ معرض رسمات الجولة</h2>
           <div id="rgGrid" style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;"></div>
+          <button class="btn btn-green" id="rgNextBtn" style="display:none;">متابعة اللعب ▶️</button>
+          <div id="rgWaitNote" style="display:none;color:#cfe3f7;font-size:14px;">بانتظار القائد للمتابعة...</div>
         </div>
 
         <!-- نهاية اللعبة -->
@@ -536,10 +538,10 @@ socket.io.on("reconnect", () => {
   });
 });
 
-// عند الطرد: أوقف إعادة الانضمام وارجع للصفحة الرئيسية
+// عند الطرد: ارجع للصفحة الرئيسية (تقدر ترجع بنفس الاسم ونقاطك محفوظة)
 socket.on("kicked", () => {
   joinedRoomId = null;
-  alert("تم طردك من الغرفة بواسطة القائد 🚫");
+  alert("تم إخراجك من الغرفة بواسطة القائد 🚫\nتقدر ترجع بنفس الاسم ورمز الغرفة ونقاطك محفوظة.");
   location.reload();
 });
 // عند رجوع التطبيق للواجهة، تأكد من الاتصال وحدّث القياس
@@ -915,8 +917,12 @@ let rgVoted = {}; // منع تكرار التصويت محليًا
 socket.on("roundGallery", ({ drawings, reacts }) => {
   rgVoted = {};
   renderRoundGallery(drawings, reacts);
+  const owner = !!state?.players.find(p => p.id === myId)?.isOwner;
+  $("rgNextBtn").style.display = owner ? "block" : "none";
+  $("rgWaitNote").style.display = owner ? "none" : "block";
   showOverlay("roundGalleryOverlay");
 });
+$("rgNextBtn").onclick = () => socket.emit("endRoundGallery");
 socket.on("galleryReacts", reacts => {
   reacts.forEach((r, i) => {
     const l = $("rgLike" + i), d = $("rgDislike" + i);
@@ -1059,22 +1065,17 @@ function buildKeyboard() {
   ctrl.appendChild(del); ctrl.appendChild(space); ctrl.appendChild(send);
   vkb.appendChild(ctrl);
 }
+// الإدراج دائمًا في نهاية النص (يمنع انعكاس الحروف)
 function kbInsert(ch) {
   const inp = $("chatInput");
   if (inp.disabled) return;
-  const s = inp.selectionStart ?? inp.value.length, e = inp.selectionEnd ?? inp.value.length;
-  if (inp.value.length - (e - s) + ch.length > 100) return;
-  inp.value = inp.value.slice(0, s) + ch + inp.value.slice(e);
-  const pos = s + ch.length;
-  inp.setSelectionRange(pos, pos);
+  if (inp.value.length + ch.length > 100) return;
+  inp.value += ch;
 }
 function kbBackspace() {
   const inp = $("chatInput");
   if (inp.disabled) return;
-  let s = inp.selectionStart ?? inp.value.length, e = inp.selectionEnd ?? inp.value.length;
-  if (s === e && s > 0) s--;
-  inp.value = inp.value.slice(0, s) + inp.value.slice(e);
-  inp.setSelectionRange(s, s);
+  inp.value = inp.value.slice(0, -1);
 }
 let kbOpen = false;
 $("kbBtn").onclick = () => {

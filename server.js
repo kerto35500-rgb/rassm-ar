@@ -229,27 +229,17 @@ function startGame(room) {
   else nextTurn(room);
 }
 
-// ====== معرض رسمات نهاية الجولة ======
-const ROUND_GALLERY_TIME = 20;
+// ====== معرض رسمات نهاية الجولة (بدون تايمر - القائد ينتقل بنفسه) ======
 function showRoundGallery(room) {
   clearTimers(room);
   room.state = "roundGallery";
   const drawings = room.roundDrawings || [];
   room.galleryReacts = drawings.map(() => ({ like: 0, dislike: 0 }));
   room.galleryVotes = {};
-  io.to(room.id).emit("roundGallery", { drawings, reacts: room.galleryReacts, time: ROUND_GALLERY_TIME });
-  sysMsg(room, "معرض رسمات الجولة! 👍👎 وحمّلوا اللي يعجبكم");
-  room.timeLeft = ROUND_GALLERY_TIME;
+  room.timeLeft = 0;
+  io.to(room.id).emit("roundGallery", { drawings, reacts: room.galleryReacts });
+  sysMsg(room, "معرض رسمات الجولة! 👍👎 القائد ينتقل للجولة التالية عند الجاهزية");
   broadcast(room);
-  room.timer = setInterval(() => {
-    room.timeLeft--;
-    io.to(room.id).emit("tick", room.timeLeft);
-    if (room.timeLeft <= 0) {
-      clearTimers(room);
-      room.galleryDone = true;
-      nextTurn(room);
-    }
-  }, 1000);
 }
 
 // ====== الوضع الكلاسيكي / الفرق ======
@@ -650,11 +640,21 @@ io.on("connection", (socket) => {
       return cb({ ok: false, error: "الغرفة ممتلئة" });
 
     room = r;
-    player = { id: socket.id, name, userName: socket.userName || null, score: 0, hasDrawn: false, connected: true };
-    room.players.push(player);
+    // إذا كان لاعب منقطع/مطرود بنفس الاسم: استرجع سجله كاملًا (النقاط والتقدم)
+    const existing = r.players.find(p => !p.connected && !p.isBot && p.name === name);
+    if (existing) {
+      existing.id = socket.id;
+      existing.connected = true;
+      if (socket.userName) existing.userName = socket.userName;
+      player = existing;
+      sysMsg(room, `${name} رجع للغرفة 🔄 (نقاطه محفوظة: ${existing.score})`, "join");
+    } else {
+      player = { id: socket.id, name, userName: socket.userName || null, score: 0, hasDrawn: false, connected: true };
+      room.players.push(player);
+      sysMsg(room, `${name} انضم إلى الغرفة 👋`, "join");
+    }
     socket.join(roomId);
     cb({ ok: true, roomId });
-    sysMsg(room, `${name} انضم إلى الغرفة 👋`, "join");
     if (room.canvasOps.length) socket.emit("canvasHistory", room.canvasOps);
     broadcast(room);
   });
@@ -697,26 +697,25 @@ io.on("connection", (socket) => {
     broadcast(room);
   });
 
-  // طرد لاعب (للقائد فقط)
+  // طرد لاعب (للقائد فقط) — المطرود يقدر يرجع بنفس الاسم ويكمل بنقاطه وتقدمه
   socket.on("kickPlayer", (targetId) => {
     if (!room || socket.id !== room.ownerId) return;
     targetId = String(targetId || "");
     if (targetId === socket.id) return; // لا يطرد نفسه
     const target = room.players.find(p => p.id === targetId && p.connected);
     if (!target) return;
-    sysMsg(room, `تم طرد ${target.name} من الغرفة 🚫`, "leave");
+    sysMsg(room, `تم إخراج ${target.name} من الغرفة 🚫 (يقدر يرجع ويكمل بنقاطه)`, "leave");
+    // نبقي سجله في القائمة (connected=false) حتى يستعيد نقاطه وتقدمه عند الرجوع
     target.connected = false;
-    room.kicked = room.kicked || new Set();
-    room.kicked.add(targetId);
     io.to(targetId).emit("kicked");
     // إذا كان الرسام الحالي، انتقل للدور التالي
     if (room.drawerId === targetId && (room.state === "drawing" || room.state === "picking")) {
       clearTimers(room);
       setTimeout(() => { if (rooms.has(room.id)) nextTurn(room); }, 1500);
     }
-    // افصل السوكِت فعليًا
+    // فصل السوكت بعد مهلة قصيرة حتى تصل رسالة "kicked" أولًا
     const sock = io.sockets.sockets.get(targetId);
-    if (sock) sock.disconnect(true);
+    if (sock) setTimeout(() => sock.disconnect(true), 400);
     broadcast(room);
   });
 
@@ -845,6 +844,14 @@ io.on("connection", (socket) => {
     room.roundDrawings.push({ name: player?.name || "؟", word: room.currentWord, img });
   });
 
+  // القائد ينهي معرض الجولة وينتقل للدور التالي
+  socket.on("endRoundGallery", () => {
+    if (!room || socket.id !== room.ownerId) return;
+    if (room.state !== "roundGallery") return;
+    room.galleryDone = true;
+    nextTurn(room);
+  });
+
   socket.on("reactDrawing", ({ index, type } = {}) => {
     if (!room || room.state !== "roundGallery" || !room.galleryReacts) return;
     const i = +index;
@@ -863,6 +870,9 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     if (!room || !player) return;
+    // السجل انتقل لاتصال أحدث (اللاعب رجع قبل اكتمال فصل الاتصال القديم) — لا تلمسه
+    if (player.id !== socket.id) return;
+    if (!player.connected) return; // مطرود سابقًا وتم التعامل معه
     player.connected = false;
     sysMsg(room, `${player.name} غادر الغرفة`, "leave");
 
