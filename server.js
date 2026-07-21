@@ -190,7 +190,9 @@ function roomState(room) {
     hint: room.hint,
     timeLeft: room.timeLeft,
     guessLockRemaining: (room.state === "drawing" && room.guessOpenAt && Date.now() < room.guessOpenAt)
-      ? Math.ceil((room.guessOpenAt - Date.now()) / 1000) : 0
+      ? Math.ceil((room.guessOpenAt - Date.now()) / 1000) : 0,
+    paused: !!room.paused,
+    pausedName: room.paused ? (room.pendingDrawer?.name || null) : null
   };
 }
 
@@ -246,6 +248,7 @@ function showRoundGallery(room) {
 function nextTurn(room) {
   clearTimers(room);
   if (room.drawerGrace) { clearTimeout(room.drawerGrace); room.drawerGrace = null; }
+  room.paused = false;
   room.guessedIds = new Set();
   room.currentWord = null;
   room.hint = "";
@@ -323,11 +326,17 @@ function chooseWord(room, playerId, word) {
   sysMsg(room, lock > 0 ? `بدأ الرسم! التخمين يفتح بعد ${lock} ثواني ✏️` : "بدأ الرسم! خمنوا الكلمة ✏️");
   broadcast(room);
 
-  const revealTimes = [Math.floor(T * 0.5), Math.floor(T * 0.25)];
+  startDrawCountdown(room);
+}
 
+// عدّاد وقت الرسم (يُستأنف من الوقت المتبقّي عند رجوع الرسام)
+function startDrawCountdown(room) {
+  clearTimers(room);
+  const T = room.settings.turnTime;
+  const word = room.currentWord;
+  const revealTimes = [Math.floor(T * 0.5), Math.floor(T * 0.25)];
   room.timer = setInterval(() => {
     room.timeLeft--;
-
     if (revealTimes.includes(room.timeLeft)) {
       const letters = word.split("");
       const hidden = letters.map((c, i) => (c !== " " && !room.revealedIdx.has(i) ? i : -1)).filter(i => i >= 0);
@@ -337,7 +346,6 @@ function chooseWord(room, playerId, word) {
         broadcast(room);
       }
     }
-
     if (room.timeLeft <= 0) endTurn(room, "time");
     else if (room.timeLeft % 5 === 0) broadcast(room);
     io.to(room.id).emit("tick", room.timeLeft);
@@ -518,6 +526,11 @@ function handleChat(room, player, text) {
   const alreadyGuessed = room.guessedIds.has(player.id);
 
   if (room.state === "drawing" && !isDrawer && !alreadyGuessed) {
+    // موقوف مؤقتًا (الرسام منقطع): لا تخمين
+    if (room.paused) {
+      io.to(player.id).emit("chat", { system: true, cls: "close", text: "⏸️ اللعبة متوقفة — بانتظار رجوع الرسام" });
+      return;
+    }
     // قفل التخمين: امنع التخمين قبل فتح الوقت
     if (room.guessOpenAt && Date.now() < room.guessOpenAt) {
       const rem = Math.ceil((room.guessOpenAt - Date.now()) / 1000);
@@ -655,12 +668,32 @@ io.on("connection", (socket) => {
       if (socket.userName) existing.userName = socket.userName;
       player = existing;
       sysMsg(room, `${name} رجع للغرفة 🔄 (نقاطه محفوظة: ${existing.score})`, "join");
-      // إذا كان الرسام المنقطع ورجع خلال المهلة: يستأنف دوره فورًا
-      if (room.pendingDrawer === existing && room.drawerGrace) {
+      // إذا كان الرسام المنقطع ورجع خلال المهلة: يستأنف نفس دوره بنفس الكلمة والرسمة
+      if (room.paused && room.pendingDrawer === existing && room.drawerGrace) {
         clearTimeout(room.drawerGrace);
         room.drawerGrace = null;
-        sysMsg(room, `${name} رجع في وقته — دوره في الرسم يبدأ الآن ✏️`);
-        setTimeout(() => { if (rooms.has(room.id)) nextTurn(room); }, 1000);
+        room.paused = false;
+        room.pendingDrawer = null;
+        room.drawerId = existing.id;             // حدّث معرّف الرسام للسوكِت الجديد
+        room.timeLeft = room.pausedRemaining;    // استأنف من نفس الوقت المتبقّي
+        socket.join(roomId);
+        // أعِد الرسمة الحالية للرسام (والباقي رسمتهم لم تتغيّر)
+        if (room.canvasOps && room.canvasOps.length) socket.emit("canvasHistory", room.canvasOps);
+        if (room.pausedPhase === "drawing") {
+          socket.emit("yourWord", { word: room.currentWord });
+          sysMsg(room, `✅ ${name} رجع — يكمل الرسم من نفس النقطة!`, "join");
+          startDrawCountdown(room);
+        } else { // انقطع وهو يختار الكلمة
+          socket.emit("chooseWord", { options: room.wordOptions, time: room.pausedRemaining });
+          sysMsg(room, `✅ ${name} رجع — يكمل اختيار الكلمة`, "join");
+          room.timer = setInterval(() => {
+            room.timeLeft--;
+            if (room.timeLeft <= 0) chooseWord(room, existing.id, room.wordOptions[0]);
+          }, 1000);
+        }
+        cb({ ok: true, roomId });
+        broadcast(room);
+        return;
       }
     } else {
       player = { id: socket.id, name, userName: socket.userName || null, score: 0, hasDrawn: false, connected: true };
@@ -903,21 +936,23 @@ io.on("connection", (socket) => {
     }
 
     if (room.drawerId === socket.id && (room.state === "drawing" || room.state === "picking")) {
-      // دور الرسام محفوظ: نرجّع له حق الرسم وننتظره 20 ثانية
+      // إيقاف الدور مؤقتًا: نحفظ الكلمة والرسمة والوقت المتبقّي وننتظر الرسام 30 ثانية
       clearTimers(room);
-      player.hasDrawn = false;
-      room.pendingDrawer = player;
-      room.state = "turnEnd";
-      room.currentWord = null;
-      room.hint = "";
-      sysMsg(room, `${player.name} (الرسام) انقطع — دوره محفوظ، ننتظر رجوعه 20 ثانية ⏳`);
+      room.paused = true;
+      room.pausedPhase = room.state;  // "drawing" أو "picking"
+      room.pausedRemaining = room.timeLeft;
+      room.pendingDrawer = player;    // نفس الرسام (لا نغيّر hasDrawn)
+      sysMsg(room, `⏸️ ${player.name} انقطع اتصاله! الرجاء الانتظار 30 ثانية ليكمل دوره...`, "leave");
+      broadcast(room); // يُظهر حالة الإيقاف للجميع
       room.drawerGrace = setTimeout(() => {
         room.drawerGrace = null;
+        room.paused = false;
+        room.pendingDrawer = null;
         if (rooms.has(room.id)) {
-          sysMsg(room, "ما رجع، نكمل — بياخذ دوره أول ما يرجع 👍");
-          nextTurn(room);
+          sysMsg(room, `${player.name} ما رجع — ننتقل للدور التالي`);
+          nextTurn(room); // الرسام يبقى hasDrawn=true فينتقل للاعب التالي
         }
-      }, 20000);
+      }, 30000);
     }
 
     broadcast(room);

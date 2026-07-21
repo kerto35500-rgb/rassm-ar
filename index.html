@@ -82,6 +82,9 @@
   #canvasContainer { flex:1; position:relative; min-height:0; }
   #board { position:absolute; inset:0; width:100%; height:100%; border-radius:12px 12px 0 0; background:#fff; touch-action:none; }
   #board.drawing { cursor:crosshair; }
+  #pauseBanner { display:none; position:absolute; inset:0; background:rgba(30,58,95,.55); border-radius:12px 12px 0 0; flex-direction:column; align-items:center; justify-content:center; gap:8px; z-index:9; color:#fff; text-align:center; padding:16px; }
+  #pauseText { font-size:20px; font-weight:900; }
+  #pauseCount { font-size:44px; font-weight:900; color:var(--yellow); }
 
   #toolbar { display:none; padding:8px; border-top:2px solid #eee; align-items:center; gap:6px; flex-wrap:wrap; }
   .colorBtn { width:28px; height:28px; border-radius:6px; border:2px solid #ccc; cursor:pointer; }
@@ -264,6 +267,7 @@
     <div id="canvasWrap">
       <div id="canvasContainer">
         <canvas id="board"></canvas>
+        <div id="pauseBanner"><div id="pauseText"></div><div id="pauseCount"></div></div>
 
         <!-- اختيار الكلمة -->
         <div class="overlay" id="pickOverlay">
@@ -811,8 +815,32 @@ socket.on("roomState", s => {
     $("roundInfo").textContent = "معرض رسمات الجولة 🖼️";
   }
   // voting و turnEnd و gameEnd و roundGallery تُدار من أحداثها الخاصة
+  updatePauseBanner(s.paused, s.pausedName);
   updateTimer(s.timeLeft);
 });
+
+// ===== لافتة إيقاف مؤقت (انقطاع الرسام) — الرسمة تبقى ظاهرة =====
+let pauseTimer = null, pauseRem = 0;
+function updatePauseBanner(paused, name) {
+  const b = $("pauseBanner");
+  if (paused) {
+    if (b.style.display !== "flex") {
+      // بدأ الإيقاف الآن — عدّاد تنازلي محلي من 30
+      pauseRem = 30;
+      $("pauseText").textContent = `⏸️ ${name || "الرسام"} انقطع اتصاله — بانتظار رجوعه`;
+      $("pauseCount").textContent = pauseRem;
+      b.style.display = "flex";
+      clearInterval(pauseTimer);
+      pauseTimer = setInterval(() => {
+        pauseRem--;
+        $("pauseCount").textContent = pauseRem > 0 ? pauseRem : "";
+        if (pauseRem <= 0) clearInterval(pauseTimer);
+      }, 1000);
+    }
+  } else {
+    if (b.style.display === "flex") { b.style.display = "none"; clearInterval(pauseTimer); }
+  }
+}
 
 // ===== عرض التلميح: خانات منفصلة + مسافات واضحة + أنميشن عند كشف حرف =====
 let prevHint = "";
