@@ -772,6 +772,7 @@ io.on("connection", (socket) => {
   socket.on("draw", (op) => {
     if (!room || room.state !== "drawing" || socket.id !== room.drawerId) return;
     if (room.canvasOps.length > 20000) return;
+    if (op.start) room.redoStack = []; // أي رسمة جديدة تلغي إمكانية الإعادة
     room.canvasOps.push(op);
     socket.to(room.id).emit("draw", op);
   });
@@ -779,6 +780,7 @@ io.on("connection", (socket) => {
   socket.on("clearCanvas", () => {
     if (!room || room.state !== "drawing" || socket.id !== room.drawerId) return;
     room.canvasOps = [];
+    room.redoStack = [];
     io.to(room.id).emit("clearCanvas");
   });
 
@@ -786,8 +788,20 @@ io.on("connection", (socket) => {
     if (!room || room.state !== "drawing" || socket.id !== room.drawerId) return;
     let i = room.canvasOps.length - 1;
     while (i >= 0 && !room.canvasOps[i].start) i--;
-    if (i >= 0) room.canvasOps.splice(i);
+    if (i >= 0) {
+      const removed = room.canvasOps.splice(i); // مجموعة العملية الأخيرة
+      if (!room.redoStack) room.redoStack = [];
+      room.redoStack.push(removed);
+    }
     // حدث واحد فقط = إعادة رسم سلسة بدون وميض
+    io.to(room.id).emit("canvasHistory", room.canvasOps);
+  });
+
+  socket.on("redo", () => {
+    if (!room || room.state !== "drawing" || socket.id !== room.drawerId) return;
+    if (!room.redoStack || !room.redoStack.length) return;
+    const group = room.redoStack.pop();
+    room.canvasOps.push(...group);
     io.to(room.id).emit("canvasHistory", room.canvasOps);
   });
 
