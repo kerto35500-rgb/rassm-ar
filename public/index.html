@@ -87,20 +87,22 @@
   #pauseCount { font-size:44px; font-weight:900; color:var(--yellow); }
 
   #stageRow { display:flex; flex:1; min-height:0; gap:8px; padding:8px; }
-  #toolsLeft, #colorsRight { display:none; flex-direction:column; align-items:center; gap:6px; padding:8px; background:#f7f9fc; border-radius:12px; flex-shrink:0; overflow-y:auto; }
-  #canvasWrap.drawmode #toolsLeft, #canvasWrap.drawmode #colorsRight { display:flex; }
+  #toolsLeft { display:none; flex-direction:column; align-items:center; gap:6px; padding:8px; background:#f7f9fc; border-radius:12px; flex-shrink:0; overflow-y:auto; }
+  #canvasWrap.drawmode #toolsLeft { display:flex; }
   .tGrid { display:grid; grid-template-columns:repeat(2,42px); grid-auto-rows:42px; gap:6px; }
   .sizeRow { display:flex; gap:6px; justify-content:center; border-top:2px solid #e6eaf0; padding-top:6px; margin-top:2px; width:100%; }
   .toolBtn { width:42px; height:42px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; border:2px solid #dfe3ea; background:#fff; cursor:pointer; color:#40454d; transition:.12s; }
   .toolBtn:hover { border-color:#aeb6c4; }
   .toolBtn.active { border-color:var(--accent2); background:#e8f2fe; color:var(--accent2); box-shadow:0 0 0 2px rgba(30,136,229,.18); }
   .toolBtn svg { width:23px; height:23px; pointer-events:none; }
+  .colorsSection { display:flex; flex-direction:column; align-items:center; gap:6px; width:100%; border-top:2px solid #e6eaf0; padding-top:8px; margin-top:4px; }
   #colors { display:grid; grid-template-columns:repeat(3,26px); grid-auto-rows:26px; gap:5px; }
   .colorBtn { width:26px; height:26px; border-radius:6px; border:1px solid rgba(0,0,0,.18); cursor:pointer; padding:0; transition:transform .1s; }
   .colorBtn:hover { transform:scale(1.12); }
   .colorBtn.active { outline:3px solid #1e3a5f; outline-offset:1px; transform:scale(1.14); position:relative; z-index:2; }
-  #currentColor { width:100%; height:34px; border-radius:8px; border:2px solid #dfe3ea; box-shadow:inset 0 0 0 2px #fff; margin-top:2px; }
-  #pickerWrap { position:relative; overflow:hidden; }
+  #pickCurRow { display:flex; gap:6px; align-items:center; width:100%; }
+  #currentColor { flex:1; height:42px; border-radius:8px; border:2px solid #dfe3ea; box-shadow:inset 0 0 0 2px #fff; }
+  #pickerWrap { position:relative; overflow:hidden; flex-shrink:0; }
   #pickerWrap input { position:absolute; inset:0; opacity:0; cursor:pointer; }
   .sizeDot { border-radius:50%; background:currentColor; display:inline-block; }
 
@@ -215,12 +217,13 @@
     .galleryItem img { width:140px; height:100px; }
     #stageRow { flex-direction:column; }
     #canvasContainer { order:-1; }
-    #toolsLeft, #colorsRight { flex-direction:row; flex-wrap:wrap; justify-content:center; align-content:flex-start; width:100%; gap:6px; }
+    #toolsLeft { flex-direction:row; flex-wrap:wrap; justify-content:center; align-content:flex-start; width:100%; gap:6px; }
     #toolsLeft .tGrid, #toolsLeft .sizeRow { display:contents; }
     #toolsLeft #clearBtn { width:42px !important; }
-    #colors { grid-template-columns:repeat(9,26px); }
-    #currentColor { width:44px; }
-    #colorsRight #pickerWrap { width:42px !important; }
+    .colorsSection { flex-basis:100%; display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:5px; border-top:none; margin-top:2px; padding-top:4px; }
+    #colors { display:contents; }
+    #currentColor { display:none; }
+    #pickCurRow { display:contents; }
   }
 
   @media (max-width: 480px) {
@@ -304,6 +307,13 @@
           <button class="toolBtn" data-size="14" title="عريض"><span class="sizeDot" style="width:17px;height:17px"></span></button>
         </div>
         <button class="toolBtn" id="clearBtn" title="مسح الكل" style="width:100%;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 10v7M14 10v7"/></svg></button>
+        <div class="colorsSection">
+          <div id="colors"></div>
+          <div id="pickCurRow">
+            <div id="currentColor" title="اللون الحالي"></div>
+            <label class="toolBtn" id="pickerWrap" title="اختر أي لون"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18c1.5 0 2-1 2-2s-1-1.5-1-2.5.8-1.5 2-1.5h1a3 3 0 0 0 3-3c0-3.9-3.5-6.5-7-6.5z"/><circle cx="8" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="10" r="1" fill="currentColor" stroke="none"/></svg><input type="color" id="colorPicker" value="#000000"></label>
+          </div>
+        </div>
       </div>
       <div id="canvasContainer">
         <canvas id="board"></canvas>
@@ -412,11 +422,6 @@
         </div>
       </div>
 
-      <div id="colorsRight">
-        <div id="colors"></div>
-        <div id="currentColor" title="اللون الحالي"></div>
-        <label class="toolBtn" id="pickerWrap" title="اختر أي لون" style="width:100%;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18c1.5 0 2-1 2-2s-1-1.5-1-2.5.8-1.5 2-1.5h1a3 3 0 0 0 3-3c0-3.9-3.5-6.5-7-6.5z"/><circle cx="8" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="10" r="1" fill="currentColor" stroke="none"/></svg><input type="color" id="colorPicker" value="#000000"></label>
-      </div>
       </div>
     </div>
 
