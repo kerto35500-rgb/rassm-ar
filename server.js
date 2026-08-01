@@ -64,6 +64,17 @@ app.get(["/bomb", "/qunbula"], (req, res) => {
 });
 // نقطة إبقاء حيّة (تمنع السيرفر المجاني من النوم أثناء اللعب الطويل)
 app.get("/healthz", (req, res) => res.type("text").send("ok"));
+// حالة الألعاب المباشرة (تستعملها الصفحة الرئيسية)
+let bombApi = null;
+app.get("/api/status", (req, res) => {
+  const draw = getLiveStats();
+  const bomb = bombApi ? bombApi.liveStats() : { online: 0, rooms: [] };
+  res.json({
+    draw: { online: draw.online, rooms: draw.rooms.length },
+    bomb: { online: bomb.online, rooms: bomb.rooms.length },
+    total: draw.online + bomb.online
+  });
+});
 if (fs.existsSync(path.join(pubDir, "index.html"))) app.use(express.static(pubDir));
 
 const PORT = process.env.PORT || 3000;
@@ -1012,7 +1023,7 @@ createStore()
     admin = setupAdmin(app, { getLiveStats, store });
     // 💣 تفعيل لعبة القنبلة (namespace مستقل /bomb)
     try {
-      setupBomb(io, { store, hashPass, publicStats, getAdmin: () => admin });
+      bombApi = setupBomb(io, { store, hashPass, publicStats, getAdmin: () => admin });
       console.log("💣 لعبة القنبلة جاهزة على /bomb");
     } catch (e) {
       console.error("bomb setup:", e.message);
