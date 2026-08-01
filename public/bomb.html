@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>💣 القنبلة — لعبة كلمات عربية</title>
+<style>
+  :root {
+    --bg1:#16324f; --bg2:#1e4976; --panel:#ffffff; --ink:#1e3a5f;
+    --accent:#e5541e; --accent2:#1e88e5; --yellow:#ffd54f;
+    --good:#2e9e5b; --bad:#d33; --line:#e6eaf0;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Tahoma, Arial, sans-serif; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; overflow:hidden; }
+  body { background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 55%,#173a5e 100%); color:#222; }
+  button { font-family:inherit; cursor:pointer; }
+  input, select { font-family:inherit; }
+
+  /* ============ شاشة الدخول ============ */
+  #lobbyScreen { height:100dvh; overflow-y:auto; display:flex; flex-direction:column; align-items:center; gap:16px; padding:26px 14px 40px; }
+  .brand { text-align:center; color:#eaf1fb; }
+  .brand h1 { font-size:clamp(30px,8vw,44px); font-weight:900; }
+  .brand p { opacity:.72; margin-top:6px; font-size:15px; }
+  .brand a.back { display:inline-block; margin-top:10px; color:#cfe3fb; font-size:13.5px; text-decoration:none; opacity:.8; }
+  .brand a.back:hover { text-decoration:underline; }
+
+  .card { width:100%; max-width:430px; background:var(--panel); border-radius:16px; padding:20px; box-shadow:0 10px 34px rgba(0,0,0,.22); }
+  .card h3 { color:var(--ink); font-size:17px; margin-bottom:12px; }
+  .card input { width:100%; padding:12px 14px; border:2px solid var(--line); border-radius:11px; font-size:15px; margin-bottom:10px; }
+  .card input:focus { outline:none; border-color:var(--accent2); }
+  .btn { width:100%; padding:12px; border:none; border-radius:11px; background:var(--accent); color:#fff; font-size:16px; font-weight:800; }
+  .btn:hover { filter:brightness(1.06); }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn.blue { background:var(--accent2); }
+  .btn.ghost { background:#eef2f7; color:var(--ink); }
+  .row2 { display:flex; gap:8px; }
+  .row2 > * { flex:1; }
+  .err { color:var(--bad); font-size:13.5px; margin-top:8px; min-height:18px; }
+  .muted { color:#7b8494; font-size:13px; }
+  .tabs { display:flex; gap:6px; margin-bottom:14px; }
+  .tabs button { flex:1; padding:9px; border:2px solid var(--line); background:#fff; border-radius:10px; font-weight:700; color:#6b7280; font-size:14px; }
+  .tabs button.on { border-color:var(--accent); color:var(--accent); background:#fff5f1; }
+
+  #roomsList { display:flex; flex-direction:column; gap:7px; max-height:210px; overflow-y:auto; }
+  .roomItem { display:flex; align-items:center; gap:8px; padding:10px 12px; border:2px solid var(--line); border-radius:10px; font-size:14px; }
+  .roomItem b { color:var(--ink); }
+  .roomItem .grow { flex:1; }
+  .roomItem button { padding:6px 14px; border:none; border-radius:8px; background:var(--accent2); color:#fff; font-weight:700; font-size:13px; }
+
+  /* ============ شاشة اللعب ============ */
+  #gameScreen { display:none; height:100dvh; flex-direction:column; }
+  #topBar { display:flex; align-items:center; gap:8px; padding:8px 12px; color:#eaf1fb; flex-shrink:0; }
+  #topBar .rid { font-weight:900; font-size:15px; letter-spacing:1px; }
+  #topBar .spacer { flex:1; }
+  .iconBtn { width:36px; height:36px; border-radius:9px; border:none; background:rgba(255,255,255,.14); color:#fff; font-size:16px; display:inline-flex; align-items:center; justify-content:center; }
+  .iconBtn:hover { background:rgba(255,255,255,.24); }
+  .iconBtn.on { background:var(--yellow); color:#333; }
+
+  #main { flex:1; display:flex; gap:10px; padding:0 10px 10px; min-height:0; }
+
+  #stage { flex:1; background:var(--panel); border-radius:14px; display:flex; flex-direction:column; min-width:0; position:relative; overflow:hidden; }
+
+  /* حلقة اللاعبين */
+  #ring { flex:1; position:relative; min-height:0; }
+  .pl {
+    position:absolute; transform:translate(50%,-50%); width:104px; text-align:center;
+    transition:opacity .2s;
+  }
+  .pl .av { width:52px; height:52px; margin:0 auto; border-radius:50%; background:#eef2f7; border:3px solid #dfe5ec;
+            display:flex; align-items:center; justify-content:center; font-size:21px; font-weight:900; color:var(--ink); }
+  .pl.turn .av { border-color:var(--accent); box-shadow:0 0 0 5px rgba(229,84,30,.18); animation:pulse 1s infinite; }
+  .pl.dead { opacity:.34; filter:grayscale(1); }
+  .pl.spec .av { border-style:dashed; }
+  .pl .nm { font-size:12.5px; font-weight:800; color:var(--ink); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pl .hearts { font-size:11px; letter-spacing:-1px; height:14px; }
+  .pl .typed { font-size:12px; color:var(--accent); font-weight:800; min-height:15px; direction:rtl; white-space:nowrap; overflow:hidden; }
+  .pl .off { font-size:10px; color:#b0b7c3; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 5px rgba(229,84,30,.18);} 50%{box-shadow:0 0 0 9px rgba(229,84,30,.07);} }
+
+  /* القنبلة في المنتصف */
+  #bombWrap { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; width:210px; }
+  #bombCircle { position:relative; width:150px; height:150px; margin:0 auto; }
+  #bombCircle svg { position:absolute; inset:0; transform:rotate(-90deg); }
+  #ringBg { fill:none; stroke:#eef2f7; stroke-width:9; }
+  #ringFg { fill:none; stroke:var(--accent); stroke-width:9; stroke-linecap:round; transition:stroke .2s; }
+  #bombFace { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
+  #bombEmoji { font-size:40px; line-height:1; }
+  #syl { font-size:29px; font-weight:900; color:var(--ink); letter-spacing:2px; }
+  #timeNum { font-size:13px; font-weight:800; color:#8a93a3; }
+  #poolHint { font-size:11.5px; color:#a7aebb; margin-top:6px; }
+  #roundHint { font-size:12.5px; color:#6b7280; margin-top:2px; }
+  .shake { animation:shake .35s; }
+  @keyframes shake { 0%,100%{transform:translate(-50%,-50%);} 25%{transform:translate(calc(-50% - 7px),-50%);} 75%{transform:translate(calc(-50% + 7px),-50%);} }
+
+  /* منطقة الإدخال */
+  #inputZone { flex-shrink:0; padding:10px 12px 12px; border-top:2px solid var(--line); background:#fbfcfe; }
+  #wordForm { display:flex; gap:8px; }
+  #wordInput { flex:1; padding:14px 16px; border:2.5px solid var(--line); border-radius:12px; font-size:18px; font-weight:700; text-align:center; color:var(--ink); }
+  #wordInput:focus { outline:none; border-color:var(--accent); }
+  #wordInput:disabled { background:#f2f4f7; color:#aab; }
+  #wordInput.bad { border-color:var(--bad); animation:shakeX .3s; }
+  @keyframes shakeX { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);} }
+  #sendBtn { padding:0 20px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-weight:800; font-size:16px; }
+  #msgLine { text-align:center; font-size:13px; min-height:18px; margin-top:6px; font-weight:700; }
+  #msgLine.bad { color:var(--bad); }
+  #msgLine.good { color:var(--good); }
+  #msgLine.info { color:#8a93a3; font-weight:600; }
+
+  /* لوحة الحروف */
+  #alphaBox { flex-shrink:0; padding:8px 12px; border-top:2px solid var(--line); background:#fff; }
+  #alphaGrid { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; }
+  .al { width:25px; height:25px; border-radius:6px; background:#eef2f7; color:#aeb6c4; font-size:13px; font-weight:800;
+        display:flex; align-items:center; justify-content:center; transition:.15s; }
+  .al.on { background:var(--good); color:#fff; }
+  #alphaHead { display:flex; align-items:center; gap:6px; font-size:12px; color:#8a93a3; margin-bottom:6px; }
+  #alphaHead b { color:var(--ink); }
+
+  /* الشريط الجانبي */
+  #side { width:270px; display:flex; flex-direction:column; gap:10px; flex-shrink:0; }
+  .panel { background:var(--panel); border-radius:14px; display:flex; flex-direction:column; overflow:hidden; }
+  .panel h4 { padding:9px 12px; font-size:13.5px; color:var(--ink); border-bottom:2px solid var(--line); }
+  #chatLog { flex:1; overflow-y:auto; padding:8px 10px; display:flex; flex-direction:column; gap:5px; font-size:13.5px; min-height:120px; }
+  .cm { line-height:1.5; word-break:break-word; }
+  .cm b { color:var(--accent2); }
+  .cm.system { color:#8a93a3; font-size:12.5px; }
+  .cm.good { color:var(--good); font-weight:700; }
+  .cm.bad { color:var(--bad); font-weight:700; }
+  .cm.warn { color:#c77700; font-weight:700; }
+  .cm.word { color:var(--ink); }
+  .cm.word b { color:var(--good); }
+  #chatForm { display:flex; gap:6px; padding:8px; border-top:2px solid var(--line); }
+  #chatInput { flex:1; padding:9px 11px; border:2px solid var(--line); border-radius:9px; font-size:13.5px; min-width:0; }
+  #chatInput:focus { outline:none; border-color:var(--accent2); }
+  #chatForm button { padding:0 13px; border:none; border-radius:9px; background:var(--accent2); color:#fff; font-weight:700; }
+
+  #playersPanel { max-height:210px; }
+  #plList { overflow-y:auto; padding:6px; display:flex; flex-direction:column; gap:4px; }
+  .plRow { display:flex; align-items:center; gap:7px; padding:6px 8px; border-radius:8px; background:#f7f9fc; font-size:13px; }
+  .plRow.turn { background:#fff2eb; }
+  .plRow.dead { opacity:.45; }
+  .plRow .nm { flex:1; font-weight:700; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .plRow .kick { border:none; background:none; color:var(--bad); font-weight:900; font-size:14px; padding:0 4px; }
+  .crown { color:var(--yellow); }
+
+  /* أزرار المضيف */
+  #hostBar { display:flex; gap:8px; padding:10px 12px; flex-shrink:0; }
+  #hostBar .btn { padding:11px; font-size:15px; }
+
+  /* نافذة الإعدادات */
+  #setModal { display:none; position:fixed; inset:0; background:rgba(10,20,35,.66); z-index:60; align-items:center; justify-content:center; padding:14px; }
+  #setModal.on { display:flex; }
+  #setBox { background:#fff; border-radius:16px; width:100%; max-width:520px; max-height:88dvh; display:flex; flex-direction:column; overflow:hidden; }
+  #setHead { display:flex; align-items:center; padding:13px 16px; border-bottom:2px solid var(--line); }
+  #setHead h3 { flex:1; color:var(--ink); font-size:17px; }
+  #setHead button { border:none; background:none; font-size:22px; color:#98a1b0; }
+  #setTabs { display:flex; gap:5px; padding:10px 12px 0; flex-wrap:wrap; }
+  #setTabs button { padding:8px 13px; border:2px solid var(--line); background:#fff; border-radius:9px; font-size:13.5px; font-weight:700; color:#6b7280; }
+  #setTabs button.on { border-color:var(--accent); color:var(--accent); background:#fff5f1; }
+  #setBody { flex:1; overflow-y:auto; padding:14px 16px 18px; }
+  .sPane { display:none; flex-direction:column; gap:14px; }
+  .sPane.on { display:flex; }
+  .fld { display:flex; flex-direction:column; gap:5px; }
+  .fld label { font-size:13.5px; font-weight:700; color:var(--ink); }
+  .fld .hint { font-size:12px; color:#8a93a3; line-height:1.5; }
+  .fld select, .fld input[type=text], .fld input[type=number] { padding:10px 12px; border:2px solid var(--line); border-radius:10px; font-size:14px; }
+  .fld input[type=range] { width:100%; accent-color:var(--accent); }
+  .valRow { display:flex; align-items:center; gap:10px; }
+  .valRow output { min-width:56px; text-align:center; font-weight:900; color:var(--accent); font-size:14px; }
+  .sw { display:flex; align-items:center; gap:10px; justify-content:space-between; padding:9px 11px; background:#f7f9fc; border-radius:10px; }
+  .sw span { font-size:13.5px; font-weight:700; color:var(--ink); }
+  .sw small { display:block; font-weight:500; color:#8a93a3; font-size:11.5px; margin-top:2px; }
+  .toggle { position:relative; width:44px; height:25px; flex-shrink:0; }
+  .toggle input { opacity:0; width:0; height:0; }
+  .toggle i { position:absolute; inset:0; background:#cbd3dd; border-radius:99px; transition:.18s; }
+  .toggle i:before { content:""; position:absolute; width:19px; height:19px; right:3px; top:3px; background:#fff; border-radius:50%; transition:.18s; }
+  .toggle input:checked + i { background:var(--good); }
+  .toggle input:checked + i:before { transform:translateX(-19px); }
+  #setFoot { padding:11px 16px; border-top:2px solid var(--line); }
+
+  /* شاشة الفوز */
+  #winOverlay { display:none; position:absolute; inset:0; background:rgba(255,255,255,.95); z-index:20; flex-direction:column; align-items:center; justify-content:center; gap:10px; text-align:center; padding:20px; }
+  #winOverlay.on { display:flex; }
+  #winOverlay .t { font-size:44px; }
+  #winOverlay h2 { color:var(--ink); font-size:26px; }
+  #winOverlay p { color:#7b8494; font-size:14px; }
+
+  #toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(80px); background:#1e3a5f; color:#fff;
+           padding:11px 20px; border-radius:11px; font-size:14px; font-weight:700; z-index:80; opacity:0; transition:.25s; pointer-events:none; }
+  #toast.on { transform:translateX(-50%) translateY(0); opacity:1; }
+
+  /* ============ الجوال ============ */
+  @media (max-width: 880px) {
+    #main { flex-direction:column; padding:0 7px 7px; gap:7px; }
+    #side { width:100%; flex-direction:row; gap:7px; max-height:150px; }
+    #side.hidden { display:none; }
+    #playersPanel { flex:1; max-height:150px; }
+    #chatPanel { flex:1.2; }
+    #chatLog { min-height:0; }
+    #ring { min-height:250px; }
+    .pl { width:74px; }
+    .pl .av { width:40px; height:40px; font-size:16px; border-width:2.5px; }
+    .pl .nm { font-size:11px; }
+    .pl .typed { font-size:11px; }
+    #bombWrap { width:150px; }
+    #bombCircle { width:120px; height:120px; }
+    #bombEmoji { font-size:30px; }
+    #syl { font-size:24px; }
+    #alphaBox { padding:6px 8px; }
+    .al { width:22px; height:22px; font-size:12px; }
+    #wordInput { font-size:17px; padding:13px; }
+  }
+  @media (max-width: 520px) {
+    #topBar { padding:6px 8px; }
+    #ring { min-height:215px; }
+    .pl { width:66px; }
+    .pl .av { width:36px; height:36px; font-size:15px; }
+    #bombCircle { width:104px; height:104px; }
+    #syl { font-size:21px; }
+    #bombEmoji { font-size:26px; }
+    .al { width:20px; height:20px; font-size:11px; border-radius:5px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= شاشة الدخول ================= -->
+<div id="lobbyScreen">
+  <div class="brand">
+    <h1>💣 القنبلة</h1>
+    <p>اكتب كلمة فيها المقطع قبل ما تنفجر!</p>
+    <a class="back" href="/">← رجوع لاختيار الألعاب</a>
+  </div>
+
+  <!-- الحساب -->
+  <div class="card" id="authCard">
+    <div class="tabs">
+      <button id="tabLogin" class="on">دخول</button>
+      <button id="tabReg">حساب جديد</button>
+      <button id="tabGuest">ضيف</button>
+    </div>
+    <div id="authFields">
+      <input id="aName" placeholder="الاسم" maxlength="20" autocomplete="username">
+      <input id="aPass" type="password" placeholder="كلمة المرور" maxlength="40" autocomplete="current-password">
+    </div>
+    <button class="btn blue" id="authBtn">دخول</button>
+    <div class="err" id="authErr"></div>
+    <div id="whoBox" style="display:none">
+      <div class="muted" style="margin-bottom:8px">مسجّل باسم <b id="whoName"></b> · <span id="whoStats"></span></div>
+      <button class="btn ghost" id="logoutBtn">خروج</button>
+    </div>
+  </div>
+
+  <!-- الغرف -->
+  <div class="card" id="roomCard" style="display:none">
+    <h3>ابدأ اللعب</h3>
+    <button class="btn" id="createBtn">🎮 إنشاء غرفة جديدة</button>
+    <div style="height:10px"></div>
+    <div class="row2">
+      <input id="joinId" placeholder="رقم الغرفة" maxlength="6" inputmode="numeric" style="margin:0">
+      <button class="btn ghost" id="joinBtn" style="flex:0 0 110px">انضمام</button>
+    </div>
+    <div class="err" id="roomErr"></div>
+    <h3 style="margin-top:6px">غرف عامة</h3>
+    <div id="roomsList"><div class="muted">لا توجد غرف عامة حالياً</div></div>
+  </div>
+
+  <div class="card" id="lbCard" style="display:none">
+    <h3>🏆 أفضل اللاعبين</h3>
+    <div id="lbList" class="muted">—</div>
+  </div>
+</div>
+
+<!-- ================= شاشة اللعب ================= -->
+<div id="gameScreen">
+  <div id="topBar">
+    <span class="rid">غرفة <b id="ridNum">—</b></span>
+    <span class="muted" id="dictInfo" style="color:#9fb6d0;font-size:12px"></span>
+    <span class="spacer"></span>
+    <button class="iconBtn" id="copyBtn" title="نسخ رابط الدعوة">🔗</button>
+    <button class="iconBtn" id="sideBtn" title="إظهار/إخفاء القوائم">☰</button>
+    <button class="iconBtn" id="setBtn" title="الإعدادات">⚙️</button>
+    <button class="iconBtn" id="exitBtn" title="خروج">✕</button>
+  </div>
+
+  <div id="main">
+    <div id="stage">
+      <div id="ring">
+        <div id="bombWrap">
+          <div id="bombCircle">
+            <svg viewBox="0 0 100 100">
+              <circle id="ringBg" cx="50" cy="50" r="44"></circle>
+              <circle id="ringFg" cx="50" cy="50" r="44"></circle>
+            </svg>
+            <div id="bombFace">
+              <div id="bombEmoji">💣</div>
+              <div id="syl">—</div>
+              <div id="timeNum"></div>
+            </div>
+          </div>
+          <div id="poolHint"></div>
+          <div id="roundHint"></div>
+        </div>
+      </div>
+
+      <div id="alphaBox">
+        <div id="alphaHead"><b>لوحتك</b> <span id="alphaCount">0/28</span> <span style="opacity:.7">— اكمل الحروف = ❤️ إضافي</span></div>
+        <div id="alphaGrid"></div>
+      </div>
+
+      <div id="inputZone">
+        <form id="wordForm" autocomplete="off">
+          <input id="wordInput" placeholder="انتظر دورك…" maxlength="40" autocomplete="off"
+                 autocorrect="off" autocapitalize="off" spellcheck="false" disabled>
+          <button type="submit" id="sendBtn">إرسال</button>
+        </form>
+        <div id="msgLine"></div>
+      </div>
+
+      <div id="hostBar">
+        <button class="btn" id="startBtn">▶ ابدأ اللعبة</button>
+      </div>
+
+      <div id="winOverlay">
+        <div class="t">🏆</div>
+        <h2 id="winName">—</h2>
+        <p id="winInfo"></p>
+        <button class="btn" id="againBtn" style="max-width:220px;margin-top:8px">لعبة جديدة</button>
+      </div>
+    </div>
+
+    <div id="side">
+      <div class="panel" id="playersPanel">
+        <h4>اللاعبون (<span id="plCount">0</span>)</h4>
+        <div id="plList"></div>
+      </div>
+      <div class="panel" id="chatPanel" style="flex:1">
+        <h4>الدردشة</h4>
+        <div id="chatLog"></div>
+        <form id="chatForm" autocomplete="off">
+          <input id="chatInput" placeholder="اكتب رسالة…" maxlength="200">
+          <button type="submit">↑</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= الإعدادات ================= -->
+<div id="setModal">
+  <div id="setBox">
+    <div id="setHead">
+      <h3>⚙️ إعدادات الغرفة</h3>
+      <button id="setClose">✕</button>
+    </div>
+    <div id="setTabs">
+      <button data-p="time" class="on">⏱️ الوقت</button>
+      <button data-p="words">📖 الكلمات</button>
+      <button data-p="players">❤️ اللاعبون</button>
+      <button data-p="room">🔒 الغرفة</button>
+    </div>
+    <div id="setBody">
+
+      <div class="sPane on" data-p="time">
+        <div class="fld">
+          <label>وقت البداية لكل لاعب</label>
+          <div class="valRow"><input type="range" id="sStart" min="5" max="30" step="1"><output id="oStart"></output></div>
+          <div class="hint">١٠ث سريع · ١٥ث كلاسيكي · ٢٠–٣٠ث هادئ للمبتدئين</div>
+        </div>
+        <div class="fld">
+          <label>تسارع القنبلة</label>
+          <select id="sSpeed">
+            <option value="off">بدون تسارع — للمبتدئين</option>
+            <option value="slow">بطيء (−0.25ث)</option>
+            <option value="classic">كلاسيكي (−0.5ث)</option>
+            <option value="fast">سريع (−1ث)</option>
+          </select>
+          <div class="hint">كل تمريرة ناجحة تقلّل الوقت التالي بهذا المقدار</div>
+        </div>
+        <div class="fld">
+          <label>الحد الأدنى للوقت (سقف السرعة)</label>
+          <div class="valRow"><input type="range" id="sMinT" min="2" max="15" step="1"><output id="oMinT"></output></div>
+          <div class="hint">القنبلة لا تتسارع أكثر من هذا الحد</div>
+        </div>
+        <div class="fld">
+          <label>طريقة إعادة الوقت</label>
+          <select id="sTimeMode">
+            <option value="reset">إعادة ضبط كاملة</option>
+            <option value="carry">المتبقي + مكافأة ثانيتين</option>
+          </select>
+        </div>
+        <div class="sw">
+          <span>مكافأة الكلمة الطويلة<small>+١ ثانية للكلمات من ٧ أحرف فأكثر</small></span>
+          <label class="toggle"><input type="checkbox" id="sLongBonus"><i></i></label>
+        </div>
+      </div>
+
+      <div class="sPane" data-p="words">
+        <div class="fld">
+          <label>صعوبة المقاطع الحرفية</label>
+          <div class="valRow"><input type="range" id="sDiff" min="0" max="100" step="5"><output id="oDiff"></output></div>
+          <div class="hint">سهل = مقاطع شائعة جداً · صعب = مقاطع نادرة</div>
+        </div>
+        <div class="fld">
+          <label>أقل عدد أحرف للكلمة</label>
+          <div class="valRow"><input type="range" id="sMinL" min="2" max="6" step="1"><output id="oMinL"></output></div>
+        </div>
+        <div class="fld">
+          <label>القاموس</label>
+          <select id="sDict">
+            <option value="full">شامل — كل الكلمات</option>
+            <option value="simple">مبسّط — كلمات ٦ أحرف فأقل</option>
+          </select>
+          <div class="hint" id="dictHint"></div>
+        </div>
+      </div>
+
+      <div class="sPane" data-p="players">
+        <div class="fld">
+          <label>عدد القلوب في البداية</label>
+          <div class="valRow"><input type="range" id="sLives" min="1" max="5" step="1"><output id="oLives"></output></div>
+        </div>
+        <div class="sw">
+          <span>مكافأة الأبجدية<small>حياة إضافية عند استخدام كل الحروف الـ٢٨</small></span>
+          <label class="toggle"><input type="checkbox" id="sAlpha"><i></i></label>
+        </div>
+        <div class="sw">
+          <span>تكرار المكافأة<small>يمكن تصفير اللوحة وكسب حياة مرة أخرى</small></span>
+          <label class="toggle"><input type="checkbox" id="sRepeat"><i></i></label>
+        </div>
+        <div class="fld">
+          <label>الانضمام المتأخر</label>
+          <select id="sLate">
+            <option value="spectate">متفرج حتى الجولة القادمة</option>
+            <option value="play">يدخل اللعب فوراً</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sPane" data-p="room">
+        <div class="fld">
+          <label>الحد الأقصى للاعبين</label>
+          <div class="valRow"><input type="range" id="sMax" min="2" max="16" step="1"><output id="oMax"></output></div>
+        </div>
+        <div class="fld">
+          <label>نوع الغرفة</label>
+          <select id="sVis">
+            <option value="private">خاصة — بالرابط فقط</option>
+            <option value="public">عامة — تظهر في القائمة</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label>كلمة مرور الغرفة (اختياري)</label>
+          <input type="text" id="sPass" maxlength="24" placeholder="اتركها فارغة لغرفة بدون كلمة مرور">
+        </div>
+      </div>
+
+    </div>
+    <div id="setFoot"><button class="btn" id="setSave">حفظ الإعدادات</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const socket = io("/bomb", { transports:["websocket","polling"] });
+
+  let ME = null, ROOM = null, ST = null, OFFSET = 0, TOKEN = null;
+  let ALPHABET = [];
+  let authMode = "login";
+  let myAccount = null;
+  let rafId = 0;
+  let lastTypedSend = 0;
+
+  // ---------- أدوات ----------
+  function toast(t){ const el=$("toast"); el.textContent=t; el.classList.add("on"); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("on"),2200); }
+  function esc(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+  function hearts(n){ return n>0 ? "❤️".repeat(Math.min(n,6)) + (n>6?"+":"") : "💀"; }
+
+  // ---------- الحساب ----------
+  function setAuthMode(m){
+    authMode = m;
+    $("tabLogin").classList.toggle("on", m==="login");
+    $("tabReg").classList.toggle("on", m==="reg");
+    $("tabGuest").classList.toggle("on", m==="guest");
+    $("aPass").style.display = m==="guest" ? "none" : "";
+    $("aName").placeholder = m==="guest" ? "اسمك في اللعبة" : "الاسم";
+    $("authBtn").textContent = m==="login" ? "دخول" : m==="reg" ? "إنشاء الحساب" : "العب كضيف";
+    $("authErr").textContent = "";
+  }
+  $("tabLogin").onclick = ()=>setAuthMode("login");
+  $("tabReg").onclick   = ()=>setAuthMode("reg");
+  $("tabGuest").onclick = ()=>setAuthMode("guest");
+
+  function showRooms(){
+    $("authFields").style.display = "none";
+    $("authBtn").style.display = "none";
+    document.querySelector(".tabs").style.display = "none";
+    $("whoBox").style.display = "";
+    $("roomCard").style.display = "";
+    $("lbCard").style.display = "";
+    refreshRooms(); refreshLB();
+  }
+
+  $("authBtn").onclick = () => {
+    const name = $("aName").value.trim();
+    const pass = $("aPass").value;
+    $("authErr").textContent = "";
+    if (name.length < 2) { $("authErr").textContent = "الاسم قصير جدًا"; return; }
+    if (authMode === "guest") {
+      myAccount = null;
+      $("whoName").textContent = name;
+      $("whoStats").textContent = "ضيف";
+      window._guestName = name;
+      showRooms();
+      return;
+    }
+    $("authBtn").disabled = true;
+    socket.emit(authMode==="reg" ? "register" : "login", { name, pass }, res => {
+      $("authBtn").disabled = false;
+      if (!res || !res.ok) { $("authErr").textContent = (res && res.error) || "خطأ"; return; }
+      myAccount = res.stats;
+      const b = res.bomb || {games:0,wins:0,words:0};
+      $("whoName").textContent = res.stats.name;
+      $("whoStats").textContent = `القنبلة: ${b.wins} فوز · ${b.games} لعبة · ${b.words} كلمة`;
+      showRooms();
+    });
+  };
+  $("logoutBtn").onclick = () => location.reload();
+
+  function refreshRooms(){
+    socket.emit("publicRooms", res => {
+      const box = $("roomsList");
+      const list = (res && res.rooms) || [];
+      if (!list.length) { box.innerHTML = '<div class="muted">لا توجد غرف عامة حالياً</div>'; return; }
+      box.innerHTML = "";
+      list.forEach(r => {
+        const d = document.createElement("div");
+        d.className = "roomItem";
+        d.innerHTML = `<b>#${r.id}</b> <span class="grow">${esc(r.owner)} · ${r.players}/${r.max} ${r.locked?"🔒":""} ${r.state==="playing"?"· يلعبون":""}</span>`;
+        const b = document.createElement("button");
+        b.textContent = "دخول";
+        b.onclick = () => doJoin(r.id, r.locked);
+        d.appendChild(b);
+        box.appendChild(d);
+      });
+    });
+  }
+  function refreshLB(){
+    socket.emit("leaderboard", res => {
+      const list = (res && res.top) || [];
+      $("lbList").innerHTML = list.length
+        ? list.map((u,i)=>`<div style="padding:5px 0;border-bottom:1px solid #f0f2f6;font-size:13.5px">${i+1}. <b style="color:#1e3a5f">${esc(u.name)}</b> — ${u.wins} فوز · ${u.words} كلمة</div>`).join("")
+        : '<div class="muted">لا توجد نتائج بعد</div>';
+    });
+  }
+  setInterval(()=>{ if ($("roomCard").style.display !== "none" && !ROOM) refreshRooms(); }, 6000);
+
+  // ---------- الدخول للغرف ----------
+  function myName(){ return (myAccount && myAccount.name) || window._guestName || "لاعب"; }
+
+  $("createBtn").onclick = () => {
+    socket.emit("createRoom", { name: myName() }, res => {
+      if (!res || !res.ok) { $("roomErr").textContent = (res&&res.error)||"خطأ"; return; }
+      enterGame(res);
+    });
+  };
+  $("joinBtn").onclick = () => doJoin($("joinId").value.trim(), false);
+  function doJoin(id, needPass){
+    if (!id) { $("roomErr").textContent = "اكتب رقم الغرفة"; return; }
+    let password = "";
+    if (needPass) { password = prompt("كلمة مرور الغرفة:") || ""; }
+    socket.emit("joinRoom", { name: myName(), roomId: id, password }, res => {
+      if (!res || !res.ok) {
+        if (res && res.needPass && !needPass) return doJoin(id, true);
+        $("roomErr").textContent = (res&&res.error)||"خطأ";
+        return;
+      }
+      enterGame(res);
+    });
+  }
+  function enterGame(res){
+    ME = res.you; ROOM = res.roomId; TOKEN = res.token;
+    try { sessionStorage.setItem("bombSession", JSON.stringify({ room:ROOM, token:TOKEN })); } catch(e){}
+    $("lobbyScreen").style.display = "none";
+    $("gameScreen").style.display = "flex";
+    $("ridNum").textContent = ROOM;
+    history.replaceState(null,"","?r="+ROOM);
+  }
+
+  $("exitBtn").onclick = () => { socket.emit("leaveRoom"); try{sessionStorage.removeItem("bombSession");}catch(e){} location.href="/bomb"; };
+  $("copyBtn").onclick = () => {
+    const url = location.origin + "/bomb?r=" + ROOM;
+    (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject())
+      .then(()=>toast("تم نسخ رابط الدعوة ✓"))
+      .catch(()=>prompt("انسخ الرابط:", url));
+  };
+  $("sideBtn").onclick = () => { $("side").classList.toggle("hidden"); $("sideBtn").classList.toggle("on"); };
+
+  // ---------- استقبال الحالة ----------
+  socket.on("hello", d => {
+    ALPHABET = d.alphabet || [];
+    buildAlpha();
+    if (d.dict) {
+      $("dictInfo").textContent = `📖 ${Number(d.dict.size).toLocaleString("en")} كلمة`;
+      $("dictHint").textContent = `القاموس الحالي: ${Number(d.dict.size).toLocaleString("en")} كلمة (المصدر: ${d.dict.source})`;
+    }
+    // محاولة العودة لجلسة سابقة
+    try {
+      const s = JSON.parse(sessionStorage.getItem("bombSession")||"null");
+      if (s && s.room && s.token) {
+        socket.emit("rejoin", { roomId:s.room, token:s.token }, r => {
+          if (r && r.ok) enterGame(r); else sessionStorage.removeItem("bombSession");
+        });
+      }
+    } catch(e){}
+    // رابط دعوة
+    const q = new URLSearchParams(location.search).get("r");
+    if (q) $("joinId").value = q;
+  });
+
+  socket.on("state", s => {
+    ST = s;
+    OFFSET = s.serverNow - Date.now();
+    render();
+  });
+
+  socket.on("kicked", () => { toast("تم طردك من الغرفة"); setTimeout(()=>location.href="/bomb", 1200); });
+
+  socket.on("chat", m => addChat(m));
+
+  socket.on("accepted", d => {
+    addChat({ cls:"word", html:`<b>${esc(d.name)}</b>: ${esc(d.word)} ${d.bonus?`<span style="color:#2e9e5b">+${d.bonus}ث</span>`:""}` });
+    if (d.id === ME) { flash("✓ " + d.word, "good"); $("wordInput").value=""; }
+  });
+
+  socket.on("reject", d => {
+    flash(d.msg || "غير مقبولة", "bad");
+    const i = $("wordInput");
+    i.classList.remove("bad"); void i.offsetWidth; i.classList.add("bad");
+  });
+
+  socket.on("boom", d => {
+    const w = $("bombWrap");
+    w.classList.remove("shake"); void w.offsetWidth; w.classList.add("shake");
+    $("bombEmoji").textContent = "💥";
+    setTimeout(()=>{ $("bombEmoji").textContent = "💣"; }, 1100);
+  });
+
+  socket.on("typing", d => {
+    const el = document.querySelector(`.pl[data-id="${d.id}"] .typed`);
+    if (el) el.textContent = d.text;
+  });
+
+  socket.on("disconnect", () => flash("انقطع الاتصال… جاري إعادة المحاولة", "bad"));
+  socket.on("connect", () => {
+    if (!ROOM || !TOKEN) return;
+    socket.emit("rejoin", { roomId:ROOM, token:TOKEN }, r => {
+      if (r && r.ok) { ME = r.you; flash("رجعت للغرفة ✓","good"); }
+    });
+  });
+
+  // ---------- الرسم ----------
+  function buildAlpha(){
+    const g = $("alphaGrid");
+    g.innerHTML = "";
+    ALPHABET.forEach(ch => {
+      const d = document.createElement("div");
+      d.className = "al"; d.dataset.ch = ch; d.textContent = ch;
+      g.appendChild(d);
+    });
+  }
+
+  function render(){
+    if (!ST) return;
+    const me = ST.players.find(p => p.id === ME);
+    const isHost = ST.ownerId === ME;
+    const playing = ST.state === "playing";
+    const myTurn = playing && ST.turnId === ME;
+
+    // شريط المضيف
+    $("hostBar").style.display = (ST.state === "lobby" && isHost) ? "flex" : "none";
+    $("setBtn").style.display = isHost ? "" : "none";
+
+    // القنبلة
+    $("syl").textContent = ST.syllable || (ST.state==="lobby" ? "🎮" : "—");
+    $("poolHint").textContent = playing && ST.sylPool ? `${ST.sylPool} كلمة ممكنة` : "";
+    $("roundHint").textContent = playing ? `الجولة ${ST.roundNo} · ${ST.usedCount} كلمة مستعملة` :
+                                 ST.state==="lobby" ? "بانتظار بدء اللعبة…" : "";
+
+    // اللاعبون في الحلقة
+    renderRing();
+    renderList();
+
+    // لوحة الحروف
+    const mine = new Set(me ? me.letters : []);
+    document.querySelectorAll(".al").forEach(el => el.classList.toggle("on", mine.has(el.dataset.ch)));
+    $("alphaCount").textContent = `${mine.size}/${ALPHABET.length}`;
+
+    // الإدخال
+    const inp = $("wordInput");
+    inp.disabled = !myTurn;
+    if (myTurn) {
+      if (inp.placeholder !== "اكتب كلمة فيها «"+ST.syllable+"»") inp.placeholder = "اكتب كلمة فيها «"+ST.syllable+"»";
+      focusInput();
+    } else {
+      inp.value = "";
+      inp.placeholder = playing ? "دور لاعب آخر…" : (ST.state==="lobby" ? "بانتظار بدء اللعبة" : "انتهت اللعبة");
+    }
+
+    // الفوز
+    const win = ST.state === "ended";
+    $("winOverlay").classList.toggle("on", win);
+    if (win) {
+      $("winName").textContent = ST.winner ? "🎉 " + ST.winner.name : "انتهت اللعبة";
+      $("winInfo").textContent = ST.winner ? "آخر لاعب صامد!" : "";
+      $("againBtn").style.display = isHost ? "" : "none";
+    }
+
+    // مؤقت
+    startTicker();
+    if (isHost) fillSettings(ST.settings);
+  }
+
+  function renderRing(){
+    const ring = $("ring");
+    // احذف اللاعبين القدامى
+    [...ring.querySelectorAll(".pl")].forEach(e => e.remove());
+    const list = ST.players;
+    const n = list.length || 1;
+    const W = ring.clientWidth, H = ring.clientHeight;
+    const rx = Math.max(70, W/2 - (W<520?42:62));
+    const ry = Math.max(60, H/2 - (H<300?38:56));
+    list.forEach((p, i) => {
+      const ang = (Math.PI*2 * i / n) - Math.PI/2;
+      const x = W/2 + Math.cos(ang)*rx;
+      const y = H/2 + Math.sin(ang)*ry;
+      const d = document.createElement("div");
+      d.className = "pl" + (p.id===ST.turnId ? " turn":"") + (!p.alive && ST.state==="playing" ? " dead":"") + (p.spectator?" spec":"");
+      d.dataset.id = p.id;
+      d.style.right = (W - x) + "px";
+      d.style.top = y + "px";
+      d.innerHTML =
+        `<div class="av">${esc((p.name||"?").slice(0,2))}</div>` +
+        `<div class="nm">${p.id===ST.ownerId?'<span class="crown">♛</span> ':''}${esc(p.name)}${p.id===ME?" (أنت)":""}</div>` +
+        `<div class="hearts">${ST.state==="playing"? hearts(p.lives) : (p.spectator?"متفرج":"")}</div>` +
+        `<div class="typed"></div>` +
+        (p.connected?"":'<div class="off">غير متصل…</div>');
+      ring.appendChild(d);
+    });
+  }
+
+  function renderList(){
+    $("plCount").textContent = ST.players.length;
+    const box = $("plList");
+    box.innerHTML = "";
+    ST.players.forEach(p => {
+      const d = document.createElement("div");
+      d.className = "plRow" + (p.id===ST.turnId?" turn":"") + (!p.alive && ST.state==="playing"?" dead":"");
+      d.innerHTML = `<span>${p.id===ST.ownerId?'<span class="crown">♛</span>':'👤'}</span>` +
+                    `<span class="nm">${esc(p.name)}${p.id===ME?" (أنت)":""}</span>` +
+                    `<span style="font-size:11px">${ST.state==="playing"?hearts(p.lives):(p.spectator?"👁":"")}</span>` +
+                    `<span class="muted" style="font-size:11px">${p.words||0}</span>`;
+      if (ST.ownerId===ME && p.id!==ME) {
+        const k = document.createElement("button");
+        k.className="kick"; k.textContent="✕"; k.title="طرد";
+        k.onclick = () => socket.emit("kickPlayer", p.id);
+        d.appendChild(k);
+      }
+      box.appendChild(d);
+    });
+  }
+
+  // ---------- المؤقت ----------
+  function startTicker(){
+    cancelAnimationFrame(rafId);
+    const fg = $("ringFg");
+    const C = 2 * Math.PI * 44;
+    fg.style.strokeDasharray = C;
+    function frame(){
+      if (!ST || ST.state !== "playing" || !ST.endsAt) {
+        fg.style.strokeDashoffset = C;
+        $("timeNum").textContent = "";
+        return;
+      }
+      const localEnd = ST.endsAt - OFFSET;
+      const total = Math.max(1000, (ST.baseTime||10) * 1000);
+      const left = Math.max(0, localEnd - Date.now());
+      const frac = Math.max(0, Math.min(1, left / total));
+      fg.style.strokeDashoffset = C * (1 - frac);
+      fg.style.stroke = left < 3000 ? "#d33" : (left < 6000 ? "#f0932b" : "#e5541e");
+      $("timeNum").textContent = (left/1000).toFixed(1) + "ث";
+      rafId = requestAnimationFrame(frame);
+    }
+    frame();
+  }
+
+  // ---------- الإدخال ----------
+  function focusInput(){
+    const i = $("wordInput");
+    if (document.activeElement === i) return;
+    try { i.focus({ preventScroll:false }); } catch(e){ i.focus(); }
+    setTimeout(()=>{ try{ i.scrollIntoView({block:"center", behavior:"smooth"}); }catch(e){} }, 60);
+  }
+  function flash(t, cls){
+    const m = $("msgLine");
+    m.textContent = t; m.className = cls || "";
+    clearTimeout(m._t); m._t = setTimeout(()=>{ m.textContent=""; }, 2400);
+  }
+
+  $("wordForm").onsubmit = e => {
+    e.preventDefault();
+    const v = $("wordInput").value.trim();
+    if (!v) return;
+    socket.emit("word", v);
+  };
+  $("wordInput").addEventListener("input", () => {
+    const now = Date.now();
+    if (now - lastTypedSend > 120) { lastTypedSend = now; socket.emit("typing", $("wordInput").value); }
+  });
+
+  $("chatForm").onsubmit = e => {
+    e.preventDefault();
+    const v = $("chatInput").value.trim();
+    if (!v) return;
+    socket.emit("chat", v);
+    $("chatInput").value = "";
+  };
+
+  function addChat(m){
+    const log = $("chatLog");
+    const d = document.createElement("div");
+    d.className = "cm " + (m.cls || (m.system?"system":""));
+    d.innerHTML = m.html ? m.html : (m.system ? esc(m.text) : `<b>${esc(m.name)}</b>: ${esc(m.text)}`);
+    log.appendChild(d);
+    while (log.children.length > 120) log.removeChild(log.firstChild);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  $("startBtn").onclick = () => socket.emit("startGame");
+  $("againBtn").onclick = () => socket.emit("backToLobby");
+
+  // ---------- الإعدادات ----------
+  const S = {
+    startTime:["sStart","oStart",v=>v+"ث"], minTime:["sMinT","oMinT",v=>v+"ث"],
+    difficulty:["sDiff","oDiff",v=> v<25?"سهل":v<55?"متوسط":v<80?"صعب":"قاسي"],
+    minLength:["sMinL","oMinL",v=>v+" أحرف"], lives:["sLives","oLives",v=>v+" ❤️"],
+    maxPlayers:["sMax","oMax",v=>v+" لاعب"]
+  };
+  Object.entries(S).forEach(([k,[inp,out,fmt]]) => {
+    $(inp).addEventListener("input", () => { $(out).textContent = fmt($(inp).value); });
+  });
+  $("setBtn").onclick = () => { fillSettings(ST.settings); $("setModal").classList.add("on"); };
+  $("setClose").onclick = () => $("setModal").classList.remove("on");
+  $("setModal").addEventListener("click", e => { if (e.target === $("setModal")) $("setModal").classList.remove("on"); });
+  document.querySelectorAll("#setTabs button").forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll("#setTabs button").forEach(x=>x.classList.remove("on"));
+      b.classList.add("on");
+      document.querySelectorAll(".sPane").forEach(p => p.classList.toggle("on", p.dataset.p === b.dataset.p));
+    };
+  });
+  function fillSettings(s){
+    if (!s || $("setModal").classList.contains("on") && fillSettings._done) return;
+    fillSettings._done = true;
+    Object.entries(S).forEach(([k,[inp,out,fmt]]) => { $(inp).value = s[k]; $(out).textContent = fmt(s[k]); });
+    $("sSpeed").value = s.speedMode; $("sTimeMode").value = s.timeMode;
+    $("sDict").value = s.dictionary; $("sLate").value = s.lateJoin; $("sVis").value = s.visibility;
+    $("sPass").value = s.password || "";
+    $("sLongBonus").checked = s.longWordBonus; $("sAlpha").checked = s.alphabetBonus; $("sRepeat").checked = s.bonusRepeat;
+  }
+  $("setSave").onclick = () => {
+    socket.emit("updateSettings", {
+      startTime:+$("sStart").value, minTime:+$("sMinT").value, speedMode:$("sSpeed").value,
+      timeMode:$("sTimeMode").value, longWordBonus:$("sLongBonus").checked,
+      difficulty:+$("sDiff").value, minLength:+$("sMinL").value, dictionary:$("sDict").value,
+      lives:+$("sLives").value, alphabetBonus:$("sAlpha").checked, bonusRepeat:$("sRepeat").checked,
+      lateJoin:$("sLate").value, maxPlayers:+$("sMax").value, visibility:$("sVis").value, password:$("sPass").value
+    });
+    $("setModal").classList.remove("on");
+    toast("تم حفظ الإعدادات ✓");
+  };
+
+  // ---------- الجوال: حماية مساحة الرؤية ----------
+  if (window.visualViewport) {
+    const vv = window.visualViewport;
+    const fix = () => {
+      const gs = $("gameScreen");
+      if (gs.style.display === "none") return;
+      gs.style.height = vv.height + "px";
+      if (document.activeElement === $("wordInput")) {
+        setTimeout(()=>{ try{ $("inputZone").scrollIntoView({block:"end"}); }catch(e){} }, 40);
+      }
+    };
+    vv.addEventListener("resize", fix);
+    vv.addEventListener("scroll", fix);
+  }
+  window.addEventListener("resize", () => { if (ST) renderRing(); });
+  window.addEventListener("orientationchange", () => setTimeout(()=>{ if (ST) renderRing(); }, 300));
+
+  setAuthMode("login");
+})();
+</script>
+</body>
+</html>
