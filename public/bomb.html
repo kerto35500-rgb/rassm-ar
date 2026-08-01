@@ -469,6 +469,7 @@
   const socket = io("/bomb", { transports:["websocket","polling"] });
 
   let ME = null, ROOM = null, ST = null, OFFSET = 0, TOKEN = null;
+  let lastSyl = null;   // لتفريغ المربع عند تغيّر المقطع
   let ALPHABET = [];
   let authMode = "login";
   let myAccount = null;
@@ -647,6 +648,8 @@
     const w = $("bombWrap");
     w.classList.remove("shake"); void w.offsetWidth; w.classList.add("shake");
     $("bombEmoji").textContent = "💥";
+    $("wordInput").value = "";
+    if (d && d.id === ME) flash("💥 انفجرت عندك!", "bad");
     setTimeout(()=>{ $("bombEmoji").textContent = "💣"; }, 1100);
   });
 
@@ -700,8 +703,9 @@
     document.querySelectorAll(".al").forEach(el => el.classList.toggle("on", mine.has(el.dataset.ch)));
     $("alphaCount").textContent = `${mine.size}/${ALPHABET.length}`;
 
-    // الإدخال
+    // الإدخال — نفرّغ المربع كلما تغيّر المقطع (جولة/دور جديد)
     const inp = $("wordInput");
+    if (ST.syllable !== lastSyl) { lastSyl = ST.syllable; inp.value = ""; }
     inp.disabled = !myTurn;
     if (myTurn) {
       if (inp.placeholder !== "اكتب كلمة فيها «"+ST.syllable+"»") inp.placeholder = "اكتب كلمة فيها «"+ST.syllable+"»";
