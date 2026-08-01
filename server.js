@@ -8,6 +8,7 @@ const { Server } = require("socket.io");
 const CATEGORIES = require("./words");
 const { createStore } = require("./store");
 const { setupAdmin } = require("./admin");
+const { setupBomb } = require("./bomb");
 
 const app = express();
 const server = http.createServer(app);
@@ -38,10 +39,28 @@ function getLiveStats() {
 // دعم هيكلين: index.html داخل public/ أو في جذر المشروع
 const pubDir = path.join(__dirname, "public");
 const indexFile = fs.existsSync(path.join(pubDir, "index.html")) ? path.join(pubDir, "index.html") : path.join(__dirname, "index.html");
-// تتبع الزيارات (طلب صفحة اللعبة الرئيسية)
+const pageFile = (name) => {
+  const inPub = path.join(pubDir, name);
+  return fs.existsSync(inPub) ? inPub : path.join(__dirname, name);
+};
+// الصفحة الرئيسية: اختيار اللعبة
 app.get("/", (req, res) => {
   if (admin) admin.trackVisit();
+  const hub = pageFile("hub.html");
+  if (fs.existsSync(hub)) return res.sendFile(hub);
+  res.sendFile(indexFile); // احتياطي: لعبة الرسم
+});
+// لعبة الرسم
+app.get(["/draw", "/rassm"], (req, res) => {
+  if (admin) admin.trackVisit();
   res.sendFile(indexFile);
+});
+// لعبة القنبلة
+app.get(["/bomb", "/qunbula"], (req, res) => {
+  if (admin) admin.trackVisit();
+  const f = pageFile("bomb.html");
+  if (fs.existsSync(f)) return res.sendFile(f);
+  res.status(404).type("text").send("bomb.html غير موجود");
 });
 // نقطة إبقاء حيّة (تمنع السيرفر المجاني من النوم أثناء اللعب الطويل)
 app.get("/healthz", (req, res) => res.type("text").send("ok"));
@@ -991,6 +1010,13 @@ createStore()
     } catch (e) { console.error("words load:", e.message); }
     // تفعيل لوحة المراقبة
     admin = setupAdmin(app, { getLiveStats, store });
+    // 💣 تفعيل لعبة القنبلة (namespace مستقل /bomb)
+    try {
+      setupBomb(io, { store, hashPass, publicStats, getAdmin: () => admin });
+      console.log("💣 لعبة القنبلة جاهزة على /bomb");
+    } catch (e) {
+      console.error("bomb setup:", e.message);
+    }
     server.listen(PORT, () => {
       console.log(`🎨 لعبة ارسمها! تعمل على المنفذ ${PORT}`);
     });
