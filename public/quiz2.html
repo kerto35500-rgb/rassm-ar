@@ -277,7 +277,7 @@ input,select,textarea{font-family:inherit}
   filter:blur(1px);transition:height .8s var(--ease)}
 
 .climber{position:absolute;width:var(--sh,24px);height:var(--sh,24px);border-radius:50%;z-index:6;
-  transition:bottom .85s var(--spring),inset-inline-start .5s var(--ease);
+  transition:bottom .85s var(--spring),left .5s var(--ease);
   box-shadow:0 5px 14px rgba(0,0,0,.6),0 0 0 2px rgba(255,255,255,.22)}
 .climber svg{width:100%;height:100%;border-radius:50%;display:block}
 .climber.mine{box-shadow:0 5px 16px rgba(0,0,0,.6),0 0 0 2.5px #fff,0 0 22px rgba(255,255,255,.6)}
@@ -313,21 +313,22 @@ input,select,textarea{font-family:inherit}
 
 /* النهاية */
 #finale{position:absolute;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;
-  padding:20px;background:radial-gradient(ellipse at 50% 30%,rgba(30,20,60,.94),rgba(5,7,15,.985))}
+  padding:20px;background:radial-gradient(ellipse at 50% 28%,#1e1442,#05070f 72%);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 #finale.on{display:flex}
 #fw{position:absolute;inset:0;pointer-events:none}
 #podium{display:flex;align-items:flex-end;gap:11px;margin-bottom:20px;z-index:2}
 .pod{display:flex;flex-direction:column;align-items:center;gap:7px;animation:podRise .8s var(--spring) both}
 .pod:nth-child(1){animation-delay:.35s}.pod:nth-child(2){animation-delay:.15s}.pod:nth-child(3){animation-delay:.5s}
 @keyframes podRise{from{opacity:0;transform:translateY(46px)}to{opacity:1;transform:none}}
-.pod .av{width:48px;height:48px;border-radius:16px;overflow:hidden;box-shadow:0 8px 22px rgba(0,0,0,.6)}
-.pod .nm{font-size:12.5px;font-weight:800;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pod .blk{width:74px;border-radius:12px 12px 0 0;display:flex;align-items:flex-start;justify-content:center;
-  padding-top:9px;font-size:20px;font-weight:900;
-  background:linear-gradient(180deg,rgba(255,255,255,.15),rgba(255,255,255,.03));border:1px solid var(--stroke);border-bottom:none}
-.pod.g1 .blk{height:104px;background:linear-gradient(180deg,rgba(255,203,46,.42),rgba(255,203,46,.06));border-color:rgba(255,203,46,.6)}
-.pod.g2 .blk{height:74px}
-.pod.g3 .blk{height:56px;background:linear-gradient(180deg,rgba(205,127,50,.3),rgba(205,127,50,.05))}
+.pod .av{width:54px;height:54px;border-radius:17px;overflow:hidden;box-shadow:0 8px 22px rgba(0,0,0,.6)}
+.pod .nm{font-size:12.5px;font-weight:800;max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod .blk{width:88px;border-radius:13px 13px 0 0;display:flex;align-items:flex-start;justify-content:center;
+  padding-top:11px;font-size:24px;font-weight:900;
+  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.03));border:1px solid var(--stroke);border-bottom:none}
+.pod.g1 .blk{height:126px;background:linear-gradient(180deg,rgba(255,203,46,.45),rgba(255,203,46,.06));border-color:rgba(255,203,46,.65)}
+.pod.g2 .blk{height:92px}
+.pod.g3 .blk{height:68px;background:linear-gradient(180deg,rgba(205,127,50,.32),rgba(205,127,50,.05))}
 .pod.g1 .av{box-shadow:0 0 34px rgba(255,203,46,.75)}
 #fTitle{font-size:clamp(26px,7vw,40px);font-weight:900;letter-spacing:-1px;z-index:2;
   background:linear-gradient(100deg,#fff,var(--gold) 55%,#fff);-webkit-background-clip:text;background-clip:text;color:transparent;
@@ -1042,7 +1043,13 @@ function rPy(fresh){
       W.appendChild(c);}
     const pos=Math.min(H,p.pyPos||0);
     c.style.bottom=(pos*(sh+gp)+4)+"px";
-    c.style.insetInlineStart=(10+idx*(80/Math.max(1,alive.length)))+"%";
+    // توزيع حول منتصف الهرم بموضع فيزيائي صريح
+    // (inset-inline-start يقيس من اليمين في RTL ويخرجهم عن الهرم)
+    const n=alive.length, cw=W.clientWidth;
+    const spread=Math.min(26,n*9);
+    const off=n<2?0:(-spread/2+idx*(spread/(n-1)));
+    c.style.insetInlineStart="auto";c.style.right="auto";
+    c.style.left=Math.round(cw*0.5+cw*off/100-sh/2)+"px";
   });
   // شعاع القمة يرتفع مع أعلى لاعب
   const best=Math.max(0,...alive.map(p=>p.pyPos||0));
