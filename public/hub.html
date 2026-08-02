@@ -145,10 +145,11 @@
       tags:["سرعة بديهة","٢–١٦ لاعب","قاموس ٢٧٢ ألف كلمة"]
     },
     {
-      key:"quiz", href:"/quiz", color:"c-violet", icon:"🏆",
+      key:"quiz", href:"/quiz2", color:"c-violet", icon:"🏆",
       title:"قمّة الهرم",
-      desc:"أسئلة سريعة، تصويت على الفئات، واضرب خصومك بالثلج والغراء! والنهاية سباق تسلّق على الهرم.",
-      tags:["ثقافة وسرعة","٢–٨ لاعبين","قوى هجومية"]
+      desc:"أسئلة سريعة، تصويت على الفئات، واضرب خصومك بالثلج والغراء! والنهاية سباق تسلّق على هرم ثلاثي الأبعاد.",
+      tags:["ثقافة وسرعة","٢–٨ لاعبين","قوى هجومية"],
+      alt:{href:"/quiz", label:"النسخة الكلاسيكية"}
     },
     {
       key:null, href:"#", color:"c-green", icon:"🕵️", soon:true,
@@ -174,6 +175,15 @@
         '<span class="go">' + (g.soon ? 'تحت التطوير' : 'ادخل اللعبة ←') + '</span>' +
         (g.key ? '<span class="now" data-k="' + g.key + '"></span>' : '') +
       '</div>';
+    if (g.alt) {
+      const a = document.createElement("a");
+      a.href = g.alt.href;
+      a.textContent = g.alt.label;
+      a.style.cssText = "position:absolute;top:12px;inset-inline-start:12px;font-size:10.5px;font-weight:700;" +
+        "padding:4px 9px;border-radius:99px;background:#eef2f7;color:#64748b;text-decoration:none;z-index:3";
+      a.onclick = e => e.stopPropagation();
+      el.appendChild(a);
+    }
     grid.appendChild(el);
   });
 
