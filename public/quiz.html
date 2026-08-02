@@ -148,13 +148,15 @@ input,select{font-family:inherit}
 .sdot.on{background:var(--accent)}
 
 /* الهرم */
-#pyWrap{flex:1;display:flex;flex-direction:column;justify-content:flex-end;position:relative;padding-bottom:6px}
-#pySteps{display:flex;flex-direction:column-reverse;gap:3px;perspective:600px}
-.step{position:relative;height:26px;margin:0 auto;background:linear-gradient(180deg,#eef2f7,#e2e8f0);border-radius:5px;
+#pyWrap{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;position:relative;padding-bottom:4px;overflow:hidden}
+#pySteps{display:flex;flex-direction:column-reverse;gap:var(--sgap,3px);perspective:600px}
+.step{position:relative;height:var(--sh,26px);margin:0 auto;background:linear-gradient(180deg,#eef2f7,#e2e8f0);border-radius:5px;
   display:flex;align-items:center;justify-content:center;transform-style:preserve-3d;transition:background .3s}
+#pyQ{flex-shrink:0}
+#pyOpts{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .step.top{background:linear-gradient(180deg,var(--gold),#e8a800);box-shadow:0 0 18px rgba(255,197,49,.55)}
 .step .lbl{font-size:10px;color:#9aa6b5;font-weight:800}
-.climber{position:absolute;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+.climber{position:absolute;width:var(--sh,26px);height:var(--sh,26px);border-radius:50%;display:flex;align-items:center;justify-content:center;
   font-size:11px;font-weight:900;color:#fff;box-shadow:0 3px 9px rgba(0,0,0,.28);
   transition:bottom .75s cubic-bezier(.34,1.4,.5,1),inset-inline-start .4s;z-index:5}
 .climber.jump{animation:jump .75s}
@@ -867,6 +869,7 @@ function renderPy(isNew){
       steps.appendChild(d);
     }
   }
+  fitPyramid(H);
   // المتسلقون
   ST.players.filter(p=>!p.spectator).forEach((p,idx,arr)=>{
     let c=steps.querySelector('.climber[data-id="'+p.id+'"]');
@@ -877,7 +880,9 @@ function renderPy(isNew){
     }
     c.style.background=p.color;
     const pos=Math.min(H,p.pyPos||0);
-    c.style.bottom=(pos*29+2)+"px";
+    const sh=parseFloat(getComputedStyle($("pySteps")).getPropertyValue("--sh"))||26;
+    const gp=parseFloat(getComputedStyle($("pySteps")).getPropertyValue("--sgap"))||3;
+    c.style.bottom=(pos*(sh+gp)+2)+"px";
     c.style.insetInlineStart=(8+idx*(100/(arr.length+1)))+"%";
     c.style.outline=p.id===ME?"2.5px solid #fff":"none";
   });
@@ -896,6 +901,20 @@ function renderPy(isNew){
       });
     }
   }else{$("pyQ").classList.add("hide");}
+}
+
+// يحسب ارتفاع درجة الهرم بحيث تتسع الشاشة للهرم + السؤال + الخيارات
+function fitPyramid(H){
+  const pane=$("pPy"),steps=$("pySteps"),wrap=$("pyWrap");
+  if(!pane||!wrap)return;
+  const avail=wrap.clientHeight-6;
+  if(avail<40)return;
+  let sh=Math.floor(avail/(H+1))-3;
+  sh=Math.max(11,Math.min(26,sh));
+  const gap=sh<16?2:3;
+  steps.style.setProperty("--sh",sh+"px");
+  steps.style.setProperty("--sgap",gap+"px");
+  steps.querySelectorAll(".lbl").forEach(l=>l.style.fontSize=(sh<16?8:10)+"px");
 }
 
 function showReveal(d){
@@ -1121,11 +1140,19 @@ $("setSave").onclick=()=>{
   $("setM").classList.remove("on");toast("تم حفظ الإعدادات ✓");
 };
 
-window.addEventListener("resize",()=>{if(ST&&ST.phase==="link")drawLinkLines();});
-if(window.visualViewport){
-  const vv=window.visualViewport;
-  vv.addEventListener("resize",()=>{if($("game").style.display!=="none")$("game").style.height=vv.height+"px";});
+// ضبط الارتفاع الفعلي — 100dvh وحده غير موثوق على بعض المتصفحات
+function fitHeight(){
+  const h=(window.visualViewport?window.visualViewport.height:window.innerHeight);
+  $("game").style.height=h+"px";
+  $("lobby").style.height=h+"px";
 }
+window.addEventListener("resize",()=>{fitHeight();if(ST&&ST.phase==="link")drawLinkLines();});
+window.addEventListener("orientationchange",()=>setTimeout(fitHeight,300));
+if(window.visualViewport){
+  window.visualViewport.addEventListener("resize",fitHeight);
+  window.visualViewport.addEventListener("scroll",fitHeight);
+}
+fitHeight();
 setMode("login");
 })();
 </script>
