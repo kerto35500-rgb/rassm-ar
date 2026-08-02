@@ -245,4 +245,8 @@ load();setInterval(load,5000);
 </script></body></html>`.replace(/LOGOUT/g, ADMIN_PATH + "/logout").replace(/DATA_URL/g, ADMIN_PATH + "/data").replace(/ADMIN_URL/g, ADMIN_PATH);
 }
 
-module.exports = { setupAdmin, ADMIN_PATH, adminEnabled: enabled };
+module.exports = {
+  setupAdmin, ADMIN_PATH, adminEnabled: enabled,
+  // أدوات مشتركة لوحدات الإدارة الأخرى (مثل إدارة الأسئلة)
+  verifySession, parseCookies, send, esc: s => String(s == null ? "" : s)
+};

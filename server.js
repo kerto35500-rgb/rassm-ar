@@ -9,6 +9,7 @@ const CATEGORIES = require("./words");
 const { createStore } = require("./store");
 const { setupAdmin } = require("./admin");
 const { setupBomb } = require("./bomb");
+const { setupQuiz } = require("./quiz");
 
 const app = express();
 const server = http.createServer(app);
@@ -62,17 +63,26 @@ app.get(["/bomb", "/qunbula"], (req, res) => {
   if (fs.existsSync(f)) return res.sendFile(f);
   res.status(404).type("text").send("bomb.html غير موجود");
 });
+// لعبة قمّة الهرم (مسابقات)
+app.get(["/quiz", "/qimma"], (req, res) => {
+  if (admin) admin.trackVisit();
+  const f = pageFile("quiz.html");
+  if (fs.existsSync(f)) return res.sendFile(f);
+  res.status(404).type("text").send("quiz.html غير موجود");
+});
 // نقطة إبقاء حيّة (تمنع السيرفر المجاني من النوم أثناء اللعب الطويل)
 app.get("/healthz", (req, res) => res.type("text").send("ok"));
 // حالة الألعاب المباشرة (تستعملها الصفحة الرئيسية)
-let bombApi = null;
+let bombApi = null, quizApi = null;
 app.get("/api/status", (req, res) => {
   const draw = getLiveStats();
   const bomb = bombApi ? bombApi.liveStats() : { online: 0, rooms: [] };
+  const quiz = quizApi ? quizApi.liveStats() : { online: 0, rooms: [] };
   res.json({
     draw: { online: draw.online, rooms: draw.rooms.length },
     bomb: { online: bomb.online, rooms: bomb.rooms.length },
-    total: draw.online + bomb.online
+    quiz: { online: quiz.online, rooms: quiz.rooms.length },
+    total: draw.online + bomb.online + quiz.online
   });
 });
 if (fs.existsSync(path.join(pubDir, "index.html"))) app.use(express.static(pubDir));
@@ -1027,6 +1037,17 @@ createStore()
       console.log("💣 لعبة القنبلة جاهزة على /bomb");
     } catch (e) {
       console.error("bomb setup:", e.message);
+    }
+    // 🏆 تفعيل لعبة قمّة الهرم (namespace مستقل /quiz)
+    try {
+      const qbank = require("./qbank");
+      const saved = await store.getKV("quizBank");
+      if (saved) { qbank.setExtra(saved.extra || {}); qbank.setRemoved(saved.removed || []); }
+      require("./qadmin").setupQuestionAdmin(app, { store });
+      quizApi = setupQuiz(io, { store, hashPass, publicStats, getAdmin: () => admin });
+      console.log(`🏆 قمّة الهرم جاهزة على /quiz — ${qbank.countAll()} سؤال`);
+    } catch (e) {
+      console.error("quiz setup:", e.message);
     }
     server.listen(PORT, () => {
       console.log(`🎨 لعبة ارسمها! تعمل على المنفذ ${PORT}`);
