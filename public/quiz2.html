@@ -194,20 +194,86 @@ input,select,textarea{font-family:inherit}
 .ans .flash{position:absolute;inset:0;background:linear-gradient(105deg,transparent 32%,rgba(255,255,255,.75),transparent 68%);transform:translateX(-135%)}
 .ans.win .flash{animation:swipe .8s .08s var(--ease)}
 
-/* التصويت */
-#votes{display:grid;gap:10px;margin-top:auto}
-@media(min-width:620px){#votes{grid-template-columns:1fr 1fr}}
-.vt{position:relative;overflow:hidden;padding:17px;border-radius:17px;font-size:16px;font-weight:800;
-  background:rgba(255,255,255,.05);border:1.5px solid var(--stroke);transition:.24s var(--ease);
-  animation:ansIn .5s var(--spring) both}
-.vt:hover{transform:translateY(-3px);border-color:rgba(139,92,246,.55);background:rgba(139,92,246,.1)}
-.vt.on{border-color:var(--violet);background:rgba(139,92,246,.16);box-shadow:0 0 30px -8px rgba(139,92,246,.8)}
-.vt .fill{position:absolute;inset:0;background:linear-gradient(90deg,rgba(139,92,246,.30),rgba(34,230,255,.16));
-  transform-origin:right;transform:scaleX(0);transition:transform .55s var(--ease)}
-.vt .n{position:absolute;inset-inline-start:13px;top:50%;transform:translateY(-50%);min-width:24px;height:24px;
-  border-radius:99px;background:var(--violet);font-size:12px;font-weight:900;display:none;align-items:center;justify-content:center}
-.vt .n.show{display:flex}
-.vt span.t{position:relative}
+/* ══════ التصويت: بوابات الفئات ══════ */
+#voteHead{text-align:center;font-size:clamp(16px,3.6vw,23px);font-weight:900;margin-bottom:2px;letter-spacing:-.3px;
+  background:linear-gradient(100deg,#fff,var(--cyan) 50%,#fff);-webkit-background-clip:text;background-clip:text;color:transparent;
+  background-size:200% auto;animation:sheen 5s linear infinite}
+#votes{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(6px,1.4vw,16px);
+  align-items:end;flex:1;min-height:0;padding:6px 2px 2px}
+@media(max-width:640px){#votes{grid-template-columns:repeat(2,1fr);gap:10px;align-items:center}}
+
+.door{position:relative;display:flex;flex-direction:column;align-items:center;gap:7px;
+  background:none;padding:0;transition:transform .3s var(--spring);
+  animation:doorIn .6s var(--spring) both}
+.door:nth-child(1){animation-delay:.05s}.door:nth-child(2){animation-delay:.13s}
+.door:nth-child(3){animation-delay:.21s}.door:nth-child(4){animation-delay:.29s}
+@keyframes doorIn{from{opacity:0;transform:translateY(34px) scale(.9)}to{opacity:1;transform:none}}
+.door:hover{transform:translateY(-8px) scale(1.03)}
+.door:active{transform:translateY(-2px) scale(.99)}
+
+.dHalo{position:absolute;left:50%;top:44%;width:118%;height:70%;transform:translate(-50%,-50%);
+  border-radius:50%;background:radial-gradient(ellipse,var(--c1),transparent 66%);
+  filter:blur(26px);opacity:.32;transition:opacity .35s;pointer-events:none;z-index:0}
+.door:hover .dHalo{opacity:.7}
+.door.on .dHalo{opacity:.95;animation:haloPulse 1.9s ease-in-out infinite}
+@keyframes haloPulse{0%,100%{opacity:.75;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.09)}}
+
+/* القوس */
+.dArch{position:relative;z-index:1;width:100%;aspect-ratio:1/1.34;
+  border-radius:50% 50% 12px 12px / 40% 40% 8px 8px;
+  background:linear-gradient(165deg,var(--c1),var(--c2) 55%,var(--c3));
+  padding:clamp(6px,1.1vw,11px);
+  box-shadow:0 16px 34px -12px rgba(0,0,0,.85), inset 0 2px 0 rgba(255,255,255,.4), inset 0 -3px 8px rgba(0,0,0,.5);
+  transition:box-shadow .35s,filter .35s}
+.door:hover .dArch{box-shadow:0 22px 44px -12px rgba(0,0,0,.9), 0 0 40px -8px var(--c1), inset 0 2px 0 rgba(255,255,255,.5)}
+.door.on .dArch{filter:saturate(1.25) brightness(1.1);
+  box-shadow:0 0 0 3px var(--cyan), 0 0 52px -6px var(--cyan), 0 18px 36px -12px rgba(0,0,0,.9)}
+/* اللوح الداخلي الغائر */
+.dPanel{position:absolute;inset:clamp(6px,1.1vw,11px);border-radius:inherit;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 22%,rgba(255,255,255,.14),transparent 62%),
+             linear-gradient(180deg,rgba(6,10,20,.62),rgba(3,6,14,.9));
+  box-shadow:inset 0 6px 18px rgba(0,0,0,.8);
+  background-size:cover;background-position:center}
+.dPanel.hasArt{background-blend-mode:normal}
+/* خط الباب المزدوج */
+.dSeam{position:absolute;left:50%;top:22%;bottom:6%;width:1.5px;transform:translateX(-50%);
+  background:linear-gradient(180deg,transparent,rgba(255,255,255,.32),transparent);pointer-events:none}
+/* الأيقونات */
+.dIcons{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3%}
+.dIcons .big{font-size:clamp(26px,4.4vw,48px);line-height:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.75))}
+.dIcons .pair{display:flex;gap:clamp(8px,1.8vw,20px)}
+.dIcons .pair span{font-size:clamp(15px,2.5vw,27px);line-height:1;filter:drop-shadow(0 3px 8px rgba(0,0,0,.7));
+  animation:iconFloat 3.4s ease-in-out infinite}
+.dIcons .pair span:nth-child(2){animation-delay:1.1s}
+@keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+/* حجر القمة والحرف */
+.dKey{position:absolute;top:2%;left:50%;transform:translateX(-50%);z-index:3;
+  width:clamp(20px,3.2vw,32px);height:clamp(20px,3.2vw,32px);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-weight:900;
+  font-size:clamp(11px,1.7vw,16px);color:#1a1205;
+  background:linear-gradient(160deg,#ffe9a3,var(--gold) 55%,#c98f0c);
+  box-shadow:0 3px 10px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.8)}
+/* أعمدة جانبية */
+.dArch::before,.dArch::after{content:"";position:absolute;bottom:0;width:9%;height:44%;
+  background:linear-gradient(90deg,rgba(255,255,255,.22),rgba(0,0,0,.28));border-radius:3px 3px 0 0;z-index:2}
+.dArch::before{left:-3%}.dArch::after{right:-3%}
+
+.dName{font-size:clamp(12px,1.9vw,17px);font-weight:900;text-align:center;line-height:1.3;
+  text-shadow:0 2px 10px rgba(0,0,0,.85);z-index:1}
+.dVotes{position:relative;z-index:1;font-size:11.5px;font-weight:800;padding:3px 12px;border-radius:99px;
+  background:rgba(255,255,255,.08);border:1px solid var(--stroke);color:var(--dim);
+  display:flex;align-items:center;gap:5px;transition:.3s}
+.door.on .dVotes{background:rgba(34,230,255,.16);border-color:rgba(34,230,255,.5);color:var(--cyan)}
+.dVotes b{color:#fff;font-variant-numeric:tabular-nums}
+/* شريط تعبئة الأصوات */
+.dBar{position:absolute;inset:0;border-radius:99px;background:linear-gradient(90deg,var(--c1),var(--cyan));
+  opacity:.28;transform-origin:right;transform:scaleX(0);transition:transform .6s var(--ease)}
+
+/* أضواء عائمة بين الأبواب */
+#voteOrbs{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(1px);animation:orbFloat linear infinite}
+@keyframes orbFloat{from{transform:translateY(20px);opacity:0}
+  15%{opacity:.85}85%{opacity:.85}to{transform:translateY(-120px);opacity:0}}
 
 /* الهجوم */
 #atkTargets{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:9px;margin-bottom:12px}
@@ -360,14 +426,31 @@ input,select,textarea{font-family:inherit}
 /* left/top صريحان ضروريان: في RTL يضع المتصفح العنصر المطلق بلا إزاحة
    عند الحافة اليمنى، فيخرج translate3d بالقنابل خارج الشاشة.
    الحركة على .bomb والانفجار على .bi حتى لا يمسح scale موضع translate */
-.bomb{position:absolute;left:0;top:0;width:42px;height:42px;cursor:pointer;will-change:transform}
-.bomb .bi{display:block;width:100%;height:100%;font-size:30px;line-height:42px;text-align:center;
-  filter:drop-shadow(0 4px 10px rgba(0,0,0,.65));animation:fuse .55s infinite alternate}
-@keyframes fuse{from{filter:drop-shadow(0 4px 10px rgba(0,0,0,.65)) brightness(1)}
-  to{filter:drop-shadow(0 0 17px rgba(255,90,50,.95)) drop-shadow(0 4px 10px rgba(0,0,0,.65)) brightness(1.35)}}
+.bomb{position:absolute;left:0;top:0;width:38px;height:38px;cursor:pointer;will-change:transform}
+/* كرة مرسومة بالكامل — دائرية تماماً (الإيموجي كان يظهر ممطوطاً) */
+.bomb .bi{position:relative;display:block;width:100%;height:100%;border-radius:50%;
+  background:
+    radial-gradient(circle at 33% 27%, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 26%),
+    radial-gradient(circle at 36% 30%, #6a7480 0%, #333a44 34%, #171b22 68%, #0a0d12 100%);
+  box-shadow:inset -4px -5px 10px rgba(0,0,0,.85), inset 3px 3px 8px rgba(255,255,255,.16),
+             0 6px 14px rgba(0,0,0,.6);
+  animation:fuseGlow .55s infinite alternate}
+/* الفتيل */
+.bomb .bi::before{content:"";position:absolute;top:-10px;left:58%;width:3px;height:12px;border-radius:2px;
+  background:linear-gradient(180deg,#d8b23f,#6d5312);transform:rotate(20deg);transform-origin:bottom}
+/* الشرارة */
+.bomb .bi::after{content:"";position:absolute;top:-17px;left:64%;width:10px;height:10px;border-radius:50%;
+  background:radial-gradient(circle,#fff 0%,#ffe07a 30%,#ff8a1a 58%,rgba(255,120,20,0) 74%);
+  animation:spark .26s infinite alternate}
+@keyframes fuseGlow{from{box-shadow:inset -4px -5px 10px rgba(0,0,0,.85), inset 3px 3px 8px rgba(255,255,255,.16), 0 6px 14px rgba(0,0,0,.6)}
+  to{box-shadow:inset -4px -5px 10px rgba(0,0,0,.85), inset 3px 3px 8px rgba(255,255,255,.16), 0 6px 14px rgba(0,0,0,.6), 0 0 18px rgba(255,110,40,.8)}}
+@keyframes spark{from{transform:scale(.75);opacity:.85}to{transform:scale(1.35);opacity:1}}
 .bomb.boom{pointer-events:none}
 .bomb.boom .bi{animation:boomOut .42s forwards}
-@keyframes boomOut{0%{transform:scale(1)}28%{transform:scale(2.5);filter:brightness(4)}100%{transform:scale(3.6);opacity:0}}
+.bomb.boom .bi::before,.bomb.boom .bi::after{display:none}
+@keyframes boomOut{0%{transform:scale(1);background:radial-gradient(circle,#fff,#ff8a1a 60%,#c02a00)}
+  28%{transform:scale(2.6);filter:brightness(3.2);background:radial-gradient(circle,#fff,#ffd54f 45%,#ff5a1a 75%)}
+  100%{transform:scale(3.8);opacity:0}}
 
 .fxPenalty{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:33;
   padding:12px 22px;border-radius:16px;font-size:17px;font-weight:900;color:#fff;
@@ -537,8 +620,8 @@ input,select,textarea{font-family:inherit}
     </div>
 
     <div class="scene" id="sVote">
-      <div id="clockHost"></div>
-      <div class="eyebrow">صوّتوا على الفئة</div>
+      <div id="voteOrbs"></div>
+      <div id="voteHead">جولة الاختيار: حدّدوا المسار القادم!</div>
       <div id="votes"></div>
     </div>
 
@@ -825,11 +908,13 @@ socket.on("connect",()=>{if(ROOM&&TOKEN)socket.emit("rejoin",{roomId:ROOM,token:
 
 socket.on("voteResult",d=>{
   const tot=Math.max(1,Object.values(d.tally).reduce((a,b)=>a+b,0));
-  document.querySelectorAll(".vt").forEach(v=>{
+  document.querySelectorAll(".door").forEach(v=>{
     const n=d.tally[v.dataset.c]||0;
-    v.querySelector(".fill").style.transform="scaleX("+(n/tot)+")";
-    const nn=v.querySelector(".n");if(n){nn.classList.add("show");nn.textContent=n;}
-    if(v.dataset.c===d.cat)v.classList.add("on");
+    const bar=v.querySelector(".dBar"),num=v.querySelector(".dVotes b");
+    if(bar)bar.style.transform="scaleX("+(n/tot)+")";
+    if(num)num.textContent=n;
+    if(v.dataset.c===d.cat){v.classList.add("on");}
+    else{v.style.opacity=".45";v.style.filter="grayscale(.55)";}
   });
 });
 
@@ -950,17 +1035,87 @@ function countUp(el,from,to){
   })(t0);
 }
 
+/* ══ هويات بوابات الفئات ══
+   c1/c2/c3 = تدرّج إطار الباب · big + pair = الأيقونات
+   يمكن استبدال الفن بصور حقيقية: ضع ملفاً باسم الفئة في /doors/  */
+const DOORS={
+  "تاريخ":            {c:["#c9b28a","#8d7350","#5c4a31"],big:"🏛️",pair:["⚔️","📜"]},
+  "جغرافيا":          {c:["#5fb4e6","#2b7bb0","#164a6e"],big:"🗺️",pair:["🏔️","🌊"]},
+  "علوم":             {c:["#6fd18a","#2f9e5c","#175f36"],big:"🧬",pair:["🌋","⚛️"]},
+  "رياضة":            {c:["#d7dde6","#98a4b4","#5c6675"],big:"🎮",pair:["⚽","🎾"]},
+  "دين":              {c:["#e6d08a","#b8912f","#6e5416"],big:"🕌",pair:["📿","🌙"]},
+  "أدب ولغة":         {c:["#e4c9a3","#b0865a","#6d4f31"],big:"📖",pair:["🖋️","📝"]},
+  "تقنية":            {c:["#7fe4ff","#1f8fb5","#0d4a63"],big:"💻",pair:["🤖","📡"]},
+  "أفلام ومسلسلات":   {c:["#c9a2ff","#7c4dff","#3f2380"],big:"🎬",pair:["🍿","🎞️"]},
+  "طعام":             {c:["#ffc48a","#e0762f","#8a3f10"],big:"🍽️",pair:["🍎","🍯"]},
+  "حيوانات":          {c:["#d2b48c","#8a6b3d","#4e3c1f"],big:"🦁",pair:["🐘","🦅"]},
+  "السعودية والخليج": {c:["#8fdba8","#2e9e5b","#155f33"],big:"🕋",pair:["🌴","🐪"]},
+  "عام":              {c:["#b9a8ff","#6d4bd6","#33207a"],big:"❓",pair:["✨","🎲"]}
+};
+function doorArt(cat){
+  if(DOORS[cat])return DOORS[cat];
+  const h=hash(cat),a=h%360;
+  return {c:[`hsl(${a} 55% 70%)`,`hsl(${a} 55% 45%)`,`hsl(${a} 60% 24%)`],big:"❓",pair:["✨","🎲"]};
+}
+const KEYS=["أ","ب","ج","د","هـ","و"];
+
 function rVote(fresh){
   scene("sVote");mountClock("sVote");
   if(!fresh)return;
+  spawnOrbs();
   const v=$("votes");v.innerHTML="";
-  (ST.catOptions||[]).forEach(c=>{
-    const b=document.createElement("button");b.className="vt";b.dataset.c=c;
-    b.innerHTML=`<span class="fill"></span><span class="n"></span><span class="t">${esc(c)}</span>`;
-    b.onclick=()=>{document.querySelectorAll(".vt").forEach(x=>x.classList.remove("on"));
-      b.classList.add("on");socket.emit("vote",c);sTap();};
+  (ST.catOptions||[]).forEach((c,i)=>{
+    const art=doorArt(c);
+    const b=document.createElement("button");
+    b.className="door";b.dataset.c=c;
+    b.style.setProperty("--c1",art.c[0]);
+    b.style.setProperty("--c2",art.c[1]);
+    b.style.setProperty("--c3",art.c[2]);
+    b.innerHTML=
+      `<div class="dHalo"></div>
+       <div class="dArch">
+         <div class="dPanel"></div>
+         <div class="dSeam"></div>
+         <div class="dIcons">
+           <span class="big">${art.big}</span>
+           <span class="pair"><span>${art.pair[0]}</span><span>${art.pair[1]}</span></span>
+         </div>
+         <div class="dKey">${KEYS[i]||"?"}</div>
+       </div>
+       <div class="dName">${esc(c)}</div>
+       <div class="dVotes"><span class="dBar"></span>⏳ تصويت: <b>0</b></div>`;
+    // إن وُجدت صورة حقيقية للفئة استعملها بدل الفن المرسوم
+    const img=new Image();
+    img.onload=()=>{
+      const p=b.querySelector(".dPanel");
+      p.style.backgroundImage=`url("${img.src}")`;
+      p.classList.add("hasArt");
+      b.querySelector(".dIcons").style.display="none";
+      b.querySelector(".dSeam").style.display="none";
+    };
+    img.src="/doors/"+encodeURIComponent(c)+".webp";
+    b.onclick=()=>{
+      document.querySelectorAll(".door").forEach(x=>x.classList.remove("on"));
+      b.classList.add("on");socket.emit("vote",c);sTap();
+      tone(880,.09,"triangle",.05,1320);
+    };
     v.appendChild(b);
   });
+}
+function spawnOrbs(){
+  const w=$("voteOrbs");if(!w)return;
+  w.innerHTML="";
+  if(RM)return;
+  const cols=["#22e6ff","#8b5cf6","#ffcb2e","#39e08a","#ff2f8e"];
+  for(let i=0;i<16;i++){
+    const o=document.createElement("i");o.className="orb";
+    const s=4+Math.random()*11;
+    o.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${40+Math.random()*55}%;`+
+      `background:${cols[(Math.random()*cols.length)|0]};opacity:0;`+
+      `animation-duration:${5+Math.random()*6}s;animation-delay:${Math.random()*5}s;`+
+      `box-shadow:0 0 ${s*2}px currentColor`;
+    w.appendChild(o);
+  }
 }
 
 function rAtk(fresh){
@@ -1547,13 +1702,13 @@ const FX={
       `width:${g.w}px;height:${g.h}px;z-index:27;pointer-events:none;overflow:hidden;border-radius:18px`;
     host.appendChild(wrap);
     this.el=wrap;
-    const W=g.w,H=g.h,SZ=42;
+    const W=g.w,H=g.h,SZ=38;
     const MX=Math.max(0,W-SZ),MY=Math.max(0,H-SZ);
-    const N=Math.max(3,Math.min(6,Math.round(W/170)));
+    const N=Math.max(5,Math.min(11,Math.round(W/115)));
     const bombs=[];
     for(let i=0;i<N;i++){
       const d=document.createElement("div");
-      d.className="bomb";d.innerHTML='<i class="bi">💣</i>';
+      d.className="bomb";d.innerHTML='<i class="bi"></i>';
       d.style.pointerEvents="auto";
       wrap.appendChild(d);
       const b={el:d,
