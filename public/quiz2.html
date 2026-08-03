@@ -626,6 +626,10 @@ input,select,textarea{font-family:inherit}
         <div class="tgl"><span>القوى الهجومية<small>من السؤال الرابع</small></span><label class="sw"><input type="checkbox" id="sPw"><i></i></label></div>
         <div class="f"><label>عدد الاستخدامات</label><div class="vv"><input type="range" id="sPU" min="0" max="9"><output id="oPU"></output></div></div>
         <div class="f"><label>القوى المسموحة</label><div class="pills" id="pwPills"></div></div>
+        <div class="f"><label>معاينة الفخاخ</label>
+          <div class="h">جرّب كل فخ على شاشتك قبل اللعب — اضغط لتجربته</div>
+          <div class="pills" id="fxPreview"></div>
+        </div>
       </div>
       <div class="cp" data-p="y">
         <div class="tgl"><span>النهائي: الهرم<small>أول من يصل القمة يفوز</small></span><label class="sw"><input type="checkbox" id="cPyOn"><i></i></label></div>
@@ -1648,6 +1652,33 @@ function buildPills(d){
   const pp=$("pwPills");pp.innerHTML="";
   (d.powers||[]).forEach(p=>{const b=document.createElement("button");b.className="pill on";b.textContent=NM[p]||p;b.dataset.p=p;
     b.onclick=()=>b.classList.toggle("on");pp.appendChild(b);});
+  // معاينة الفخاخ — يغلق الإعدادات ويشغّل الفخ على شاشة الإجابات الحالية
+  const fp=$("fxPreview");fp.innerHTML="";
+  (d.powers||[]).forEach(p=>{
+    const b=document.createElement("button");b.className="pill";b.textContent=NM[p]||p;
+    b.onclick=()=>{
+      $("cfg").classList.remove("on");
+      if(!FX.answersBox()){demoQuestion();}
+      setTimeout(()=>FX.start(p,"معاينة",9000),260);
+    };
+    fp.appendChild(b);
+  });
+}
+// مشهد سؤال تجريبي للمعاينة عندما لا تكون هناك مباراة جارية
+function demoQuestion(){
+  document.querySelectorAll(".scene").forEach(s=>s.classList.remove("on"));
+  $("sQ").classList.add("on");
+  $("qMeta").innerHTML='<span class="tag">معاينة</span>';
+  $("qText").textContent="ما عاصمة اليابان؟";
+  const K=["أ","ب","ج","د"],O=["طوكيو","سيول","بكين","بانكوك"];
+  const box=$("answers");box.innerHTML="";
+  O.forEach((t,i)=>{
+    const b=document.createElement("button");b.className="ans";
+    b.innerHTML=`<span class="flash"></span><span class="key">${K[i]}</span>${t}`;
+    box.appendChild(b);
+  });
+  clearTimeout(window.__demoT);
+  window.__demoT=setTimeout(()=>{if(ST)render();},11000);
 }
 $("cfgOpen").onclick=()=>{if(ST)fillCfg(ST.settings);$("cfg").classList.add("on");};
 $("cfgX").onclick=()=>$("cfg").classList.remove("on");
