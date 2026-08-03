@@ -784,7 +784,10 @@ function setupQuiz(io, deps) {
       if (!room.settings.allowedPowers.includes(power)) return;
       const target = room.players.find(p => p.id === to);
       if (!target || target.id === player.id || target.spectator) return;
-      if (player.lastTarget === to) return;   // لا تضرب نفس الشخص مرتين متتاليتين
+      // لا تضرب نفس الشخص مرتين متتاليتين — إلا إذا لم يكن هناك خصم آخر أصلاً
+      // (في مباراة لاعبَين تعطّل هذه القاعدة القوى نهائياً بعد أول استخدام)
+      const others = alive(room).filter(p => p.id !== player.id).length;
+      if (others > 1 && player.lastTarget === to) return;
       if (player.pendingAttack) return;
       player.pendingAttack = { to, power };
       player.lastTarget = to;
