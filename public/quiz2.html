@@ -1279,6 +1279,14 @@ const FX={
   },
   buttons(){ const b=this.answersBox(); return b?[...b.querySelectorAll(".ans")]:[]; },
 
+  /* قياس بالتخطيط لا بالشاشة — getBoundingClientRect يتأثر بأنميشن
+     دخول المشهد (scale) فتخرج الطبقة أضيق من الإجابات */
+  geom(box,host){
+    let x=0,y=0,n=box;
+    while(n&&n!==host){x+=n.offsetLeft;y+=n.offsetTop;n=n.offsetParent;}
+    return {x,y,w:box.offsetWidth,h:box.offsetHeight};
+  },
+
   mount(){
     const box=this.answersBox();
     if(!box)return null;
@@ -1286,11 +1294,11 @@ const FX={
     const host=box.parentElement;
     if(getComputedStyle(host).position==="static")host.style.position="relative";
     this.host=host;
-    const r=box.getBoundingClientRect(),hr=host.getBoundingClientRect();
+    const g=this.geom(box,host);
     const el=document.createElement("div");
     el.className="fxLayer";
-    el.style.cssText=`position:absolute;left:${r.left-hr.left}px;top:${r.top-hr.top}px;`+
-      `width:${r.width}px;height:${r.height}px;z-index:26;border-radius:18px;overflow:hidden;touch-action:none`;
+    el.style.cssText=`position:absolute;left:${g.x}px;top:${g.y}px;`+
+      `width:${g.w}px;height:${g.h}px;z-index:26;border-radius:18px;overflow:hidden;touch-action:none`;
     host.appendChild(el);
     this.el=el;
     return el;
@@ -1326,7 +1334,8 @@ const FX={
     clearTimeout(this.timer);cancelAnimationFrame(this.raf);
     this.timer=null;this.active=null;this.key=null;
     this.lockAnswers(false);
-    if(this.origText){this.origText.forEach(([b,t])=>{if(b.isConnected)b.lastChild.textContent=t;});this.origText=null;}
+    // نستعيد عقدة النص نفسها (لا b.lastChild — فقد يكون المخلوق المضاف)
+    if(this.origText){this.origText.forEach(([node,t])=>{try{if(node&&node.isConnected)node.textContent=t;}catch(e){}});this.origText=null;}
     if(this.el){this.el.remove();this.el=null;}
     document.querySelectorAll(".fxLayer,.bombWrap").forEach(e=>e.remove());
   },
@@ -1524,14 +1533,14 @@ const FX={
     const host=box.parentElement;
     if(getComputedStyle(host).position==="static")host.style.position="relative";
     this.host=host;
-    const r=box.getBoundingClientRect(),hr=host.getBoundingClientRect();
+    const g=this.geom(box,host);
     const wrap=document.createElement("div");
     wrap.className="bombWrap";
-    wrap.style.cssText=`position:absolute;left:${r.left-hr.left}px;top:${r.top-hr.top}px;`+
-      `width:${r.width}px;height:${r.height}px;z-index:27;pointer-events:none;overflow:hidden;border-radius:18px`;
+    wrap.style.cssText=`position:absolute;left:${g.x}px;top:${g.y}px;`+
+      `width:${g.w}px;height:${g.h}px;z-index:27;pointer-events:none;overflow:hidden;border-radius:18px`;
     host.appendChild(wrap);
     this.el=wrap;
-    const W=r.width,H=r.height;
+    const W=g.w,H=g.h;
     const N=Math.max(3,Math.min(6,Math.round(W/150)));
     const bombs=[];
     for(let i=0;i<N;i++){
@@ -1589,7 +1598,7 @@ const FX={
     btns.forEach(b=>{
       const node=b.lastChild;               // العقدة النصية للإجابة
       const t=node.textContent;
-      this.origText.push([b,t]);
+      this.origText.push([node,t]);
       const chars=[...t];
       const idx=chars.map((c,i)=>i).filter(i=>chars[i].trim());
       // 30٪ من الحروف تُستبدل
@@ -1599,14 +1608,13 @@ const FX={
         if(pick!==undefined)chars[pick]="ـ";
       }
       node.textContent=chars.join("");
-      // مخلوق يزحف فوق الزر
-      const r=b.getBoundingClientRect(),hr=host.getBoundingClientRect();
+      // مخلوق يزحف داخل الزر نفسه (لا يتأثر بقياسات المشهد)
       const m=document.createElement("div");
       m.className="nib";m.textContent="👾";
-      m.style.top=(r.top-hr.top+r.height/2-13)+"px";
-      m.style.left=(r.left-hr.left)+"px";
-      m.style.setProperty("--tr",(r.width-26)+"px");
-      host.appendChild(m);
+      m.style.top="calc(50% - 13px)";
+      m.style.left="4px";
+      m.style.setProperty("--tr",(b.offsetWidth-34)+"px");
+      b.appendChild(m);
       setTimeout(()=>m.remove(),2400);
     });
     sChomp();setTimeout(sChomp,180);setTimeout(sChomp,360);
