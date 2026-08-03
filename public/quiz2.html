@@ -660,6 +660,7 @@ const RM=matchMedia("(prefers-reduced-motion:reduce)").matches;
 
 let ME=null,ROOM=null,ST=null,OFF=0,TOKEN=null,HELLO=null;
 let mode="login",acct=null,raf=0,picked=-1,phaseKey="";
+let previewMode=false;   // أثناء معاينة الفخاخ: لا نسمح لتحديثات الخادم بتبديل المشهد
 let lkSel=null,lkMap=[null,null,null,null],stIdx=0,stAns=[];
 let atkT=null,atkP=null,atkSent=false,scoreShown={};
 
@@ -872,6 +873,7 @@ function render(){
   $("cfgOpen").style.display=host?"":"none";
   $("stgChip").textContent=ST.state==="playing"?`${ST.stage}/${ST.totalStages}`:"";
   renderRoster();
+  if(previewMode)return;   // معاينة فخ جارية — لا نبدّل المشهد
 
   const key=ST.phase+"|"+ST.stage+"|"+(ST.pyramidQ||0);
   const fresh=key!==phaseKey;
@@ -1674,6 +1676,7 @@ function buildPills(d){
 }
 // مشهد سؤال تجريبي للمعاينة عندما لا تكون هناك مباراة جارية
 function demoQuestion(){
+  previewMode=true;
   document.querySelectorAll(".scene").forEach(s=>s.classList.remove("on"));
   $("sQ").classList.add("on");
   $("qMeta").innerHTML='<span class="tag">معاينة</span>';
@@ -1686,7 +1689,7 @@ function demoQuestion(){
     box.appendChild(b);
   });
   clearTimeout(window.__demoT);
-  window.__demoT=setTimeout(()=>{if(ST)render();},11000);
+  window.__demoT=setTimeout(()=>{previewMode=false;FX.stop();if(ST)render();},11000);
 }
 $("cfgOpen").onclick=()=>{if(ST)fillCfg(ST.settings);$("cfg").classList.add("on");};
 $("cfgX").onclick=()=>$("cfg").classList.remove("on");
