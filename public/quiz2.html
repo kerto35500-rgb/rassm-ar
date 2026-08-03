@@ -357,13 +357,17 @@ input,select,textarea{font-family:inherit}
 @keyframes bannerIn{from{opacity:0;transform:translateX(-50%) translateY(-18px) scale(.85)}to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
 @keyframes bannerOut{to{opacity:0;transform:translateX(-50%) translateY(-14px) scale(.92)}}
 
-.bomb{position:absolute;width:42px;height:42px;font-size:30px;line-height:42px;text-align:center;
-  cursor:pointer;will-change:transform;filter:drop-shadow(0 4px 10px rgba(0,0,0,.65));
-  animation:fuse .55s infinite alternate}
-@keyframes fuse{from{filter:drop-shadow(0 4px 10px rgba(0,0,0,.65))}
-  to{filter:drop-shadow(0 0 16px rgba(255,90,50,.95)) drop-shadow(0 4px 10px rgba(0,0,0,.65))}}
-.bomb.boom{animation:boomOut .4s forwards;pointer-events:none}
-@keyframes boomOut{0%{transform:scale(1)}30%{transform:scale(2.4);filter:brightness(3)}100%{transform:scale(3.4);opacity:0}}
+/* left/top صريحان ضروريان: في RTL يضع المتصفح العنصر المطلق بلا إزاحة
+   عند الحافة اليمنى، فيخرج translate3d بالقنابل خارج الشاشة.
+   الحركة على .bomb والانفجار على .bi حتى لا يمسح scale موضع translate */
+.bomb{position:absolute;left:0;top:0;width:42px;height:42px;cursor:pointer;will-change:transform}
+.bomb .bi{display:block;width:100%;height:100%;font-size:30px;line-height:42px;text-align:center;
+  filter:drop-shadow(0 4px 10px rgba(0,0,0,.65));animation:fuse .55s infinite alternate}
+@keyframes fuse{from{filter:drop-shadow(0 4px 10px rgba(0,0,0,.65)) brightness(1)}
+  to{filter:drop-shadow(0 0 17px rgba(255,90,50,.95)) drop-shadow(0 4px 10px rgba(0,0,0,.65)) brightness(1.35)}}
+.bomb.boom{pointer-events:none}
+.bomb.boom .bi{animation:boomOut .42s forwards}
+@keyframes boomOut{0%{transform:scale(1)}28%{transform:scale(2.5);filter:brightness(4)}100%{transform:scale(3.6);opacity:0}}
 
 .fxPenalty{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:33;
   padding:12px 22px;border-radius:16px;font-size:17px;font-weight:900;color:#fff;
@@ -1538,33 +1542,39 @@ const FX={
     const g=this.geom(box,host);
     const wrap=document.createElement("div");
     wrap.className="bombWrap";
-    wrap.style.cssText=`position:absolute;left:${g.x}px;top:${g.y}px;`+
+    // direction:ltr يمنع أي التباس في مواضع الأبناء المطلقة داخل صفحة RTL
+    wrap.style.cssText=`position:absolute;left:${g.x}px;top:${g.y}px;direction:ltr;`+
       `width:${g.w}px;height:${g.h}px;z-index:27;pointer-events:none;overflow:hidden;border-radius:18px`;
     host.appendChild(wrap);
     this.el=wrap;
-    const W=g.w,H=g.h;
-    const N=Math.max(3,Math.min(6,Math.round(W/150)));
+    const W=g.w,H=g.h,SZ=42;
+    const MX=Math.max(0,W-SZ),MY=Math.max(0,H-SZ);
+    const N=Math.max(3,Math.min(6,Math.round(W/170)));
     const bombs=[];
     for(let i=0;i<N;i++){
       const d=document.createElement("div");
-      d.className="bomb";d.textContent="💣";
+      d.className="bomb";d.innerHTML='<i class="bi">💣</i>';
       d.style.pointerEvents="auto";
       wrap.appendChild(d);
-      bombs.push({el:d,x:Math.random()*(W-46),y:Math.random()*(H-46),
-        vx:(Math.random()<.5?-1:1)*(1.4+Math.random()*1.8),
-        vy:(Math.random()<.5?-1:1)*(1.2+Math.random()*1.6),dead:false});
-      d.onpointerdown=ev=>{ev.preventDefault();ev.stopPropagation();this.blowUp(bombs[i],wrap);};
+      const b={el:d,
+        x:Math.random()*MX, y:Math.random()*MY,
+        vx:(Math.random()<.5?-1:1)*(1.5+Math.random()*1.9),
+        vy:(Math.random()<.5?-1:1)*(1.3+Math.random()*1.7),
+        r:Math.random()*360, vr:(Math.random()-.5)*4, dead:false};
+      b.el.style.transform=`translate3d(${b.x}px,${b.y}px,0)`;
+      bombs.push(b);
+      d.onpointerdown=ev=>{ev.preventDefault();ev.stopPropagation();this.blowUp(b,wrap);};
     }
     const self=this;
     (function loop(){
       bombs.forEach(b=>{
         if(b.dead)return;
-        b.x+=b.vx;b.y+=b.vy;
-        if(b.x<=0){b.x=0;b.vx*=-1;}
-        if(b.x>=W-42){b.x=W-42;b.vx*=-1;}
-        if(b.y<=0){b.y=0;b.vy*=-1;}
-        if(b.y>=H-42){b.y=H-42;b.vy*=-1;}
-        b.el.style.transform=`translate3d(${b.x}px,${b.y}px,0)`;
+        b.x+=b.vx;b.y+=b.vy;b.r+=b.vr;
+        if(b.x<=0){b.x=0;b.vx=Math.abs(b.vx);}
+        else if(b.x>=MX){b.x=MX;b.vx=-Math.abs(b.vx);}
+        if(b.y<=0){b.y=0;b.vy=Math.abs(b.vy);}
+        else if(b.y>=MY){b.y=MY;b.vy=-Math.abs(b.vy);}
+        b.el.style.transform=`translate3d(${b.x}px,${b.y}px,0) rotate(${b.r}deg)`;
       });
       self.raf=requestAnimationFrame(loop);
     })();
