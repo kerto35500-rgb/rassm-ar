@@ -20,10 +20,10 @@ const PY_MAX_Q = 24;          // سقف أسئلة الهرم
 // الحدود الدنيا للمؤقتات (تُخفَّض في وضع الاختبار فقط)
 const MIN_Q = FAST ? 1 : 8, MIN_V = FAST ? 1 : 4, MIN_A = FAST ? 1 : 3, MIN_P = FAST ? 1 : 4;
 
-const POWERS = ["freeze", "gloop", "smoke", "shuffle", "hide"];
+const POWERS = ["freeze", "gloop", "bombs", "nibble", "shuffle"];
 const POWER_AR = {
-  freeze: "تجميد ❄️", gloop: "غراء 🟢", smoke: "دخان 💨",
-  shuffle: "خلط 🔀", hide: "إخفاء 🙈"
+  freeze: "تجميد ❄️", gloop: "وحل 🟢", bombs: "قنابل 💣",
+  nibble: "أكلة الحروف 👾", shuffle: "خلط 🔀"
 };
 
 const COLORS = ["#e5541e", "#1e88e5", "#2e9e5b", "#7c4dff", "#ffb300", "#e91e63", "#00acc1", "#8d6e63"];
