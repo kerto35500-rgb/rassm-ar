@@ -198,9 +198,12 @@ input,select,textarea{font-family:inherit}
 #voteHead{text-align:center;font-size:clamp(16px,3.6vw,23px);font-weight:900;margin-bottom:2px;letter-spacing:-.3px;
   background:linear-gradient(100deg,#fff,var(--cyan) 50%,#fff);-webkit-background-clip:text;background-clip:text;color:transparent;
   background-size:200% auto;animation:sheen 5s linear infinite}
-#votes{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(6px,1.4vw,16px);
-  align-items:end;flex:1;min-height:0;padding:6px 2px 2px}
-@media(max-width:640px){#votes{grid-template-columns:repeat(2,1fr);gap:10px;align-items:center}}
+#votes{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(8px,1.6vw,20px);
+  align-items:center;justify-items:center;flex:1;min-height:0;padding:6px 2px 2px;
+  width:100%;max-width:880px;margin:0 auto}
+#votes>*{width:100%;max-width:190px}
+@media(max-width:640px){#votes{grid-template-columns:repeat(2,1fr);gap:12px;max-width:400px}
+  #votes>*{max-width:165px}}
 
 .door{position:relative;display:flex;flex-direction:column;align-items:center;gap:7px;
   background:none;padding:0;transition:transform .3s var(--spring);
@@ -244,12 +247,17 @@ input,select,textarea{font-family:inherit}
 .dSeam{position:absolute;left:50%;top:20%;bottom:5%;width:2px;transform:translateX(-50%);z-index:2;
   background:linear-gradient(180deg,transparent,rgba(255,255,255,.34) 22%,rgba(255,255,255,.34) 78%,transparent);
   pointer-events:none}
+/* اسم الفئة داخل البوابة في الأعلى */
+.dTitle{position:absolute;top:15%;left:6%;right:6%;z-index:3;text-align:center;
+  font-size:11cqw;font-weight:900;line-height:1.25;letter-spacing:-.2px;
+  text-shadow:0 2px 10px #000, 0 0 22px color-mix(in srgb,var(--c1) 60%, transparent);
+  pointer-events:none}
 /* الأيقونات — تتناسب مع عرض الباب نفسه */
-.dIcons{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4%;z-index:2}
-.dIcons .big{font-size:34cqw;line-height:1;filter:drop-shadow(0 6px 16px rgba(0,0,0,.85));
+.dIcons{position:absolute;inset:14% 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4%;z-index:2}
+.dIcons .big{font-size:29cqw;line-height:1;filter:drop-shadow(0 6px 16px rgba(0,0,0,.85));
   animation:iconBreathe 4.2s ease-in-out infinite}
 .dIcons .pair{display:flex;gap:12cqw;margin-top:2%}
-.dIcons .pair span{font-size:17cqw;line-height:1;filter:drop-shadow(0 4px 10px rgba(0,0,0,.8));
+.dIcons .pair span{font-size:15cqw;line-height:1;filter:drop-shadow(0 4px 10px rgba(0,0,0,.8));
   animation:iconFloat 3.4s ease-in-out infinite}
 .dIcons .pair span:nth-child(2){animation-delay:1.1s}
 @keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
@@ -956,12 +964,21 @@ socket.on("pyramidReveal",d=>{
       if(el){el.classList.remove("hop");void el.offsetWidth;el.classList.add("hop");tone(700+m.to*40,.14,"sine",.045);}}
   });
 });
+// الهجوم يصل قبل أن تُبنى شاشة السؤال — نخزّنه ونطبّقه فور جاهزية الأزرار
+let pendingFx=null;
 socket.on("attacked",d=>{
   sHit();
   $("stage").classList.remove("hit");void $("stage").offsetWidth;$("stage").classList.add("hit");
   $("hitVeil").classList.remove("on");void $("hitVeil").offsetWidth;$("hitVeil").classList.add("on");
-  runFx(d.power,d.from,d.ms||4000);
+  pendingFx=d;
+  tryFx();
 });
+function tryFx(){
+  if(!pendingFx)return;
+  if(!FX.answersBox())return;     // ننتظر ظهور شاشة السؤال
+  const d=pendingFx;pendingFx=null;
+  FX.start(d.power,d.from,d.ms||4000);
+}
 socket.on("attackAck",d=>toast("⚡ ضربت "+d.to));
 socket.on("finish",d=>showFinale(d));
 
@@ -978,11 +995,9 @@ function render(){
   const fresh=key!==phaseKey;
   if(fresh){
     phaseKey=key;picked=-1;
-    // الفخ يصل قبل حالة السؤال مباشرة — لا نقتله عند أول تغيّر مرحلة بعده
-    if(FX.active){
-      if(FX.key===null)FX.key=key;
-      else if(FX.key!==key)FX.stop();
-    }
+    // نُنهي الفخ فقط عند الانتقال لمرحلة غير التي بدأ فيها
+    if(FX.active&&FX.key&&FX.key!==key)FX.stop();
+    if(ST.phase!=="question"&&ST.phase!=="pyramid")pendingFx=null;
   }
 
   if(ST.state==="lobby"){
@@ -1090,9 +1105,9 @@ function rVote(fresh){
            <span class="big">${art.big}</span>
            <span class="pair"><span>${art.pair[0]}</span><span>${art.pair[1]}</span></span>
          </div>
+         <div class="dTitle">${esc(c)}</div>
          <div class="dKey">${KEYS[i]||"?"}</div>
        </div>
-       <div class="dName">${esc(c)}</div>
        <div class="dVotes"><span class="dBar"></span>⏳ تصويت: <b>0</b></div>`;
     // إن وُجدت صورة حقيقية للفئة استعملها بدل الفن المرسوم
     const img=new Image();
@@ -1168,10 +1183,11 @@ function rQ(fresh){
   ST.question.options.forEach((t,i)=>{
     const b=document.createElement("button");b.className="ans";
     b.innerHTML=`<span class="flash"></span><span class="key">${K[i]}</span>${esc(t)}`;
-    b.onclick=()=>{if(picked>=0)return;picked=i;b.classList.add("pick");sTap();
+    b.onclick=()=>{if(picked>=0||FX.locked)return;picked=i;b.classList.add("pick");sTap();
       ripple(b);socket.emit("answer",i);};
     box.appendChild(b);
   });
+  tryFx();   // فخ وصل قبل بناء الأزرار؟ طبّقه الآن
 }
 
 function rLink(fresh){
@@ -1285,8 +1301,9 @@ function rPy(fresh){
       ST.question.options.forEach((t,i)=>{
         const b=document.createElement("button");b.className="ans";
         b.innerHTML=`<span class="flash"></span>${esc(t)}`;
-        b.onclick=()=>{if(picked>=0)return;picked=i;b.classList.add("pick");sTap();ripple(b);socket.emit("answer",i);};
+        b.onclick=()=>{if(picked>=0||FX.locked)return;picked=i;b.classList.add("pick");sTap();ripple(b);socket.emit("answer",i);};
         o.appendChild(b);});
+      tryFx();
     }
   }else $("pyQ").classList.add("hide");
 }
@@ -1493,7 +1510,7 @@ const FX={
     this.stop();
     const NM={freeze:"تجميد ❄️",gloop:"وحل 🟢",bombs:"قنابل 💣",nibble:"أكلة الحروف 👾",shuffle:"خلط 🔀"};
     const CL={freeze:"#7fd8ff",gloop:"#5fd06a",bombs:"#ff6b4d",nibble:"#c58bff",shuffle:"#ffcb2e"};
-    this.active=power;this.key=null;
+    this.active=power;this.key=phaseKey;   // المرحلة التي بدأ فيها الفخ
     this.banner((NM[power]||power)+"  من  "+from,CL[power]);
     const fn=this["fx_"+power];
     if(fn)fn.call(this,ms);
