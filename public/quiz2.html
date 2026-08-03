@@ -1668,8 +1668,8 @@ function buildPills(d){
     const b=document.createElement("button");b.className="pill";b.textContent=NM[p]||p;
     b.onclick=()=>{
       $("cfg").classList.remove("on");
-      if(!FX.answersBox()){demoQuestion();}
-      setTimeout(()=>FX.start(p,"معاينة",9000),260);
+      demoQuestion();   // دائماً: يجدّد المشهد ومهلته حتى لا يموت أثناء الفخ
+      setTimeout(()=>FX.start(p,"معاينة",8000),300);
     };
     fp.appendChild(b);
   });
@@ -1689,7 +1689,7 @@ function demoQuestion(){
     box.appendChild(b);
   });
   clearTimeout(window.__demoT);
-  window.__demoT=setTimeout(()=>{previewMode=false;FX.stop();if(ST)render();},11000);
+  window.__demoT=setTimeout(()=>{previewMode=false;FX.stop();if(ST)render();},13000);
 }
 $("cfgOpen").onclick=()=>{if(ST)fillCfg(ST.settings);$("cfg").classList.add("on");};
 $("cfgX").onclick=()=>$("cfg").classList.remove("on");
