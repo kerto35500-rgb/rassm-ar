@@ -163,7 +163,11 @@
   #vkb .k.send { background:var(--green); color:#fff; }
 
   /* ===== النوافذ ===== */
-  .overlay { position:absolute; inset:0; background:rgba(30,58,95,.9); border-radius:12px; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; z-index:10; color:#fff; text-align:center; padding:16px; overflow-y:auto; }
+  /* التوسيط بالهوامش التلقائية بدل justify-content:center — حتى لا يُقطع
+     أعلى المحتوى ولا يستحيل الوصول إليه عند طول القائمة */
+  .overlay { position:absolute; inset:0; background:rgba(30,58,95,.9); border-radius:12px; display:none; flex-direction:column; align-items:center; justify-content:flex-start; gap:14px; z-index:10; color:#fff; text-align:center; padding:16px; overflow-y:auto; }
+  .overlay > *:first-child { margin-top:auto; }
+  .overlay > *:last-child  { margin-bottom:auto; }
   .overlay h2 { font-size:24px; }
   .wordChoices { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
   .wordChoice { padding:14px 26px; background:var(--yellow); color:#333; border:none; border-radius:12px; font-size:20px; font-weight:800; cursor:pointer; transition:transform .1s; }
@@ -344,7 +348,6 @@
           <button class="toolBtn" id="lineBtn" title="خط مستقيم"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="19" x2="19" y2="5"/><circle cx="5" cy="19" r="2.3" fill="currentColor" stroke="none"/><circle cx="19" cy="5" r="2.3" fill="currentColor" stroke="none"/></svg></button>
           <button class="toolBtn" id="undoBtn" title="تراجع"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-4"/></svg></button>
           <button class="toolBtn" id="redoBtn" title="إعادة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h4"/></svg></button>
-        </div>
         </div>
         <span class="tbSep"></span>
         <div class="tbGroup">
