@@ -66,7 +66,13 @@ input,select,textarea{font-family:inherit}
   filter:drop-shadow(0 0 26px rgba(139,92,246,.4))}
 @keyframes sheen{to{background-position:220% center}}
 .logo .sub{margin-top:9px;color:var(--dim);font-size:14.5px;letter-spacing:.3px}
-.logo .back{display:inline-block;margin-top:12px;color:var(--cyan);font-size:12.5px;text-decoration:none;opacity:.85}
+/* رابط الرجوع للبوابة — واضح وبارز */
+.logo .back{display:inline-flex;align-items:center;gap:6px;margin-top:16px;padding:9px 20px;border-radius:999px;
+  background:rgba(34,230,255,.13);border:1.5px solid rgba(34,230,255,.42);color:#dff9ff;
+  font-size:15.5px;font-weight:900;text-decoration:none;transition:.18s;
+  box-shadow:0 0 24px -10px rgba(34,230,255,.8)}
+.logo .back:hover{background:rgba(34,230,255,.24);transform:translateY(-2px)}
+.logo .back:active{transform:none}
 
 .panel{width:100%;max-width:452px;padding:24px}
 .panel h3{font-size:15px;margin-bottom:14px;color:var(--dim);font-weight:700;letter-spacing:.4px}
@@ -993,15 +999,25 @@ const sFan=()=>[523,659,784,1046,1318].forEach((f,i)=>setTimeout(()=>tone(f,.35,
   })();
 })();
 
-/* ═══ الحساب ═══ */
+/* ═══ الحساب: تسجيل الدخول يحدث في الصفحة الرئيسية فقط ═══ */
 function setMode(m){
-  mode=m;["tL","tR","tG"].forEach((id,i)=>$(id).classList.toggle("on",["login","reg","guest"][i]===m));
-  $("aPass").parentElement.style.display=m==="guest"?"none":"";
-  $("aName").placeholder=m==="guest"?"اسمك في اللعبة":"الاسم";
-  $("aBtn").textContent=m==="login"?"دخول":m==="reg"?"إنشاء الحساب":"العب كضيف";
+  mode="guest";
+  document.querySelector(".seg").classList.add("hide");
+  $("aPass").parentElement.style.display="none";
+  $("aName").placeholder="اسمك في اللعبة";
+  $("aBtn").textContent="متابعة";
   $("aErr").textContent="";
 }
-$("tL").onclick=()=>setMode("login");$("tR").onclick=()=>setMode("reg");$("tG").onclick=()=>setMode("guest");
+fetch("/api/account/me",{cache:"no-store"}).then(r=>r.json()).then(d=>{
+  if(!d||d.guest)return;
+  acct=d.stats;
+  $("aName").value=d.stats.name;
+  $("whoN").textContent=d.stats.name;
+  $("whoS").textContent=`${d.stats.wins} فوز · ${d.stats.games} مباراة · ${d.stats.totalScore} نقطة`;
+  showRooms();
+  const q=new URLSearchParams(location.search).get("r");
+  if(q&&!ROOM)doJoin(q.trim(),false);
+}).catch(()=>{});
 function showRooms(){
   $("authF").classList.add("hide");$("aBtn").classList.add("hide");
   document.querySelector(".seg").classList.add("hide");
@@ -1012,16 +1028,9 @@ $("aBtn").onclick=()=>{
   const n=$("aName").value.trim(),p=$("aPass").value;
   $("aErr").textContent="";
   if(n.length<2){$("aErr").textContent="الاسم قصير جدًا";return;}
-  if(mode==="guest"){acct=null;window._g=n;$("whoN").textContent=n;$("whoS").textContent="ضيف";showRooms();return;}
-  $("aBtn").disabled=true;
-  socket.emit(mode==="reg"?"register":"login",{name:n,pass:p},r=>{
-    $("aBtn").disabled=false;
-    if(!r||!r.ok){$("aErr").textContent=(r&&r.error)||"خطأ";return;}
-    acct=r.stats;const q=r.quiz||{games:0,wins:0,points:0};
-    $("whoN").textContent=r.stats.name;
-    $("whoS").textContent=`${q.wins} فوز · ${q.games} مباراة · ${q.points} نقطة`;
-    showRooms();
-  });
+  window._g=n;$("whoN").textContent=n;
+  $("whoS").textContent=acct?"مسجّل":"ضيف · سجّل من الصفحة الرئيسية لحفظ نتائجك";
+  showRooms();
 };
 $("outB").onclick=()=>location.reload();
 const myName=()=>(acct&&acct.name)||window._g||"لاعب";

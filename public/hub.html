@@ -19,8 +19,63 @@
       linear-gradient(165deg,#0f2740 0%,#16375a 55%,#122f4d 100%);
     background-attachment:fixed;
     display:flex;flex-direction:column;align-items:center;
-    padding:34px 16px 30px;
+    padding:62px 16px 30px;
   }
+
+  /* ===== حساب واحد لكل الألعاب (زاوية الصفحة) ===== */
+  #accBar{
+    position:fixed;top:0;inset-inline-start:0;inset-inline-end:0;z-index:40;
+    display:flex;justify-content:flex-start;padding:10px 14px;pointer-events:none;
+  }
+  #accBtn{
+    pointer-events:auto;display:inline-flex;align-items:center;gap:8px;
+    padding:8px 14px;border:1px solid rgba(255,255,255,.2);border-radius:999px;
+    background:rgba(10,28,48,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    color:#eaf1fb;font-size:13.5px;font-weight:800;cursor:pointer;
+    font-family:inherit;transition:.18s;
+  }
+  #accBtn:hover{background:rgba(10,28,48,.8);border-color:rgba(255,255,255,.35)}
+  #accBtn .who{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #accBtn .ava{
+    width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(140deg,#ffd54f,#e5541e);color:#2b1600;font-weight:900;font-size:12px;flex-shrink:0;
+  }
+  #accBtn.guest .ava{background:rgba(255,255,255,.16);color:#cfdcec}
+
+  #accPop{
+    position:fixed;top:52px;inset-inline-start:14px;z-index:41;width:290px;display:none;
+    background:#fff;border-radius:16px;padding:16px;color:var(--ink);
+    box-shadow:0 18px 46px rgba(0,0,0,.42);
+  }
+  #accPop.on{display:block;animation:popIn .2s cubic-bezier(.2,.8,.3,1)}
+  @keyframes popIn{from{opacity:0;transform:translateY(-8px) scale(.96)}to{opacity:1;transform:none}}
+  #accPop h3{font-size:15.5px;margin-bottom:4px}
+  #accPop .sub{font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:11px}
+  #accPop .tabs{display:flex;gap:6px;margin-bottom:10px}
+  #accPop .tabs button{
+    flex:1;padding:8px;border:2px solid var(--line);background:#fff;border-radius:9px;
+    font-family:inherit;font-weight:800;font-size:13px;color:#7d8798;cursor:pointer;
+  }
+  #accPop .tabs button.on{border-color:#1e88e5;color:#1565c0;background:#f2f8ff}
+  #accPop input{
+    width:100%;padding:11px 13px;border:2px solid var(--line);border-radius:10px;
+    font-family:inherit;font-size:14.5px;margin-bottom:8px;
+  }
+  #accPop input:focus{outline:none;border-color:#1e88e5}
+  #accPop .go{
+    width:100%;padding:11px;border:none;border-radius:10px;background:#1e88e5;color:#fff;
+    font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;
+  }
+  #accPop .go:disabled{opacity:.55;cursor:default}
+  #accPop .ghost{
+    width:100%;margin-top:8px;padding:10px;border:none;border-radius:10px;background:#f1f5f9;
+    color:#64748b;font-family:inherit;font-weight:800;font-size:14px;cursor:pointer;
+  }
+  #accErr{color:#d33;font-size:12.5px;min-height:16px;margin-top:2px}
+  #accStats{display:flex;gap:8px;margin-bottom:10px}
+  #accStats div{flex:1;background:#f4f7fb;border-radius:10px;padding:9px 6px;text-align:center}
+  #accStats b{display:block;font-size:17px;color:#1565c0}
+  #accStats span{font-size:11px;color:var(--muted)}
 
   /* ===== الترويسة ===== */
   header{text-align:center;max-width:620px;margin-bottom:8px}
@@ -96,7 +151,8 @@
   footer{margin-top:32px;font-size:12.5px;opacity:.45;text-align:center;line-height:1.9}
 
   @media (max-width:560px){
-    body{padding:26px 12px 24px}
+    body{padding:56px 12px 24px}
+    #accPop{inset-inline-start:10px;inset-inline-end:10px;width:auto}
     .grid{gap:13px;margin-top:20px}
     .g{padding:18px 16px 16px;border-radius:16px}
     .g .ic{width:46px;height:46px;font-size:25px;border-radius:13px}
@@ -106,6 +162,42 @@
 </style>
 </head>
 <body>
+
+  <!-- حساب واحد يكفي لكل الألعاب -->
+  <div id="accBar">
+    <button id="accBtn" class="guest">
+      <span class="ava" id="accAva">؟</span>
+      <span class="who" id="accWho">تسجيل الدخول</span>
+    </button>
+  </div>
+
+  <div id="accPop">
+    <!-- حالة الضيف -->
+    <div id="accGuest">
+      <h3>حساب واحد لكل الألعاب</h3>
+      <div class="sub">سجّل مرة واحدة من هنا — وتدخل كل الألعاب باسمك، مع حفظ نتائجك وكلماتك وإعداداتك الخاصة.</div>
+      <div class="tabs">
+        <button id="accTabLogin" class="on">دخول</button>
+        <button id="accTabReg">حساب جديد</button>
+      </div>
+      <input id="accName" maxlength="20" placeholder="الاسم" autocomplete="username">
+      <input id="accPass" type="password" maxlength="60" placeholder="كلمة المرور" autocomplete="current-password">
+      <button class="go" id="accGo">دخول</button>
+      <div id="accErr"></div>
+      <div class="sub" style="margin:6px 0 0">تحب تلعب بسرعة؟ ما تحتاج حساب — اكتب اسمك داخل اللعبة والعب مباشرة.</div>
+    </div>
+    <!-- حالة المسجَّل -->
+    <div id="accIn" style="display:none">
+      <h3 id="accInName">—</h3>
+      <div class="sub">مسجّل — يظهر اسمك تلقائياً في كل الألعاب</div>
+      <div id="accStats">
+        <div><b id="accWins">0</b><span>فوز</span></div>
+        <div><b id="accGames">0</b><span>لعبة</span></div>
+        <div><b id="accPts">0</b><span>نقطة</span></div>
+      </div>
+      <button class="ghost" id="accOut">تسجيل الخروج</button>
+    </div>
+  </div>
 
   <header>
     <div class="logo">ألعاب<em>نا</em></div>
@@ -186,6 +278,81 @@
     }
     grid.appendChild(el);
   });
+
+  /* ══════════════ الحساب المشترك ══════════════ */
+  const $ = id => document.getElementById(id);
+  let accMode = "login", ACC = null;
+
+  function paintAcc(){
+    const btn = $("accBtn");
+    if (ACC){
+      btn.classList.remove("guest");
+      $("accAva").textContent = ACC.name.slice(0,1);
+      $("accWho").textContent = ACC.name;
+      $("accGuest").style.display = "none";
+      $("accIn").style.display = "";
+      $("accInName").textContent = ACC.name;
+      $("accWins").textContent  = ACC.wins || 0;
+      $("accGames").textContent = ACC.games || 0;
+      $("accPts").textContent   = ACC.totalScore || 0;
+    } else {
+      btn.classList.add("guest");
+      $("accAva").textContent = "؟";
+      $("accWho").textContent = "تسجيل الدخول";
+      $("accGuest").style.display = "";
+      $("accIn").style.display = "none";
+    }
+  }
+  function setMode(m){
+    accMode = m;
+    $("accTabLogin").classList.toggle("on", m==="login");
+    $("accTabReg").classList.toggle("on", m==="reg");
+    $("accGo").textContent = m==="login" ? "دخول" : "إنشاء الحساب";
+    $("accPass").setAttribute("autocomplete", m==="login" ? "current-password" : "new-password");
+    $("accErr").textContent = "";
+  }
+  $("accTabLogin").onclick = () => setMode("login");
+  $("accTabReg").onclick   = () => setMode("reg");
+
+  $("accBtn").onclick = e => { e.stopPropagation(); $("accPop").classList.toggle("on"); };
+  document.addEventListener("click", e => {
+    if (!$("accPop").contains(e.target) && e.target !== $("accBtn")) $("accPop").classList.remove("on");
+  });
+
+  async function accPost(path, body){
+    const r = await fetch("/api/account/" + path, {
+      method:"POST", headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(body || {})
+    });
+    return r.json().catch(() => ({ ok:false, error:"تعذّر الاتصال" }));
+  }
+
+  $("accGo").onclick = async () => {
+    const name = $("accName").value.trim(), pass = $("accPass").value;
+    $("accErr").textContent = "";
+    if (name.length < 2) return $("accErr").textContent = "الاسم قصير جدًا";
+    if (pass.length < 4) return $("accErr").textContent = "كلمة المرور ٤ أحرف على الأقل";
+    $("accGo").disabled = true;
+    const res = await accPost(accMode === "login" ? "login" : "register", { name, pass });
+    $("accGo").disabled = false;
+    if (!res.ok) return $("accErr").textContent = res.error || "خطأ";
+    ACC = res.stats;
+    $("accPass").value = "";
+    paintAcc();
+    setTimeout(() => $("accPop").classList.remove("on"), 550);
+  };
+  $("accName").onkeydown = $("accPass").onkeydown = e => { if (e.key === "Enter") $("accGo").click(); };
+
+  $("accOut").onclick = async () => {
+    await accPost("logout");
+    ACC = null; paintAcc();
+    $("accPop").classList.remove("on");
+  };
+
+  fetch("/api/account/me", { cache:"no-store" })
+    .then(r => r.json())
+    .then(d => { ACC = d && !d.guest ? d.stats : null; paintAcc(); })
+    .catch(() => paintAcc());
 
   // ===== الإحصائيات المباشرة =====
   function refresh(){

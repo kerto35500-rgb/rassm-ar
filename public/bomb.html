@@ -21,8 +21,18 @@
   .brand { text-align:center; color:#eaf1fb; }
   .brand h1 { font-size:clamp(30px,8vw,44px); font-weight:900; }
   .brand p { opacity:.72; margin-top:6px; font-size:15px; }
-  .brand a.back { display:inline-block; margin-top:10px; color:#cfe3fb; font-size:13.5px; text-decoration:none; opacity:.8; }
-  .brand a.back:hover { text-decoration:underline; }
+  /* رابط الرجوع للبوابة — واضح وبارز */
+  .brand a.back {
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    margin-top:14px; padding:9px 20px; border-radius:999px;
+    background:rgba(255,255,255,.15); border:1.5px solid rgba(255,255,255,.34);
+    color:#fff; font-size:15.5px; font-weight:900; text-decoration:none;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    box-shadow:0 4px 14px rgba(0,0,0,.2); transition:.18s;
+  }
+  .brand a.back:hover { background:rgba(255,255,255,.27); transform:translateY(-2px); }
+  .brand a.back:active { transform:none; }
+  #whoLine { display:none; text-align:center; font-size:13.5px; color:var(--good); font-weight:800; margin:-2px 0 8px; }
 
   .card { width:100%; max-width:430px; background:var(--panel); border-radius:16px; padding:20px; box-shadow:0 10px 34px rgba(0,0,0,.22); }
   .card h3 { color:var(--ink); font-size:17px; margin-bottom:12px; }
@@ -48,7 +58,8 @@
   .roomItem button { padding:6px 14px; border:none; border-radius:8px; background:var(--accent2); color:#fff; font-weight:700; font-size:13px; }
 
   /* ============ شاشة اللعب ============ */
-  #gameScreen { display:none; height:100dvh; flex-direction:column; }
+  /* الارتفاع يتبع الشاشة المرئية فعلاً (يتقلّص عند فتح كيبورد الجوال) */
+  #gameScreen { display:none; height:var(--appH, 100dvh); flex-direction:column; }
   #topBar { display:flex; align-items:center; gap:8px; padding:8px 12px; color:#eaf1fb; flex-shrink:0; }
   #topBar .rid { font-weight:900; font-size:15px; letter-spacing:1px; }
   #topBar .spacer { flex:1; }
@@ -77,6 +88,27 @@
   .pl .off { font-size:10px; color:#b0b7c3; }
   @keyframes pulse { 0%,100%{box-shadow:0 0 0 5px rgba(229,84,30,.18);} 50%{box-shadow:0 0 0 9px rgba(229,84,30,.07);} }
 
+  /* ⬇ سهم يؤشّر على صاحب الدور */
+  .turnArrow { display:none; font-size:20px; line-height:1; color:var(--accent);
+               filter:drop-shadow(0 2px 3px rgba(229,84,30,.4)); animation:bob .8s ease-in-out infinite; }
+  .pl.turn .turnArrow, .chip.turn .turnArrow { display:block; }
+  @keyframes bob { 0%,100%{transform:translateY(0);} 50%{transform:translateY(4px);} }
+
+  /* ============ شريط اللاعبين (الجوال) ============ */
+  #plStrip { display:none; gap:7px; padding:7px 9px 5px; overflow-x:auto; flex-shrink:0;
+             border-bottom:2px solid var(--line); background:#fbfcfe; scrollbar-width:none; }
+  #plStrip::-webkit-scrollbar { display:none; }
+  .chip { flex:0 0 auto; min-width:66px; text-align:center; padding:5px 8px 4px; border-radius:11px;
+          background:#f2f5f9; border:2px solid transparent; transition:.18s; }
+  .chip.turn { background:#fff2eb; border-color:var(--accent); }
+  .chip.dead { opacity:.4; filter:grayscale(1); }
+  .chip .nm { font-size:11.5px; font-weight:800; color:var(--ink); max-width:82px;
+              overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .chip .hearts { font-size:10px; letter-spacing:-1.5px; height:13px; }
+  .chip .typed { font-size:10.5px; color:var(--accent); font-weight:800; min-height:13px;
+                 max-width:82px; overflow:hidden; white-space:nowrap; }
+  .chip .turnArrow { font-size:14px; height:14px; }
+
   /* القنبلة في المنتصف */
   #bombWrap { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; width:210px; }
   #bombCircle { position:relative; width:150px; height:150px; margin:0 auto; }
@@ -94,7 +126,29 @@
 
   /* منطقة الإدخال */
   #inputZone { flex-shrink:0; padding:10px 12px 12px; border-top:2px solid var(--line); background:#fbfcfe; }
+  /* شارة المقطع فوق المربع: تبقى ظاهرة والكيبورد مفتوح فلا حاجة للسكرول */
+  #sylPill { display:none; align-items:center; justify-content:center; gap:8px; margin-bottom:8px;
+             padding:7px 12px; border-radius:11px; background:#fff3ec; border:2px solid #ffd3bf; }
+  #sylPill.on { display:flex; }
+  #sylPill .lb { font-size:11.5px; font-weight:700; color:#a06a4e; }
+  #sylPill .vv { font-size:22px; font-weight:900; color:var(--accent); letter-spacing:2px; }
+  #sylPill .tt { font-size:12.5px; font-weight:800; color:#8a93a3; font-variant-numeric:tabular-nums; }
   #wordForm { display:flex; gap:8px; }
+  #kbBtn { flex:0 0 auto; width:46px; border:2px solid var(--line); border-radius:12px;
+           background:#eef2f7; font-size:19px; color:var(--ink); }
+  #kbBtn.on { background:var(--accent2); border-color:var(--accent2); color:#fff; }
+
+  /* لوحة مفاتيح عربية على الشاشة */
+  #vkb { display:none; margin-top:8px; padding:6px; background:#dfe6ee; border-radius:11px;
+         flex-direction:column; gap:5px; }
+  #vkb.on { display:flex; }
+  #vkb .krow { display:flex; gap:4px; justify-content:center; }
+  #vkb .k { flex:1 1 0; min-width:0; padding:9px 0; background:#fff; border:1px solid #c4d0dc;
+            border-radius:6px; font-size:17px; font-weight:700; color:var(--ink); text-align:center; user-select:none; }
+  #vkb .k:active { background:#c8d6e5; }
+  #vkb .k.wide { flex:3; font-size:14px; }
+  #vkb .k.del { background:#ffe0e0; color:#c62828; }
+  #vkb .k.send { background:var(--good); color:#fff; font-size:14px; }
   #wordInput { flex:1; padding:14px 16px; border:2.5px solid var(--line); border-radius:12px; font-size:18px; font-weight:700; text-align:center; color:var(--ink); }
   #wordInput:focus { outline:none; border-color:var(--accent); }
   #wordInput:disabled { background:#f2f4f7; color:#aab; }
@@ -196,28 +250,31 @@
     #playersPanel { flex:1; max-height:150px; }
     #chatPanel { flex:1.2; }
     #chatLog { min-height:0; }
-    #ring { min-height:250px; }
-    .pl { width:74px; }
-    .pl .av { width:40px; height:40px; font-size:16px; border-width:2.5px; }
-    .pl .nm { font-size:11px; }
-    .pl .typed { font-size:11px; }
-    #bombWrap { width:150px; }
-    #bombCircle { width:120px; height:120px; }
+    /* اللاعبون ينتقلون لشريط أفقي أعلى الشاشة — لا تداخل مع القنبلة */
+    #plStrip { display:flex; }
+    #ring .pl { display:none; }
+    #stage { overflow-y:auto; }          /* السكرول ممكن والكيبورد مفتوح */
+    #ring { flex:0 0 auto; min-height:186px; }
+    #bombWrap { width:190px; }
+    #bombCircle { width:128px; height:128px; }
     #bombEmoji { font-size:30px; }
-    #syl { font-size:24px; }
+    #syl { font-size:25px; }
     #alphaBox { padding:6px 8px; }
     .al { width:22px; height:22px; font-size:12px; }
     #wordInput { font-size:17px; padding:13px; }
+    #sylPill { display:flex; }
   }
   @media (max-width: 520px) {
-    #topBar { padding:6px 8px; }
-    #ring { min-height:215px; }
-    .pl { width:66px; }
-    .pl .av { width:36px; height:36px; font-size:15px; }
-    #bombCircle { width:104px; height:104px; }
-    #syl { font-size:21px; }
+    #topBar { padding:6px 8px; gap:5px; }
+    #topBar .rid { font-size:13.5px; }
+    .iconBtn { width:32px; height:32px; font-size:15px; border-radius:8px; }
+    #ring { min-height:170px; }
+    #bombWrap { width:170px; }
+    #bombCircle { width:114px; height:114px; }
+    #syl { font-size:22px; }
     #bombEmoji { font-size:26px; }
     .al { width:20px; height:20px; font-size:11px; border-radius:5px; }
+    #vkb .k { padding:8px 0; font-size:16px; }
   }
 </style>
 </head>
@@ -231,28 +288,10 @@
     <a class="back" href="/">← رجوع لاختيار الألعاب</a>
   </div>
 
-  <!-- الحساب -->
-  <div class="card" id="authCard">
-    <div class="tabs">
-      <button id="tabLogin" class="on">دخول</button>
-      <button id="tabReg">حساب جديد</button>
-      <button id="tabGuest">ضيف</button>
-    </div>
-    <div id="authFields">
-      <input id="aName" placeholder="الاسم" maxlength="20" autocomplete="username">
-      <input id="aPass" type="password" placeholder="كلمة المرور" maxlength="40" autocomplete="current-password">
-    </div>
-    <button class="btn blue" id="authBtn">دخول</button>
-    <div class="err" id="authErr"></div>
-    <div id="whoBox" style="display:none">
-      <div class="muted" style="margin-bottom:8px">مسجّل باسم <b id="whoName"></b> · <span id="whoStats"></span></div>
-      <button class="btn ghost" id="logoutBtn">خروج</button>
-    </div>
-  </div>
-
-  <!-- الغرف -->
-  <div class="card" id="roomCard" style="display:none">
-    <h3>ابدأ اللعب</h3>
+  <!-- بطاقة واحدة: الاسم + ابدأ اللعب -->
+  <div class="card" id="roomCard">
+    <input id="aName" placeholder="اكتب اسمك هنا" maxlength="20" autocomplete="off">
+    <div id="whoLine"></div>
     <button class="btn" id="createBtn">🎮 إنشاء غرفة جديدة</button>
     <div style="height:10px"></div>
     <div class="row2">
@@ -262,11 +301,6 @@
     <div class="err" id="roomErr"></div>
     <h3 style="margin-top:6px">غرف عامة</h3>
     <div id="roomsList"><div class="muted">لا توجد غرف عامة حالياً</div></div>
-  </div>
-
-  <div class="card" id="lbCard" style="display:none">
-    <h3>🏆 أفضل اللاعبين</h3>
-    <div id="lbList" class="muted">—</div>
   </div>
 </div>
 
@@ -284,6 +318,7 @@
 
   <div id="main">
     <div id="stage">
+      <div id="plStrip"></div>
       <div id="ring">
         <div id="bombWrap">
           <div id="bombCircle">
@@ -308,11 +343,18 @@
       </div>
 
       <div id="inputZone">
+        <div id="sylPill">
+          <span class="lb">المقطع</span>
+          <span class="vv" id="pillSyl">—</span>
+          <span class="tt" id="pillTime"></span>
+        </div>
         <form id="wordForm" autocomplete="off">
+          <button type="button" id="kbBtn" title="لوحة مفاتيح عربية">⌨️</button>
           <input id="wordInput" placeholder="انتظر دورك…" maxlength="40" autocomplete="off"
                  autocorrect="off" autocapitalize="off" spellcheck="false" disabled>
           <button type="submit" id="sendBtn">إرسال</button>
         </form>
+        <div id="vkb"></div>
         <div id="msgLine"></div>
       </div>
 
@@ -471,7 +513,6 @@
   let ME = null, ROOM = null, ST = null, OFFSET = 0, TOKEN = null;
   let lastSyl = null;   // لتفريغ المربع عند تغيّر المقطع
   let ALPHABET = [];
-  let authMode = "login";
   let myAccount = null;
   let rafId = 0;
   let lastTypedSend = 0;
@@ -481,56 +522,22 @@
   function esc(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
   function hearts(n){ return n>0 ? "❤️".repeat(Math.min(n,6)) + (n>6?"+":"") : "💀"; }
 
-  // ---------- الحساب ----------
-  function setAuthMode(m){
-    authMode = m;
-    $("tabLogin").classList.toggle("on", m==="login");
-    $("tabReg").classList.toggle("on", m==="reg");
-    $("tabGuest").classList.toggle("on", m==="guest");
-    $("aPass").style.display = m==="guest" ? "none" : "";
-    $("aName").placeholder = m==="guest" ? "اسمك في اللعبة" : "الاسم";
-    $("authBtn").textContent = m==="login" ? "دخول" : m==="reg" ? "إنشاء الحساب" : "العب كضيف";
-    $("authErr").textContent = "";
-  }
-  $("tabLogin").onclick = ()=>setAuthMode("login");
-  $("tabReg").onclick   = ()=>setAuthMode("reg");
-  $("tabGuest").onclick = ()=>setAuthMode("guest");
-
-  function showRooms(){
-    $("authFields").style.display = "none";
-    $("authBtn").style.display = "none";
-    document.querySelector(".tabs").style.display = "none";
-    $("whoBox").style.display = "";
-    $("roomCard").style.display = "";
-    $("lbCard").style.display = "";
-    refreshRooms(); refreshLB();
-  }
-
-  $("authBtn").onclick = () => {
-    const name = $("aName").value.trim();
-    const pass = $("aPass").value;
-    $("authErr").textContent = "";
-    if (name.length < 2) { $("authErr").textContent = "الاسم قصير جدًا"; return; }
-    if (authMode === "guest") {
-      myAccount = null;
-      $("whoName").textContent = name;
-      $("whoStats").textContent = "ضيف";
-      window._guestName = name;
-      showRooms();
-      return;
-    }
-    $("authBtn").disabled = true;
-    socket.emit(authMode==="reg" ? "register" : "login", { name, pass }, res => {
-      $("authBtn").disabled = false;
-      if (!res || !res.ok) { $("authErr").textContent = (res && res.error) || "خطأ"; return; }
-      myAccount = res.stats;
-      const b = res.bomb || {games:0,wins:0,words:0};
-      $("whoName").textContent = res.stats.name;
-      $("whoStats").textContent = `القنبلة: ${b.wins} فوز · ${b.games} لعبة · ${b.words} كلمة`;
-      showRooms();
-    });
-  };
-  $("logoutBtn").onclick = () => location.reload();
+  // ---------- الحساب المشترك (يُسجَّل الدخول من الصفحة الرئيسية) ----------
+  fetch("/api/account/me", { cache:"no-store" })
+    .then(r => r.json())
+    .then(d => {
+      if (!d || d.guest) return;
+      myAccount = d.stats;
+      $("aName").value = d.stats.name;
+      $("aName").disabled = true;
+      const w = $("whoLine");
+      w.style.display = "block";
+      w.textContent = `✅ ${d.stats.name} · ${d.stats.wins} فوز · ${d.stats.games} لعبة`;
+      // مسجَّل + رابط دعوة ⇒ ندخل الغرفة فوراً
+      const q = new URLSearchParams(location.search).get("r");
+      if (q && !ROOM) doJoin(q.trim(), false);
+    })
+    .catch(() => {});
 
   function refreshRooms(){
     socket.emit("publicRooms", res => {
@@ -550,28 +557,31 @@
       });
     });
   }
-  function refreshLB(){
-    socket.emit("leaderboard", res => {
-      const list = (res && res.top) || [];
-      $("lbList").innerHTML = list.length
-        ? list.map((u,i)=>`<div style="padding:5px 0;border-bottom:1px solid #f0f2f6;font-size:13.5px">${i+1}. <b style="color:#1e3a5f">${esc(u.name)}</b> — ${u.wins} فوز · ${u.words} كلمة</div>`).join("")
-        : '<div class="muted">لا توجد نتائج بعد</div>';
-    });
-  }
-  setInterval(()=>{ if ($("roomCard").style.display !== "none" && !ROOM) refreshRooms(); }, 6000);
+  refreshRooms();
+  setInterval(()=>{ if (!ROOM) refreshRooms(); }, 6000);
 
   // ---------- الدخول للغرف ----------
-  function myName(){ return (myAccount && myAccount.name) || window._guestName || "لاعب"; }
+  function myName(){ return (myAccount && myAccount.name) || $("aName").value.trim() || ""; }
+  function needName(){
+    if (myName().length >= 2) return false;
+    $("roomErr").textContent = "اكتب اسمك أولاً";
+    $("aName").focus();
+    return true;
+  }
 
   $("createBtn").onclick = () => {
+    if (needName()) return;
     socket.emit("createRoom", { name: myName() }, res => {
       if (!res || !res.ok) { $("roomErr").textContent = (res&&res.error)||"خطأ"; return; }
       enterGame(res);
     });
   };
   $("joinBtn").onclick = () => doJoin($("joinId").value.trim(), false);
+  $("aName").onkeydown = e => { if (e.key === "Enter") ($("joinId").value.trim() ? $("joinBtn") : $("createBtn")).click(); };
+  $("joinId").onkeydown = e => { if (e.key === "Enter") $("joinBtn").click(); };
   function doJoin(id, needPass){
     if (!id) { $("roomErr").textContent = "اكتب رقم الغرفة"; return; }
+    if (needName()) return;
     let password = "";
     if (needPass) { password = prompt("كلمة مرور الغرفة:") || ""; }
     socket.emit("joinRoom", { name: myName(), roomId: id, password }, res => {
@@ -618,9 +628,17 @@
         });
       }
     } catch(e){}
-    // رابط دعوة
+    // رابط دعوة: نجهّز الغرفة ونبرز زر الدخول
     const q = new URLSearchParams(location.search).get("r");
-    if (q) $("joinId").value = q;
+    if (q && !ROOM) {
+      $("joinId").value = q.trim().slice(0, 6);
+      $("createBtn").style.display = "none";
+      $("joinBtn").className = "btn";
+      $("joinBtn").style.flex = "0 0 130px";
+      $("joinBtn").textContent = "ادخل الغرفة";
+      $("aName").placeholder = "اكتب اسمك للدخول";
+      if (myAccount) doJoin(q.trim(), false);
+    }
   });
 
   socket.on("state", s => {
@@ -654,8 +672,8 @@
   });
 
   socket.on("typing", d => {
-    const el = document.querySelector(`.pl[data-id="${d.id}"] .typed`);
-    if (el) el.textContent = d.text;
+    document.querySelectorAll(`.pl[data-id="${d.id}"] .typed, .chip[data-id="${d.id}"] .typed`)
+      .forEach(el => el.textContent = d.text);
   });
 
   socket.on("disconnect", () => flash("انقطع الاتصال… جاري إعادة المحاولة", "bad"));
@@ -694,9 +712,14 @@
     $("roundHint").textContent = playing ? `الجولة ${ST.roundNo} · ${ST.usedCount} كلمة مستعملة` :
                                  ST.state==="lobby" ? "بانتظار بدء اللعبة…" : "";
 
-    // اللاعبون في الحلقة
+    // اللاعبون: حلقة على الكمبيوتر، شريط أفقي على الجوال
     renderRing();
+    renderStrip();
     renderList();
+
+    // شارة المقطع فوق مربع الكتابة (تبقى ظاهرة والكيبورد مفتوح)
+    $("pillSyl").textContent = ST.syllable || "—";
+    $("sylPill").classList.toggle("on", playing);
 
     // لوحة الحروف
     const mine = new Set(me ? me.letters : []);
@@ -748,6 +771,7 @@
       d.style.right = (W - x) + "px";
       d.style.top = y + "px";
       d.innerHTML =
+        `<div class="turnArrow">▼</div>` +
         `<div class="av">${esc((p.name||"?").slice(0,2))}</div>` +
         `<div class="nm">${p.id===ST.ownerId?'<span class="crown">♛</span> ':''}${esc(p.name)}${p.id===ME?" (أنت)":""}</div>` +
         `<div class="hearts">${ST.state==="playing"? hearts(p.lives) : (p.spectator?"متفرج":"")}</div>` +
@@ -755,6 +779,27 @@
         (p.connected?"":'<div class="off">غير متصل…</div>');
       ring.appendChild(d);
     });
+  }
+
+  // شريط اللاعبين الأفقي (الجوال) — يستغل الفراغ يمين ويسار بدل التداخل
+  function renderStrip(){
+    const box = $("plStrip");
+    box.innerHTML = "";
+    ST.players.forEach(p => {
+      const d = document.createElement("div");
+      d.className = "chip" + (p.id===ST.turnId ? " turn":"") +
+                    (!p.alive && ST.state==="playing" ? " dead":"");
+      d.dataset.id = p.id;
+      d.innerHTML =
+        `<div class="turnArrow">▼</div>` +
+        `<div class="nm">${p.id===ST.ownerId?'<span class="crown">♛</span> ':''}${esc(p.name)}${p.id===ME?" (أنت)":""}</div>` +
+        `<div class="hearts">${ST.state==="playing"? hearts(p.lives) : (p.spectator?"👁":"")}</div>` +
+        `<div class="typed"></div>`;
+      box.appendChild(d);
+    });
+    // نُظهر صاحب الدور تلقائياً لو كان خارج الشريط
+    const t = box.querySelector(".chip.turn");
+    if (t && t.scrollIntoView) t.scrollIntoView({ inline:"center", block:"nearest", behavior:"smooth" });
   }
 
   function renderList(){
@@ -788,6 +833,7 @@
       if (!ST || ST.state !== "playing" || !ST.endsAt) {
         fg.style.strokeDashoffset = C;
         $("timeNum").textContent = "";
+        $("pillTime").textContent = "";
         return;
       }
       const localEnd = ST.endsAt - OFFSET;
@@ -796,7 +842,9 @@
       const frac = Math.max(0, Math.min(1, left / total));
       fg.style.strokeDashoffset = C * (1 - frac);
       fg.style.stroke = left < 3000 ? "#d33" : (left < 6000 ? "#f0932b" : "#e5541e");
-      $("timeNum").textContent = (left/1000).toFixed(1) + "ث";
+      const txt = (left/1000).toFixed(1) + "ث";
+      $("timeNum").textContent = txt;
+      $("pillTime").textContent = txt;
       rafId = requestAnimationFrame(frame);
     }
     frame();
@@ -805,6 +853,7 @@
   // ---------- الإدخال ----------
   function focusInput(){
     const i = $("wordInput");
+    if (kbOpen) return;                       // الكيبورد الداخلي مفتوح — لا نستدعي كيبورد الجهاز
     if (document.activeElement === i) return;
     try { i.focus({ preventScroll:false }); } catch(e){ i.focus(); }
     setTimeout(()=>{ try{ i.scrollIntoView({block:"center", behavior:"smooth"}); }catch(e){} }, 60);
@@ -825,6 +874,79 @@
     const now = Date.now();
     if (now - lastTypedSend > 120) { lastTypedSend = now; socket.emit("typing", $("wordInput").value); }
   });
+
+  /* ══════════ لوحة مفاتيح عربية على الشاشة ══════════ */
+  const KB_ROWS = [
+    ["ض","ص","ث","ق","ف","غ","ع","ه","خ","ح","ج","د"],
+    ["ش","س","ي","ب","ل","ا","ت","ن","م","ك","ط"],
+    ["ذ","ئ","ء","ؤ","ر","ى","ة","و","ز","ظ"],
+    ["أ","إ","آ","لا"]
+  ];
+  function kbType(ch){
+    const i = $("wordInput");
+    if (i.disabled) return;
+    if (i.value.length + ch.length > 40) return;
+    i.value += ch;                                  // الإضافة في النهاية دائماً (يمنع انعكاس الحروف)
+    i.dispatchEvent(new Event("input"));
+  }
+  function buildVKB(){
+    const v = $("vkb");
+    v.innerHTML = "";
+    KB_ROWS.forEach(row => {
+      const r = document.createElement("div"); r.className = "krow";
+      row.forEach(ch => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "k"; b.textContent = ch;
+        b.onpointerdown = e => { e.preventDefault(); kbType(ch); };
+        r.appendChild(b);
+      });
+      v.appendChild(r);
+    });
+    const ctrl = document.createElement("div"); ctrl.className = "krow";
+    const mk = (cls, txt, fn) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "k " + cls; b.textContent = txt;
+      b.onpointerdown = e => { e.preventDefault(); fn(); };
+      return b;
+    };
+    ctrl.appendChild(mk("del", "⌫", () => {
+      const i = $("wordInput");
+      if (i.disabled) return;
+      i.value = i.value.slice(0, -1);
+      i.dispatchEvent(new Event("input"));
+    }));
+    ctrl.appendChild(mk("wide", "مسافة", () => kbType(" ")));
+    ctrl.appendChild(mk("send", "إرسال", () => $("wordForm").requestSubmit()));
+    v.appendChild(ctrl);
+  }
+  buildVKB();
+
+  let kbOpen = false;
+  $("kbBtn").onclick = () => {
+    kbOpen = !kbOpen;
+    $("vkb").classList.toggle("on", kbOpen);
+    $("kbBtn").classList.toggle("on", kbOpen);
+    // مع الكيبورد الداخلي لا نحتاج كيبورد الجهاز — نمنعه من الظهور
+    const i = $("wordInput");
+    if (kbOpen) { i.blur(); i.readOnly = true; }
+    else { i.readOnly = false; }
+    try { localStorage.setItem("bombKB", kbOpen ? "1" : "0"); } catch(e){}
+  };
+  try { if (localStorage.getItem("bombKB") === "1") $("kbBtn").click(); } catch(e){}
+
+  /* ══════════ ارتفاع حقيقي للشاشة (كيبورد الجوال لا يقص الأعلى) ══════════ */
+  function fitApp(){
+    const vv = window.visualViewport;
+    const h = vv ? vv.height : window.innerHeight;
+    document.documentElement.style.setProperty("--appH", Math.round(h) + "px");
+  }
+  fitApp();
+  addEventListener("resize", fitApp);
+  addEventListener("orientationchange", () => setTimeout(fitApp, 250));
+  if (window.visualViewport) {
+    visualViewport.addEventListener("resize", fitApp);
+    visualViewport.addEventListener("scroll", fitApp);
+  }
 
   $("chatForm").onsubmit = e => {
     e.preventDefault();

@@ -34,15 +34,21 @@
   .btn-blue { background:var(--accent2); }
   .btn-purple { background:var(--purple); }
   .divider { text-align:center; color:#999; font-size:13px; }
-  #joinError, #authError { color:var(--red); text-align:center; font-size:14px; min-height:16px; }
-  #authStatus { text-align:center; font-size:14px; color:#555; }
-  #authStatus.logged { color:var(--green); font-weight:700; }
+  #joinError { color:var(--red); text-align:center; font-size:14px; min-height:16px; }
+  #whoLine { display:none; text-align:center; font-size:13.5px; color:var(--green); font-weight:800; margin:-4px 0 4px; }
+  /* رابط الرجوع للبوابة — واضح وبارز */
+  .backLink {
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    margin:2px auto 4px; padding:9px 20px; border-radius:999px;
+    background:rgba(255,255,255,.14); border:1.5px solid rgba(255,255,255,.32);
+    color:#fff; font-size:15.5px; font-weight:900; text-decoration:none;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    box-shadow:0 4px 14px rgba(0,0,0,.18); transition:.18s;
+  }
+  .backLink:hover { background:rgba(255,255,255,.26); transform:translateY(-2px); }
+  .backLink:active { transform:none; }
   .row2 { display:flex; gap:8px; }
   .row2 > * { flex:1 1 0; min-width:0; }
-  #lbPanel { display:none; background:#f7f9fc; border-radius:10px; padding:10px; max-height:220px; overflow-y:auto; }
-  .lbRow { display:flex; justify-content:space-between; padding:6px 8px; border-radius:6px; font-size:14px; }
-  .lbRow:nth-child(odd) { background:#eef3f8; }
-  .lbRow b { color:var(--accent2); }
 
   /* ===== شاشة اللعبة ===== */
   #gameScreen { display:none; flex-direction:column; height:100vh; padding:8px; gap:8px; max-width:1250px; margin:0 auto; }
@@ -241,9 +247,11 @@
 <div id="lobbyScreen">
   <div class="logo">ارسمها<span>!</span></div>
   <div class="tagline">لعبة رسم وتخمين جماعية بالعربي ✏️</div>
+  <a class="backLink" href="/">← رجوع لاختيار الألعاب</a>
 
   <div class="card">
     <input id="nameInput" maxlength="20" placeholder="اكتب اسمك هنا">
+    <div id="whoLine"></div>
     <button class="btn btn-green" id="createBtn">إنشاء غرفة جديدة ➕</button>
     <div class="divider">— أو انضم لغرفة موجودة —</div>
     <div class="row2">
@@ -251,21 +259,6 @@
       <button class="btn btn-blue" id="joinBtn">انضمام 🚪</button>
     </div>
     <div id="joinError"></div>
-  </div>
-
-  <div class="card">
-    <div id="authStatus">سجّل دخول لحفظ انتصاراتك وإحصائياتك (اختياري)</div>
-    <div class="row2" id="authInputs">
-      <input id="authUser" maxlength="20" placeholder="اسم المستخدم">
-      <input id="authPass" type="password" placeholder="كلمة المرور">
-    </div>
-    <div class="row2" id="authBtns">
-      <button class="btn btn-blue" id="loginBtn">دخول</button>
-      <button class="btn btn-green" id="registerBtn">تسجيل جديد</button>
-    </div>
-    <button class="btn btn-purple" id="lbBtn">🏆 لوحة المتصدرين</button>
-    <div id="lbPanel"></div>
-    <div id="authError"></div>
   </div>
 </div>
 
@@ -280,7 +273,7 @@
       <div id="roundInfo">في الانتظار...</div>
       <div id="hintBox"></div>
     </div>
-    <div id="roomCodeBox" title="اضغط للنسخ">رمز الغرفة: <b id="roomCodeText"></b> 📋</div>
+    <div id="roomCodeBox" title="اضغط لنسخ رابط الدعوة">🔗 رابط الدعوة · <b id="roomCodeText"></b></div>
   </div>
 
   <div id="mainArea">
@@ -505,41 +498,28 @@ const sndStart   = () => { beep(392, .14); beep(523, .2, .13); };
 const sndEnd     = () => { beep(523, .13); beep(659, .13, .12); beep(784, .13, .24); beep(1047, .35, .36); };
 const sndJoin    = () => beep(660, .1, 0, "triangle", .1);
 
-// ===== الحسابات =====
+// ===== الحساب المشترك (يُسجَّل الدخول من الصفحة الرئيسية) =====
 let loggedIn = null;
 function setAuthUI(stats) {
   loggedIn = stats;
-  if (stats) {
-    $("authStatus").textContent = `✅ ${stats.name} — انتصارات: ${stats.wins} | ألعاب: ${stats.games} | مجموع النقاط: ${stats.totalScore}`;
-    $("authStatus").classList.add("logged");
-    $("authInputs").style.display = "none";
-    $("authBtns").style.display = "none";
-    $("nameInput").value = stats.name;
-    $("nameInput").disabled = true;
-  }
+  if (!stats) return;
+  $("nameInput").value = stats.name;
+  $("nameInput").disabled = true;
+  const w = $("whoLine");
+  w.style.display = "block";
+  w.textContent = `✅ ${stats.name} · ${stats.wins} فوز · ${stats.games} لعبة`;
 }
-function doAuth(ev) {
-  const name = $("authUser").value.trim(), pass = $("authPass").value;
-  if (!name || !pass) return $("authError").textContent = "اكتب اسم المستخدم وكلمة المرور";
-  socket.emit(ev, { name, pass }, res => {
-    if (res.ok) { $("authError").textContent = ""; setAuthUI(res.stats); }
-    else $("authError").textContent = res.error;
-  });
-}
-$("loginBtn").onclick = () => doAuth("login");
-$("registerBtn").onclick = () => doAuth("register");
+fetch("/api/account/me", { cache: "no-store" })
+  .then(r => r.json())
+  .then(d => {
+    if (d && !d.guest) {
+      setAuthUI(d.stats);
+      // مسجَّل + رابط دعوة ⇒ ندخل الغرفة فوراً بلا أي خطوة
+      if (new URLSearchParams(location.search).get("r")) $("joinBtn").click();
+    }
+  })
+  .catch(() => {});
 socket.on("statsUpdate", s => { if (loggedIn) setAuthUI(s); });
-
-$("lbBtn").onclick = () => {
-  socket.emit("leaderboard", res => {
-    const p = $("lbPanel");
-    p.style.display = p.style.display === "block" ? "none" : "block";
-    if (!res.top.length) { p.innerHTML = "<div class='lbRow'>لا يوجد لاعبون مسجلون بعد</div>"; return; }
-    const medals = ["🥇","🥈","🥉"];
-    p.innerHTML = res.top.map((u, i) =>
-      `<div class="lbRow"><span>${medals[i] || (i+1)}‏ ${esc(u.name)}</span><span><b>${u.wins}</b> فوز • ${u.totalScore} نقطة</span></div>`).join("");
-  });
-};
 
 // ===== الدخول للغرف =====
 let joinedRoomId = null, joinedName = null;
@@ -548,8 +528,19 @@ function enterGame(roomId) {
   $("lobbyScreen").style.display = "none";
   $("gameScreen").style.display = "flex";
   $("roomCodeText").textContent = roomId;
+  history.replaceState(null, "", "?r=" + roomId);
   resizeCanvas();
   setTimeout(resizeCanvas, 300); // ضمان القياس الصحيح على الجوال
+}
+
+// رابط دعوة: ?r=CODE يدخل الغرفة مباشرة بمجرد كتابة الاسم
+const inviteRoom = new URLSearchParams(location.search).get("r");
+if (inviteRoom) {
+  $("roomInput").value = inviteRoom.trim().slice(0, 6);
+  $("createBtn").style.display = "none";
+  $("joinBtn").textContent = "ادخل الغرفة " + inviteRoom + " 🚪";
+  document.querySelector("#lobbyScreen .divider").textContent = "— دعوة لغرفة " + inviteRoom + " —";
+  $("nameInput").placeholder = "اكتب اسمك للدخول";
 }
 $("createBtn").onclick = () => {
   const name = $("nameInput").value.trim();
@@ -591,7 +582,10 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 $("roomCodeBox").onclick = () => {
-  navigator.clipboard?.writeText($("roomCodeText").textContent);
+  // ننسخ رابط دعوة كامل: من يفتحه يدخل الغرفة مباشرة
+  const url = location.origin + "/draw?r=" + $("roomCodeText").textContent;
+  (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject())
+    .catch(() => prompt("انسخ رابط الدعوة:", url));
   $("roomCodeBox").style.background = "#c8e6c9";
   setTimeout(() => $("roomCodeBox").style.background = "", 600);
 };
