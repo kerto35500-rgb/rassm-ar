@@ -202,8 +202,18 @@ input,select,textarea{font-family:inherit}
   align-items:center;justify-items:center;flex:1;min-height:0;padding:6px 2px 2px;
   width:100%;max-width:880px;margin:0 auto}
 #votes>*{width:100%;max-width:232px}
-@media(max-width:640px){#votes{grid-template-columns:repeat(2,1fr);gap:12px;max-width:400px}
-  #votes>*{max-width:172px}}
+@media(max-width:640px){
+  #sVote{overflow-y:auto;-webkit-overflow-scrolling:touch}
+  #votes{grid-template-columns:repeat(2,1fr);gap:10px;max-width:360px;
+         align-items:start;flex:none;padding-bottom:14px}
+  #votes>*{max-width:150px}
+  #voteHead{font-size:15px;margin-bottom:6px}
+  .dVotes{font-size:10.5px;padding:2px 9px}
+}
+@media(max-width:640px) and (max-height:700px){
+  #votes>*{max-width:126px}
+  #clock{width:58px;height:58px;margin-bottom:4px}#cNum{font-size:20px}
+}
 
 .door{position:relative;display:flex;flex-direction:column;align-items:center;gap:7px;
   background:none;padding:0;transition:transform .3s var(--spring);
@@ -283,6 +293,8 @@ input,select,textarea{font-family:inherit}
   display:flex;align-items:center;gap:5px;transition:.3s}
 .door.on .dVotes{background:rgba(34,230,255,.16);border-color:rgba(34,230,255,.5);color:var(--cyan)}
 .dVotes b{color:#fff;font-variant-numeric:tabular-nums}
+.dVotes.bump{animation:votePop .45s var(--spring)}
+@keyframes votePop{0%{transform:scale(1)}45%{transform:scale(1.22)}100%{transform:scale(1)}}
 /* شريط تعبئة الأصوات */
 .dBar{position:absolute;inset:0;border-radius:99px;background:linear-gradient(90deg,var(--c1),var(--cyan));
   opacity:.28;transform-origin:right;transform:scaleX(0);transition:transform .6s var(--ease)}
@@ -293,20 +305,138 @@ input,select,textarea{font-family:inherit}
 @keyframes orbFloat{from{transform:translateY(20px);opacity:0}
   15%{opacity:.85}85%{opacity:.85}to{transform:translateY(-120px);opacity:0}}
 
-/* الهجوم */
-#atkTargets{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:9px;margin-bottom:12px}
-.tg{padding:12px 10px;border-radius:15px;background:rgba(255,255,255,.05);border:1.5px solid var(--stroke);
-  font-weight:800;font-size:13.5px;transition:.24s var(--ease);display:flex;align-items:center;gap:8px;justify-content:center}
-.tg .av{width:26px;height:26px;border-radius:9px;overflow:hidden;flex-shrink:0}
-.tg:hover{transform:translateY(-3px);border-color:rgba(255,47,142,.55)}
-.tg.on{border-color:var(--magenta);background:rgba(255,47,142,.15);box-shadow:0 0 28px -8px rgba(255,47,142,.85)}
-#atkPowers{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.pwr{position:relative;width:64px;padding:11px 6px;border-radius:15px;background:rgba(255,255,255,.05);
-  border:1.5px solid var(--stroke);text-align:center;transition:.24s var(--spring)}
-.pwr .em{font-size:22px;display:block;line-height:1.1}
-.pwr .lb{font-size:10px;font-weight:700;color:var(--dim);margin-top:3px}
-.pwr:hover{transform:translateY(-4px) scale(1.06);border-color:rgba(34,230,255,.5)}
-.pwr.on{border-color:var(--cyan);background:rgba(34,230,255,.14);box-shadow:0 0 26px -8px rgba(34,230,255,.9)}
+/* ══════ مشهد سحب البطاقة ══════ */
+#sAtk{align-items:center;justify-content:center;overflow:hidden}
+/* عتمة الأطراف تبرز التوهج */
+#atkVeil{position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 62% 58% at 50% 46%,transparent 18%,rgba(2,4,10,.72) 68%,rgba(1,2,6,.94))}
+/* حلقات الطلاسم */
+#atkRune{position:absolute;left:50%;top:46%;width:min(74vh,560px);aspect-ratio:1;transform:translate(-50%,-50%);
+  pointer-events:none;z-index:0;opacity:.5}
+#atkRune i{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(139,92,246,.55)}
+#atkRune i:nth-child(1){animation:spinCW 26s linear infinite;
+  border-style:dashed;border-color:rgba(34,230,255,.42)}
+#atkRune i:nth-child(2){inset:11%;animation:spinCCW 19s linear infinite;
+  border-width:2px;border-color:rgba(139,92,246,.5);
+  box-shadow:0 0 40px -12px rgba(139,92,246,.7) inset}
+#atkRune i:nth-child(3){inset:23%;animation:spinCW 13s linear infinite;
+  border-color:rgba(255,47,142,.34);border-style:dotted}
+#atkRune i:nth-child(4){inset:34%;border-color:rgba(255,255,255,.13)}
+@keyframes spinCW{to{transform:rotate(360deg)}}
+@keyframes spinCCW{to{transform:rotate(-360deg)}}
+/* قوس المؤقت على الحلقة نفسها */
+#atkArcSvg{position:absolute;left:50%;top:46%;width:min(74vh,560px);aspect-ratio:1;
+  transform:translate(-50%,-50%) rotate(-90deg);overflow:visible;z-index:1;pointer-events:none}
+#atkArc{fill:none;stroke:url(#ag);stroke-width:2.5;stroke-linecap:round;
+  filter:drop-shadow(0 0 8px rgba(34,230,255,.95))}
+/* شرارات رباعية */
+.spk{position:absolute;pointer-events:none;z-index:1;
+  background:#fff;clip-path:polygon(50% 0,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 42%);
+  animation:spkTw 2.6s ease-in-out infinite;filter:drop-shadow(0 0 6px #fff)}
+@keyframes spkTw{0%,100%{transform:scale(.35) rotate(0);opacity:.15}50%{transform:scale(1) rotate(45deg);opacity:.95}}
+
+#atkTitle{position:relative;z-index:3;text-align:center;font-size:clamp(15px,3.4vw,22px);font-weight:900;
+  margin-bottom:clamp(10px,2.4vh,26px);letter-spacing:-.3px;
+  text-shadow:0 0 26px rgba(139,92,246,.9),0 2px 10px #000}
+
+/* صف البطاقات */
+#cardRow{position:relative;z-index:3;display:flex;flex-wrap:wrap;gap:clamp(10px,2.6vw,30px);
+  align-items:center;justify-content:center;perspective:1100px;max-width:100%}
+.card{position:relative;width:clamp(84px,15vw,132px);aspect-ratio:1/1.5;
+  transform-style:preserve-3d;cursor:pointer;
+  transition:transform .4s var(--spring),filter .3s;
+  animation:cardIn .75s var(--spring) both,cardFloat 4.2s ease-in-out infinite 1s}
+.card:nth-child(1){animation-delay:.05s,1.0s}
+.card:nth-child(2){animation-delay:.16s,1.4s}
+.card:nth-child(3){animation-delay:.27s,1.8s}
+.card:nth-child(4){animation-delay:.38s,2.2s}
+.card:nth-child(5){animation-delay:.49s,2.6s}
+.card:nth-child(1){--tilt:-11deg}.card:nth-child(2){--tilt:7deg}
+.card:nth-child(3){--tilt:-6deg}.card:nth-child(4){--tilt:12deg}.card:nth-child(5){--tilt:-9deg}
+@keyframes cardIn{from{opacity:0;transform:translateY(70px) rotate(calc(var(--tilt)*3)) scale(.6)}
+  to{opacity:1;transform:translateY(0) rotate(var(--tilt)) scale(1)}}
+@keyframes cardFloat{0%,100%{transform:translateY(0) rotate(var(--tilt))}
+  50%{transform:translateY(-11px) rotate(calc(var(--tilt)*.55))}}
+.card:hover,.card.flip{filter:brightness(1.12);animation:none;
+  transform:translateY(-14px) rotate(0deg) scale(1.08)}
+.card.spent{pointer-events:none;filter:grayscale(1) brightness(.45);animation:none;transform:rotate(var(--tilt)) scale(.92)}
+
+.cIn{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .72s var(--ease)}
+.card.flip .cIn{transform:rotateY(180deg)}
+.cFace{position:absolute;inset:0;border-radius:12px;backface-visibility:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(4px,.9vw,8px);overflow:hidden}
+/* ظهر البطاقة */
+.cBack{background:linear-gradient(150deg,#1a1440,#0b0a22 55%,#241a4d);
+  border:2px solid rgba(180,150,255,.55);
+  box-shadow:0 14px 34px -10px rgba(0,0,0,.9), inset 0 0 26px rgba(139,92,246,.32),
+             0 0 24px -6px rgba(139,92,246,.6)}
+.cBack::before{content:"";position:absolute;inset:7px;border-radius:8px;
+  border:1px solid rgba(255,255,255,.16)}
+.cBack .glyph{font-size:clamp(30px,5.5vw,48px);line-height:1;color:#c9b6ff;
+  text-shadow:0 0 16px rgba(160,120,255,.95);
+  animation:glyphPulse 2.6s ease-in-out infinite}
+@keyframes glyphPulse{0%,100%{opacity:.65;transform:scale(1)}50%{opacity:1;transform:scale(1.12)}}
+.cBack::after{content:"";position:absolute;inset:-40% -110%;
+  background:linear-gradient(100deg,transparent 42%,rgba(255,255,255,.32),transparent 58%);
+  animation:cardSheen 3.4s linear infinite}
+@keyframes cardSheen{from{transform:translateX(-60%) rotate(12deg)}to{transform:translateX(60%) rotate(12deg)}}
+/* وجه البطاقة */
+.cFront{transform:rotateY(180deg);
+  background:linear-gradient(160deg,var(--pc1,#22e6ff),var(--pc2,#8b5cf6));
+  border:2px solid rgba(255,255,255,.5);
+  box-shadow:0 16px 38px -10px rgba(0,0,0,.9), 0 0 34px -6px var(--pc1,#22e6ff)}
+.cFront .em{font-size:clamp(34px,6.4vw,56px);line-height:1;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
+.cFront .lb{font-size:clamp(10.5px,1.9vw,16px);font-weight:900;color:#08131c;text-align:center;padding:0 6%;line-height:1.25}
+.cFront .self{position:absolute;top:5%;font-size:clamp(8px,1.3vw,11px);font-weight:900;color:#3a2a00;
+  background:rgba(255,255,255,.75);padding:2px 7px;border-radius:99px}
+
+#atkNote{position:relative;z-index:3;text-align:center;font-size:13px;color:var(--dim);
+  margin-top:clamp(10px,2.2vh,22px)}
+.ammo{display:inline-flex;gap:5px;margin-inline-start:8px;vertical-align:middle}
+
+/* ══ نافذة اختيار الخصم ══ */
+#tgModal{position:absolute;inset:0;z-index:36;display:none;align-items:center;justify-content:center;padding:16px;
+  background:rgba(3,5,12,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+#tgModal.on{display:flex;animation:fadeIn .25s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+#tgBox{width:100%;max-width:360px;padding:20px 18px 18px;border-radius:22px;text-align:center;
+  background:linear-gradient(165deg,rgba(30,20,60,.96),rgba(8,10,22,.97));
+  border:1.5px solid rgba(180,150,255,.4);
+  box-shadow:0 26px 60px -16px rgba(0,0,0,.95), 0 0 44px -12px rgba(139,92,246,.65);
+  animation:tgIn .45s var(--spring)}
+@keyframes tgIn{from{opacity:0;transform:translateY(26px) scale(.9)}to{opacity:1;transform:none}}
+#tgCard{--tilt:0deg;width:62px;aspect-ratio:1/1.5;margin:0 auto 12px;border-radius:10px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  background:linear-gradient(160deg,var(--pc1,#22e6ff),var(--pc2,#8b5cf6));
+  border:1.5px solid rgba(255,255,255,.55);box-shadow:0 0 26px -6px var(--pc1,#22e6ff);
+  animation:cardFloat 3s ease-in-out infinite}
+#tgCard .em{font-size:26px;line-height:1}
+#tgCard .lb{font-size:8px;font-weight:900;color:#08131c}
+#tgTitle{font-size:16px;font-weight:900;margin-bottom:4px}
+#tgSub{font-size:12px;color:var(--dim);margin-bottom:14px}
+#tgList{display:flex;flex-direction:column;gap:8px}
+.tg{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:14px;
+  background:rgba(255,255,255,.06);border:1.5px solid var(--stroke);
+  font-weight:800;font-size:14px;transition:.2s var(--ease);text-align:start}
+.tg .av{width:30px;height:30px;border-radius:10px;overflow:hidden;flex-shrink:0}
+.tg .nm{flex:1}
+.tg .sc{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.tg:hover{transform:translateX(-4px);border-color:var(--magenta);background:rgba(255,47,142,.14);
+  box-shadow:0 0 26px -10px rgba(255,47,142,.9)}
+#tgBar{height:4px;border-radius:99px;background:rgba(255,255,255,.12);margin-top:14px;overflow:hidden}
+#tgBar i{display:block;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--cyan),var(--magenta));transform-origin:right}
+
+/* البطاقة تطير نحو الهدف */
+.flyCard{position:fixed;z-index:60;width:54px;aspect-ratio:1/1.5;border-radius:9px;pointer-events:none;
+  background:linear-gradient(160deg,var(--pc1,#22e6ff),var(--pc2,#8b5cf6));
+  border:1.5px solid rgba(255,255,255,.6);box-shadow:0 0 30px -4px var(--pc1,#22e6ff);
+  display:flex;align-items:center;justify-content:center;font-size:24px}
+.pl .x2{position:absolute;bottom:-6px;inset-inline-start:50%;transform:translateX(50%);
+  font-size:9.5px;font-weight:900;padding:1px 7px;border-radius:99px;color:#3a2a00;
+  background:linear-gradient(100deg,#ffe9a3,var(--gold));box-shadow:0 2px 8px rgba(255,203,46,.6);
+  animation:beat 1.2s infinite}
 #atkNote{text-align:center;font-size:12.5px;color:var(--dim);margin-top:12px}
 .ammo{display:inline-flex;gap:4px;margin-inline-start:6px;vertical-align:middle}
 .ammo i{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
@@ -314,10 +444,11 @@ input,select,textarea{font-family:inherit}
 
 /* الربط */
 #lkTitle{text-align:center;font-size:15px;font-weight:800;margin-bottom:10px}
-#lkBoard{position:relative;flex:1;min-height:0;display:flex;gap:12px}
-#lkBoard .col{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:7px;z-index:2}
-.node{padding:12px 8px;border-radius:14px;background:rgba(255,255,255,.055);border:1.5px solid var(--stroke);
-  font-size:13.5px;font-weight:800;text-align:center;transition:.22s var(--spring)}
+#lkBoard{position:relative;flex:1;min-height:0;display:flex;gap:clamp(28px,9vw,90px);padding:2px 4px}
+#lkBoard .col{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-evenly;gap:clamp(6px,1.4vh,14px);z-index:2}
+.node{padding:clamp(7px,1.3vh,12px) 8px;border-radius:12px;background:rgba(255,255,255,.055);
+  border:1.5px solid var(--stroke);font-size:clamp(11.5px,1.5vw,14px);font-weight:800;text-align:center;
+  line-height:1.3;overflow:hidden;text-overflow:ellipsis;transition:.22s var(--spring)}
 .node:hover{transform:scale(1.035);border-color:rgba(34,230,255,.5)}
 .node.sel{border-color:var(--cyan);background:rgba(34,230,255,.15);box-shadow:0 0 26px -8px var(--cyan);transform:scale(1.05)}
 .node.tied{border-color:var(--violet);background:rgba(139,92,246,.13)}
@@ -383,6 +514,7 @@ input,select,textarea{font-family:inherit}
 .revHead .val{font-size:clamp(20px,5.5vw,28px);font-weight:900;color:var(--lime);margin-top:5px;
   text-shadow:0 0 30px rgba(57,224,138,.55);animation:qDrop .5s var(--spring) both}
 .rrow{display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:14px;
+  width:100%;max-width:420px;margin-inline:auto;
   background:rgba(255,255,255,.045);border:1px solid var(--stroke);margin-bottom:7px;font-size:13.5px;
   animation:slideIn .45s var(--ease) both}
 .rrow:nth-child(1){animation-delay:.05s}.rrow:nth-child(2){animation-delay:.12s}
@@ -644,10 +776,27 @@ input,select,textarea{font-family:inherit}
     </div>
 
     <div class="scene" id="sAtk">
-      <div class="eyebrow">⚡ اضرب خصماً قبل السؤال</div>
-      <div id="atkTargets"></div>
-      <div id="atkPowers"></div>
+      <div id="atkVeil"></div>
+      <div id="atkRune"><i></i><i></i><i></i><i></i></div>
+      <svg id="atkArcSvg" viewBox="0 0 100 100">
+        <defs><linearGradient id="ag" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#22e6ff"/><stop offset="1" stop-color="#ff2f8e"/>
+        </linearGradient></defs>
+        <circle id="atkArc" cx="50" cy="50" r="49"/>
+      </svg>
+      <div id="atkTitle">اسحب بطاقةً… واختر ضحيّتك</div>
+      <div id="cardRow"></div>
       <div id="atkNote"></div>
+
+      <div id="tgModal">
+        <div id="tgBox">
+          <div id="tgCard"></div>
+          <div id="tgTitle"></div>
+          <div id="tgSub">على مَن تُسلّطها؟</div>
+          <div id="tgList"></div>
+          <div id="tgBar"><i></i></div>
+        </div>
+      </div>
     </div>
 
     <div class="scene" id="sQ">
@@ -729,7 +878,10 @@ input,select,textarea{font-family:inherit}
       </div>
       <div class="cp" data-p="w">
         <div class="tgl"><span>القوى الهجومية<small>من السؤال الرابع</small></span><label class="sw"><input type="checkbox" id="sPw"><i></i></label></div>
-        <div class="f"><label>عدد الاستخدامات</label><div class="vv"><input type="range" id="sPU" min="0" max="9"><output id="oPU"></output></div></div>
+        <div class="f"><label>عدد الاستخدامات لكل لاعب</label><div class="vv"><input type="range" id="sPU" min="0" max="12"><output id="oPU"></output></div></div>
+        <div class="f"><label>كم قوة تظهر لك كل جولة</label>
+          <div class="vv"><input type="range" id="sPC" min="1" max="6"><output id="oPC"></output></div>
+          <div class="h">تُختار عشوائياً من القوى المسموحة — لا تظهر كلها دفعة واحدة</div></div>
         <div class="f"><label>القوى المسموحة</label><div class="pills" id="pwPills"></div></div>
         <div class="f"><label>معاينة الفخاخ</label>
           <div class="h">جرّب كل فخ على شاشتك قبل اللعب — اضغط لتجربته</div>
@@ -979,7 +1131,7 @@ function tryFx(){
   const d=pendingFx;pendingFx=null;
   FX.start(d.power,d.from,d.ms||4000);
 }
-socket.on("attackAck",d=>toast("⚡ ضربت "+d.to));
+socket.on("attackAck",d=>{ if(d.self){toast("✨ مضاعفة النقاط مفعّلة للسؤال القادم");tone(1046,.16,"triangle",.06,1568);} else toast("⚡ ضربت "+d.to); });
 socket.on("finish",d=>showFinale(d));
 
 /* ═══ العرض ═══ */
@@ -998,6 +1150,7 @@ function render(){
     // نُنهي الفخ فقط عند الانتقال لمرحلة غير التي بدأ فيها
     if(FX.active&&FX.key&&FX.key!==key)FX.stop();
     if(ST.phase!=="question"&&ST.phase!=="pyramid")pendingFx=null;
+    if(ST.phase!=="attack"){closeTg();cancelAnimationFrame(atkArcRaf);}
   }
 
   if(ST.state==="lobby"){
@@ -1026,7 +1179,7 @@ function renderRoster(){
     ST.players.forEach(p=>{
       const d=document.createElement("div");d.className="pl";d.dataset.id=p.id;
       d.innerHTML=`<div class="crown hide">👑</div><div class="av">${avatar(p.name,p.color)}</div>
-        <div class="sc">0</div><div class="nm"></div>`;
+        <div class="sc">0</div><div class="nm"></div><div class="x2 hide">×2</div>`;
       r.appendChild(d);
     });
   }
@@ -1037,6 +1190,7 @@ function renderRoster(){
     d.classList.toggle("ans",!!p.answered);
     d.classList.toggle("off",!p.connected);
     d.classList.toggle("lead",p.score===top&&top>0);
+    d.querySelector(".x2").classList.toggle("hide",!p.doubleNext);
     d.querySelector(".crown").classList.toggle("hide",!(p.score===top&&top>0));
     d.querySelector(".nm").textContent=p.name+(p.id===ME?" (أنت)":"");
     const sc=d.querySelector(".sc");
@@ -1086,7 +1240,7 @@ const KEYS=["أ","ب","ج","د","هـ","و"];
 
 function rVote(fresh){
   scene("sVote");mountClock("sVote");
-  if(!fresh)return;
+  if(!fresh){paintVotes();return;}   // تحديث الأعداد لحظياً مع كل تصويت
   spawnOrbs();
   const v=$("votes");v.innerHTML="";
   (ST.catOptions||[]).forEach((c,i)=>{
@@ -1126,6 +1280,23 @@ function rVote(fresh){
     };
     v.appendChild(b);
   });
+  paintVotes();
+}
+// يرسم أعداد الأصوات الحيّة القادمة من الخادم
+function paintVotes(){
+  if(!ST||!ST.votes)return;
+  const tot=Math.max(1,Object.values(ST.votes).reduce((a,b)=>a+b,0));
+  document.querySelectorAll(".door").forEach(d=>{
+    const n=ST.votes[d.dataset.c]||0;
+    const num=d.querySelector(".dVotes b"),bar=d.querySelector(".dBar");
+    if(num&&num.textContent!==String(n)){
+      num.textContent=n;
+      d.querySelector(".dVotes").classList.remove("bump");
+      void d.offsetWidth;
+      d.querySelector(".dVotes").classList.add("bump");
+    }
+    if(bar)bar.style.transform="scaleX("+(n/tot)+")";
+  });
 }
 function spawnOrbs(){
   const w=$("voteOrbs");if(!w)return;
@@ -1143,33 +1314,172 @@ function spawnOrbs(){
   }
 }
 
+const PW_EM={freeze:"❄️",gloop:"🟢",bombs:"💣",nibble:"👾",shuffle:"🔀",double:"✨"};
+const PW_NM={freeze:"تجميد",gloop:"وحل",bombs:"قنابل",nibble:"أكلة الحروف",shuffle:"خلط",double:"مضاعفة"};
+const SELF_PW=new Set(["double"]);
+
+/* لون كل قوة على وجه البطاقة */
+const PW_CL={
+  freeze:["#7ee8ff","#2b6cff"], gloop:["#a8e063","#2f7d32"],
+  bombs :["#ff9a5a","#b3261e"], nibble:["#c9a4ff","#5b21b6"],
+  shuffle:["#ffd76e","#c47d00"], double:["#ffe36e","#ff8a00"]
+};
+const CARD_GLYPH="✦";
+
+/* شرارات الخلفية — تُبنى مرة واحدة */
+let spksReady=false;
+function buildSparks(){
+  if(spksReady||RM)return;spksReady=true;
+  const host=$("sAtk");
+  for(let i=0;i<18;i++){
+    const s=document.createElement("span");s.className="spk";
+    const sz=4+Math.random()*9;
+    s.style.width=s.style.height=sz+"px";
+    s.style.left=(6+Math.random()*88)+"%";
+    s.style.top=(8+Math.random()*80)+"%";
+    s.style.animationDelay=(-Math.random()*2.6)+"s";
+    s.style.animationDuration=(1.9+Math.random()*2.2)+"s";
+    s.style.opacity=.25+Math.random()*.55;
+    host.insertBefore(s,$("atkTitle"));
+  }
+}
+
+/* قوس المؤقت على حلقة الطلاسم */
+let atkArcRaf=0;
+function atkArcRun(){
+  cancelAnimationFrame(atkArcRaf);
+  const arc=$("atkArc");if(!arc)return;
+  const C=2*Math.PI*49;arc.style.strokeDasharray=C;
+  (function f(){
+    if(!ST||ST.phase!=="attack"||!ST.phaseEndsAt){arc.style.strokeDashoffset=C;return;}
+    const end=ST.phaseEndsAt-OFF,tot=Math.max(1000,(ST.phaseDur||6)*1000);
+    const fr=Math.max(0,Math.min(1,(end-Date.now())/tot));
+    arc.style.strokeDashoffset=C*(1-fr);
+    const bar=$("tgBar").firstElementChild;
+    if(bar)bar.style.transform="scaleX("+fr+")";
+    atkArcRaf=requestAnimationFrame(f);
+  })();
+}
+
+function closeTg(){$("tgModal").classList.remove("on");}
+
 function rAtk(fresh){
-  scene("sAtk");mountClock("sAtk");
+  scene("sAtk");mountClock("sAtk");buildSparks();
   const me=ST.players.find(p=>p.id===ME);
-  if(fresh){atkT=null;atkP=null;atkSent=false;}
-  const g=$("atkTargets");g.innerHTML="";
-  ST.players.filter(p=>p.id!==ME&&!p.spectator).forEach(p=>{
-    const b=document.createElement("button");b.className="tg"+(atkT===p.id?" on":"");
-    b.innerHTML=`<span class="av">${avatar(p.name,p.color)}</span>${esc(p.name)}`;
-    b.onclick=()=>{if(atkSent)return;atkT=p.id;rAtk(false);send();};
-    g.appendChild(b);
-  });
-  const EM={freeze:"❄️",gloop:"🟢",bombs:"💣",nibble:"👾",shuffle:"🔀"};
-  const NM={freeze:"تجميد",gloop:"وحل",bombs:"قنابل",nibble:"أكلة الحروف",shuffle:"خلط"};
-  const pg=$("atkPowers");pg.innerHTML="";
-  (ST.settings.allowedPowers||[]).forEach(p=>{
-    const b=document.createElement("button");b.className="pwr"+(atkP===p?" on":"");
-    b.innerHTML=`<span class="em">${EM[p]||"⚡"}</span><span class="lb">${NM[p]||p}</span>`;
-    b.onclick=()=>{if(atkSent)return;atkP=p;rAtk(false);send();};
-    pg.appendChild(b);
-  });
   const left=me?me.powersLeft:0,tot=ST.settings.powerUses||0;
+  if(fresh){atkT=null;atkP=null;atkSent=false;closeTg();}
+  atkArcRun();
+
+  const row=$("cardRow");
+  const foes=ST.players.filter(p=>p.id!==ME&&!p.spectator&&p.connected!==false);
+
+  /* لا استخدامات؟ لا بطاقات — نشاهد فقط */
+  if(left<=0||atkSent){
+    row.innerHTML="";
+    $("atkTitle").textContent=atkSent?"⚡ أُلقيت البطاقة… انتظر البقيّة":"⏳ استعدّ للسؤال";
+    $("atkNote").innerHTML=atkSent?"":"نفدت بطاقاتك — تابع اللعب بالنقاط";
+    return;
+  }
+
+  const menu=(ST.powerMenu&&ST.powerMenu.length)?ST.powerMenu:(ST.settings.allowedPowers||[]);
+  $("atkTitle").textContent="اسحب بطاقةً… واختر ضحيّتك";
+
+  row.innerHTML="";
+  menu.forEach(p=>{
+    const cl=PW_CL[p]||["#22e6ff","#8b5cf6"];
+    const card=document.createElement("div");
+    card.className="card";
+    card.style.setProperty("--pc1",cl[0]);card.style.setProperty("--pc2",cl[1]);
+    card.innerHTML=
+      '<div class="cIn">'+
+        '<div class="cFace cBack"><span class="glyph">'+CARD_GLYPH+'</span></div>'+
+        '<div class="cFace cFront">'+
+          (SELF_PW.has(p)?'<span class="self">لنفسك</span>':'')+
+          '<span class="em">'+(PW_EM[p]||"⚡")+'</span>'+
+          '<span class="lb">'+(PW_NM[p]||p)+'</span>'+
+        '</div>'+
+      '</div>';
+    card.onclick=()=>flipCard(card,p,cl,foes);
+    row.appendChild(card);
+  });
+
   let ammo='<span class="ammo">';
-  for(let i=0;i<tot;i++)ammo+=`<i class="${i<left?"":"spent"}"></i>`;
+  for(let i=0;i<tot;i++)ammo+='<i class="'+(i<left?"":"spent")+'"></i>';
   ammo+="</span>";
-  $("atkNote").innerHTML=atkSent?"⚡ تم إرسال الهجوم"
-    :(left>0?"اختر خصماً وقوة"+ammo:"لا توجد استخدامات متبقية");
-  function send(){if(atkT&&atkP&&!atkSent){atkSent=true;socket.emit("attack",{to:atkT,power:atkP});sTap();rAtk(false);}}
+  $("atkNote").innerHTML="اقلب بطاقة لتكشف قوّتها"+ammo;
+}
+
+function flipCard(card,power,cl,foes){
+  if(atkSent||card.classList.contains("flip"))return;
+  atkP=power;
+  card.classList.add("flip");
+  sTap();tone(660,.12,"triangle",.05,1320);
+  // البطاقات الأخرى تخبو
+  [...card.parentElement.children].forEach(c=>{if(c!==card)c.classList.add("spent");});
+
+  setTimeout(()=>{
+    if(SELF_PW.has(power)){            // على النفس — لا هدف
+      atkSent=true;socket.emit("attack",{power:power});
+      flyTo(card,null,cl);
+      $("atkTitle").textContent="✨ مضاعفة النقاط في يدك";
+      $("atkNote").innerHTML="";
+      return;
+    }
+    openTargets(card,power,cl,foes);
+  },560);
+}
+
+function openTargets(card,power,cl,foes){
+  const box=$("tgBox");
+  box.style.setProperty("--pc1",cl[0]);box.style.setProperty("--pc2",cl[1]);
+  $("tgCard").innerHTML='<span class="em">'+(PW_EM[power]||"⚡")+'</span>'+
+                        '<span class="lb">'+(PW_NM[power]||power)+'</span>';
+  $("tgTitle").textContent=PW_NM[power]||power;
+  const L=$("tgList");L.innerHTML="";
+  foes.forEach(p=>{
+    const b=document.createElement("button");b.className="tg";
+    b.innerHTML='<span class="av">'+avatar(p.name,p.color)+'</span>'+
+                '<span class="nm">'+esc(p.name)+'</span>'+
+                '<span class="sc">'+(p.score||0)+'</span>';
+    b.onclick=()=>{
+      if(atkSent)return;
+      atkT=p.id;atkSent=true;
+      socket.emit("attack",{to:p.id,power:power});
+      sTap();closeTg();
+      flyTo(card,p.id,cl);
+      $("atkTitle").textContent="⚡ "+p.name+" في مرمى النار";
+      $("atkNote").innerHTML="";
+    };
+    L.appendChild(b);
+  });
+  $("tgModal").classList.add("on");
+}
+
+/* البطاقة تطير من مكانها نحو بطاقة اللاعب في الشريط الجانبي */
+function flyTo(card,targetId,cl){
+  card.style.visibility="hidden";
+  if(RM){card.style.visibility="";return;}
+  const r=card.getBoundingClientRect();
+  const dst=targetId?document.querySelector('#roster .pl[data-id="'+targetId+'"]'):null;
+  const f=document.createElement("div");
+  f.className="flyCard";
+  f.style.setProperty("--pc1",cl[0]);f.style.setProperty("--pc2",cl[1]);
+  f.textContent="⚡";
+  f.style.left=(r.left+r.width/2-27)+"px";
+  f.style.top=(r.top+r.height/2-40)+"px";
+  document.body.appendChild(f);
+  let dx=0,dy=-140;
+  if(dst){const d=dst.getBoundingClientRect();
+    dx=d.left+d.width/2-(r.left+r.width/2);dy=d.top+d.height/2-(r.top+r.height/2);}
+  f.animate([
+    {transform:"translate(0,0) rotate(0) scale(1)",opacity:1},
+    {transform:"translate("+dx*.55+"px,"+(dy*.55-60)+"px) rotate(220deg) scale(1.25)",opacity:1,offset:.6},
+    {transform:"translate("+dx+"px,"+dy+"px) rotate(420deg) scale(.35)",opacity:0}
+  ],{duration:820,easing:"cubic-bezier(.4,0,.5,1)"});
+  setTimeout(()=>{f.remove();if(dst){dst.animate(
+    [{transform:"scale(1)"},{transform:"scale(1.14)",filter:"brightness(1.6)"},{transform:"scale(1)"}],
+    {duration:420,easing:"cubic-bezier(.22,1,.36,1)"});}},820);
+  tone(320,.2,"sawtooth",.05,90);
 }
 
 function rQ(fresh){
@@ -1327,7 +1637,7 @@ function showRev(d){
       <span class="av">${avatar(r.name,r.color)}</span>
       <span class="nm">${esc(r.name)}</span>
       ${r.ms!==null?`<span class="ms">${(r.ms/1000).toFixed(2)}ث</span>`:""}
-      <span class="pt">${r.correct?"+"+r.gain:"—"}</span></div>`).join("");
+      <span class="pt">${r.correct?(r.doubled?"✨ +"+r.gain:"+"+r.gain):"—"}</span></div>`).join("");
 }
 function showRevCh(d){
   scene("sRev");
@@ -1398,6 +1708,8 @@ function burst(el,color){
   cv.style.cssText="position:absolute;inset:0;pointer-events:none;z-index:28";
   cv.width=sr.width;cv.height=sr.height;
   $("stage").appendChild(cv);
+  // شبكة أمان: لو خُنق requestAnimationFrame (تبويب مخفي) لا تبقَ اللوحة عالقة
+  setTimeout(()=>cv.remove(),2500);
   const cx=cv.getContext("2d");
   const px=r.left-sr.left+r.width/2,py=r.top-sr.top+r.height/2;
   const ps=[];
@@ -1428,6 +1740,7 @@ function fireworks(){
     tone(400+Math.random()*400,.18,"sine",.03);
   }
   boom();const iv=setInterval(boom,620);
+  setTimeout(()=>{clearInterval(iv);try{cv.getContext("2d").clearRect(0,0,cv.width,cv.height);}catch(e){}},12000);
   (function loop(){
     n++;cx.clearRect(0,0,cv.width,cv.height);
     ps=ps.filter(p=>p.l>0);
@@ -1843,7 +2156,7 @@ $("againB").onclick=()=>{$("finale").classList.remove("on");socket.emit("backToL
 
 /* ═══ الإعدادات ═══ */
 const RG={questionTime:["sQT","oQT",v=>v+"ث"],voteTime:["sVT","oVT",v=>v+"ث"],attackTime:["sAT","oAT",v=>v+"ث"],
-  powerUses:["sPU","oPU",v=>v+" مرات"],pyramidHeight:["sPH","oPH",v=>v+" درجة"],pyramidTime:["sPT","oPT",v=>v+"ث"],
+  powerUses:["sPU","oPU",v=>v+" مرات"],powerChoices:["sPC","oPC",v=>v+" قوى"],pyramidHeight:["sPH","oPH",v=>v+" درجة"],pyramidTime:["sPT","oPT",v=>v+"ث"],
   maxPlayers:["sMP","oMP",v=>v+" لاعبين"]};
 Object.entries(RG).forEach(([k,[i,o,f]])=>$(i).addEventListener("input",()=>$(o).textContent=f($(i).value)));
 function buildPills(d){
@@ -1906,7 +2219,7 @@ $("cfgSave").onclick=()=>{
     questionTime:+$("sQT").value,voteTime:+$("sVT").value,attackTime:+$("sAT").value,
     length:$("sLen").value,difficulty:+$("sDif").value,
     cats:cats.length===document.querySelectorAll("#catPills .pill").length?[]:cats,
-    challenges:$("sCh").checked,powers:$("sPw").checked,powerUses:+$("sPU").value,allowedPowers:pws,
+    challenges:$("sCh").checked,powers:$("sPw").checked,powerUses:+$("sPU").value,powerChoices:+$("sPC").value,allowedPowers:pws,
     pyramid:$("cPyOn").checked,pyramidHeight:+$("sPH").value,pyramidTime:+$("sPT").value,
     headStart:$("sHS").checked,pyramidPenalty:$("sPP").checked,
     maxPlayers:+$("sMP").value,visibility:$("sVis").value,password:$("sPass").value});
