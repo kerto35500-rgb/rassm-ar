@@ -312,16 +312,19 @@ input,select,textarea{font-family:inherit}
   background:radial-gradient(ellipse 62% 58% at 50% 46%,transparent 18%,rgba(2,4,10,.72) 68%,rgba(1,2,6,.94))}
 /* حلقات الطلاسم */
 #atkRune{position:absolute;left:50%;top:46%;width:min(74vh,560px);aspect-ratio:1;transform:translate(-50%,-50%);
-  pointer-events:none;z-index:0;opacity:.5}
-#atkRune i{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(139,92,246,.55)}
+  pointer-events:none;z-index:0}
+#atkRune i{position:absolute;inset:0;border-radius:50%}
 #atkRune i:nth-child(1){animation:spinCW 26s linear infinite;
-  border-style:dashed;border-color:rgba(34,230,255,.42)}
+  border:2px dashed rgba(34,230,255,.5);
+  box-shadow:0 0 26px -6px rgba(34,230,255,.55)}
 #atkRune i:nth-child(2){inset:11%;animation:spinCCW 19s linear infinite;
-  border-width:2px;border-color:rgba(139,92,246,.5);
-  box-shadow:0 0 40px -12px rgba(139,92,246,.7) inset}
+  border:3px solid rgba(139,92,246,.62);
+  box-shadow:0 0 60px -10px rgba(139,92,246,.85) inset, 0 0 34px -8px rgba(139,92,246,.6)}
 #atkRune i:nth-child(3){inset:23%;animation:spinCW 13s linear infinite;
-  border-color:rgba(255,47,142,.34);border-style:dotted}
-#atkRune i:nth-child(4){inset:34%;border-color:rgba(255,255,255,.13)}
+  border:2px dotted rgba(255,47,142,.5);
+  box-shadow:0 0 24px -8px rgba(255,47,142,.55)}
+#atkRune i:nth-child(4){inset:34%;border:1.5px solid rgba(255,255,255,.22);
+  background:radial-gradient(circle at 50% 50%,rgba(139,92,246,.14),transparent 68%)}
 @keyframes spinCW{to{transform:rotate(360deg)}}
 @keyframes spinCCW{to{transform:rotate(-360deg)}}
 /* قوس المؤقت على الحلقة نفسها */
@@ -329,11 +332,13 @@ input,select,textarea{font-family:inherit}
   transform:translate(-50%,-50%) rotate(-90deg);overflow:visible;z-index:1;pointer-events:none}
 #atkArc{fill:none;stroke:url(#ag);stroke-width:2.5;stroke-linecap:round;
   filter:drop-shadow(0 0 8px rgba(34,230,255,.95))}
-/* شرارات رباعية */
+/* شرارات رباعية — نجمة بأربعة أطراف مع هالة */
 .spk{position:absolute;pointer-events:none;z-index:1;
-  background:#fff;clip-path:polygon(50% 0,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 42%);
-  animation:spkTw 2.6s ease-in-out infinite;filter:drop-shadow(0 0 6px #fff)}
-@keyframes spkTw{0%,100%{transform:scale(.35) rotate(0);opacity:.15}50%{transform:scale(1) rotate(45deg);opacity:.95}}
+  background:radial-gradient(circle at 50% 50%,#fff 0%,#dff6ff 40%,rgba(160,220,255,.55) 100%);
+  clip-path:polygon(50% 0,56% 44%,100% 50%,56% 56%,50% 100%,44% 56%,0 50%,44% 44%);
+  animation:spkTw 2.6s ease-in-out infinite;
+  filter:drop-shadow(0 0 8px rgba(200,235,255,.95)) drop-shadow(0 0 18px rgba(120,190,255,.55))}
+@keyframes spkTw{0%,100%{transform:scale(.3);opacity:.1}50%{transform:scale(1);opacity:1}}
 
 #atkTitle{position:relative;z-index:3;text-align:center;font-size:clamp(15px,3.4vw,22px);font-weight:900;
   margin-bottom:clamp(10px,2.4vh,26px);letter-spacing:-.3px;
@@ -367,14 +372,16 @@ input,select,textarea{font-family:inherit}
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:clamp(4px,.9vw,8px);overflow:hidden}
 /* ظهر البطاقة */
-.cBack{background:linear-gradient(150deg,#1a1440,#0b0a22 55%,#241a4d);
-  border:2px solid rgba(180,150,255,.55);
-  box-shadow:0 14px 34px -10px rgba(0,0,0,.9), inset 0 0 26px rgba(139,92,246,.32),
-             0 0 24px -6px rgba(139,92,246,.6)}
+.cBack{background:
+    radial-gradient(circle at 50% 42%,rgba(150,110,255,.42),transparent 62%),
+    linear-gradient(150deg,#2b2170,#140f38 55%,#3a2678);
+  border:2px solid rgba(200,175,255,.8);
+  box-shadow:0 14px 34px -10px rgba(0,0,0,.9), inset 0 0 34px rgba(150,110,255,.4),
+             0 0 34px -4px rgba(150,110,255,.85)}
 .cBack::before{content:"";position:absolute;inset:7px;border-radius:8px;
   border:1px solid rgba(255,255,255,.16)}
-.cBack .glyph{font-size:clamp(30px,5.5vw,48px);line-height:1;color:#c9b6ff;
-  text-shadow:0 0 16px rgba(160,120,255,.95);
+.cBack .glyph{font-size:clamp(30px,5.5vw,48px);line-height:1;color:#fff;
+  text-shadow:0 0 12px #fff,0 0 26px rgba(180,150,255,1),0 0 46px rgba(139,92,246,.9);
   animation:glyphPulse 2.6s ease-in-out infinite}
 @keyframes glyphPulse{0%,100%{opacity:.65;transform:scale(1)}50%{opacity:1;transform:scale(1.12)}}
 .cBack::after{content:"";position:absolute;inset:-40% -110%;
@@ -1331,9 +1338,9 @@ let spksReady=false;
 function buildSparks(){
   if(spksReady||RM)return;spksReady=true;
   const host=$("sAtk");
-  for(let i=0;i<18;i++){
+  for(let i=0;i<24;i++){
     const s=document.createElement("span");s.className="spk";
-    const sz=4+Math.random()*9;
+    const sz=7+Math.random()*15;
     s.style.width=s.style.height=sz+"px";
     s.style.left=(6+Math.random()*88)+"%";
     s.style.top=(8+Math.random()*80)+"%";
