@@ -119,6 +119,7 @@
   #sylHead { display:none; flex-shrink:0; text-align:center; padding:9px 10px 10px;
              background:linear-gradient(180deg,#fff6f1,#fdfbfa); border-bottom:2px solid #ffe3d4; }
   #stage.compact #sylHead { display:block; }
+  #sylHead.hide { display:none !important; }
   #sylHead .v { font-size:34px; font-weight:900; color:var(--ink); letter-spacing:3px; line-height:1.1; }
   #sylHead .t { font-size:12.5px; font-weight:700; color:#a08672; margin-top:3px; }
   .chip { flex:0 0 auto; min-width:66px; text-align:center; padding:5px 8px 4px; border-radius:11px;
@@ -219,7 +220,8 @@
   #stage.compact #ringNote { display:block; }
 
   /* ===== زرّان مميّزان للدردشة واللاعبين (الجوال) ===== */
-  #fabs { display:none; position:absolute; inset-inline-start:9px; bottom:9px; z-index:24; gap:7px; }
+  #fabs { display:none; position:absolute; inset-inline-start:4px; bottom:2px; z-index:24; gap:7px;
+          flex-direction:column; align-items:flex-start; }
   #stage.compact #fabs { display:flex; }
   .fab { position:relative; display:flex; align-items:center; gap:6px; height:40px; padding:0 14px 0 11px;
          border-radius:99px; border:none; color:#fff; font-family:inherit; font-size:13px; font-weight:800;
@@ -427,13 +429,13 @@
           <div id="roundHint"></div>
         </div>
         <div id="ringNote"></div>
-      </div>
-
-      <!-- أزرار عائمة: الدردشة واللاعبون (الجوال) -->
       <div id="fabs">
         <button class="fab" id="fabChat" title="الدردشة"><span class="ico">💬</span>الدردشة<span class="badge hide" id="chatBadge">0</span></button>
         <button class="fab" id="fabPl" title="اللاعبون"><span class="ico">👥</span>اللاعبون<span class="badge" id="plBadge">0</span></button>
       </div>
+      </div>
+
+      <!-- أزرار عائمة: الدردشة واللاعبون (الجوال) -->
 
       <div id="alphaBox">
         <div id="alphaHead"><b>لوحتك</b> <span id="alphaCount">0/28</span> <span style="opacity:.7">— اكمل الحروف = ❤️ إضافي</span></div>
@@ -917,6 +919,7 @@
 
     // المقطع: كبيراً فوق الحلقة، وفي شارة فوق مربع الكتابة (تبقى ظاهرة والكيبورد مفتوح)
     $("sylBig").textContent = ST.syllable || "—";
+    $("sylHead").classList.toggle("hide", !playing);
     $("pillSyl").textContent = ST.syllable || "—";
     $("sylPill").classList.toggle("on", playing);
 
