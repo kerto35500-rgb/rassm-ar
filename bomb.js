@@ -193,6 +193,17 @@ function setupBomb(io, deps) {
     room.boomTimer = setTimeout(() => explode(room), ms + GRACE_MS);
   }
 
+  // أول لاعب حيّ بعد الموضع المُعطى (دوراناً حول الحلقة)
+  function nextAliveIdx(room, from) {
+    const n = room.players.length;
+    for (let i = 1; i <= n; i++) {
+      const j = (from + i) % n;
+      const c = room.players[j];
+      if (c && c.alive && !c.spectator) return j;
+    }
+    return from;
+  }
+
   function advanceTurn(room, gainedSeconds) {
     const list = alivePlayers(room);
     if (list.length <= 1) return endGame(room);
@@ -200,12 +211,7 @@ function setupBomb(io, deps) {
     const step = SPEED_STEP[room.settings.speedMode] || 0;
     room.baseTime = Math.max(room.settings.minTime, room.baseTime - step);
 
-    let next = room.turnIdx;
-    for (let i = 1; i <= room.players.length; i++) {
-      const cand = room.players[(room.turnIdx + i) % room.players.length];
-      if (cand && cand.alive && !cand.spectator) { next = (room.turnIdx + i) % room.players.length; break; }
-    }
-    room.turnIdx = next;
+    room.turnIdx = nextAliveIdx(room, room.turnIdx);
     nextSyllable(room);
 
     let t = room.baseTime;
@@ -236,8 +242,8 @@ function setupBomb(io, deps) {
     }
     const list = alivePlayers(room);
     if (list.length <= 1) return endGame(room);
-    // اللاعب الذي انفجرت عنده يبدأ الجولة الجديدة (إن كان ما زال حياً)
-    const startIdx = p.alive ? room.turnIdx : (room.turnIdx + 1) % room.players.length;
+    // بعد الانفجار تنتقل القنبلة للاعب الذي بعده — لا تبقى معلّقة عليه
+    const startIdx = nextAliveIdx(room, room.turnIdx);
     setTimeout(() => { if (room.state === "playing") newRound(room, startIdx); }, 1400);
     broadcast(room);
   }

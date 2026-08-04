@@ -34,7 +34,7 @@ const COLORS = ["#e5541e", "#1e88e5", "#2e9e5b", "#7c4dff", "#ffb300", "#e91e63"
 const DEFAULTS = {
   questionTime: 15,     // ثواني السؤال (10/15/20)
   voteTime: 8,          // ثواني التصويت على الفئة
-  attackTime: 6,        // ثواني اختيار الهجوم
+  attackTime: 60,       // ثواني اختيار بطاقة الفخ (دقيقة كاملة افتراضياً)
   length: "normal",     // short(6 أسئلة) | normal(9) | long(12)
   challenges: true,     // تفعيل جولتي الربط والتصنيف
   powers: true,         // تفعيل القوى الهجومية
@@ -62,7 +62,7 @@ function sanitize(s = {}, old = DEFAULTS) {
   const o = { ...old };
   if (s.questionTime !== undefined) o.questionTime = clampInt(s.questionTime, MIN_Q, 30, old.questionTime);
   if (s.voteTime !== undefined) o.voteTime = clampInt(s.voteTime, MIN_V, 15, old.voteTime);
-  if (s.attackTime !== undefined) o.attackTime = clampInt(s.attackTime, MIN_A, 12, old.attackTime);
+  if (s.attackTime !== undefined) o.attackTime = clampInt(s.attackTime, MIN_A, 60, old.attackTime);
   if (s.length !== undefined) o.length = ["short", "normal", "long"].includes(s.length) ? s.length : old.length;
   if (s.challenges !== undefined) o.challenges = !!s.challenges;
   if (s.powers !== undefined) o.powers = !!s.powers;
@@ -254,6 +254,16 @@ function setupQuiz(io, deps) {
   }
 
   // ====== مرحلة اختيار الهجوم ======
+  // إذا اختار كل من يملك استخداماً ⇒ لا داعي لانتظار بقية الدقيقة.
+  // ومن لم يختر حتى انتهاء الوقت يمرّ بلا فخ (سلوك المهلة الطبيعي).
+  function maybeEndAttack(room) {
+    if (room.phase !== "attack") return;
+    const waiting = alive(room).filter(p => p.powersLeft > 0 && !p.pendingAttack);
+    if (waiting.length) return;
+    clearTimers(room);
+    setTimeout(() => { if (room.phase === "attack") beginQuestion(room); }, FAST ? 50 : 900);
+  }
+
   function beginAttack(room) {
     room.attacks = [];
     room.players.forEach(p => { p.pendingAttack = null; });
@@ -812,6 +822,7 @@ function setupQuiz(io, deps) {
         if (power === "double") player.doubleNext = true;
         nsp.to(player.id).emit("attackAck", { to: "نفسك", power, self: true });
         broadcast(room);
+        maybeEndAttack(room);
         return;
       }
 
@@ -827,6 +838,7 @@ function setupQuiz(io, deps) {
       room.attacks.push({ from: player.id, fromName: player.name, to, toName: target.name, power });
       nsp.to(player.id).emit("attackAck", { to: target.name, power });
       broadcast(room);
+      maybeEndAttack(room);
     });
 
     socket.on("answer", (idx) => {

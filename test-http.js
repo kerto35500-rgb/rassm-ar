@@ -38,7 +38,7 @@ setTimeout(async () => {
   const draw = (await get("/draw")).body;
   ok(/id="board"/.test(draw), "لوحة الرسم موجودة");
   ok(/id="colors"/.test(draw), "لوحة الألوان موجودة");
-  ok(/flex-direction:row/.test(draw), "إصلاح ألوان الجوال ما زال موجوداً");
+  ok(/#colors \{ display:flex/.test(draw), "الألوان في سطر أفقي (إصلاح الجوال باقٍ)");
   ok(/id="lobbyScreen"/.test(draw) && /id="gameScreen"/.test(draw), "شاشات اللعبة سليمة");
   ok(draw.length > 60000, `حجم الملف طبيعي (${draw.length} حرف)`);
 

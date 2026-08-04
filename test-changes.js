@@ -160,6 +160,13 @@ setTimeout(async () => {
   ok(/#plStrip \{ display:flex; \}/.test(BOMB), "الشريط يظهر في الجوال");
   ok(/scrollIntoView\(\{ inline:"center"/.test(BOMB), "صاحب الدور يُجلب داخل الشريط تلقائياً");
   ok(/overflow-x:auto/.test(BOMB), "الشريط يستغل العرض كاملاً بالتمرير");
+  ok(/function updateCompact/.test(BOMB), "التبديل للشريط يعتمد على ارتفاع الحلقة الفعلي");
+  ok(/#stage\.compact #ring \.pl \{ display:none; \}/.test(BOMB),
+     "أي شاشة ضاق ارتفاعها (كيبورد مفتوح) تنتقل للشريط — لا تداخل");
+  ok(/reflowRing\(\);\s+\/\/ اللوحة/.test(BOMB), "فتح اللوحة يعيد حساب المواضع فوراً");
+  ok(/new ResizeObserver\(reflowRing\)/.test(BOMB),
+     "ResizeObserver يرصد تغيّر ارتفاع الحلقة (مواضع الأسماء لا تبقى قديمة)");
+  ok(/addEventListener\("resize", reflowRing\)/.test(BOMB), "تغيير حجم النافذة يعيد الترتيب");
 
   // ───────────── ٨ · السكرول مع الكيبورد ─────────────
   console.log("\n⑧ السكرول والمقطع مع الكيبورد المفتوح");
@@ -191,8 +198,8 @@ setTimeout(async () => {
   console.log("\n⑪ سلامة لعبة الرسم");
   const d = await get("/draw");
   ok(d.code === 200 && /id="board"/.test(d.body), "لوحة الرسم موجودة");
-  ok(/id="colorsSection"|colorsSection/.test(d.body), "قسم الألوان موجود");
-  ok(/flex-direction:row/.test(d.body), "إصلاح ألوان الجوال باقٍ");
+  ok(/id="colors"/.test(d.body) && /\.colorBtn/.test(d.body), "قسم الألوان موجود");
+  ok(/#colors \{ display:flex/.test(d.body), "الألوان في سطر واحد أفقي (لا عمود)");
   ok(/id="vkb"/.test(d.body), "كيبورد الرسم العربي باقٍ");
   const h = await get("/");
   ok(h.code === 200 && /GAMES/.test(h.body), "البوابة تعمل");
