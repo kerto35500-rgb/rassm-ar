@@ -149,7 +149,7 @@
   #sylPill .lb { font-size:11.5px; font-weight:700; color:#a06a4e; }
   #sylPill .vv { font-size:22px; font-weight:900; color:var(--accent); letter-spacing:2px; }
   #sylPill .tt { font-size:12.5px; font-weight:800; color:#8a93a3; font-variant-numeric:tabular-nums; }
-  #wordForm { display:flex; gap:8px; }
+  #wordForm { display:flex; gap:8px; min-width:0; }
   #kbBtn { flex:0 0 auto; width:46px; border:2px solid var(--line); border-radius:12px;
            background:#eef2f7; font-size:19px; color:var(--ink); }
   #kbBtn.on { background:var(--accent2); border-color:var(--accent2); color:#fff; }
@@ -165,12 +165,12 @@
   #vkb .k.wide { flex:3; font-size:14px; }
   #vkb .k.del { background:#ffe0e0; color:#c62828; }
   #vkb .k.send { background:var(--good); color:#fff; font-size:14px; }
-  #wordInput { flex:1; padding:14px 16px; border:2.5px solid var(--line); border-radius:12px; font-size:18px; font-weight:700; text-align:center; color:var(--ink); }
+  #wordInput { flex:1 1 0; min-width:0; padding:14px 16px; border:2.5px solid var(--line); border-radius:12px; font-size:18px; font-weight:700; text-align:center; color:var(--ink); }
   #wordInput:focus { outline:none; border-color:var(--accent); }
   #wordInput:disabled { background:#f2f4f7; color:#aab; }
   #wordInput.bad { border-color:var(--bad); animation:shakeX .3s; }
   @keyframes shakeX { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);} }
-  #sendBtn { padding:0 20px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-weight:800; font-size:16px; }
+  #sendBtn { flex:0 0 auto; padding:0 20px; border:none; border-radius:12px; background:var(--accent); color:#fff; font-weight:800; font-size:16px; }
   #msgLine { text-align:center; font-size:13px; min-height:18px; margin-top:6px; font-weight:700; }
   #msgLine.bad { color:var(--bad); }
   #msgLine.good { color:var(--good); }
@@ -180,6 +180,10 @@
   #alphaRing { position:absolute; inset:0; pointer-events:none; display:none; }
   #stage.compact #alphaRing { display:block; }
   #stage.compact #alphaBox { display:none; }
+  /* المساحة أضيق من الحلقة (لوحة مفاتيح مفتوحة مثلاً) ⇒ نرجع للشريط المسطّح */
+  #stage.compact.tight #alphaRing { display:none; }
+  #stage.compact.tight #alphaBox { display:block; }
+  #stage.compact.tight #ringNote { display:none; }
   .ral { position:absolute; width:30px; height:30px; margin:-15px 0 0 -15px; border-radius:9px;
          display:flex; align-items:center; justify-content:center; font-size:14.5px; font-weight:900;
          background:#fff; color:#c3cad6; border:1.5px solid #e9edf3;
@@ -310,7 +314,10 @@
     #bombEmoji { font-size:30px; }
     #syl { font-size:25px; }
     #poolHint, #roundHint { display:none; }   /* موجودة في شارة المقطع وأسفل الحلقة */
-    #wordInput { font-size:17px; padding:13px; }
+    #wordInput { font-size:17px; padding:13px 10px; }
+    #kbBtn { width:40px; font-size:17px; }
+    #sendBtn { padding:0 12px; font-size:15px; }
+    #inputZone { padding:8px 8px 10px; }
     #sylPill { display:flex; }
   }
   @media (max-width: 520px) {
@@ -800,7 +807,8 @@
     layoutAlphaRing();
   }
 
-  // توزيع الحروف على بيضاوي حول القنبلة — يستغل الفراغ يمين ويسار
+  // توزيع الحروف على بيضاوي حول القنبلة — يستغل الفراغ يمين ويسار.
+  // إن كانت المساحة أضيق من أن تتسع للحروف بلا تراكب نرجع للشريط المسطّح.
   function layoutAlphaRing(){
     const box = $("ring"), host = $("alphaRing");
     const tiles = [...host.children];
@@ -810,9 +818,18 @@
     const bomb = $("bombCircle");
     const half = (bomb ? bomb.offsetWidth : 110) / 2;
     const t = tiles[0].offsetWidth || 28;
-    const rx = Math.max(half + t * 0.9, W / 2 - t * 0.85);
-    const ry = Math.max(half + t * 0.75, H / 2 - t * 0.95);
     const n = tiles.length;
+
+    const ry = Math.max(half + t * 0.75, H / 2 - t * 0.95);
+    // نمنع البيضاوي من أن يكون مفرطح الشكل، وإلا تتكتّل الحروف عند الطرفين
+    const rx = Math.min(Math.max(half + t * 0.9, W / 2 - t * 0.85), ry * 1.4);
+
+    // محيط البيضاوي (تقريب رامانوجان) ÷ عدد الحروف = المسافة المتاحة لكل حرف
+    const per = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
+    const tight = per / n < t * 1.15;
+    $("stage").classList.toggle("tight", tight);
+    if (tight) return;                       // الشريط المسطّح سيظهر بدلاً منها
+
     tiles.forEach((el, i) => {
       const a = (Math.PI * 2 * i / n) - Math.PI / 2;   // نبدأ من الأعلى
       el.style.left = (W / 2 + Math.cos(a) * rx) + "px";
