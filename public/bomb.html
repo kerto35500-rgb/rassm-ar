@@ -94,7 +94,12 @@
   .pl.turn .turnArrow, .chip.turn .turnArrow { display:block; }
   @keyframes bob { 0%,100%{transform:translateY(0);} 50%{transform:translateY(4px);} }
 
-  /* ============ شريط اللاعبين (الجوال) ============ */
+  /* ============ شريط اللاعبين ============ */
+  /* يُستعمل في الجوال، وأيضاً على أي شاشة صار فيها ارتفاع الحلقة صغيراً
+     (مثلاً عند فتح لوحة المفاتيح) — يمنع تداخل الأسماء مع القنبلة */
+  #stage.compact #plStrip { display:flex; }
+  #stage.compact #ring .pl { display:none; }
+  #stage.compact #ring { flex:1 1 auto; min-height:150px; }
   #plStrip { display:none; gap:7px; padding:7px 9px 5px; overflow-x:auto; flex-shrink:0;
              border-bottom:2px solid var(--line); background:#fbfcfe; scrollbar-width:none; }
   #plStrip::-webkit-scrollbar { display:none; }
@@ -254,7 +259,7 @@
     #plStrip { display:flex; }
     #ring .pl { display:none; }
     #stage { overflow-y:auto; }          /* السكرول ممكن والكيبورد مفتوح */
-    #ring { flex:0 0 auto; min-height:186px; }
+    #ring { flex:1 1 auto; min-height:170px; }
     #bombWrap { width:190px; }
     #bombCircle { width:128px; height:128px; }
     #bombEmoji { font-size:30px; }
@@ -712,7 +717,8 @@
     $("roundHint").textContent = playing ? `الجولة ${ST.roundNo} · ${ST.usedCount} كلمة مستعملة` :
                                  ST.state==="lobby" ? "بانتظار بدء اللعبة…" : "";
 
-    // اللاعبون: حلقة على الكمبيوتر، شريط أفقي على الجوال
+    // اللاعبون: حلقة على الكمبيوتر، شريط أفقي على الجوال أو عند ضيق الارتفاع
+    updateCompact();
     renderRing();
     renderStrip();
     renderList();
@@ -751,6 +757,13 @@
     startTicker();
     if (isHost) fillSettings(ST.settings);
   }
+
+  // إن ضاق ارتفاع الحلقة (جوال، أو لوحة مفاتيح مفتوحة) ننتقل لشريط أفقي
+  function updateCompact(){
+    const h = $("ring").clientHeight;
+    $("stage").classList.toggle("compact", h > 0 && h < 265);
+  }
+  addEventListener("resize", updateCompact);
 
   function renderRing(){
     const ring = $("ring");
@@ -930,6 +943,7 @@
     const i = $("wordInput");
     if (kbOpen) { i.blur(); i.readOnly = true; }
     else { i.readOnly = false; }
+    setTimeout(updateCompact, 30);       // اللوحة أخذت مساحة ⇒ ننتقل للشريط
     try { localStorage.setItem("bombKB", kbOpen ? "1" : "0"); } catch(e){}
   };
   try { if (localStorage.getItem("bombKB") === "1") $("kbBtn").click(); } catch(e){}
