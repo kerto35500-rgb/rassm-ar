@@ -2,6 +2,7 @@
 // منطق مستقل تماماً على namespace "/quiz" — لا يتداخل مع الرسم أو القنبلة.
 const crypto = require("crypto");
 const qbank = require("./qbank");
+const { nameFromSocket } = require("./account");
 
 // ====== ثوابت ======
 // وضع الاختبار السريع (يُفعّل بمتغير بيئة فقط — لا يؤثر على اللعب الحقيقي)
@@ -596,6 +597,9 @@ function setupQuiz(io, deps) {
   // ====== الاتصال ======
   nsp.on("connection", (socket) => {
     let room = null, player = null;
+
+    // الحساب المشترك من الصفحة الرئيسية (كوكي)
+    socket.userName = nameFromSocket(socket) || null;
 
     socket.emit("hello", {
       cats: qbank.categories(),

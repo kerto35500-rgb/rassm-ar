@@ -10,6 +10,7 @@ const { createStore } = require("./store");
 const { setupAdmin } = require("./admin");
 const { setupBomb } = require("./bomb");
 const { setupQuiz } = require("./quiz");
+const { setupAccounts, nameFromSocket } = require("./account");
 
 const app = express();
 const server = http.createServer(app);
@@ -92,6 +93,12 @@ app.get("/api/status", (req, res) => {
     total: draw.online + bomb.online + quiz.online
   });
 });
+// حساب واحد لكل الألعاب — يُسجّل الدخول من الصفحة الرئيسية فقط
+setupAccounts(app, {
+  store: { getUser: (n) => store.getUser(n), createUser: (...a) => store.createUser(...a), top: (n) => store.top(n) },
+  hashPass, publicStats,
+  onNewUser: () => { if (admin) admin.trackNewUser(); }
+});
 if (fs.existsSync(path.join(pubDir, "index.html"))) app.use(express.static(pubDir));
 
 const PORT = process.env.PORT || 3000;
@@ -146,29 +153,42 @@ function makeRoomId() {
 }
 
 // ====== الكلمات ======
-// تعديلات الكلمات عامة ودائمة (تُحفظ في قاعدة البيانات وتظهر لكل الغرف)
-let GW = { extra: {}, removedWords: new Set(), removedCats: new Set() };
-let wordsSaveTimer = null;
-function persistWords() {
-  clearTimeout(wordsSaveTimer);
-  wordsSaveTimer = setTimeout(() => {
-    store.saveWords({
-      extra: GW.extra,
-      removedWords: [...GW.removedWords],
-      removedCats: [...GW.removedCats]
-    }).catch(e => console.error("words save:", e.message));
-  }, 500);
+// تعديلات الكلمات محلّية لكل غرفة: كل غرفة جديدة تبدأ من القائمة الأساسية.
+// اللاعب المسجَّل تُحمَّل له كلماته وإعداداته المحفوظة، وتُحفظ تعديلاته باسمه.
+function emptyWords() { return { extra: {}, removedWords: new Set(), removedCats: new Set() }; }
+function wordsToJSON(w) {
+  return { extra: w.extra, removedWords: [...w.removedWords], removedCats: [...w.removedCats] };
 }
-function broadcastAll() { rooms.forEach(r => broadcast(r)); }
+function wordsFromJSON(j) {
+  return {
+    extra: (j && j.extra) || {},
+    removedWords: new Set((j && j.removedWords) || []),
+    removedCats: new Set((j && j.removedCats) || [])
+  };
+}
+const PROFILE_KEY = (name) => "drawProfile:" + name;
 
-// الفئات الفعلية: الأصلية (بدون المحذوف) + المضافة
-function roomCategories() {
+// حفظ مؤجَّل لملف اللاعب المسجَّل (الضيف لا يُحفظ له شيء)
+function persistWords(room) {
+  if (!room || !room.ownerUser) return;         // ضيف → التعديلات تنتهي مع الغرفة
+  clearTimeout(room._wSave);
+  room._wSave = setTimeout(() => {
+    store.saveKV(PROFILE_KEY(room.ownerUser), {
+      words: wordsToJSON(room.words),
+      settings: room.settings
+    }).catch(e => console.error("profile save:", e.message));
+  }, 600);
+}
+
+// الفئات الفعلية للغرفة: الأصلية (بدون المحذوف) + المضافة
+function roomCategories(room) {
+  const W = (room && room.words) || emptyWords();
   const out = {};
   for (const [name, words] of Object.entries(CATEGORIES)) {
-    if (GW.removedCats.has(name)) continue;
-    out[name] = [...words.filter(w => !GW.removedWords.has(w)), ...(GW.extra[name] || [])];
+    if (W.removedCats.has(name)) continue;
+    out[name] = [...words.filter(w => !W.removedWords.has(w)), ...(W.extra[name] || [])];
   }
-  for (const [name, words] of Object.entries(GW.extra)) {
+  for (const [name, words] of Object.entries(W.extra)) {
     if (!(name in CATEGORIES)) out[name] = [...words];
   }
   return out;
@@ -377,18 +397,38 @@ function chooseWord(room, playerId, word) {
 }
 
 // عدّاد وقت الرسم (يُستأنف من الوقت المتبقّي عند رجوع الرسام)
+// كم حرفاً يُكشف في التلميح: نصف حروف الكلمة (تقريب للأعلى عند الفرد)
+// حرفان→١ · ٣→٢ · ٤→٢ · ٥→٣ · ٦→٣ … مع إبقاء حرف واحد مخفياً على الأقل
+function hintBudget(word) {
+  const n = word.replace(/ /g, "").length;
+  if (n <= 1) return 0;
+  return Math.max(1, Math.min(n - 1, Math.round(n / 2)));
+}
+
 function startDrawCountdown(room) {
   clearTimers(room);
   const T = room.settings.turnTime;
   const word = room.currentWord;
-  const revealTimes = [Math.floor(T * 0.5), Math.floor(T * 0.25)];
+  // التلميح يُكشف على دفعات: أول حرف عند نصف الوقت، وآخر حرف عند ربع الوقت
+  const budget = hintBudget(word);
+  const revealAt = new Map();               // ثانية متبقّية → عدد الحروف المكشوفة عندها
+  for (let k = 1; k <= budget; k++) {
+    const frac = budget === 1 ? 0.5 : 0.5 - 0.25 * (k - 1) / (budget - 1);
+    revealAt.set(Math.max(1, Math.round(T * frac)), k);
+  }
   room.timer = setInterval(() => {
     room.timeLeft--;
-    if (revealTimes.includes(room.timeLeft)) {
+    const want = revealAt.get(room.timeLeft);
+    if (want) {
       const letters = word.split("");
-      const hidden = letters.map((c, i) => (c !== " " && !room.revealedIdx.has(i) ? i : -1)).filter(i => i >= 0);
-      if (hidden.length > 1) {
+      let changed = false;
+      while (room.revealedIdx.size < Math.min(want, budget)) {
+        const hidden = letters.map((c, i) => (c !== " " && !room.revealedIdx.has(i) ? i : -1)).filter(i => i >= 0);
+        if (hidden.length <= 1) break;   // لا نكشف الكلمة بالكامل
         room.revealedIdx.add(hidden[Math.floor(Math.random() * hidden.length)]);
+        changed = true;
+      }
+      if (changed) {
         room.hint = letters.map((c, i) => (c === " " ? " " : room.revealedIdx.has(i) ? c : "_")).join("");
         broadcast(room);
       }
@@ -628,6 +668,9 @@ io.on("connection", (socket) => {
   let room = null;
   let player = null;
 
+  // الحساب المشترك (كوكي من الصفحة الرئيسية) — لا حاجة لتسجيل دخول داخل اللعبة
+  socket.userName = nameFromSocket(socket) || null;
+
   socket.emit("meta", { categories: ["الكل", ...CATEGORY_NAMES] });
 
   // ---- الحسابات ----
@@ -676,25 +719,38 @@ io.on("connection", (socket) => {
   });
 
   // ---- الغرف ----
-  socket.on("createRoom", ({ name }, cb) => {
+  socket.on("createRoom", async ({ name }, cb) => {
     if (typeof cb !== "function") return;
     name = socket.userName || String(name || "").trim().slice(0, 20) || "لاعب";
     const id = makeRoomId();
+    // كل غرفة جديدة تبدأ من الإعدادات والكلمات الأساسية
     room = {
       id, players: [], state: "lobby", round: 0,
-      drawerId: null, ownerId: socket.id,
+      drawerId: null, ownerId: socket.id, ownerUser: socket.userName || null,
       currentWord: null, wordOptions: [], hint: "",
       guessedIds: new Set(), usedWords: new Set(),
       timeLeft: 0, timer: null, canvasOps: [], botTimers: [],
       settings: { ...DEFAULT_SETTINGS }, customWords: [],
+      words: emptyWords(),
       drawings: new Map(), votes: new Map()
     };
     rooms.set(id, room);
     player = { id: socket.id, name, userName: socket.userName || null, score: 0, hasDrawn: false, connected: true };
     room.players.push(player);
     socket.join(id);
-    cb({ ok: true, roomId: id });
+    cb({ ok: true, roomId: id, saved: !!room.ownerUser });
     broadcast(room);
+    // القائد المسجَّل: نحمّل ملفه (كلماته وإعداداته الخاصة)
+    if (room.ownerUser) {
+      try {
+        const p = await store.getKV(PROFILE_KEY(room.ownerUser));
+        if (p && rooms.get(id) === room) {
+          if (p.words) room.words = wordsFromJSON(p.words);
+          if (p.settings) room.settings = sanitizeSettings(p.settings, DEFAULT_SETTINGS, room);
+          broadcast(room);
+        }
+      } catch (e) { console.error("profile load:", e.message); }
+    }
   });
 
   socket.on("joinRoom", ({ name, roomId }, cb) => {
@@ -758,6 +814,7 @@ io.on("connection", (socket) => {
     if (!room || socket.id !== room.ownerId) return;
     if (room.state !== "lobby" && room.state !== "gameEnd") return;
     room.settings = sanitizeSettings(s, room.settings, room);
+    persistWords(room);          // تُحفظ للقائد المسجَّل فقط
     broadcast(room);
   });
 
@@ -852,84 +909,89 @@ io.on("connection", (socket) => {
     io.to(room.id).emit("canvasHistory", room.canvasOps);
   });
 
-  // ---- إدارة الكلمات والفئات (للقائد - التعديلات دائمة وعامة) ----
+  // ---- إدارة الكلمات والفئات (للقائد — التعديلات خاصة بهذه الغرفة فقط) ----
   socket.on("wordsList", (cb) => {
     if (typeof cb !== "function" || !room) return;
     cb({
       builtin: CATEGORIES,
-      extra: GW.extra,
-      removedWords: [...GW.removedWords],
-      removedCats: [...GW.removedCats]
+      extra: room.words.extra,
+      removedWords: [...room.words.removedWords],
+      removedCats: [...room.words.removedCats],
+      saved: !!room.ownerUser        // هل ستُحفظ التعديلات للمرة القادمة؟
     });
   });
 
   socket.on("addWord", (data, cb) => {
     if (!room || socket.id !== room.ownerId) return;
     const done = r => typeof cb === "function" && cb(r);
+    const W = room.words;
     const word = String(data?.word || "").trim().slice(0, 30);
     const cat = String(data?.cat || "").trim();
     if (word.length < 2) return done({ ok: false, error: "الكلمة قصيرة جدًا" });
-    const cats = roomCategories();
+    const cats = roomCategories(room);
     if (!cats[cat]) return done({ ok: false, error: "الفئة غير موجودة" });
     // لو كانت الكلمة محذوفة من نفس الفئة الأصلية: استرجاع
-    if (GW.removedWords.has(word) && (CATEGORIES[cat] || []).includes(word)) {
-      GW.removedWords.delete(word);
-      persistWords();
+    if (W.removedWords.has(word) && (CATEGORIES[cat] || []).includes(word)) {
+      W.removedWords.delete(word);
+      persistWords(room);
       return done({ ok: true, restored: true });
     }
     if (cats[cat].includes(word)) return done({ ok: false, error: "الكلمة موجودة في هذه الفئة" });
-    (GW.extra[cat] = GW.extra[cat] || []).push(word);
-    persistWords();
+    (W.extra[cat] = W.extra[cat] || []).push(word);
+    persistWords(room);
     done({ ok: true });
   });
 
   socket.on("removeWord", (word) => {
     if (!room || socket.id !== room.ownerId) return;
+    const W = room.words;
     word = String(word || "").trim();
     let inExtra = false;
-    for (const cat of Object.keys(GW.extra)) {
-      const i = GW.extra[cat].indexOf(word);
-      if (i >= 0) { GW.extra[cat].splice(i, 1); inExtra = true; }
+    for (const cat of Object.keys(W.extra)) {
+      const i = W.extra[cat].indexOf(word);
+      if (i >= 0) { W.extra[cat].splice(i, 1); inExtra = true; }
     }
-    if (!inExtra && ALL_WORDS.includes(word)) GW.removedWords.add(word);
-    persistWords();
+    if (!inExtra && ALL_WORDS.includes(word)) W.removedWords.add(word);
+    persistWords(room);
   });
 
   socket.on("restoreWord", (word) => {
     if (!room || socket.id !== room.ownerId) return;
-    GW.removedWords.delete(String(word || "").trim());
-    persistWords();
+    room.words.removedWords.delete(String(word || "").trim());
+    persistWords(room);
   });
 
   socket.on("addCategory", (name, cb) => {
     if (!room || socket.id !== room.ownerId) return;
     const done = r => typeof cb === "function" && cb(r);
+    const W = room.words;
     name = String(name || "").trim().slice(0, 20);
     if (name.length < 2) return done({ ok: false, error: "اسم الفئة قصير جدًا" });
     if (name === "الكل") return done({ ok: false, error: "اسم محجوز" });
-    if (GW.removedCats.has(name)) { GW.removedCats.delete(name); persistWords(); broadcastAll(); return done({ ok: true }); }
-    if (roomCategories()[name]) return done({ ok: false, error: "الفئة موجودة أصلًا" });
-    GW.extra[name] = GW.extra[name] || [];
-    persistWords();
-    broadcastAll();
+    if (W.removedCats.has(name)) { W.removedCats.delete(name); persistWords(room); broadcast(room); return done({ ok: true }); }
+    if (roomCategories(room)[name]) return done({ ok: false, error: "الفئة موجودة أصلًا" });
+    W.extra[name] = W.extra[name] || [];
+    persistWords(room);
+    broadcast(room);
     done({ ok: true });
   });
 
   socket.on("removeCategory", (name) => {
     if (!room || socket.id !== room.ownerId) return;
+    const W = room.words;
     name = String(name || "").trim();
-    if (CATEGORIES[name]) GW.removedCats.add(name);
-    delete GW.extra[name];
-    rooms.forEach(r => { if (r.settings.category === name) r.settings.category = "الكل"; });
-    persistWords();
-    broadcastAll();
+    if (CATEGORIES[name]) W.removedCats.add(name);
+    delete W.extra[name];
+    if (room.settings.category === name) room.settings.category = "الكل";
+    persistWords(room);
+    broadcast(room);
   });
 
   socket.on("restoreCategory", (name) => {
     if (!room || socket.id !== room.ownerId) return;
-    GW.removedCats.delete(String(name || "").trim());
-    persistWords();
-    broadcastAll();
+    room.words.removedCats.delete(String(name || "").trim());
+    persistWords(room);
+    broadcast(room);
   });
 
   // ---- وضع التصويت ----
@@ -1023,19 +1085,9 @@ io.on("connection", (socket) => {
 createStore()
   .then(async s => {
     store = s;
-    // تحميل تعديلات الكلمات المحفوظة
-    try {
-      const w = await store.getWords();
-      if (w) {
-        GW = {
-          extra: w.extra || {},
-          removedWords: new Set(w.removedWords || []),
-          removedCats: new Set(w.removedCats || [])
-        };
-        const extraCount = Object.values(GW.extra).flat().length;
-        console.log(`📚 كلمات مخصصة محفوظة: ${extraCount} كلمة، ${Object.keys(GW.extra).length} فئة`);
-      }
-    } catch (e) { console.error("words load:", e.message); }
+    // تعديلات الكلمات صارت لكل غرفة على حدة (وتُحفظ للاعب المسجَّل باسمه)،
+    // فلم تعد تُحمَّل قائمة عامة عند الإقلاع.
+    console.log("📚 قائمة الكلمات الأساسية: " + ALL_WORDS.length + " كلمة في " + CATEGORY_NAMES.length + " فئة");
     // تفعيل لوحة المراقبة
     admin = setupAdmin(app, { getLiveStats, store });
     // 💣 تفعيل لعبة القنبلة (namespace مستقل /bomb)

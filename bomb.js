@@ -2,6 +2,7 @@
 // لا يتداخل إطلاقاً مع لعبة الرسم (io.on("connection") الأساسي).
 const crypto = require("crypto");
 const dict = require("./dict");
+const { nameFromSocket } = require("./account");
 
 const GRACE_MS = 500;          // فترة سماح خفية عند وصول العداد للصفر
 const RECONNECT_MS = 60000;    // مهلة العودة بعد انقطاع الاتصال
@@ -330,6 +331,9 @@ function setupBomb(io, deps) {
   nsp.on("connection", (socket) => {
     let room = null;
     let player = null;
+
+    // الحساب المشترك من الصفحة الرئيسية (كوكي) — لا تسجيل دخول داخل اللعبة
+    socket.userName = nameFromSocket(socket) || null;
 
     socket.emit("hello", { dict: dict.stats(), defaults: DEFAULTS, alphabet: ALPHABET });
 
