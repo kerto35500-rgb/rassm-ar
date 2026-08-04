@@ -112,8 +112,15 @@
   #stage.compact #ring .pl { display:none; }
   #stage.compact #ring { flex:1 1 auto; min-height:150px; }
   #plStrip { display:none; gap:7px; padding:7px 9px 5px; overflow-x:auto; flex-shrink:0;
-             border-bottom:2px solid var(--line); background:#fbfcfe; scrollbar-width:none; }
+             background:#fbfcfe; scrollbar-width:none; align-items:stretch; }
   #plStrip::-webkit-scrollbar { display:none; }
+
+  /* المقطع المطلوب: كبير وواضح فوق حلقة الحروف (بنمط التصميم المرجعي) */
+  #sylHead { display:none; flex-shrink:0; text-align:center; padding:9px 10px 10px;
+             background:linear-gradient(180deg,#fff6f1,#fdfbfa); border-bottom:2px solid #ffe3d4; }
+  #stage.compact #sylHead { display:block; }
+  #sylHead .v { font-size:34px; font-weight:900; color:var(--ink); letter-spacing:3px; line-height:1.1; }
+  #sylHead .t { font-size:12.5px; font-weight:700; color:#a08672; margin-top:3px; }
   .chip { flex:0 0 auto; min-width:66px; text-align:center; padding:5px 8px 4px; border-radius:11px;
           background:#f2f5f9; border:2px solid transparent; transition:.18s; }
   .chip.turn { background:#fff2eb; border-color:var(--accent); }
@@ -135,6 +142,21 @@
   #bombEmoji { font-size:40px; line-height:1; }
   #syl { font-size:29px; font-weight:900; color:var(--ink); letter-spacing:2px; }
   #timeNum { font-size:13px; font-weight:800; color:#8a93a3; }
+  #timeUnit { display:none; font-size:12px; font-weight:700; color:#a7aebb; margin-top:-2px; }
+
+  /* ===== قرص القنبلة الناعم (نمط التصميم المرجعي) — في الوضع المدمج ===== */
+  #stage.compact #bombCircle {
+    border-radius:50%; background:#fff;
+    box-shadow:0 14px 34px rgba(30,58,95,.13), 0 2px 6px rgba(30,58,95,.08),
+               inset 0 0 0 1px rgba(30,58,95,.04);
+  }
+  #stage.compact #ringBg { stroke:#f1f4f8; stroke-width:7; }
+  #stage.compact #ringFg { stroke-width:7; }
+  #stage.compact #syl { display:none; }          /* المقطع يظهر كبيراً فوق الحلقة */
+  #stage.compact #bombEmoji { font-size:44px; margin-bottom:1px;
+                              filter:drop-shadow(0 4px 7px rgba(30,58,95,.28)); }
+  #stage.compact #timeNum { font-size:31px; font-weight:900; color:var(--ink); line-height:1.05; }
+  #stage.compact #timeUnit { display:block; }
   #poolHint { font-size:11.5px; color:#a7aebb; margin-top:6px; }
   #roundHint { font-size:12.5px; color:#6b7280; margin-top:2px; }
   .shake { animation:shake .35s; }
@@ -184,25 +206,29 @@
   #stage.compact.tight #alphaRing { display:none; }
   #stage.compact.tight #alphaBox { display:block; }
   #stage.compact.tight #ringNote { display:none; }
-  .ral { position:absolute; width:30px; height:30px; margin:-15px 0 0 -15px; border-radius:9px;
-         display:flex; align-items:center; justify-content:center; font-size:14.5px; font-weight:900;
-         background:#fff; color:#c3cad6; border:1.5px solid #e9edf3;
-         box-shadow:0 2px 5px rgba(30,58,95,.09); transition:.2s var(--ease, ease); }
-  .ral.on { background:linear-gradient(160deg,#3fbf74,#238a52); color:#fff; border-color:#1d7a48;
-            box-shadow:0 3px 9px rgba(35,138,82,.4); }
+  /* مفاتيح ناعمة كبيرة تلتصق بحلقة القنبلة (بنمط التصميم المرجعي) */
+  .ral { position:absolute; width:42px; height:42px; margin:-21px 0 0 -21px; border-radius:13px;
+         display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:800;
+         background:#fff; color:#1e3a5f; border:none;
+         box-shadow:0 4px 10px rgba(30,58,95,.13), 0 1px 2px rgba(30,58,95,.10);
+         transition:transform .18s ease, box-shadow .18s ease, background .18s ease; }
+  .ral.on { background:linear-gradient(160deg,#43c97c,#1f8b52); color:#fff;
+            box-shadow:0 5px 14px rgba(31,139,82,.42); transform:scale(1.04); }
   #ringNote { position:absolute; left:0; right:0; bottom:2px; text-align:center;
               font-size:11px; color:#a7aebb; pointer-events:none; display:none; }
   #stage.compact #ringNote { display:block; }
 
-  /* ===== أزرار عائمة للدردشة واللاعبين (الجوال) ===== */
-  #fabs { display:none; position:absolute; inset-inline-start:10px; bottom:10px; z-index:24; gap:8px; }
+  /* ===== زرّان مميّزان للدردشة واللاعبين (الجوال) ===== */
+  #fabs { display:none; position:absolute; inset-inline-start:9px; bottom:9px; z-index:24; gap:7px; }
   #stage.compact #fabs { display:flex; }
-  .fab { position:relative; width:46px; height:46px; border-radius:50%; border:none;
-         background:var(--accent2); color:#fff; font-size:20px; display:flex; align-items:center; justify-content:center;
-         box-shadow:0 5px 16px rgba(30,58,95,.34); }
-  .fab.grey { background:#546b8a; }
-  .fab .badge { position:absolute; top:-3px; inset-inline-end:-3px; min-width:19px; height:19px; padding:0 4px;
-                border-radius:99px; background:var(--accent); color:#fff; font-size:11px; font-weight:900;
+  .fab { position:relative; display:flex; align-items:center; gap:6px; height:40px; padding:0 14px 0 11px;
+         border-radius:99px; border:none; color:#fff; font-family:inherit; font-size:13px; font-weight:800;
+         box-shadow:0 5px 15px rgba(30,58,95,.3); }
+  .fab .ico { font-size:16px; line-height:1; }
+  #fabChat { background:linear-gradient(140deg,#3ea1ff,#1668d6); }   /* الدردشة: أزرق */
+  #fabPl   { background:linear-gradient(140deg,#4a5f7d,#25364f); }   /* اللاعبون: كحلي */
+  .fab .badge { position:absolute; top:-5px; inset-inline-end:-5px; min-width:20px; height:20px; padding:0 5px;
+                border-radius:99px; background:var(--accent); color:#fff; font-size:11.5px; font-weight:900;
                 display:flex; align-items:center; justify-content:center; border:2px solid #fff; }
   .fab .badge.hide { display:none; }
 
@@ -308,12 +334,14 @@
     #plStrip { display:flex; }
     #ring .pl { display:none; }
     #stage { overflow-y:auto; }          /* السكرول ممكن والكيبورد مفتوح */
-    #ring { flex:1 1 auto; min-height:250px; }
+    #ring { flex:1 1 auto; min-height:300px; }
     #bombWrap { width:150px; }
-    #bombCircle { width:124px; height:124px; }
+    #bombCircle { width:136px; height:136px; }
     #bombEmoji { font-size:30px; }
     #syl { font-size:25px; }
     #poolHint, #roundHint { display:none; }   /* موجودة في شارة المقطع وأسفل الحلقة */
+    #sylPill { margin-bottom:6px; padding:5px 10px; }
+    #sylPill .vv { font-size:19px; }
     #wordInput { font-size:17px; padding:13px 10px; }
     #kbBtn { width:40px; font-size:17px; }
     #sendBtn { padding:0 12px; font-size:15px; }
@@ -379,6 +407,7 @@
   <div id="main">
     <div id="stage">
       <div id="plStrip"></div>
+      <div id="sylHead"><div class="v" id="sylBig">—</div><div class="t">✨ أكمل بالكلمة</div></div>
       <div id="ring">
         <div id="alphaRing"></div>
         <div id="bombWrap">
@@ -391,6 +420,7 @@
               <div id="bombEmoji">💣</div>
               <div id="syl">—</div>
               <div id="timeNum"></div>
+              <div id="timeUnit">ثانية</div>
             </div>
           </div>
           <div id="poolHint"></div>
@@ -401,8 +431,8 @@
 
       <!-- أزرار عائمة: الدردشة واللاعبون (الجوال) -->
       <div id="fabs">
-        <button class="fab" id="fabChat" title="الدردشة">💬<span class="badge hide" id="chatBadge">0</span></button>
-        <button class="fab grey" id="fabPl" title="اللاعبون">👥<span class="badge" id="plBadge">0</span></button>
+        <button class="fab" id="fabChat" title="الدردشة"><span class="ico">💬</span>الدردشة<span class="badge hide" id="chatBadge">0</span></button>
+        <button class="fab" id="fabPl" title="اللاعبون"><span class="ico">👥</span>اللاعبون<span class="badge" id="plBadge">0</span></button>
       </div>
 
       <div id="alphaBox">
@@ -807,8 +837,14 @@
     layoutAlphaRing();
   }
 
-  // توزيع الحروف على بيضاوي حول القنبلة — يستغل الفراغ يمين ويسار.
-  // إن كانت المساحة أضيق من أن تتسع للحروف بلا تراكب نرجع للشريط المسطّح.
+  // محيط البيضاوي (تقريب رامانوجان)
+  function ellipsePerimeter(rx, ry) {
+    return Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
+  }
+
+  // توزيع الحروف على حلقتين متداخلتين تحيطان قرص القنبلة (بنمط التصميم المرجعي):
+  // مفاتيح كبيرة تلتصق بالقرص، والحلقة الخارجية تستغل الفراغ يمين ويسار.
+  // إن ضاقت المساحة عن الحلقتين نرجع للشريط المسطّح.
   function layoutAlphaRing(){
     const box = $("ring"), host = $("alphaRing");
     const tiles = [...host.children];
@@ -816,24 +852,43 @@
     const W = box.clientWidth, H = box.clientHeight;
     if (W < 40 || H < 40) return;
     const bomb = $("bombCircle");
-    const half = (bomb ? bomb.offsetWidth : 110) / 2;
-    const t = tiles[0].offsetWidth || 28;
+    const half = (bomb ? bomb.offsetWidth : 130) / 2;
+    const t = tiles[0].offsetWidth || 42;
     const n = tiles.length;
 
-    const ry = Math.max(half + t * 0.75, H / 2 - t * 0.95);
-    // نمنع البيضاوي من أن يكون مفرطح الشكل، وإلا تتكتّل الحروف عند الطرفين
-    const rx = Math.min(Math.max(half + t * 0.9, W / 2 - t * 0.85), ry * 1.4);
+    const maxRx = W / 2 - t * 0.55;          // أقصى نصف قطر يبقي المفتاح داخل الشاشة
+    const maxRy = H / 2 - t * 0.58;
+    const gap = t * 1.12;                    // المسافة بين الحلقتين
+    const innerBase = half + t * 0.68;       // الحلقة الداخلية تلامس القرص
 
-    // محيط البيضاوي (تقريب رامانوجان) ÷ عدد الحروف = المسافة المتاحة لكل حرف
-    const per = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
-    const tight = per / n < t * 1.15;
+    const nIn = Math.round(n * 0.43);        // ١٢ من ٢٨
+    const nOut = n - nIn;
+
+    // نصف قطر كل حلقة (بيضاوي: أوسع أفقياً لأن العرض أكبر عادةً)
+    const ring = (R, pad) => ({
+      rx: Math.min(R * 1.22, maxRx - pad),
+      ry: Math.min(R,        maxRy - pad)
+    });
+    const inR = ring(innerBase, gap);
+    const outR = ring(innerBase + gap, 0);
+
+    const fits = (r, count) =>
+      r.rx > half + t * 0.45 && r.ry > half + t * 0.45 &&
+      ellipsePerimeter(r.rx, r.ry) / count >= t * 1.04;
+
+    const tight = !(fits(inR, nIn) && fits(outR, nOut));
     $("stage").classList.toggle("tight", tight);
     if (tight) return;                       // الشريط المسطّح سيظهر بدلاً منها
 
+    const place = (el, i, count, r, offset) => {
+      const a = (Math.PI * 2 * i / count) - Math.PI / 2 + offset;
+      el.style.left = (W / 2 + Math.cos(a) * r.rx) + "px";
+      el.style.top  = (H / 2 + Math.sin(a) * r.ry) + "px";
+    };
     tiles.forEach((el, i) => {
-      const a = (Math.PI * 2 * i / n) - Math.PI / 2;   // نبدأ من الأعلى
-      el.style.left = (W / 2 + Math.cos(a) * rx) + "px";
-      el.style.top  = (H / 2 + Math.sin(a) * ry) + "px";
+      if (i < nOut) place(el, i, nOut, outR, 0);
+      // الحلقة الداخلية مُزاحة نصف خطوة حتى لا تحجب حروف الخارجية
+      else place(el, i - nOut, nIn, inR, Math.PI / nIn);
     });
   }
 
@@ -860,7 +915,8 @@
     renderStrip();
     renderList();
 
-    // شارة المقطع فوق مربع الكتابة (تبقى ظاهرة والكيبورد مفتوح)
+    // المقطع: كبيراً فوق الحلقة، وفي شارة فوق مربع الكتابة (تبقى ظاهرة والكيبورد مفتوح)
+    $("sylBig").textContent = ST.syllable || "—";
     $("pillSyl").textContent = ST.syllable || "—";
     $("sylPill").classList.toggle("on", playing);
 
@@ -1006,6 +1062,7 @@
       if (!ST || ST.state !== "playing" || !ST.endsAt) {
         fg.style.strokeDashoffset = C;
         $("timeNum").textContent = "";
+        $("timeUnit").style.visibility = "hidden";
         $("pillTime").textContent = "";
         return;
       }
@@ -1016,7 +1073,10 @@
       fg.style.strokeDashoffset = C * (1 - frac);
       fg.style.stroke = left < 3000 ? "#d33" : (left < 6000 ? "#f0932b" : "#e5541e");
       const txt = (left/1000).toFixed(1) + "ث";
-      $("timeNum").textContent = txt;
+      // في الوضع المدمج نُظهر الرقم كبيراً و«ثانية» تحته (بلا حرف ث مكرّر)
+      const compact = $("stage").classList.contains("compact");
+      $("timeNum").textContent = compact ? (left/1000).toFixed(1) : txt;
+      $("timeUnit").style.visibility = "";
       $("pillTime").textContent = txt;
       rafId = requestAnimationFrame(frame);
     }
