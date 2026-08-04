@@ -899,10 +899,12 @@
     if (isHost) fillSettings(ST.settings);
   }
 
-  // إن ضاق ارتفاع الحلقة (جوال، أو لوحة مفاتيح مفتوحة) ننتقل لشريط أفقي
+  // الوضع المدمج = شاشة جوال، أو أي شاشة ضاق ارتفاع حلقتها (لوحة مفاتيح مفتوحة).
+  // فيه: أسماء اللاعبين في شريط أفقي، والحروف حلقة حول القنبلة، والقوائم منبثقة.
   function updateCompact(){
+    const narrow = window.matchMedia("(max-width: 880px)").matches;
     const h = $("ring").clientHeight;
-    $("stage").classList.toggle("compact", h > 0 && h < 265);
+    $("stage").classList.toggle("compact", narrow || (h > 0 && h < 265));
   }
   // مواضع اللاعبين تُحسب من قياس الحلقة، فأي تغيّر في الارتفاع يجب أن يعيد الحساب
   // (وإلا بقيت الأسماء في أماكن قديمة وتداخلت مع القنبلة)
