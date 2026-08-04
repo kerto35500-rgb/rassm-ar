@@ -605,6 +605,7 @@
     $("gameScreen").style.display = "flex";
     $("ridNum").textContent = ROOM;
     history.replaceState(null,"","?r="+ROOM);
+    reflowRing();                       // القياس صار متاحاً بعد ظهور الشاشة
   }
 
   $("exitBtn").onclick = () => { socket.emit("leaveRoom"); try{sessionStorage.removeItem("bombSession");}catch(e){} location.href="/bomb"; };
@@ -763,7 +764,20 @@
     const h = $("ring").clientHeight;
     $("stage").classList.toggle("compact", h > 0 && h < 265);
   }
-  addEventListener("resize", updateCompact);
+  // مواضع اللاعبين تُحسب من قياس الحلقة، فأي تغيّر في الارتفاع يجب أن يعيد الحساب
+  // (وإلا بقيت الأسماء في أماكن قديمة وتداخلت مع القنبلة)
+  let reflowT = 0;
+  function reflowRing(){
+    clearTimeout(reflowT);
+    reflowT = setTimeout(() => { if (ST) { updateCompact(); renderRing(); } }, 60);
+  }
+  addEventListener("resize", reflowRing);
+  addEventListener("orientationchange", () => setTimeout(reflowRing, 300));
+  if (window.visualViewport) visualViewport.addEventListener("resize", reflowRing);
+  if (window.ResizeObserver) {
+    // أدق من resize: يرصد تغيّر ارتفاع الحلقة نفسه (فتح لوحة الحروف، ظهور شريط المضيف…)
+    new ResizeObserver(reflowRing).observe($("ring"));
+  }
 
   function renderRing(){
     const ring = $("ring");
@@ -943,7 +957,7 @@
     const i = $("wordInput");
     if (kbOpen) { i.blur(); i.readOnly = true; }
     else { i.readOnly = false; }
-    setTimeout(updateCompact, 30);       // اللوحة أخذت مساحة ⇒ ننتقل للشريط
+    reflowRing();                        // اللوحة أخذت مساحة ⇒ نعيد حساب المواضع
     try { localStorage.setItem("bombKB", kbOpen ? "1" : "0"); } catch(e){}
   };
   try { if (localStorage.getItem("bombKB") === "1") $("kbBtn").click(); } catch(e){}
