@@ -73,6 +73,7 @@ input,select,textarea{font-family:inherit}
   box-shadow:0 0 24px -10px rgba(34,230,255,.8)}
 .logo .back:hover{background:rgba(34,230,255,.24);transform:translateY(-2px)}
 .logo .back:active{transform:none}
+#whoLine{display:none;text-align:center;font-size:13px;font-weight:800;color:var(--lime);margin:-4px 0 10px}
 
 .panel{width:100%;max-width:452px;padding:24px}
 .panel h3{font-size:15px;margin-bottom:14px;color:var(--dim);font-weight:700;letter-spacing:.4px}
@@ -720,27 +721,11 @@ input,select,textarea{font-family:inherit}
     <a class="back" href="/">← كل الألعاب</a>
   </div>
 
-  <div class="panel glass" id="authP">
-    <div class="seg">
-      <button id="tL" class="on">دخول</button>
-      <button id="tR">حساب جديد</button>
-      <button id="tG">ضيف</button>
-    </div>
-    <div id="authF">
-      <div class="fi"><input id="aName" placeholder="الاسم" maxlength="20" autocomplete="username"></div>
-      <div class="fi"><input id="aPass" type="password" placeholder="كلمة المرور" maxlength="40" autocomplete="current-password"></div>
-    </div>
-    <button class="btn" id="aBtn">دخول</button>
-    <div class="err" id="aErr"></div>
-    <div id="who" class="hide">
-      <div class="dim" style="margin-bottom:11px">مسجّل باسم <b style="color:var(--cyan)" id="whoN"></b><br><span id="whoS" style="font-size:12px"></span></div>
-      <button class="btn ghost" id="outB">خروج</button>
-    </div>
-  </div>
-
-  <div class="panel glass hide" id="roomP">
-    <h3>ابدأ اللعب</h3>
-    <button class="btn" id="crB">إنشاء غرفة جديدة</button>
+  <!-- بطاقة واحدة: الاسم + ابدأ اللعب — نفس ترتيب الرسم والقنبلة -->
+  <div class="panel glass" id="roomP">
+    <div class="fi"><input id="aName" placeholder="اكتب اسمك هنا" maxlength="20" autocomplete="off"></div>
+    <div id="whoLine"></div>
+    <button class="btn" id="crB">🎮 إنشاء غرفة جديدة</button>
     <div style="height:11px"></div>
     <div class="row">
       <div class="fi" style="margin:0"><input id="jId" placeholder="رقم الغرفة" maxlength="6" inputmode="numeric"></div>
@@ -751,7 +736,14 @@ input,select,textarea{font-family:inherit}
     <div id="rooms"><div class="dim">لا توجد غرف عامة حالياً</div></div>
   </div>
 
-  <div class="panel glass hide" id="lbP">
+  <!-- عناصر مخفية يعتمد عليها المنطق القديم (لا تظهر للاعب) -->
+  <div class="hide" id="authP"><div class="seg"></div><div id="authF"></div>
+    <button id="aBtn"></button><div id="aErr"></div>
+    <div id="who"><span id="whoN"></span><span id="whoS"></span><button id="outB"></button></div>
+    <input id="aPass" type="password">
+  </div>
+
+  <div class="panel glass" id="lbP">
     <h3>🏆 أفضل اللاعبين</h3>
     <div id="lbL" class="dim">—</div>
   </div>
@@ -763,6 +755,9 @@ input,select,textarea{font-family:inherit}
     <span class="rid">غرفة <b id="rid">—</b></span>
     <span class="chip" id="stgChip"></span>
     <span class="sp"></span>
+    <a class="ic" href="/" title="رجوع لكل الألعاب" style="text-decoration:none">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.8V20h14V9.8"/><path d="M9.5 20v-6h5v6"/></svg>
+    </a>
     <button class="ic" id="cpB" title="نسخ الرابط">🔗</button>
     <button class="ic" id="chB" title="الدردشة">💬</button>
     <button class="ic" id="cfgOpen" title="الإعدادات">⚙</button>
@@ -881,7 +876,7 @@ input,select,textarea{font-family:inherit}
       <div class="cp on" data-p="t">
         <div class="f"><label>مهلة السؤال</label><div class="vv"><input type="range" id="sQT" min="8" max="30"><output id="oQT"></output></div></div>
         <div class="f"><label>مهلة التصويت</label><div class="vv"><input type="range" id="sVT" min="4" max="15"><output id="oVT"></output></div></div>
-        <div class="f"><label>مهلة الهجوم</label><div class="vv"><input type="range" id="sAT" min="3" max="12"><output id="oAT"></output></div></div>
+        <div class="f"><label>مهلة الهجوم</label><div class="vv"><input type="range" id="sAT" min="5" max="60" step="5"><output id="oAT"></output></div></div>
       </div>
       <div class="cp" data-p="q">
         <div class="f"><label>طول المباراة</label><select id="sLen"><option value="short">قصيرة — ٦ أسئلة</option><option value="normal">عادية — ٩ أسئلة</option><option value="long">طويلة — ١٢ سؤالاً</option></select></div>
@@ -999,41 +994,29 @@ const sFan=()=>[523,659,784,1046,1318].forEach((f,i)=>setTimeout(()=>tone(f,.35,
   })();
 })();
 
-/* ═══ الحساب: تسجيل الدخول يحدث في الصفحة الرئيسية فقط ═══ */
-function setMode(m){
-  mode="guest";
-  document.querySelector(".seg").classList.add("hide");
-  $("aPass").parentElement.style.display="none";
-  $("aName").placeholder="اسمك في اللعبة";
-  $("aBtn").textContent="متابعة";
-  $("aErr").textContent="";
-}
+/* ═══ الحساب: تسجيل الدخول من الصفحة الرئيسية فقط (نفس ترتيب الرسم والقنبلة) ═══ */
+function setMode(){ mode="guest"; }
 fetch("/api/account/me",{cache:"no-store"}).then(r=>r.json()).then(d=>{
   if(!d||d.guest)return;
   acct=d.stats;
   $("aName").value=d.stats.name;
-  $("whoN").textContent=d.stats.name;
-  $("whoS").textContent=`${d.stats.wins} فوز · ${d.stats.games} مباراة · ${d.stats.totalScore} نقطة`;
-  showRooms();
+  $("aName").disabled=true;
+  const w=$("whoLine");
+  w.style.display="block";
+  w.textContent=`✅ ${d.stats.name} · ${d.stats.wins} فوز · ${d.stats.games} مباراة`;
   const q=new URLSearchParams(location.search).get("r");
   if(q&&!ROOM)doJoin(q.trim(),false);
 }).catch(()=>{});
-function showRooms(){
-  $("authF").classList.add("hide");$("aBtn").classList.add("hide");
-  document.querySelector(".seg").classList.add("hide");
-  $("who").classList.remove("hide");$("roomP").classList.remove("hide");$("lbP").classList.remove("hide");
-  refreshRooms();refreshLB();
+function showRooms(){ refreshRooms();refreshLB(); }
+const myName=()=>(acct&&acct.name)||$("aName").value.trim()||"";
+function needName(){
+  if(myName().length>=2)return false;
+  $("rErr").textContent="اكتب اسمك أولاً";
+  $("aName").focus();
+  return true;
 }
-$("aBtn").onclick=()=>{
-  const n=$("aName").value.trim(),p=$("aPass").value;
-  $("aErr").textContent="";
-  if(n.length<2){$("aErr").textContent="الاسم قصير جدًا";return;}
-  window._g=n;$("whoN").textContent=n;
-  $("whoS").textContent=acct?"مسجّل":"ضيف · سجّل من الصفحة الرئيسية لحفظ نتائجك";
-  showRooms();
-};
-$("outB").onclick=()=>location.reload();
-const myName=()=>(acct&&acct.name)||window._g||"لاعب";
+$("aName").onkeydown=e=>{ if(e.key==="Enter")($("jId").value.trim()?$("jB"):$("crB")).click(); };
+$("jId").onkeydown=e=>{ if(e.key==="Enter")$("jB").click(); };
 
 function refreshRooms(){
   socket.emit("publicRooms",r=>{
@@ -1059,11 +1042,12 @@ function refreshLB(){
 }
 setInterval(()=>{if(!ROOM&&!$("roomP").classList.contains("hide"))refreshRooms();},7000);
 
-$("crB").onclick=()=>socket.emit("createRoom",{name:myName()},r=>{
-  if(!r||!r.ok){$("rErr").textContent=(r&&r.error)||"خطأ";return;} enter(r);});
+$("crB").onclick=()=>{ if(needName())return; socket.emit("createRoom",{name:myName()},r=>{
+  if(!r||!r.ok){$("rErr").textContent=(r&&r.error)||"خطأ";return;} enter(r);}); };
 $("jB").onclick=()=>doJoin($("jId").value.trim(),false);
 function doJoin(id,np){
   if(!id){$("rErr").textContent="اكتب رقم الغرفة";return;}
+  if(needName())return;
   let pw="";if(np)pw=prompt("كلمة مرور الغرفة:")||"";
   socket.emit("joinRoom",{name:myName(),roomId:id,password:pw},r=>{
     if(!r||!r.ok){if(r&&r.needPass&&!np)return doJoin(id,true);$("rErr").textContent=(r&&r.error)||"خطأ";return;}
@@ -2252,7 +2236,7 @@ function fit(){
 addEventListener("resize",fit);
 addEventListener("orientationchange",()=>setTimeout(fit,320));
 if(window.visualViewport){visualViewport.addEventListener("resize",fit);visualViewport.addEventListener("scroll",fit);}
-fit();setMode("login");
+fit();setMode();refreshRooms();refreshLB();
 })();
 </script>
 </body>
