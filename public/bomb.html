@@ -132,7 +132,7 @@
   #stage.compact #ring .pl { display:none; }
   #stage.compact #ring { flex:1 1 auto; min-height:150px; }
   #plStrip { display:none; gap:7px; padding:2px 9px 4px; overflow-x:auto; flex-shrink:0;
-             scrollbar-width:none; align-items:stretch; }
+             scrollbar-width:none; align-items:stretch; justify-content:space-between; }
   #plStrip::-webkit-scrollbar { display:none; }
 
   /* بطاقة الدور: أسماء اللاعبين + المقطع في بطاقة واحدة (بنمط التصميم المرجعي) */
@@ -807,7 +807,7 @@
   /* سحب الفقاعة لأي مكان داخل منطقة اللعب (يُحفظ الموضع) */
   (function makeDraggable(){
     const f = $("fabChat"), host = $("ring");
-    let dragging = false, moved = 0, sx = 0, sy = 0, ox = 0, oy = 0;
+    let dragging = false, moved = 0, sx = 0, sy = 0, ox = 0, oy = 0, downAt = 0, justDragged = false;
 
     function clampInto(x, y){
       const w = host.clientWidth, h = host.clientHeight, s = f.offsetWidth || 48;
@@ -833,7 +833,7 @@
     window._restoreChatFab = restore;
 
     f.addEventListener("pointerdown", e => {
-      dragging = true; moved = 0;
+      dragging = true; moved = 0; downAt = Date.now(); justDragged = false;
       sx = e.clientX; sy = e.clientY;
       const hr = host.getBoundingClientRect(), fr = f.getBoundingClientRect();
       ox = fr.left - hr.left; oy = fr.top - hr.top;
@@ -851,7 +851,10 @@
       if (!dragging) return;
       dragging = false;
       f.classList.remove("dragging");
-      if (moved < 7) return sheetToggle();          // نقرة = فتح الدردشة
+      // النقرة على الجوال تتحرك قليلاً بطبيعتها ⇒ عتبة متسامحة
+      if (moved < 14) { justDragged = false; return sheetToggle(); }
+      justDragged = true;
+      setTimeout(() => { justDragged = false; }, 350);
       const w = host.clientWidth, h = host.clientHeight;
       try {
         localStorage.setItem("bombChatPos", JSON.stringify({
@@ -860,6 +863,12 @@
       } catch(e){}
     });
     f.addEventListener("pointercancel", () => { dragging = false; f.classList.remove("dragging"); });
+    // احتياط: لو لم يصل pointerup لأي سبب، النقر العادي يفتح الدردشة
+    f.addEventListener("click", e => {
+      e.preventDefault();
+      if (justDragged || dragging) return;
+      if (!$("side").classList.contains("open")) sheetOpen();
+    });
   })();
 
   // ☰ من قائمة «المزيد»: في الجوال يفتح النافذة، وعلى الكمبيوتر يُظهر/يخفي العمود
@@ -981,7 +990,19 @@
     const box = $("ring"), host = $("alphaRing");
     const tiles = [...host.children];
     if (!tiles.length) return;
-    const W = box.clientWidth, H = box.clientHeight;
+    const W = box.clientWidth;
+    // ⚠ لا نقيس ارتفاع الحلقة الحالي فقط: لو كنّا في الوضع المسطّح فالشريط
+    // يأخذ مساحة ويجعل القرار يثبت على «ضيق» للأبد (حلقة مفرغة).
+    // نحسب المساحة المتاحة للحلقة بعد استثناء الشريط المسطّح.
+    const stage = $("stage");
+    let avail = stage.clientHeight;
+    [...stage.children].forEach(c => {
+      if (c === box || c.id === "alphaBox") return;
+      if (c.offsetParent === null) return;                 // مخفي
+      if (getComputedStyle(c).position === "absolute") return;
+      avail -= c.offsetHeight;
+    });
+    const H = Math.max(box.clientHeight, avail - 4);
     if (W < 40 || H < 40) return;
     const bomb = $("bombCircle");
     const half = (bomb ? bomb.offsetWidth : 130) / 2;
