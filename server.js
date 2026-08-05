@@ -409,16 +409,11 @@ function startDrawCountdown(room) {
   clearTimers(room);
   const T = room.settings.turnTime;
   const word = room.currentWord;
-  // التلميح: يبدأ بعد انقضاء ثلث الوقت (أي عند بقاء ثلثيه)،
-  // وينتهي كشف كل الحروف قبل ١٠ ثوانٍ من النهاية.
+  // التلميح: يظهر مرة واحدة بعد انقضاء ثلث الوقت، وتُكشف كل حروفه دفعة واحدة
+  // (نصف حروف الكلمة) — لا كشف تدريجي حرفاً حرفاً.
   const budget = hintBudget(word);
-  const first = Math.round(T * 2 / 3);              // ثوانٍ متبقّية عند أول حرف
-  const last = Math.max(1, Math.min(first - 1, T <= 20 ? Math.round(T * 0.25) : 10));
   const revealAt = new Map();                       // ثانية متبقّية → عدد الحروف المكشوفة عندها
-  for (let k = 1; k <= budget; k++) {
-    const t = budget === 1 ? first : Math.round(first - (first - last) * (k - 1) / (budget - 1));
-    revealAt.set(Math.max(1, t), k);
-  }
+  if (budget > 0) revealAt.set(Math.max(1, Math.round(T * 2 / 3)), budget);
   room.timer = setInterval(() => {
     room.timeLeft--;
     const want = revealAt.get(room.timeLeft);
