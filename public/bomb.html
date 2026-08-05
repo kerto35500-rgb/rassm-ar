@@ -205,6 +205,9 @@
   #sylPill { display:none; align-items:center; justify-content:center; gap:8px; margin-bottom:8px;
              padding:7px 12px; border-radius:11px; background:#fff3ec; border:2px solid #ffd3bf; }
   #sylPill.on { display:flex; }
+  /* في الجوال نحجز مكانها دائماً: الشاشة لا «تقفز» عند بدء اللعب */
+  #stage.compact #sylPill { display:flex; }
+  #stage.compact #sylPill:not(.on) { visibility:hidden; }
   #sylPill .lb { font-size:11.5px; font-weight:700; color:#a06a4e; }
   #sylPill .vv { font-size:22px; font-weight:900; color:var(--accent); letter-spacing:2px; }
   #sylPill .tt { font-size:12.5px; font-weight:800; color:#8a93a3; font-variant-numeric:tabular-nums; }
@@ -244,8 +247,10 @@
   #stage.compact.tight #alphaBox { display:block; }
   #stage.compact.tight #ringNote { display:none; }
   /* مفاتيح ناعمة كبيرة تلتصق بحلقة القنبلة (بنمط التصميم المرجعي) */
-  .ral { position:absolute; width:42px; height:42px; margin:-21px 0 0 -21px; border-radius:13px;
-         display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:800;
+  .ral { position:absolute; width:var(--ral,40px); height:var(--ral,40px);
+         margin:calc(var(--ral,40px) / -2) 0 0 calc(var(--ral,40px) / -2); border-radius:13px;
+         display:flex; align-items:center; justify-content:center;
+         font-size:calc(var(--ral,40px) * 0.46); font-weight:800;
          background:#fff; color:#1e3a5f; border:none;
          box-shadow:0 4px 10px rgba(30,58,95,.13), 0 1px 2px rgba(30,58,95,.10);
          transition:transform .18s ease, box-shadow .18s ease, background .18s ease; }
@@ -401,8 +406,6 @@
     #syl { font-size:21px; }
     #bombEmoji { font-size:25px; }
     .al { width:20px; height:20px; font-size:11px; border-radius:5px; }
-    /* المفاتيح تبقى كبيرة على الجوال الصغير (لا 27px كما كانت) */
-    .ral { width:38px; height:38px; margin:-19px 0 0 -19px; font-size:17.5px; border-radius:12px; }
     #stage.compact #timeNum { font-size:27px; }
     #stage.compact #bombEmoji { font-size:36px; }
     #sylHead .v { font-size:30px; }
@@ -1022,26 +1025,30 @@
     if (W < 40 || H < 40) return;
     const bomb = $("bombCircle");
     const half = (bomb ? bomb.offsetWidth : 130) / 2;
-    const t = tiles[0].offsetWidth || 42;
     const n = tiles.length;
-
-    // حلقتان **دائريتان** (لا بيضاويتان): البيضاوي يجعل المسافات متفاوتة
-    // فتتكتّل الحروف عند الطرفين — الدائرة تعطي مسافات متساوية تماماً كالمرجع.
-    const maxR = Math.min(W / 2 - t * 0.55, H / 2 - t * 0.58);
-    const gap = t * 1.12;                    // المسافة بين الحلقتين
     const nIn = Math.round(n * 0.43);        // ١٢ من ٢٨
     const nOut = n - nIn;
 
-    const outR = maxR;
-    const inR = Math.max(half + t * 0.72, maxR - gap);
+    // حلقتان **دائريتان** (لا بيضاويتان: البيضاوي يجعل المسافات متفاوتة).
+    // ونُقلّل حجم المفتاح تلقائياً حتى تتحقّق كل الشروط:
+    //   هامش من حدود الشاشة · فراغ بين المفاتيح · فراغ بين الحلقتين · بعد عن القرص
+    const EDGE = 12, GAP = 9, BOMB_PAD = 8;
+    const adj = (r, c) => 2 * r * Math.sin(Math.PI / c);                       // مسافة متجاورين
+    const cross = (R, Ri) => Math.sqrt(R*R + Ri*Ri - 2*R*Ri*Math.cos(Math.PI / nOut));
 
-    const fits = (r, count) =>
-      r > half + t * 0.45 && (2 * Math.PI * r) / count >= t * 1.04;
+    let t = 0, outR = 0, inR = 0;
+    for (let s = 46; s >= 26; s -= 2) {
+      const R = Math.min(W / 2, H / 2) - s / 2 - EDGE;                          // أكبر نصف قطر مسموح
+      const RiMin = Math.max(half + s / 2 + BOMB_PAD, (s + GAP) / (2 * Math.sin(Math.PI / nIn)));
+      if (adj(R, nOut) < s + GAP) continue;                                     // الخارجية مزدحمة
+      if (RiMin >= R) continue;                                                 // لا مكان للداخلية
+      if (cross(R, RiMin) < s + GAP) continue;                                  // الحلقتان متقاربتان
+      t = s; outR = R; inR = RiMin; break;
+    }
+    $("stage").classList.toggle("tight", !t);
+    if (!t) return;                          // حتى أصغر مقاس لا يكفي ⇒ الشريط المسطّح
 
-    const tight = !(fits(inR, nIn) && fits(outR, nOut) && outR - inR >= t * 1.05);
-    $("stage").classList.toggle("tight", tight);
-    if (tight) return;                       // الشريط المسطّح سيظهر بدلاً منها
-
+    host.style.setProperty("--ral", t + "px");
     const place = (el, i, count, r, offset) => {
       const a = (Math.PI * 2 * i / count) - Math.PI / 2 + offset;
       el.style.left = (W / 2 + Math.cos(a) * r) + "px";
