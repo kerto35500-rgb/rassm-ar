@@ -234,30 +234,48 @@ ok(/#board \{ position:absolute; inset:0; width:100%; height:100%/.test(DRAW), "
 ok(/#canvasContainer \{[\s\S]*?background:#fff/.test(DRAW), "الخلفية بيضاء بالكامل لا رمادية");
 ok(!/#canvasContainer \{[\s\S]*?background:#e9eef4/.test(DRAW), "اللون الرمادي أُزيل");
 ok(/const rect = canvas\.getBoundingClientRect\(\)/.test(DRAW), "القياس للوحة نفسها");
-ok(/y: \(pt\.clientY - rect\.top\) \/ rect\.width/.test(DRAW), "ص تُطبَّع بالعرض ⇒ مقياس موحّد");
-ok(/op\.y1 \* canvas\.width/.test(DRAW) && /op\.y2 \* canvas\.width/.test(DRAW), "الرسم يُعيد الإحداثي الرأسي بالعرض");
-ok(!/op\.y1 \* canvas\.height/.test(DRAW) && !/op\.y \* h\b/.test(DRAW), "لا بقايا تطبيع بالارتفاع");
 ok(/new ResizeObserver\(\(\) => resizeCanvas\(\)\)/.test(DRAW), "يُعاد القياس عند تغيّر مقاس الحاوية");
+
+// «حد المساحة المشتركة» أُلغي: صار الرسّام يستخدم كل شاشته والبقية يرون كل الرسمة
+console.log("\n⑦-هـ لا حدود على الرسّام ولا قصّ على المشاهدين");
+ok(!/safeLine/.test(DRAW), "خط الحد المشترك أُزيل تماماً");
+ok(/socket\.emit\("canvasAspect", a\)/.test(DRAW), "الرسّام يُعلن نسبة لوحته");
+ok(/socket\.on\("canvasAspect", a =>/.test(DRAW), "البقية يستقبلونها");
+ok(/socket\.on\("canvasAspect", \(a\) => \{/.test(SRV), "الخادم يستقبلها");
+ok(/if \(!room \|\| socket\.id !== room\.drawerId\) return;/.test(SRV), "لا يقبلها إلا من الرسّام (لا تلاعب)");
+ok(/socket\.to\(room\.id\)\.emit\("canvasAspect", v\)/.test(SRV), "ويبثّها للغرفة");
+ok(/canvasAspect: typeof room\.canvasAspect === "number"/.test(SRV), "تُرسل أيضاً في حالة الغرفة (للداخل متأخراً)");
+ok((SRV.match(/room\.canvasAspect = null;/g) || []).length >= 2, "تُصفَّر مع بداية كل دور");
+ok(/if \(!\(v > 0\.05 && v < 6\)\) return;/.test(SRV), "قيمة النسبة محدودة (حماية)");
+ok(/function view\(\) \{/.test(DRAW) && /const s = Math\.min\(W, H \/ Math\.max\(0\.05, A\)\)/.test(DRAW),
+   "التحويل: مقياس واحد يحتوي الرسمة كاملة");
+ok(/if \(canDraw\) return myAspect\(\);/.test(DRAW), "الرسّام يستخدم نسبة شاشته هو ⇒ لا فراغ عنده");
+ok(/op\.size \* \(v\.s \/ 800\)/.test(DRAW), "سماكة القلم تتناسب مع المقياس");
 (function () {
-  // شكل مربع الأبعاد (دائرة) يُرسم على جهاز ويُعاد على آخر — المقياس واحد فالنسبة تُحفظ
-  const shape = { x1: .30, y1: .20, x2: .70, y2: .60 };   // عرضه = ارتفاعه = 0.40 وحدة
-  const dev = (w, h) => {
-    const W = shape.x2 * w - shape.x1 * w;      // بالبكسل أفقياً
-    const H = shape.y2 * w - shape.y1 * w;      // بالبكسل رأسياً (نفس العرض!)
-    return W / H;
-  };
-  const cases = [["كمبيوتر", 940, 590], ["جوال", 390, 452], ["تابلت", 760, 520], ["جوال صغير", 320, 380]];
-  cases.forEach(([n, w, h]) => ok(Math.abs(dev(w, h) - 1) < 0.001, `${n} ${w}×${h}: الدائرة دائرة (نسبة ${dev(w, h).toFixed(3)})`));
-  // السلوك القديم (تطبيع بالارتفاع) كان يشوّه بحسب فرق النسب
-  const oldDev = (w, h) => ((shape.x2 - shape.x1) * w) / ((shape.y2 - shape.y1) * h);
-  const bad = Math.abs(oldDev(940, 590) / oldDev(390, 452) - 1) * 100;
-  ok(bad > 20, `قبل الإصلاح كان الفرق بين الكمبيوتر والجوال ${bad.toFixed(0)}%`);
-  // الفراغ المهدور: قبل الإصلاح ٤:٣ داخل حاوية 390×452 ⇒ نسبة كبيرة مهدورة
-  const wasted = 1 - (390 * (390 * 3 / 4)) / (390 * 452);
-  ok(wasted > 0.3, `الفراغ الذي أُلغي كان ${(wasted * 100).toFixed(0)}% من المساحة`);
+  const W_ = (w, h, A) => { const s = Math.min(w, h / A); return { s, ox: (w - s) / 2, oy: (h - s * A) / 2 }; };
+  const drawer = { w: 380, h: 434 };                 // جوال طويل يرسم على كل شاشته
+  const A = drawer.h / drawer.w;                      // 1.142
+  // ١) الرسّام: لا فراغ ولا هدر
+  const dv = W_(drawer.w, drawer.h, A);
+  ok(Math.abs(dv.s - drawer.w) < 0.01 && Math.abs(dv.ox) < 0.01 && Math.abs(dv.oy) < 0.01,
+     "الرسّام يستعمل ١٠٠٪ من لوحته (بلا إزاحة)");
+  // ٢) المشاهدون: كل نقطة من الرسمة تظهر داخل لوحتهم + الشكل غير مشوّه
+  const viewers = [["كمبيوتر", 742, 732], ["كمبيوتر عريض", 1100, 560], ["تابلت", 760, 520], ["جوال صغير", 320, 300]];
+  const corners = [[0, 0], [1, 0], [0, A], [1, A], [.5, A / 2]];
+  viewers.forEach(([n, w, h]) => {
+    const v = W_(w, h, A);
+    const inside = corners.every(([x, y]) => {
+      const px = v.ox + x * v.s, py = v.oy + y * v.s;
+      return px >= -0.5 && px <= w + 0.5 && py >= -0.5 && py <= h + 0.5;
+    });
+    // شكل مربع الأبعاد يبقى مربعاً (نفس المقياس للمحورين)
+    const sq = ((.7 - .3) * v.s) / ((.7 - .3) * v.s);
+    ok(inside && Math.abs(sq - 1) < 1e-9, `${n} ${w}×${h}: الرسمة كاملة ظاهرة وبلا تمطيط`);
+  });
+  // ٣) لو أخذنا سلوك «حد المساحة» القديم لكان يُقصّ من الرسمة
+  const clippedOld = A > 0.75;
+  ok(clippedOld, "قبلاً: ما تحت ٤:٣ كان يختفي عن الشاشات العريضة — انتهت المشكلة");
 })();
-ok(/#safeLine/.test(DRAW) && /حد المساحة المشتركة/.test(DRAW), "خط إرشادي يبيّن الحد المشترك للرسم");
-ok(/const show = !!canDraw && h > y \+ 14/.test(DRAW), "الخط يظهر للرسّام فقط وعند وجود مساحة زائدة");
 ok(/if \(isDrawer && !wasMyDraw\) \{ turnFlash\(\); wasMyDraw = true; \}/.test(DRAW),
    "تنبيه «دورك!» يظهر في مرحلة اختيار الكلمة — قبلها لا بعدها");
 ok(!/if \(canDraw && !wasMyDraw\) turnFlash\(\)/.test(DRAW), "لا يُعاد إطلاقه عند بدء الرسم");

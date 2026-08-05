@@ -254,6 +254,7 @@ function roomState(room) {
     customWordsCount: room.customWords.length,
     drawerId: room.drawerId,
     drawerName: room.players.find(p => p.id === room.drawerId)?.name || null,
+    canvasAspect: typeof room.canvasAspect === "number" ? room.canvasAspect : null,
     hint: room.hint,
     timeLeft: room.timeLeft,
     guessLockRemaining: (room.state === "drawing" && room.guessOpenAt && Date.now() < room.guessOpenAt)
@@ -320,6 +321,7 @@ function nextTurn(room) {
   room.currentWord = null;
   room.hint = "";
   room.canvasOps = [];
+  room.canvasAspect = null;   // نسبة لوحة الرسّام تُحدَّد من جديد كل دور
 
   const connected = room.players.filter(p => p.connected);
   if (connected.length < 2) {
@@ -465,6 +467,7 @@ function nextVoteRound(room) {
   room.drawings = new Map();
   room.votes = new Map();
   room.canvasOps = [];
+  room.canvasAspect = null;   // نسبة لوحة الرسّام تُحدَّد من جديد كل دور
 
   const connected = room.players.filter(p => p.connected && !p.isBot);
   if (connected.length < 2) {
@@ -881,6 +884,17 @@ io.on("connection", (socket) => {
     if (op.start) room.redoStack = []; // أي رسمة جديدة تلغي إمكانية الإعادة
     room.canvasOps.push(op);
     socket.to(room.id).emit("draw", op);
+  });
+
+  // نسبة لوحة الرسّام (ارتفاع/عرض): تُبثّ للبقية ليعرضوا الرسمة كاملة
+  // بمقياس موحّد — فالرسّام يستفيد من كل شاشته ولا يُقصّ شيء عن أحد
+  socket.on("canvasAspect", (a) => {
+    if (!room || socket.id !== room.drawerId) return;
+    const v = Number(a);
+    if (!(v > 0.05 && v < 6)) return;
+    if (room.canvasAspect === v) return;
+    room.canvasAspect = v;
+    socket.to(room.id).emit("canvasAspect", v);
   });
 
   socket.on("clearCanvas", () => {
