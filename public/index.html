@@ -106,13 +106,6 @@
   #board { position:absolute; inset:0; width:100%; height:100%; border-radius:12px;
            background:#fff; touch-action:none; }
   #board.drawing { cursor:crosshair; }
-  /* حدّ المساحة المشتركة: ما تحته قد لا يظهر لأصحاب الشاشات العريضة */
-  #safeLine { display:none; position:absolute; left:0; right:0; height:0; z-index:6;
-              border-top:2px dashed rgba(30,58,95,.16); pointer-events:none; }
-  #safeLine.on { display:block; }
-  #safeLine span { position:absolute; right:8px; top:3px; font-size:10px; font-weight:700;
-                   color:rgba(30,58,95,.34); background:rgba(255,255,255,.75);
-                   padding:1px 6px; border-radius:6px; }
   #pauseBanner { display:none; position:absolute; inset:0; background:rgba(30,58,95,.55); border-radius:12px; flex-direction:column; align-items:center; justify-content:center; gap:8px; z-index:9; color:#fff; text-align:center; padding:16px; }
   #pauseText { font-size:20px; font-weight:900; }
   #pauseCount { font-size:44px; font-weight:900; color:var(--yellow); }
@@ -465,7 +458,6 @@
       </div>
       <div id="canvasContainer">
         <canvas id="board"></canvas>
-        <div id="safeLine"><span>حد المساحة المشتركة</span></div>
         <div id="pauseBanner"><div id="pauseText"></div><div id="pauseCount"></div></div>
 
         <!-- اختيار الكلمة -->
@@ -624,7 +616,7 @@ const socket = io({ reconnection: true, reconnectionDelay: 800, reconnectionAtte
 const $ = id => document.getElementById(id);
 
 /* تنبيه «دورك!» */
-let flashT = 0, wasMyDraw = false;
+let flashT = 0, wasMyDraw = false, prevDrawerId = null;
 const FLASH_COLORS = ["#7c4dff","#1e88e5","#ef5350","#ffb300","#4caf50","#e8329b"];
 function turnFlash() {
   const el = $("turnFlash");
@@ -968,7 +960,15 @@ socket.on("roomState", s => {
   $("board").classList.toggle("drawing", canDraw);
   // في الجوال: نُخفي شريط الأسماء وقت دوري في الرسم لتوسيع مساحة اللوحة
   document.body.classList.toggle("iDraw", canDraw);
-  if (typeof updateSafeLine === "function") updateSafeLine();
+  // نسبة الرسمة: تُصفَّر مع كل رسّام جديد، والرسّام يُعلن نسبته فوراً
+  if (s.drawerId !== prevDrawerId) {
+    prevDrawerId = s.drawerId;
+    drawAspect = (typeof s.canvasAspect === "number" ? s.canvasAspect : null);
+    sentAspect = 0;
+  } else if (typeof s.canvasAspect === "number" && !canDraw) {
+    drawAspect = s.canvasAspect;
+  }
+  if (typeof announceAspect === "function") setTimeout(announceAspect, 0);
   // تنبيه «دورك!»: يُطلق في مرحلة اختيار الكلمة (أسفل)، ونصفّر العلم بعد انتهاء دورك
   if (!isDrawer) wasMyDraw = false;
 
@@ -1456,11 +1456,27 @@ function redrawAll() {
   localOps.forEach(op => renderOp(op));
 }
 
-/* ===== نظام إحداثيات موحّد المقياس =====
-   س وَ ص كلاهما يُقسَّم على العرض. فالوحدة الواحدة = عرض اللوحة أفقياً ورأسياً،
-   أي أن المقياس واحد في الاتجاهين ⇒ الدائرة تبقى دائرة على أي جهاز،
-   واللوحة تملأ كل المساحة بالأبيض بلا فراغ ولا حواف. */
-const SAFE_H = 0.75;  // ٤:٣ — الارتفاع المضمون ظهوره عند الجميع
+/* ===== نظام إحداثيات موحّد المقياس + احتواء كامل =====
+   • س وَ ص يُقسَّمان على العرض ⇒ المقياس واحد في الاتجاهين، فلا تمطيط أبداً.
+   • الرسّام يرسم على كل شاشته (لا فراغ عنده)، ويُعلن «نسبة لوحته».
+   • البقية يعرضون الرسمة كاملة داخل لوحاتهم بمقياس واحد ⇒ لا يُقصّ أي شيء،
+     فيقدر الرسّام يستخدم كل المساحة وكل الناس يشوفون كل الرسمة. */
+let drawAspect = null;   // ارتفاع/عرض لوحة الرسّام (يأتي من الخادم)
+function myAspect() { return canvas.height / Math.max(1, canvas.width); }
+// نسبة الرسمة المعمول بها: الرسّام يستخدم نسبته، والباقي نسبة الرسّام
+function activeAspect() {
+  if (canDraw) return myAspect();
+  return drawAspect || myAspect();
+}
+// تحويل من إحداثيات الرسمة إلى بكسل اللوحة: مقياس واحد + توسيط
+function view() {
+  const W = canvas.width, H = canvas.height, A = activeAspect();
+  const s = Math.min(W, H / Math.max(0.05, A));       // احتواء كامل
+  return { s, ox: (W - s) / 2, oy: (H - s * A) / 2 };
+}
+const VX = (x, v) => v.ox + x * v.s;
+const VY = (y, v) => v.oy + y * v.s;
+
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
   const w = Math.round(rect.width), h = Math.round(rect.height);
@@ -1469,18 +1485,24 @@ function resizeCanvas() {
     canvas.width = w; canvas.height = h;
     redrawAll();
   }
-  updateSafeLine();
+  announceAspect();
 }
-// خط الحدّ المشترك: يظهر للرسّام فقط، وفقط إن كانت لوحته أطول من النسبة المشتركة
-function updateSafeLine() {
-  const el = $("safeLine");
-  if (!el) return;
-  const w = canvas.width, h = canvas.height;
-  const y = w * SAFE_H;
-  const show = !!canDraw && h > y + 14;
-  el.classList.toggle("on", show);
-  if (show) el.style.top = Math.round(y) + "px";
+// الرسّام يُبلّغ الغرفة بنسبة لوحته ليعرضها الباقون كاملة
+let sentAspect = 0;
+function announceAspect() {
+  if (!canDraw || canvas.width < 10) return;
+  const a = +myAspect().toFixed(4);
+  if (Math.abs(a - sentAspect) < 0.002) return;
+  sentAspect = a;
+  socket.emit("canvasAspect", a);
 }
+socket.on("canvasAspect", a => {
+  const v = Number(a);
+  if (!(v > 0.05 && v < 6)) return;
+  if (drawAspect === v) return;
+  drawAspect = v;
+  if (!canDraw) redrawAll();     // أعِد الرسم بالنسبة الصحيحة
+});
 window.addEventListener("resize", resizeCanvas);
 window.addEventListener("orientationchange", () => setTimeout(resizeCanvas, 300));
 // أي تغيّر في مقاس الحاوية (ظهور شريط الأدوات، فتح الكيبورد، دوران الشاشة) يُعيد القياس
@@ -1491,17 +1513,20 @@ if (window.ResizeObserver) {
 function getPos(e) {
   const rect = canvas.getBoundingClientRect();
   const pt = e.touches ? e.touches[0] : e;
-  return { x: (pt.clientX - rect.left) / rect.width, y: (pt.clientY - rect.top) / rect.width };
+  const v = view(), r = canvas.width / Math.max(1, rect.width); // نسبة البكسل للـ CSS
+  return { x: ((pt.clientX - rect.left) * r - v.ox) / v.s,
+           y: ((pt.clientY - rect.top) * r - v.oy) / v.s };
 }
 
 function drawSegment(op) {
+  const v = view();
   ctx.strokeStyle = op.eraser ? "#ffffff" : op.color;
-  ctx.lineWidth = Math.max(2, op.size * (canvas.width / 800)); // حد أدنى للوضوح على الشاشات الصغيرة
+  ctx.lineWidth = Math.max(2, op.size * (v.s / 800)); // حد أدنى للوضوح على الشاشات الصغيرة
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.beginPath();
-  ctx.moveTo(op.x1 * canvas.width, op.y1 * canvas.width);
-  ctx.lineTo(op.x2 * canvas.width, op.y2 * canvas.width);
+  ctx.moveTo(VX(op.x1, v), VY(op.y1, v));
+  ctx.lineTo(VX(op.x2, v), VY(op.y2, v));
   ctx.stroke();
 }
 
@@ -1511,9 +1536,9 @@ function hexToRgb(hex) {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 function floodFillAt(op) {
-  const w = canvas.width, h = canvas.height;
-  const sx = Math.min(w - 1, Math.max(0, Math.floor(op.x * w)));
-  const sy = Math.min(h - 1, Math.max(0, Math.floor(op.y * w)));
+  const w = canvas.width, h = canvas.height, v = view();
+  const sx = Math.min(w - 1, Math.max(0, Math.floor(VX(op.x, v))));
+  const sy = Math.min(h - 1, Math.max(0, Math.floor(VY(op.y, v))));
   const img = ctx.getImageData(0, 0, w, h), d = img.data;
   const i0 = (sy * w + sx) * 4;
   const target = [d[i0], d[i0 + 1], d[i0 + 2]];
@@ -1541,11 +1566,12 @@ function drawShape(op) {
   const base = op.shape === "rectFill" ? "rect" : op.shape === "circleFill" ? "circle" : op.shape;
   ctx.strokeStyle = op.color;
   ctx.fillStyle = op.color;
-  ctx.lineWidth = Math.max(2, op.size * (canvas.width / 800));
+  const v = view();
+  ctx.lineWidth = Math.max(2, op.size * (v.s / 800));
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  const x1 = op.x1 * canvas.width, y1 = op.y1 * canvas.width;
-  const x2 = op.x2 * canvas.width, y2 = op.y2 * canvas.width;
+  const x1 = VX(op.x1, v), y1 = VY(op.y1, v);
+  const x2 = VX(op.x2, v), y2 = VY(op.y2, v);
   ctx.beginPath();
   if (base === "line") { ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
   else if (base === "rect") { ctx.rect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)); }
