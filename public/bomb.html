@@ -264,7 +264,8 @@
   #fabChat { display:none; position:absolute; z-index:26; width:48px; height:48px; border:none;
              border-radius:50%; background:linear-gradient(140deg,#3ea1ff,#1668d6); color:#fff;
              align-items:center; justify-content:center; font-size:21px; padding:0;
-             box-shadow:0 6px 18px rgba(22,104,214,.42); touch-action:none; cursor:grab;
+             box-shadow:0 6px 18px rgba(22,104,214,.42); touch-action:manipulation; cursor:grab;
+             -webkit-tap-highlight-color:rgba(255,255,255,.25);
              transition:transform .15s, box-shadow .15s; }
   #stage.compact #fabChat { display:flex; }
   #fabChat:active { cursor:grabbing; }
@@ -357,6 +358,36 @@
   #winOverlay .t { font-size:44px; }
   #winOverlay h2 { color:var(--ink); font-size:26px; }
   #winOverlay p { color:#7b8494; font-size:14px; }
+
+  /* ===== تنبيه «دورك!» — يظهر بحركة ثم يختفي ===== */
+  #turnFlash { position:fixed; inset:0; z-index:70; display:none; align-items:center; justify-content:center;
+               pointer-events:none; }
+  #turnFlash.on { display:flex; }
+  #turnFlash .halo { position:absolute; width:min(86vw,420px); aspect-ratio:1; border-radius:50%;
+              background:radial-gradient(circle,rgba(255,138,0,.42),rgba(255,60,0,.16) 55%,transparent 72%);
+              animation:tfHalo 1.5s ease-out forwards; }
+  @keyframes tfHalo { 0%{transform:scale(.3);opacity:0} 25%{transform:scale(1);opacity:1}
+                      100%{transform:scale(1.5);opacity:0} }
+  #turnFlash .word { position:relative; font-size:clamp(58px,19vw,132px); font-weight:900; letter-spacing:2px;
+              line-height:1; animation:tfWord 1.5s cubic-bezier(.2,1.5,.3,1) forwards;
+              background:linear-gradient(180deg,#fff3d0 0%,#ffb43a 42%,#ff5a12 78%,#c1290a 100%);
+              -webkit-background-clip:text; background-clip:text; color:transparent;
+              -webkit-text-stroke:3px #2a1400;
+              filter:drop-shadow(0 6px 0 rgba(0,0,0,.35)) drop-shadow(0 0 26px rgba(255,140,20,.95)); }
+  @keyframes tfWord { 0%{transform:scale(.35) rotate(-9deg);opacity:0}
+                      22%{transform:scale(1.14) rotate(2deg);opacity:1}
+                      38%{transform:scale(1) rotate(0)}
+                      74%{transform:scale(1);opacity:1}
+                      100%{transform:scale(1.16);opacity:0} }
+  #turnFlash .sub { position:absolute; top:calc(50% + clamp(42px,13vw,88px)); font-size:clamp(14px,4.2vw,20px);
+              font-weight:900; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.75);
+              animation:tfSub 1.5s ease-out forwards; }
+  @keyframes tfSub { 0%{transform:translateY(14px);opacity:0} 30%{transform:translateY(0);opacity:1}
+                     78%{opacity:1} 100%{opacity:0} }
+  #turnFlash .spark { position:absolute; width:7px; height:7px; border-radius:50%; background:#ffcf5a;
+              box-shadow:0 0 12px #ff9020; animation:tfSpark 1.4s ease-out forwards; }
+  @keyframes tfSpark { 0%{transform:translate(0,0) scale(1);opacity:1}
+                       100%{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0} }
 
   #toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(80px); background:#1e3a5f; color:#fff;
            padding:11px 20px; border-radius:11px; font-size:14px; font-weight:700; z-index:80; opacity:0; transition:.25s; pointer-events:none; }
@@ -670,6 +701,11 @@
   </div>
 </div>
 
+<div id="turnFlash">
+  <div class="halo"></div>
+  <div class="word">دورك!</div>
+  <div class="sub">💣 اكتب كلمة بسرعة</div>
+</div>
 <div id="toast"></div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -687,6 +723,26 @@
   let lastTypedSend = 0;
 
   // ---------- أدوات ----------
+  /* تنبيه «دورك!» — يظهر مرة واحدة عند بداية دورك ثم يختفي */
+  let flashT = 0, wasMyTurn = false;
+  function turnFlash(){
+    const el = $("turnFlash");
+    if (!el) return;
+    el.querySelectorAll(".spark").forEach(x => x.remove());
+    for (let i = 0; i < 14; i++) {
+      const sp = document.createElement("span");
+      sp.className = "spark";
+      const a = Math.random() * Math.PI * 2, d = 90 + Math.random() * 130;
+      sp.style.setProperty("--dx", Math.cos(a) * d + "px");
+      sp.style.setProperty("--dy", Math.sin(a) * d + "px");
+      sp.style.animationDelay = (Math.random() * .18) + "s";
+      el.appendChild(sp);
+    }
+    el.classList.remove("on"); void el.offsetWidth; el.classList.add("on");
+    clearTimeout(flashT);
+    flashT = setTimeout(() => el.classList.remove("on"), 1550);
+  }
+
   function toast(t){ const el=$("toast"); el.textContent=t; el.classList.add("on"); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("on"),2200); }
   function esc(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
   function hearts(n){ return n>0 ? "❤️".repeat(Math.min(n,6)) + (n>6?"+":"") : "💀"; }
@@ -822,10 +878,11 @@
     toastT = setTimeout(()=>{ t.classList.remove("on"); }, 3200);
   }
 
-  /* سحب الفقاعة لأي مكان داخل منطقة اللعب (يُحفظ الموضع) */
-  (function makeDraggable(){
+  /* ── فقاعة الدردشة ──
+     الفتح يعتمد على حدث click العادي (الأكثر موثوقية على الجوال قطعاً).
+     السحب منفصل تماماً: يبدأ فقط بعد تحرّك ١٢px، وحينها يُلغى الـ click.  */
+  (function chatBubble(){
     const f = $("fabChat"), host = $("ring");
-    let dragging = false, moved = 0, sx = 0, sy = 0, ox = 0, oy = 0, downAt = 0, justDragged = false;
 
     function clampInto(x, y){
       const w = host.clientWidth, h = host.clientHeight, s = f.offsetWidth || 48;
@@ -834,60 +891,72 @@
     function place(x, y){
       const [cx, cy] = clampInto(x, y);
       f.style.left = cx + "px"; f.style.top = cy + "px";
-      f.style.right = "auto"; f.style.bottom = "auto";
-      f.style.insetInlineStart = "auto";
+      f.style.right = "auto"; f.style.bottom = "auto"; f.style.insetInlineStart = "auto";
     }
-    // الموضع المحفوظ أو الزاوية السفلية الافتراضية
     function restore(){
       let p = null;
       try { p = JSON.parse(localStorage.getItem("bombChatPos") || "null"); } catch(e){}
       const w = host.clientWidth, h = host.clientHeight;
       if (w < 40 || h < 40) return;
       if (p && typeof p.rx === "number") place(p.rx * w, p.ry * h);
-      else place(6, h - 56);
+      else place(6, h - 58);
     }
     addEventListener("resize", () => setTimeout(restore, 80));
     setTimeout(restore, 300);
     window._restoreChatFab = restore;
 
-    f.addEventListener("pointerdown", e => {
-      dragging = true; moved = 0; downAt = Date.now(); justDragged = false;
-      sx = e.clientX; sy = e.clientY;
+    /* ① الفتح: نقرة عادية — لا pointer capture ولا حساب مسافات */
+    f.addEventListener("click", () => {
+      if (f.dataset.dragged === "1") { f.dataset.dragged = "0"; return; }   // كانت سحبة
+      sheetToggle();
+    });
+
+    /* ② السحب: يُفعّل بعد تجاوز ١٢px فقط، ثم يُلغي نقرة النهاية */
+    let sx = 0, sy = 0, ox = 0, oy = 0, active = false, dragging = false;
+    const start = (x, y) => {
+      active = true; dragging = false;
+      sx = x; sy = y;
       const hr = host.getBoundingClientRect(), fr = f.getBoundingClientRect();
       ox = fr.left - hr.left; oy = fr.top - hr.top;
+    };
+    const move = (x, y) => {
+      if (!active) return false;
+      const dx = x - sx, dy = y - sy;
+      if (!dragging && Math.hypot(dx, dy) < 12) return false;
+      dragging = true;
       f.classList.add("dragging");
-      f.setPointerCapture(e.pointerId);
-    });
-    f.addEventListener("pointermove", e => {
-      if (!dragging) return;
-      const dx = e.clientX - sx, dy = e.clientY - sy;
-      moved = Math.max(moved, Math.hypot(dx, dy));
+      f.dataset.dragged = "1";
       place(ox + dx, oy + dy);
       hideToast();
-    });
-    f.addEventListener("pointerup", e => {
-      if (!dragging) return;
-      dragging = false;
+      return true;
+    };
+    const end = () => {
+      if (!active) return;
+      active = false;
       f.classList.remove("dragging");
-      // النقرة على الجوال تتحرك قليلاً بطبيعتها ⇒ عتبة متسامحة
-      // نقرة = حركة صغيرة أو ضغطة قصيرة (الإصبع يهتز دائماً على الجوال)
-      if (moved < 20 || (Date.now() - downAt < 320 && moved < 30)) { justDragged = false; return sheetToggle(); }
-      justDragged = true;
-      setTimeout(() => { justDragged = false; }, 350);
+      if (!dragging) return;
       const w = host.clientWidth, h = host.clientHeight;
       try {
         localStorage.setItem("bombChatPos", JSON.stringify({
           rx: parseFloat(f.style.left) / w, ry: parseFloat(f.style.top) / h
         }));
       } catch(e){}
-    });
-    f.addEventListener("pointercancel", () => { dragging = false; f.classList.remove("dragging"); });
-    // احتياط: لو لم يصل pointerup لأي سبب، النقر العادي يفتح الدردشة
-    f.addEventListener("click", e => {
-      e.preventDefault();
-      if (justDragged || dragging) return;
-      if (!$("side").classList.contains("open")) sheetOpen();
-    });
+      // نلغي النقرة التي ستتبع السحب
+      setTimeout(() => { f.dataset.dragged = "0"; }, 400);
+    };
+
+    // اللمس
+    f.addEventListener("touchstart", e => { const t = e.touches[0]; start(t.clientX, t.clientY); }, { passive:true });
+    f.addEventListener("touchmove", e => {
+      const t = e.touches[0];
+      if (move(t.clientX, t.clientY)) e.preventDefault();      // نمنع التمرير أثناء السحب فقط
+    }, { passive:false });
+    f.addEventListener("touchend", end);
+    f.addEventListener("touchcancel", end);
+    // الماوس
+    f.addEventListener("mousedown", e => { start(e.clientX, e.clientY); e.preventDefault(); });
+    addEventListener("mousemove", e => move(e.clientX, e.clientY));
+    addEventListener("mouseup", end);
   })();
 
   // ☰ من قائمة «المزيد»: في الجوال يفتح النافذة، وعلى الكمبيوتر يُظهر/يخفي العمود
@@ -1098,6 +1167,10 @@
       ? `لوحتك ${mine.size}/${ALPHABET.length} · اكمل الحروف = ❤️ إضافي · ${ST.sylPool||0} كلمة ممكنة`
       : `لوحتك ${mine.size}/${ALPHABET.length} — اكمل الحروف = ❤️ إضافي`;
     paintBadges();
+
+    // تنبيه «دورك!» عند انتقال الدور إليك (مرة واحدة لا مع كل تحديث)
+    if (myTurn && !wasMyTurn) turnFlash();
+    wasMyTurn = myTurn;
 
     // الإدخال — نفرّغ المربع كلما تغيّر المقطع (جولة/دور جديد)
     const inp = $("wordInput");

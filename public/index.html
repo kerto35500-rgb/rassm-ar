@@ -164,6 +164,29 @@
   #vkb .k.del { background:#ffe0e0; color:#c62828; }
   #vkb .k.send { background:var(--green); color:#fff; }
 
+  /* ===== تنبيه «دورك!» — يظهر بحركة ثم يختفي ===== */
+  #turnFlash { position:fixed; inset:0; z-index:70; display:none; align-items:center; justify-content:center; pointer-events:none; }
+  #turnFlash.on { display:flex; }
+  #turnFlash .halo { position:absolute; width:min(86vw,420px); aspect-ratio:1; border-radius:50%;
+              background:radial-gradient(circle,rgba(124,77,255,.34),rgba(66,165,245,.18) 55%,transparent 72%);
+              animation:tfHalo 1.5s ease-out forwards; }
+  @keyframes tfHalo { 0%{transform:scale(.3);opacity:0} 25%{transform:scale(1);opacity:1} 100%{transform:scale(1.5);opacity:0} }
+  #turnFlash .word { position:relative; font-size:clamp(58px,19vw,132px); font-weight:900; letter-spacing:2px; line-height:1;
+              animation:tfWord 1.5s cubic-bezier(.2,1.5,.3,1) forwards;
+              background:linear-gradient(110deg,#7c4dff 0%,#1e88e5 34%,#ef5350 64%,#ffb300 100%);
+              -webkit-background-clip:text; background-clip:text; color:transparent;
+              -webkit-text-stroke:3px #14243a;
+              filter:drop-shadow(0 6px 0 rgba(0,0,0,.28)) drop-shadow(0 0 24px rgba(124,77,255,.75)); }
+  @keyframes tfWord { 0%{transform:scale(.35) rotate(-9deg);opacity:0} 22%{transform:scale(1.14) rotate(2deg);opacity:1}
+                      38%{transform:scale(1) rotate(0)} 74%{transform:scale(1);opacity:1} 100%{transform:scale(1.16);opacity:0} }
+  #turnFlash .sub { position:absolute; top:calc(50% + clamp(42px,13vw,88px)); font-size:clamp(14px,4.2vw,20px);
+              font-weight:900; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.7); animation:tfSub 1.5s ease-out forwards; }
+  @keyframes tfSub { 0%{transform:translateY(14px);opacity:0} 30%{transform:translateY(0);opacity:1} 78%{opacity:1} 100%{opacity:0} }
+  #turnFlash .spark { position:absolute; width:9px; height:9px; border-radius:2px;
+              animation:tfSpark 1.4s ease-out forwards; }
+  @keyframes tfSpark { 0%{transform:translate(0,0) rotate(0) scale(1);opacity:1}
+                       100%{transform:translate(var(--dx),var(--dy)) rotate(220deg) scale(.2);opacity:0} }
+
   /* ===== النوافذ ===== */
   /* التوسيط بالهوامش التلقائية بدل justify-content:center — حتى لا يُقطع
      أعلى المحتوى ولا يستحيل الوصول إليه عند طول القائمة */
@@ -261,6 +284,9 @@
     #roomCodeBox { font-size:12px; padding:5px 9px; }
     #roomCodeBox b { font-size:14px; }
     #hintBox { padding:6px 8px; border-radius:10px; }
+    /* دوري في الرسم ⇒ نُخفي شريط الأسماء ونوسّع اللوحة */
+    body.iDraw #playersPanel { display:none; }
+    body.iDraw #canvasContainer { min-height:330px; }
     /* الإعدادات تصبح نافذة منبثقة بدل لوحة مدموجة تحتاج سكرول */
     #setOpenBtn { display:block; width:100%; max-width:340px; }
     #settingsBox { position:fixed; inset:0; z-index:70; max-width:none; border-radius:0;
@@ -322,6 +348,13 @@
     </div>
     <div id="joinError"></div>
   </div>
+</div>
+
+<!-- تنبيه «دورك!» -->
+<div id="turnFlash">
+  <div class="halo"></div>
+  <div class="word">دورك!</div>
+  <div class="sub">🎨 ارسم الكلمة</div>
 </div>
 
 <!-- شاشة اللعبة -->
@@ -540,6 +573,28 @@
 <script>
 const socket = io({ reconnection: true, reconnectionDelay: 800, reconnectionAttempts: Infinity });
 const $ = id => document.getElementById(id);
+
+/* تنبيه «دورك!» */
+let flashT = 0, wasMyDraw = false;
+const FLASH_COLORS = ["#7c4dff","#1e88e5","#ef5350","#ffb300","#4caf50","#e8329b"];
+function turnFlash() {
+  const el = $("turnFlash");
+  if (!el) return;
+  el.querySelectorAll(".spark").forEach(x => x.remove());
+  for (let i = 0; i < 16; i++) {
+    const sp = document.createElement("span");
+    sp.className = "spark";
+    const a = Math.random() * Math.PI * 2, d = 90 + Math.random() * 140;
+    sp.style.setProperty("--dx", Math.cos(a) * d + "px");
+    sp.style.setProperty("--dy", Math.sin(a) * d + "px");
+    sp.style.background = FLASH_COLORS[i % FLASH_COLORS.length];
+    sp.style.animationDelay = (Math.random() * .18) + "s";
+    el.appendChild(sp);
+  }
+  el.classList.remove("on"); void el.offsetWidth; el.classList.add("on");
+  clearTimeout(flashT);
+  flashT = setTimeout(() => el.classList.remove("on"), 1550);
+}
 
 let myId = null, isDrawer = false, canDraw = false, state = null, prevState = "lobby";
 let voteMode = false, myVoted = false;
@@ -862,6 +917,11 @@ socket.on("roomState", s => {
   canDraw = (isDrawer && s.state === "drawing") || s.state === "drawAll";
   $("canvasWrap").classList.toggle("drawmode", canDraw);
   $("board").classList.toggle("drawing", canDraw);
+  // في الجوال: نُخفي شريط الأسماء وقت دوري في الرسم لتوسيع مساحة اللوحة
+  document.body.classList.toggle("iDraw", canDraw);
+  // تنبيه «دورك!» عند انتقال دور الرسم إليك
+  if (canDraw && !wasMyDraw) turnFlash();
+  wasMyDraw = canDraw;
 
   // صوت بداية الدور
   if ((s.state === "drawing" || s.state === "drawAll") && prevState !== "drawing" && prevState !== "drawAll") sndStart();
