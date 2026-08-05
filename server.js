@@ -634,6 +634,7 @@ function handleChat(room, player, text) {
       player.score += points;
       io.to(room.id).emit("chat", { system: true, cls: "correct", text: `${player.name} خمّن الكلمة! ✅ (المركز ${rank} • +${points})` });
       io.to(player.id).emit("guessedCorrectly");
+      io.to(player.id).emit("guessResult", { ok: true });
       broadcast(room);
 
       const remaining = room.players.filter(p => p.connected && p.id !== room.drawerId && !room.guessedIds.has(p.id));
@@ -641,9 +642,12 @@ function handleChat(room, player, text) {
       return;
     }
 
-    if (levenshtein(guess, answer) === 1) {
+    const veryClose = levenshtein(guess, answer) === 1;
+    if (veryClose) {
       io.to(player.id).emit("chat", { system: true, cls: "close", text: `"${text}" قريبة جدًا! 🔥` });
     }
+    // نتيجة التخمين للمُخمِّن نفسه: يلوّن مربع الدردشة (أحمر خطأ • برتقالي قريبة)
+    io.to(player.id).emit("guessResult", { ok: false, close: veryClose });
     io.to(room.id).emit("chat", { name: player.name, text });
     return;
   }

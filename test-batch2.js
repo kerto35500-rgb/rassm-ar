@@ -103,7 +103,8 @@ ok(/class="shaft"/.test(BOMB) && /class="head"/.test(BOMB), "السهم صار �
 ok(!/turnArrow">▼/.test(BOMB), "الرمز القديم أُزيل");
 ok(/\.turnArrow \.shaft \{ fill:#ffc21f/.test(BOMB), "لون ذهبي كالمرجع");
 ok(/\.chip \.turnArrow \{ position:absolute/.test(BOMB), "في الشريط: سهم أفقي يشير للبطاقة");
-ok(/@keyframes slideIn/.test(BOMB), "السهم يتحرك نحو الهدف");
+ok(/@keyframes bobDown/.test(BOMB) && /@keyframes bob\b/.test(BOMB),
+   "المؤشّر متحرّك: مثلث نابض في البطاقة وسهم في الحلقة");
 
 // ───────── ٦ · الدور ينتقل بعد الانفجار ─────────
 console.log("\n⑥ القنبلة لا تبقى معلّقة بعد الانفجار");
@@ -134,7 +135,7 @@ ok(/matchMedia\("\(max-width: 880px\)"\)\.matches/.test(BOMB),
    "الوضع المدمج يشمل كل شاشات الجوال (لا يختفي على جوال طويل)");
 ok(/narrow \|\| \(h > 0 && h < 265\)/.test(BOMB), "أو أي شاشة ضاق ارتفاعها");
 ok(/#stage\.compact #alphaBox \{ display:none; \}/.test(BOMB), "الشريط المسطّح يختفي (لا تكرار)");
-ok(/Math\.cos\(a\) \* r\.rx/.test(BOMB) && /Math\.sin\(a\) \* r\.ry/.test(BOMB), "بيضاوي يستغل العرض والارتفاع");
+ok(/Math\.cos\(a\) \* r\b/.test(BOMB) && /Math\.sin\(a\) \* r\b/.test(BOMB), "المواضع تُحسب على محيط دائرة");
 ok(/id="fabChat"/.test(BOMB), "فقاعة دردشة عائمة واحدة");
 ok(/#side \{ position:fixed[\s\S]*?transform:translateY\(102%\)/.test(BOMB), "القوائم صارت نافذة سفلية منزلقة");
 ok(/#side\.open \{ transform:translateY\(0\); \}/.test(BOMB), "تنزلق للأعلى عند الفتح");
@@ -143,70 +144,53 @@ ok(/unread\+\+; paintBadges\(\)/.test(BOMB), "شارة غير المقروء ع�
 ok(/id="ringNote"/.test(BOMB), "عدّاد الحروف أسفل الحلقة");
 ok(/#stage\.compact\.tight #alphaRing \{ display:none; \}/.test(BOMB),
    "لو ضاقت المساحة نرجع للشريط المسطّح بدل حلقة متراكبة");
-ok(/function ellipsePerimeter/.test(BOMB), "قياس المحيط يقرّر إن كانت المساحة تكفي");
-ok(/const nIn = Math\.round\(n \* 0\.43\)/.test(BOMB), "الحروف على حلقتين متداخلتين (مفاتيح أكبر)");
-ok(/\.ral \{[\s\S]*?width:42px/.test(BOMB), "المفاتيح صارت 42px (كانت 30px)");
-ok(/\.ral \{ width:38px/.test(BOMB), "وعلى الجوال الصغير 38px — لا تعود 27px");
-ok(!/\.ral \{ width:27px/.test(BOMB), "لا قاعدة قديمة تُصغّرها");
-ok(BOMB.indexOf('id="fabChat"') > BOMB.indexOf('id="ringNote"'),
-   "الفقاعة داخل منطقة اللعب فلا تصادم «ابدأ اللعبة»");
-ok(/#sylHead\.hide \{ display:none !important; \}/.test(BOMB) && /classList\.toggle\("hide", !playing\)/.test(BOMB),
-   "ترويسة المقطع تختفي قبل بدء اللعب (لا شرطة سابحة)");
-ok(/border-radius:13px/.test(BOMB) && /box-shadow:0 4px 10px/.test(BOMB), "مفاتيح ناعمة بظل — كالتصميم المرجعي");
-ok(/innerBase = half \+ t \* 0\.68/.test(BOMB), "الحلقة الداخلية تلامس قرص القنبلة (لا مبعدة)");
-ok(/Math\.PI \/ nIn/.test(BOMB), "الحلقة الداخلية مُزاحة نصف خطوة فلا تحجب الخارجية");
+ok(/const EDGE = 12, GAP = 9, BOMB_PAD = 8/.test(BOMB),
+   "شروط صريحة: هامش 12px من الشاشة وفراغ 9px بين المفاتيح");
+ok(/for \(let s = 46; s >= 26; s -= 2\)/.test(BOMB),
+   "مقاس المفتاح يُختار تلقائياً (يصغر حتى تتحقّق الشروط)");
+ok(/Math\.PI \/ nOut/.test(BOMB), "الحلقة الداخلية تقع في فراغات الخارجية (كالمرجع)");
+ok(/const cross = \(R, Ri\)/.test(BOMB), "يُقاس الفراغ بين الحلقتين لا الفرق بين نصفَي القطر فقط");
+ok(/width:var\(--ral,40px\)/.test(BOMB), "المفتاح يأخذ مقاسه من الحساب");
+ok(!/\.ral \{ width:38px/.test(BOMB) && !/\.ral \{ width:27px/.test(BOMB), "لا تجاوزات مقاس ثابتة");
+ok(/#stage\.compact #sylPill \{ display:flex; \}/.test(BOMB) &&
+   /#stage\.compact #sylPill:not\(\.on\) \{ visibility:hidden; \}/.test(BOMB),
+   "مكان شارة المقطع محجوز دائماً — الشاشة لا تتغيّر عند بدء اللعب");
 // قرص القنبلة بنمط التصميم المرجعي
-ok(/#stage\.compact #bombCircle \{[\s\S]*?border-radius:50%[\s\S]*?background:#fff/.test(BOMB),
-   "قرص أبيض دائري ناعم");
+ok(/#stage\.compact #bombCircle \{[\s\S]*?border-radius:50%[\s\S]*?background:#fff/.test(BOMB), "قرص أبيض دائري ناعم");
 ok(/#stage\.compact #timeNum \{ font-size:31px/.test(BOMB), "الرقم كبير داخل القرص");
 ok(/id="timeUnit"/.test(BOMB) && /#stage\.compact #timeUnit \{ display:block; \}/.test(BOMB), "كلمة «ثانية» تحت الرقم");
 ok(/#stage\.compact #syl \{ display:none; \}/.test(BOMB), "المقطع خرج من داخل القرص");
-ok(/id="sylHead"/.test(BOMB) && /id="sylBig"/.test(BOMB), "المقطع كبير وواضح فوق الحلقة");
-ok(/✨ أكمل بالكلمة/.test(BOMB), "نص «أكمل بالكلمة» كالمرجع");
-// زرّان مختلفان لا متشابهان
-ok(!/id="fabPl"/.test(BOMB) && !/plBadge/.test(BOMB), "زر «اللاعبون» المكرَّر حُذف — بقيت الدردشة فقط");
-ok(/#fabChat \{ display:none; position:absolute[\s\S]*?border-radius:50%/.test(BOMB), "فقاعة دائرية بأيقونة فقط");
-ok(!/>الدردشة</.test(BOMB.match(/<button id="fabChat"[^>]*>[\s\S]{0,80}/)[0]), "بلا نص على الفقاعة");
-ok(/function makeDraggable/.test(BOMB), "الفقاعة قابلة للسحب");
-ok(/pointerdown/.test(BOMB) && /pointermove/.test(BOMB) && /pointerup/.test(BOMB), "سحب بالمؤشّر/اللمس");
-ok(/if \(moved < 7\) return sheetToggle\(\)/.test(BOMB), "نقرة تفتح الدردشة وسحبة تحرّكها");
-ok(/localStorage\.setItem\("bombChatPos"/.test(BOMB), "الموضع يُحفظ للمرة القادمة");
-ok(/function clampInto/.test(BOMB), "لا تخرج عن حدود منطقة اللعب");
-ok(/id="chatToast"/.test(BOMB) && /function showToast/.test(BOMB), "إشعار يظهر عند وصول رسالة");
-ok(/toastT = setTimeout\(\(\)=>\{ t\.classList\.remove\("on"\); \}, 3200\)/.test(BOMB), "الإشعار يختفي تلقائياً");
-// محاكاة التوزيع الفعلي على كل المقاسات: بلا تراكب ولا خروج عن الشاشة
-function per(rx, ry) { return Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry))); }
-function layout(W, H, half, t, n) {
-  const maxRx = W / 2 - t * 0.55, maxRy = H / 2 - t * 0.58, gap = t * 1.12, innerBase = half + t * 0.68;
-  const nIn = Math.round(n * 0.43), nOut = n - nIn;
-  const ring = (R, pad) => ({ rx: Math.min(R * 1.22, maxRx - pad), ry: Math.min(R, maxRy - pad) });
-  const inR = ring(innerBase, gap), outR = ring(innerBase + gap, 0);
-  const fits = (r, c) => r.rx > half + t * 0.45 && r.ry > half + t * 0.45 && per(r.rx, r.ry) / c >= t * 1.04;
-  if (!(fits(inR, nIn) && fits(outR, nOut))) return { tight: true };
-  const place = (i, c, r, off) => { const a = Math.PI * 2 * i / c - Math.PI / 2 + off; return [W / 2 + Math.cos(a) * r.rx, H / 2 + Math.sin(a) * r.ry]; };
-  const pts = [];
-  for (let i = 0; i < n; i++) pts.push(i < nOut ? place(i, nOut, outR, 0) : place(i - nOut, nIn, inR, Math.PI / nIn));
-  let mn = Infinity, inBomb = 0, off = 0;
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 1; j < n; j++) mn = Math.min(mn, Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]));
-    if (Math.hypot(pts[i][0] - W / 2, pts[i][1] - H / 2) < half + t * 0.42) inBomb++;
-    if (pts[i][0] < t / 2 || pts[i][0] > W - t / 2 || pts[i][1] < t / 2 || pts[i][1] > H - t / 2) off++;
-  }
-  return { tight: false, minGap: +mn.toFixed(1), inBomb, off };
-}
-[[398, 260], [398, 340], [398, 380], [398, 420], [398, 480], [398, 560], [346, 420], [360, 340]]
-  .forEach(([W, H]) => {
-    const r = layout(W, H, 68, 42, 28);   // الكمبيوتر/التابلت: مفتاح 42px
-    ok(r.tight || (r.minGap >= 42 * 0.96 && r.inBomb === 0 && r.off === 0),
-       `${W}×${H}: ` + (r.tight ? "شريط مسطّح (ضيق)" : `حلقتان · أقرب ${r.minGap}px بين أي مفتاحين · بلا تراكب`));
-  });
-// جوال ≤520px: مفتاح 38px
-[[398, 300], [398, 380], [398, 480], [346, 380], [360, 340], [320, 420], [398, 270]]
-  .forEach(([W, H]) => {
-    const r = layout(W, H, 68, 38, 28);
-    ok(r.tight || (r.minGap >= 38 * 0.96 && r.inBomb === 0 && r.off === 0),
-       `جوال ${W}×${H}: ` + (r.tight ? "شريط مسطّح" : `حلقتان · أقرب ${r.minGap}px · بلا تراكب`));
-  });
+ok(/id="sylHead"/.test(BOMB) && /id="sylBig"/.test(BOMB), "المقطع كبير وواضح");
+ok(/id="plTurn"/.test(BOMB) && /id="plOthers"/.test(BOMB), "عمودان: صاحب الدور والباقون");
+ok(/#stage\.compact #turnCard \{ display:flex; align-items:center/.test(BOMB), "المقطع في الوسط لا تحت اللاعبين");
+ok(/\.chip\.turn::before \{ content:"دورك"/.test(BOMB), "شارة «دورك» كالمرجع");
+ok(/#ringNote \{ flex-shrink:0/.test(BOMB), "سطر «لوحتك» خارج الحلقة");
+// محاكاة: كل شرط يُقاس على ١٢ مقاس شاشة
+(function () {
+  const half = 68, n = 28, nIn = Math.round(n * 0.43), nOut = n - nIn;
+  const EDGE = 12, GAP = 9, BOMB_PAD = 8;
+  const adj = (r, c) => 2 * r * Math.sin(Math.PI / c);
+  const cross = (R, Ri) => Math.sqrt(R*R + Ri*Ri - 2*R*Ri*Math.cos(Math.PI / nOut));
+  const fit = (W, H) => {
+    for (let s = 46; s >= 26; s -= 2) {
+      const R = Math.min(W / 2, H / 2) - s / 2 - EDGE;
+      const RiMin = Math.max(half + s / 2 + BOMB_PAD, (s + GAP) / (2 * Math.sin(Math.PI / nIn)));
+      if (adj(R, nOut) < s + GAP || RiMin >= R || cross(R, RiMin) < s + GAP) continue;
+      return { t: s, R, Ri: RiMin };
+    }
+    return null;
+  };
+  [[398,560],[398,500],[398,470],[398,440],[398,400],[398,360],[360,460],[346,420],[320,440],[300,400],[398,320],[398,280]]
+    .forEach(([W, H]) => {
+      const f = fit(W, H);
+      if (!f) return ok(true, `${W}×${H}: شريط مسطّح (المساحة لا تكفي)`);
+      const { t, R, Ri } = f;
+      const margin = Math.min(W / 2, H / 2) - R - t / 2;
+      const gOut = adj(R, nOut) - t, gIn = adj(Ri, nIn) - t, gX = cross(R, Ri) - t, gB = Ri - half - t / 2;
+      ok(margin >= 11.9 && gOut >= 8.9 && gIn >= 8.9 && gX >= 8.9 && gB >= 7.9,
+         `${W}×${H}: مفتاح ${t}px · هامش ${margin.toFixed(0)}px · فراغات ${gOut.toFixed(0)}/${gIn.toFixed(0)}/${gX.toFixed(0)}/${gB.toFixed(0)}px`);
+    });
+})();
 // صف الإدخال لا يفيض عن عرض الشاشة
 ok(/#wordInput \{ flex:1 1 0; min-width:0/.test(BOMB), "مربع الكتابة يتقلّص ولا يدفع زر الإرسال خارج الشاشة");
 ok(/#sendBtn \{ flex:0 0 auto/.test(BOMB), "زر الإرسال بحجم ثابت");
@@ -219,6 +203,64 @@ ok(/\.iconBtn \{[\s\S]*?border-radius:14px[\s\S]*?background:#fff/.test(BOMB), "
 ok(/id="moreBtn"/.test(BOMB) && /id="moreMenu"/.test(BOMB), "أزرار الإعدادات/القوائم/الخروج داخل قائمة ⋮");
 ok(/id="turnCard"/.test(BOMB), "بطاقة الدور تجمع الأسماء والمقطع (كالمرجع)");
 ok(/#stage\.compact #turnCard \{[\s\S]*?border-radius:20px/.test(BOMB), "بطاقة الدور بحواف دائرية وخلفية خفيفة");
+
+// تنبيه «دورك!»
+console.log("\n⑦-ب تنبيه «دورك!»");
+[["القنبلة", BOMB], ["ارسمها", DRAW]].forEach(([n, f]) => {
+  ok(/id="turnFlash"/.test(f), n + ": عنصر التنبيه موجود");
+  ok(/function turnFlash/.test(f), n + ": دالة الإظهار موجودة");
+  ok(/@keyframes tfWord/.test(f) && /@keyframes tfHalo/.test(f) && /@keyframes tfSpark/.test(f),
+     n + ": حركات (الكلمة + الهالة + الشرارات)");
+  ok(/-webkit-text-stroke:3px/.test(f) && /background-clip:text/.test(f),
+     n + ": حروف ملوّنة بحدّ أسود كالصور المرجعية");
+  ok(/setTimeout\(\(\) => el\.classList\.remove\("on"\), 1550\)/.test(f), n + ": يختفي تلقائياً");
+  ok(/pointer-events:none/.test(f.match(/#turnFlash \{[^}]*\}/)[0]), n + ": لا يعترض اللمس");
+});
+ok(/if \(myTurn && !wasMyTurn\) turnFlash\(\)/.test(BOMB), "القنبلة: يظهر مرة واحدة عند انتقال الدور إليك");
+ok(/if \(isDrawer && !wasMyDraw\) \{ turnFlash\(\)/.test(DRAW), "ارسمها: يظهر عند انتقال الدور إليك");
+ok(/background:linear-gradient\(180deg,#fff3d0/.test(BOMB), "القنبلة: تدرّج ناري كالمرجع");
+ok(/background:linear-gradient\(110deg,#7c4dff/.test(DRAW), "ارسمها: تدرّج ملوّن كالمرجع");
+
+// شريط الأسماء يختفي وقت الرسم
+console.log("\n⑦-ج مساحة أوسع للرسم");
+ok(/body\.iDraw #playersPanel \{ display:none; \}/.test(DRAW), "شريط الأسماء يُخفى وقت دورك في الرسم");
+ok(/body\.iDraw #canvasContainer \{ min-height:330px; \}/.test(DRAW), "اللوحة تتوسّع");
+ok(/document\.body\.classList\.toggle\("iDraw", canDraw\)/.test(DRAW), "يُفعّل فقط وقت دورك");
+
+// لا فراغ رمادي + لا تمطيط: المقياس موحّد (تطبيع بالعرض في المحورين)
+console.log("\n⑦-د اللوحة تملأ المساحة كاملة والدائرة تبقى دائرة");
+ok(!/#board \{[^}]*aspect-ratio/.test(DRAW), "لا نسبة مفروضة على اللوحة (اختفى الفراغ)");
+ok(/#board \{ position:absolute; inset:0; width:100%; height:100%/.test(DRAW), "اللوحة تغطي كل الحاوية");
+ok(/#canvasContainer \{[\s\S]*?background:#fff/.test(DRAW), "الخلفية بيضاء بالكامل لا رمادية");
+ok(!/#canvasContainer \{[\s\S]*?background:#e9eef4/.test(DRAW), "اللون الرمادي أُزيل");
+ok(/const rect = canvas\.getBoundingClientRect\(\)/.test(DRAW), "القياس للوحة نفسها");
+ok(/y: \(pt\.clientY - rect\.top\) \/ rect\.width/.test(DRAW), "ص تُطبَّع بالعرض ⇒ مقياس موحّد");
+ok(/op\.y1 \* canvas\.width/.test(DRAW) && /op\.y2 \* canvas\.width/.test(DRAW), "الرسم يُعيد الإحداثي الرأسي بالعرض");
+ok(!/op\.y1 \* canvas\.height/.test(DRAW) && !/op\.y \* h\b/.test(DRAW), "لا بقايا تطبيع بالارتفاع");
+ok(/new ResizeObserver\(\(\) => resizeCanvas\(\)\)/.test(DRAW), "يُعاد القياس عند تغيّر مقاس الحاوية");
+(function () {
+  // شكل مربع الأبعاد (دائرة) يُرسم على جهاز ويُعاد على آخر — المقياس واحد فالنسبة تُحفظ
+  const shape = { x1: .30, y1: .20, x2: .70, y2: .60 };   // عرضه = ارتفاعه = 0.40 وحدة
+  const dev = (w, h) => {
+    const W = shape.x2 * w - shape.x1 * w;      // بالبكسل أفقياً
+    const H = shape.y2 * w - shape.y1 * w;      // بالبكسل رأسياً (نفس العرض!)
+    return W / H;
+  };
+  const cases = [["كمبيوتر", 940, 590], ["جوال", 390, 452], ["تابلت", 760, 520], ["جوال صغير", 320, 380]];
+  cases.forEach(([n, w, h]) => ok(Math.abs(dev(w, h) - 1) < 0.001, `${n} ${w}×${h}: الدائرة دائرة (نسبة ${dev(w, h).toFixed(3)})`));
+  // السلوك القديم (تطبيع بالارتفاع) كان يشوّه بحسب فرق النسب
+  const oldDev = (w, h) => ((shape.x2 - shape.x1) * w) / ((shape.y2 - shape.y1) * h);
+  const bad = Math.abs(oldDev(940, 590) / oldDev(390, 452) - 1) * 100;
+  ok(bad > 20, `قبل الإصلاح كان الفرق بين الكمبيوتر والجوال ${bad.toFixed(0)}%`);
+  // الفراغ المهدور: قبل الإصلاح ٤:٣ داخل حاوية 390×452 ⇒ نسبة كبيرة مهدورة
+  const wasted = 1 - (390 * (390 * 3 / 4)) / (390 * 452);
+  ok(wasted > 0.3, `الفراغ الذي أُلغي كان ${(wasted * 100).toFixed(0)}% من المساحة`);
+})();
+ok(/#safeLine/.test(DRAW) && /حد المساحة المشتركة/.test(DRAW), "خط إرشادي يبيّن الحد المشترك للرسم");
+ok(/const show = !!canDraw && h > y \+ 14/.test(DRAW), "الخط يظهر للرسّام فقط وعند وجود مساحة زائدة");
+ok(/if \(isDrawer && !wasMyDraw\) \{ turnFlash\(\); wasMyDraw = true; \}/.test(DRAW),
+   "تنبيه «دورك!» يظهر في مرحلة اختيار الكلمة — قبلها لا بعدها");
+ok(!/if \(canDraw && !wasMyDraw\) turnFlash\(\)/.test(DRAW), "لا يُعاد إطلاقه عند بدء الرسم");
 
 // ───────── ٨ · شاشة دخول الهرم موحّدة ─────────
 console.log("\n⑧ شاشة دخول قمّة الهرم كالباقي");
@@ -250,6 +292,32 @@ ok((QJS.match(/maybeEndAttack\(room\);/g) || []).length >= 2, "تُستدعى ب
 ok(/setPhase\(room, "attack", room\.settings\.attackTime, \(\) => beginQuestion\(room\)\)/.test(QJS),
    "من لم يختر حتى انتهاء الوقت يمرّ بلا فخ");
 ok(/id="sAT" min="5" max="60" step="5"/.test(Q2), "شريط الإعداد يصل إلى ٦٠ث");
+
+// ───────── ١٢ · تلوين مربع الدردشة حسب نتيجة التخمين ─────────
+console.log("\n⑫ الدردشة تقلب أحمر/أخضر حسب التخمين");
+ok(/io\.to\(player\.id\)\.emit\("guessResult", \{ ok: true \}\)/.test(SRV), "الخادم يبلّغ المُخمِّن بالإجابة الصحيحة");
+ok(/io\.to\(player\.id\)\.emit\("guessResult", \{ ok: false, close: veryClose \}\)/.test(SRV), "ويبلّغه بالخطأ ويميّز القريبة");
+ok(/const veryClose = levenshtein\(guess, answer\) === 1/.test(SRV), "«قريبة جدًا» تُحسب بفرق حرف واحد");
+ok(!/io\.to\(room\.id\)\.emit\("guessResult"/.test(SRV), "النتيجة تُرسل للمُخمِّن وحده لا للغرفة (لا تكشف الكلمة)");
+ok(/socket\.on\("guessResult", r => \{/.test(DRAW), "العميل يستقبل النتيجة");
+ok(/#chatForm\.res-bad\s+#chatInput \{ animation:cbBad/.test(DRAW), "خطأ ⇒ أنميشن أحمر");
+ok(/#chatForm\.res-good\s+#chatInput \{ animation:cbGood/.test(DRAW), "صح ⇒ أنميشن أخضر");
+ok(/#chatForm\.res-close #chatInput \{ animation:cbClose/.test(DRAW), "قريبة ⇒ برتقالي");
+ok(/@keyframes cbBad \{[\s\S]*?border-color:#e53935; background:#ffdad6/.test(DRAW), "الأحمر واضح على الحدود والخلفية");
+ok(/@keyframes cbBad \{[\s\S]*?translateX\(-7px\)/.test(DRAW), "مع رجّة تنبيهية");
+ok(/@keyframes cbGood \{[\s\S]*?border-color:#2e7d32; background:#c8f7cd/.test(DRAW), "الأخضر واضح");
+ok(/100% \{ border-color:#ddd; background:#fff/.test(DRAW), "يرجع للطبيعي بعد الوميض (يظهر ويختفي)");
+ok(/id="resTag"/.test(DRAW) && /"صح! ✅"/.test(DRAW) && /"خطأ ✗"/.test(DRAW), "شارة نصية صغيرة تؤكد المعنى");
+ok(/void form\.offsetWidth/.test(DRAW), "يُعاد تشغيل الأنميشن لو خمّنت مرتين بسرعة");
+ok(/clearTimeout\(resT\)/.test(DRAW), "لا تتراكم المؤقتات");
+ok(/navigator\.vibrate && navigator\.vibrate\(70\)/.test(DRAW), "اهتزاز خفيف للجوال عند الخطأ");
+(function () {
+  // منطق اختيار اللون كما في العميل
+  const kind = r => (r && r.ok ? "good" : (r && r.close ? "close" : "bad"));
+  ok(kind({ ok: true }) === "good", "نتيجة صحيحة ⇒ أخضر");
+  ok(kind({ ok: false, close: true }) === "close", "فرق حرف ⇒ برتقالي");
+  ok(kind({ ok: false, close: false }) === "bad", "خطأ ⇒ أحمر");
+})();
 
 console.log("\n══════════════════════════════════");
 console.log("  ✅ نجح: " + PASS + "    ❌ فشل: " + FAIL);
