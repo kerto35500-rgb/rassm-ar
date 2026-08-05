@@ -60,12 +60,32 @@
   /* ============ شاشة اللعب ============ */
   /* الارتفاع يتبع الشاشة المرئية فعلاً (يتقلّص عند فتح كيبورد الجوال) */
   #gameScreen { display:none; height:var(--appH, 100dvh); flex-direction:column; }
-  #topBar { display:flex; align-items:center; gap:8px; padding:8px 12px; color:#eaf1fb; flex-shrink:0; }
-  #topBar .rid { font-weight:900; font-size:15px; letter-spacing:1px; }
-  #topBar .spacer { flex:1; }
-  .iconBtn { width:36px; height:36px; border-radius:9px; border:none; background:rgba(255,255,255,.14); color:#fff; font-size:16px; display:inline-flex; align-items:center; justify-content:center; }
-  .iconBtn:hover { background:rgba(255,255,255,.24); }
+  /* ===== الشريط العلوي: بطاقات بيضاء ناعمة (بنمط التصميم المرجعي) ===== */
+  #topBar { position:relative; display:flex; align-items:center; gap:8px; padding:10px 11px 4px;
+            color:#eaf1fb; flex-shrink:0; }
+  #topBar .tbGrp { display:flex; align-items:center; gap:7px; flex-shrink:0; }
+  #roomChip { flex:1; min-width:0; margin:0 2px; padding:7px 14px; border-radius:16px; text-align:center;
+              background:#fff; box-shadow:0 4px 12px rgba(12,34,60,.16), 0 1px 2px rgba(12,34,60,.10); }
+  #roomChip .l1 { font-size:14.5px; font-weight:800; color:#6b7a8d; line-height:1.2;
+                  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #roomChip .l1 b { color:var(--ink); font-size:18px; font-weight:900; letter-spacing:.5px; }
+  #roomChip .l2 { font-size:11.5px; font-weight:700; color:#98a3b3; margin-top:1px;
+                  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .iconBtn { width:40px; height:40px; border-radius:14px; border:none; background:#fff; color:var(--ink);
+             font-size:16px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
+             box-shadow:0 4px 12px rgba(12,34,60,.16), 0 1px 2px rgba(12,34,60,.10);
+             text-decoration:none; transition:transform .15s, box-shadow .15s; }
+  .iconBtn:hover { transform:translateY(-1px); box-shadow:0 7px 16px rgba(12,34,60,.22); }
   .iconBtn.on { background:var(--yellow); color:#333; }
+
+  /* قائمة «المزيد» */
+  #moreMenu { position:absolute; top:54px; inset-inline-start:11px; z-index:40; display:none;
+              flex-direction:column; min-width:200px; padding:6px; border-radius:14px; background:#fff;
+              box-shadow:0 14px 34px rgba(12,34,60,.3); }
+  #moreMenu.on { display:flex; }
+  #moreMenu button { text-align:start; padding:11px 12px; border:none; background:none; border-radius:10px;
+                     font-family:inherit; font-size:14px; font-weight:700; color:var(--ink); }
+  #moreMenu button:hover { background:#f1f5f9; }
 
   #main { flex:1; display:flex; gap:10px; padding:0 10px 10px; min-height:0; }
 
@@ -111,13 +131,16 @@
   #stage.compact #plStrip { display:flex; }
   #stage.compact #ring .pl { display:none; }
   #stage.compact #ring { flex:1 1 auto; min-height:150px; }
-  #plStrip { display:none; gap:7px; padding:7px 9px 5px; overflow-x:auto; flex-shrink:0;
-             background:#fbfcfe; scrollbar-width:none; align-items:stretch; }
+  #plStrip { display:none; gap:7px; padding:2px 9px 4px; overflow-x:auto; flex-shrink:0;
+             scrollbar-width:none; align-items:stretch; }
   #plStrip::-webkit-scrollbar { display:none; }
 
-  /* المقطع المطلوب: كبير وواضح فوق حلقة الحروف (بنمط التصميم المرجعي) */
-  #sylHead { display:none; flex-shrink:0; text-align:center; padding:9px 10px 10px;
-             background:linear-gradient(180deg,#fff6f1,#fdfbfa); border-bottom:2px solid #ffe3d4; }
+  /* بطاقة الدور: أسماء اللاعبين + المقطع في بطاقة واحدة (بنمط التصميم المرجعي) */
+  #turnCard { flex-shrink:0; }
+  #stage.compact #turnCard { margin:8px 9px 4px; padding:6px 0 2px; border-radius:20px;
+             background:linear-gradient(180deg,#fff4ec,#fffaf7); border:1.5px solid #ffe0cd; }
+  /* المقطع: كبير وواضح فوق حلقة الحروف */
+  #sylHead { display:none; flex-shrink:0; text-align:center; padding:2px 10px 9px; }
   #stage.compact #sylHead { display:block; }
   #sylHead.hide { display:none !important; }
   #sylHead .v { font-size:34px; font-weight:900; color:var(--ink); letter-spacing:3px; line-height:1.1; }
@@ -219,20 +242,25 @@
               font-size:11px; color:#a7aebb; pointer-events:none; display:none; }
   #stage.compact #ringNote { display:block; }
 
-  /* ===== زرّان مميّزان للدردشة واللاعبين (الجوال) ===== */
-  #fabs { display:none; position:absolute; inset-inline-start:4px; bottom:2px; z-index:24; gap:7px;
-          flex-direction:column; align-items:flex-start; }
-  #stage.compact #fabs { display:flex; }
-  .fab { position:relative; display:flex; align-items:center; gap:6px; height:40px; padding:0 14px 0 11px;
-         border-radius:99px; border:none; color:#fff; font-family:inherit; font-size:13px; font-weight:800;
-         box-shadow:0 5px 15px rgba(30,58,95,.3); }
-  .fab .ico { font-size:16px; line-height:1; }
-  #fabChat { background:linear-gradient(140deg,#3ea1ff,#1668d6); }   /* الدردشة: أزرق */
-  #fabPl   { background:linear-gradient(140deg,#4a5f7d,#25364f); }   /* اللاعبون: كحلي */
-  .fab .badge { position:absolute; top:-5px; inset-inline-end:-5px; min-width:20px; height:20px; padding:0 5px;
-                border-radius:99px; background:var(--accent); color:#fff; font-size:11.5px; font-weight:900;
-                display:flex; align-items:center; justify-content:center; border:2px solid #fff; }
-  .fab .badge.hide { display:none; }
+  /* ===== فقاعة دردشة واحدة، أيقونة فقط، يمكن سحبها لأي مكان ===== */
+  #fabChat { display:none; position:absolute; z-index:26; width:48px; height:48px; border:none;
+             border-radius:50%; background:linear-gradient(140deg,#3ea1ff,#1668d6); color:#fff;
+             align-items:center; justify-content:center; font-size:21px; padding:0;
+             box-shadow:0 6px 18px rgba(22,104,214,.42); touch-action:none; cursor:grab;
+             transition:transform .15s, box-shadow .15s; }
+  #stage.compact #fabChat { display:flex; }
+  #fabChat:active { cursor:grabbing; }
+  #fabChat.dragging { transform:scale(1.1); box-shadow:0 10px 26px rgba(22,104,214,.55); transition:none; }
+  #fabChat .badge { position:absolute; top:-4px; inset-inline-end:-4px; min-width:21px; height:21px; padding:0 5px;
+                    border-radius:99px; background:var(--accent); color:#fff; font-size:11.5px; font-weight:900;
+                    display:flex; align-items:center; justify-content:center; border:2px solid #fff; }
+  #fabChat .badge.hide { display:none; }
+  /* إشعار يظهر ثم يختفي فوق الفقاعة */
+  #chatToast { display:none; position:absolute; z-index:25; max-width:210px; padding:8px 12px;
+               border-radius:14px; background:#1e3a5f; color:#fff; font-size:12.5px; font-weight:600;
+               line-height:1.5; box-shadow:0 8px 22px rgba(12,34,60,.34); pointer-events:none;
+               opacity:0; transition:opacity .25s, transform .25s; transform:translateY(6px); }
+  #chatToast.on { display:block; opacity:1; transform:translateY(0); }
 
   /* لوحة الحروف */
   #alphaBox { flex-shrink:0; padding:8px 12px; border-top:2px solid var(--line); background:#fff; }
@@ -398,22 +426,41 @@
 <!-- ================= شاشة اللعب ================= -->
 <div id="gameScreen">
   <div id="topBar">
-    <span class="rid">غرفة <b id="ridNum">—</b></span>
-    <span class="muted" id="dictInfo" style="color:#9fb6d0;font-size:12px"></span>
-    <span class="spacer"></span>
-    <a class="iconBtn" href="/" title="رجوع لكل الألعاب" style="text-decoration:none">
-      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.8V20h14V9.8"/><path d="M9.5 20v-6h5v6"/></svg>
-    </a>
-    <button class="iconBtn" id="copyBtn" title="نسخ رابط الدعوة">🔗</button>
-    <button class="iconBtn" id="sideBtn" title="إظهار/إخفاء القوائم">☰</button>
-    <button class="iconBtn" id="setBtn" title="الإعدادات">⚙️</button>
-    <button class="iconBtn" id="exitBtn" title="خروج">✕</button>
+    <!-- يسار: قائمة + رابط · وسط: بطاقة الغرفة · يمين: البيت -->
+    <div class="tbGrp">
+      <button class="iconBtn" id="moreBtn" title="المزيد">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>
+      </button>
+      <button class="iconBtn" id="copyBtn" title="نسخ رابط الدعوة">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13.5a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.2 1.2"/><path d="M14 10.5a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.2-1.2"/></svg>
+      </button>
+    </div>
+
+    <div id="roomChip">
+      <div class="l1">غرفة <b id="ridNum">—</b></div>
+      <div class="l2" id="dictInfo"></div>
+    </div>
+
+    <div class="tbGrp">
+      <a class="iconBtn" href="/" title="رجوع لكل الألعاب">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.8V20h14V9.8"/><path d="M9.5 20v-6h5v6"/></svg>
+      </a>
+    </div>
+
+    <!-- قائمة المزيد -->
+    <div id="moreMenu">
+      <button id="setBtn">⚙️ إعدادات الغرفة</button>
+      <button id="sideBtn">☰ الدردشة واللاعبون</button>
+      <button id="exitBtn">✕ خروج من الغرفة</button>
+    </div>
   </div>
 
   <div id="main">
     <div id="stage">
-      <div id="plStrip"></div>
-      <div id="sylHead"><div class="v" id="sylBig">—</div><div class="t">✨ أكمل بالكلمة</div></div>
+      <div id="turnCard">
+        <div id="plStrip"></div>
+        <div id="sylHead"><div class="v" id="sylBig">—</div><div class="t">✨ أكمل بالكلمة</div></div>
+      </div>
       <div id="ring">
         <div id="alphaRing"></div>
         <div id="bombWrap">
@@ -433,10 +480,8 @@
           <div id="roundHint"></div>
         </div>
         <div id="ringNote"></div>
-      <div id="fabs">
-        <button class="fab" id="fabChat" title="الدردشة"><span class="ico">💬</span>الدردشة<span class="badge hide" id="chatBadge">0</span></button>
-        <button class="fab" id="fabPl" title="اللاعبون"><span class="ico">👥</span>اللاعبون<span class="badge" id="plBadge">0</span></button>
-      </div>
+      <div id="chatToast"></div>
+      <button id="fabChat" title="الدردشة (اسحبها لتحريكها)">💬<span class="badge hide" id="chatBadge">0</span></button>
       </div>
 
       <!-- أزرار عائمة: الدردشة واللاعبون (الجوال) -->
@@ -716,39 +761,120 @@
       .then(()=>toast("تم نسخ رابط الدعوة ✓"))
       .catch(()=>prompt("انسخ الرابط:", url));
   };
-  /* ── الدردشة واللاعبون: نافذة منبثقة سفلية في الجوال ── */
+  /* ── الدردشة: نافذة منبثقة سفلية + فقاعة قابلة للسحب ── */
   let unread = 0;
   function sheetOpen(){
     $("side").classList.add("open");
     $("sheetBack").classList.add("on");
-    unread = 0; paintBadges();
+    unread = 0; paintBadges(); hideToast();
     setTimeout(()=>{ const l=$("chatLog"); l.scrollTop = l.scrollHeight; }, 260);
   }
   function sheetClose(){
     $("side").classList.remove("open");
     $("sheetBack").classList.remove("on");
   }
-  function sheetToggle(scrollToChat){
+  function sheetToggle(){
     if ($("side").classList.contains("open")) return sheetClose();
     sheetOpen();
-    if (scrollToChat) setTimeout(()=>$("chatPanel").scrollIntoView({block:"nearest",behavior:"smooth"}), 280);
   }
   function paintBadges(){
     const b = $("chatBadge");
     b.textContent = unread > 9 ? "9+" : unread;
     b.classList.toggle("hide", unread === 0);
-    $("plBadge").textContent = ST ? ST.players.length : 0;
   }
-  $("fabChat").onclick  = () => sheetToggle(true);
-  $("fabPl").onclick    = () => sheetToggle(false);
   $("sheetBack").onclick = sheetClose;
   $("sheetGrip").onclick = sheetClose;
-  // زر ☰ يعمل على الكمبيوتر (إخفاء العمود) وفي الجوال يفتح النافذة
+
+  /* إشعار قصير يظهر فوق الفقاعة ثم يختفي */
+  let toastT = 0;
+  function hideToast(){ clearTimeout(toastT); $("chatToast").classList.remove("on"); }
+  function showToast(text){
+    const t = $("chatToast"), f = $("fabChat");
+    if (!$("stage").classList.contains("compact")) return;
+    if ($("side").classList.contains("open")) return;
+    t.textContent = text;
+    // نضعه فوق الفقاعة (أو تحتها إن لم تكن هناك مساحة) — بالنسبة لحاويته #ring
+    const st = $("ring").getBoundingClientRect(), fr = f.getBoundingClientRect();
+    t.style.display = "block";
+    const above = fr.top - st.top > 60;
+    t.style.top = (above ? fr.top - st.top - t.offsetHeight - 8 : fr.bottom - st.top + 8) + "px";
+    t.style.left = Math.max(6, Math.min(st.width - t.offsetWidth - 6, fr.left - st.left - 20)) + "px";
+    t.classList.add("on");
+    clearTimeout(toastT);
+    toastT = setTimeout(()=>{ t.classList.remove("on"); }, 3200);
+  }
+
+  /* سحب الفقاعة لأي مكان داخل منطقة اللعب (يُحفظ الموضع) */
+  (function makeDraggable(){
+    const f = $("fabChat"), host = $("ring");
+    let dragging = false, moved = 0, sx = 0, sy = 0, ox = 0, oy = 0;
+
+    function clampInto(x, y){
+      const w = host.clientWidth, h = host.clientHeight, s = f.offsetWidth || 48;
+      return [Math.max(2, Math.min(w - s - 2, x)), Math.max(2, Math.min(h - s - 2, y))];
+    }
+    function place(x, y){
+      const [cx, cy] = clampInto(x, y);
+      f.style.left = cx + "px"; f.style.top = cy + "px";
+      f.style.right = "auto"; f.style.bottom = "auto";
+      f.style.insetInlineStart = "auto";
+    }
+    // الموضع المحفوظ أو الزاوية السفلية الافتراضية
+    function restore(){
+      let p = null;
+      try { p = JSON.parse(localStorage.getItem("bombChatPos") || "null"); } catch(e){}
+      const w = host.clientWidth, h = host.clientHeight;
+      if (w < 40 || h < 40) return;
+      if (p && typeof p.rx === "number") place(p.rx * w, p.ry * h);
+      else place(6, h - 56);
+    }
+    addEventListener("resize", () => setTimeout(restore, 80));
+    setTimeout(restore, 300);
+    window._restoreChatFab = restore;
+
+    f.addEventListener("pointerdown", e => {
+      dragging = true; moved = 0;
+      sx = e.clientX; sy = e.clientY;
+      const hr = host.getBoundingClientRect(), fr = f.getBoundingClientRect();
+      ox = fr.left - hr.left; oy = fr.top - hr.top;
+      f.classList.add("dragging");
+      f.setPointerCapture(e.pointerId);
+    });
+    f.addEventListener("pointermove", e => {
+      if (!dragging) return;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      moved = Math.max(moved, Math.hypot(dx, dy));
+      place(ox + dx, oy + dy);
+      hideToast();
+    });
+    f.addEventListener("pointerup", e => {
+      if (!dragging) return;
+      dragging = false;
+      f.classList.remove("dragging");
+      if (moved < 7) return sheetToggle();          // نقرة = فتح الدردشة
+      const w = host.clientWidth, h = host.clientHeight;
+      try {
+        localStorage.setItem("bombChatPos", JSON.stringify({
+          rx: parseFloat(f.style.left) / w, ry: parseFloat(f.style.top) / h
+        }));
+      } catch(e){}
+    });
+    f.addEventListener("pointercancel", () => { dragging = false; f.classList.remove("dragging"); });
+  })();
+
+  // ☰ من قائمة «المزيد»: في الجوال يفتح النافذة، وعلى الكمبيوتر يُظهر/يخفي العمود
   $("sideBtn").onclick = () => {
-    if ($("stage").classList.contains("compact")) return sheetToggle(false);
+    closeMore();
+    if ($("stage").classList.contains("compact")) return sheetToggle();
     $("side").classList.toggle("hidden");
-    $("sideBtn").classList.toggle("on");
   };
+
+  // قائمة «المزيد»
+  function closeMore(){ $("moreMenu").classList.remove("on"); }
+  $("moreBtn").onclick = e => { e.stopPropagation(); $("moreMenu").classList.toggle("on"); };
+  document.addEventListener("click", e => {
+    if (!$("moreMenu").contains(e.target) && e.target !== $("moreBtn") && !$("moreBtn").contains(e.target)) closeMore();
+  });
 
   // ---------- استقبال الحالة ----------
   socket.on("hello", d => {
@@ -1205,9 +1331,10 @@
     log.appendChild(d);
     while (log.children.length > 120) log.removeChild(log.firstChild);
     log.scrollTop = log.scrollHeight;
-    // عدّاد غير المقروء على الزر العائم (النافذة مغلقة في الجوال)
+    // عدّاد غير المقروء + إشعار قصير (النافذة مغلقة في الجوال)
     if ($("stage").classList.contains("compact") && !$("side").classList.contains("open")) {
       unread++; paintBadges();
+      showToast(d.textContent.slice(0, 90));
     }
   }
 
