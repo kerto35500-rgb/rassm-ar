@@ -99,14 +99,20 @@
   .kickBtn:hover { background:#ffcdd2; }
 
   #canvasWrap { flex:1; background:var(--panel); border-radius:12px; display:flex; flex-direction:column; min-width:0; position:relative; }
-  /* اللوحة بنسبة ثابتة ٤:٣ على كل الأجهزة — لأن الإحداثيات نسبية،
-     فاختلاف نسبة العرض للطول كان يمطّ الرسم (دائرة ⇒ بيضة) بين الجوال والكمبيوتر */
-  #canvasContainer { flex:1; position:relative; min-height:0; display:flex;
-                     align-items:center; justify-content:center; background:#e9eef4; border-radius:12px; }
-  #board { position:static; width:100%; height:auto; aspect-ratio:4 / 3;
-           max-width:100%; max-height:100%; border-radius:12px; background:#fff; touch-action:none;
-           box-shadow:0 2px 10px rgba(20,40,70,.10); }
+  /* اللوحة تملأ كل المساحة بالأبيض (لا فراغ رمادي) — وعدم التمطيط مضمون
+     لأن الإحداثيات تُطبَّع بالعرض فقط، فالمقياس موحّد أفقياً ورأسياً */
+  #canvasContainer { flex:1; position:relative; min-height:0; background:#fff;
+                     border-radius:12px; overflow:hidden; box-shadow:0 2px 10px rgba(20,40,70,.10); }
+  #board { position:absolute; inset:0; width:100%; height:100%; border-radius:12px;
+           background:#fff; touch-action:none; }
   #board.drawing { cursor:crosshair; }
+  /* حدّ المساحة المشتركة: ما تحته قد لا يظهر لأصحاب الشاشات العريضة */
+  #safeLine { display:none; position:absolute; left:0; right:0; height:0; z-index:6;
+              border-top:2px dashed rgba(30,58,95,.16); pointer-events:none; }
+  #safeLine.on { display:block; }
+  #safeLine span { position:absolute; right:8px; top:3px; font-size:10px; font-weight:700;
+                   color:rgba(30,58,95,.34); background:rgba(255,255,255,.75);
+                   padding:1px 6px; border-radius:6px; }
   #pauseBanner { display:none; position:absolute; inset:0; background:rgba(30,58,95,.55); border-radius:12px; flex-direction:column; align-items:center; justify-content:center; gap:8px; z-index:9; color:#fff; text-align:center; padding:16px; }
   #pauseText { font-size:20px; font-weight:900; }
   #pauseCount { font-size:44px; font-weight:900; color:var(--yellow); }
@@ -153,9 +159,45 @@
   .msg.join { background:#e8f5e9; color:#388e3c; }
   .msg.leave { background:#ffebee; color:#c62828; }
   .msg.guessedChat { background:#e0f2f1; color:#00695c; }
-  #chatForm { display:flex; padding:8px; gap:6px; border-top:2px solid #eee; width:100%; box-sizing:border-box; }
+  #chatForm { display:flex; padding:8px; gap:6px; border-top:2px solid #eee; width:100%; box-sizing:border-box; position:relative; }
   #chatInput { flex:1 1 0; min-width:0; padding:9px 12px; border:2px solid #ddd; border-radius:8px; font-size:15px; direction:rtl; }
   #chatInput:focus { outline:none; border-color:var(--accent2); }
+  /* ===== تلوين مربع الدردشة حسب نتيجة التخمين ===== */
+  #chatForm.res-bad   #chatInput { animation:cbBad .62s ease-out; }
+  #chatForm.res-good  #chatInput { animation:cbGood 1s ease-out; }
+  #chatForm.res-close #chatInput { animation:cbClose .8s ease-out; }
+  @keyframes cbBad {
+    0%   { border-color:#e53935; background:#ffdad6; transform:translateX(0); }
+    15%  { transform:translateX(-7px); }
+    30%  { transform:translateX(7px); }
+    45%  { transform:translateX(-5px); }
+    60%  { transform:translateX(4px); }
+    75%  { transform:translateX(-2px); }
+    100% { border-color:#ddd; background:#fff; transform:translateX(0); }
+  }
+  @keyframes cbGood {
+    0%   { border-color:#2e7d32; background:#c8f7cd; transform:scale(1); box-shadow:0 0 0 0 rgba(46,125,50,.5); }
+    25%  { transform:scale(1.035); box-shadow:0 0 0 9px rgba(46,125,50,0); }
+    100% { border-color:#ddd; background:#fff; transform:scale(1); box-shadow:none; }
+  }
+  @keyframes cbClose {
+    0%   { border-color:#ef6c00; background:#ffe6c7; }
+    100% { border-color:#ddd; background:#fff; }
+  }
+  #resTag { position:absolute; bottom:calc(100% + 6px); inset-inline-start:50%; transform:translate(-50%,6px);
+            padding:4px 12px; border-radius:20px; font-size:13px; font-weight:900; color:#fff;
+            opacity:0; pointer-events:none; white-space:nowrap; z-index:12; }
+  #resTag.show { animation:tagPop 1.15s ease-out; }
+  #resTag.bad { background:linear-gradient(135deg,#ef5350,#c62828); }
+  #resTag.good { background:linear-gradient(135deg,#66bb6a,#2e7d32); }
+  #resTag.close { background:linear-gradient(135deg,#ffa726,#e65100); }
+  @keyframes tagPop {
+    0%   { opacity:0; transform:translate(-50%,8px) scale(.8); }
+    18%  { opacity:1; transform:translate(-50%,0) scale(1.06); }
+    30%  { transform:translate(-50%,0) scale(1); }
+    78%  { opacity:1; }
+    100% { opacity:0; transform:translate(-50%,-6px) scale(.96); }
+  }
   #chatForm button[type=submit] { flex-shrink:0; padding:9px 12px; border:none; border-radius:8px; background:var(--accent2); color:#fff; font-weight:700; cursor:pointer; }
   #kbBtn { flex-shrink:0; padding:9px 10px; border:none; border-radius:8px; background:#eef2f6; cursor:pointer; font-size:16px; }
   #kbBtn.on { background:var(--accent2); }
@@ -423,6 +465,7 @@
       </div>
       <div id="canvasContainer">
         <canvas id="board"></canvas>
+        <div id="safeLine"><span>حد المساحة المشتركة</span></div>
         <div id="pauseBanner"><div id="pauseText"></div><div id="pauseCount"></div></div>
 
         <!-- اختيار الكلمة -->
@@ -542,6 +585,7 @@
       <div id="messages"></div>
       <div id="vkb"></div>
       <form id="chatForm">
+        <div id="resTag"></div>
         <button type="button" id="kbBtn" title="لوحة مفاتيح عربية">⌨️</button>
         <input id="chatInput" maxlength="100" placeholder="اكتب تخمينك هنا..." autocomplete="off">
         <button type="submit">إرسال</button>
@@ -924,6 +968,7 @@ socket.on("roomState", s => {
   $("board").classList.toggle("drawing", canDraw);
   // في الجوال: نُخفي شريط الأسماء وقت دوري في الرسم لتوسيع مساحة اللوحة
   document.body.classList.toggle("iDraw", canDraw);
+  if (typeof updateSafeLine === "function") updateSafeLine();
   // تنبيه «دورك!»: يُطلق في مرحلة اختيار الكلمة (أسفل)، ونصفّر العلم بعد انتهاء دورك
   if (!isDrawer) wasMyDraw = false;
 
@@ -1234,6 +1279,26 @@ socket.on("guessedCorrectly", () => {
   $("chatInput").placeholder = "خمنتها! دردش مع من خمنوا ✅";
 });
 
+// ===== نتيجة التخمين: أخضر صح • أحمر خطأ • برتقالي قريبة =====
+let resT = 0;
+socket.on("guessResult", r => {
+  const form = $("chatForm"), tag = $("resTag");
+  const kind = r && r.ok ? "good" : (r && r.close ? "close" : "bad");
+  const txt = { good: "صح! ✅", close: "قريبة جدًا 🔥", bad: "خطأ ✗" }[kind];
+  clearTimeout(resT);
+  form.classList.remove("res-good", "res-bad", "res-close");
+  tag.classList.remove("show", "good", "bad", "close");
+  void form.offsetWidth;                 // إعادة تشغيل الأنميشن لو تكرّر التخمين سريعًا
+  form.classList.add("res-" + kind);
+  tag.textContent = txt;
+  tag.classList.add("show", kind);
+  if (kind === "bad") { try { navigator.vibrate && navigator.vibrate(70); } catch (e) {} }
+  resT = setTimeout(() => {
+    form.classList.remove("res-good", "res-bad", "res-close");
+    tag.classList.remove("show", "good", "bad", "close");
+  }, 1200);
+});
+
 // ===== الشات =====
 $("chatForm").onsubmit = e => {
   e.preventDefault();
@@ -1391,22 +1456,42 @@ function redrawAll() {
   localOps.forEach(op => renderOp(op));
 }
 
+/* ===== نظام إحداثيات موحّد المقياس =====
+   س وَ ص كلاهما يُقسَّم على العرض. فالوحدة الواحدة = عرض اللوحة أفقياً ورأسياً،
+   أي أن المقياس واحد في الاتجاهين ⇒ الدائرة تبقى دائرة على أي جهاز،
+   واللوحة تملأ كل المساحة بالأبيض بلا فراغ ولا حواف. */
+const SAFE_H = 0.75;  // ٤:٣ — الارتفاع المضمون ظهوره عند الجميع
 function resizeCanvas() {
-  // نقيس اللوحة نفسها لا الحاوية: اللوحة بنسبة ٤:٣ ومتوسّطة داخل الحاوية
   const rect = canvas.getBoundingClientRect();
   const w = Math.round(rect.width), h = Math.round(rect.height);
   if (w < 10 || h < 10) return; // تجاهل القياسات غير الجاهزة
-  if (canvas.width === w && canvas.height === h) return;
-  canvas.width = w; canvas.height = h;
-  redrawAll();
+  if (canvas.width !== w || canvas.height !== h) {
+    canvas.width = w; canvas.height = h;
+    redrawAll();
+  }
+  updateSafeLine();
+}
+// خط الحدّ المشترك: يظهر للرسّام فقط، وفقط إن كانت لوحته أطول من النسبة المشتركة
+function updateSafeLine() {
+  const el = $("safeLine");
+  if (!el) return;
+  const w = canvas.width, h = canvas.height;
+  const y = w * SAFE_H;
+  const show = !!canDraw && h > y + 14;
+  el.classList.toggle("on", show);
+  if (show) el.style.top = Math.round(y) + "px";
 }
 window.addEventListener("resize", resizeCanvas);
 window.addEventListener("orientationchange", () => setTimeout(resizeCanvas, 300));
+// أي تغيّر في مقاس الحاوية (ظهور شريط الأدوات، فتح الكيبورد، دوران الشاشة) يُعيد القياس
+if (window.ResizeObserver) {
+  new ResizeObserver(() => resizeCanvas()).observe($("canvasContainer"));
+}
 
 function getPos(e) {
   const rect = canvas.getBoundingClientRect();
   const pt = e.touches ? e.touches[0] : e;
-  return { x: (pt.clientX - rect.left) / rect.width, y: (pt.clientY - rect.top) / rect.height };
+  return { x: (pt.clientX - rect.left) / rect.width, y: (pt.clientY - rect.top) / rect.width };
 }
 
 function drawSegment(op) {
@@ -1415,8 +1500,8 @@ function drawSegment(op) {
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.beginPath();
-  ctx.moveTo(op.x1 * canvas.width, op.y1 * canvas.height);
-  ctx.lineTo(op.x2 * canvas.width, op.y2 * canvas.height);
+  ctx.moveTo(op.x1 * canvas.width, op.y1 * canvas.width);
+  ctx.lineTo(op.x2 * canvas.width, op.y2 * canvas.width);
   ctx.stroke();
 }
 
@@ -1428,7 +1513,7 @@ function hexToRgb(hex) {
 function floodFillAt(op) {
   const w = canvas.width, h = canvas.height;
   const sx = Math.min(w - 1, Math.max(0, Math.floor(op.x * w)));
-  const sy = Math.min(h - 1, Math.max(0, Math.floor(op.y * h)));
+  const sy = Math.min(h - 1, Math.max(0, Math.floor(op.y * w)));
   const img = ctx.getImageData(0, 0, w, h), d = img.data;
   const i0 = (sy * w + sx) * 4;
   const target = [d[i0], d[i0 + 1], d[i0 + 2]];
@@ -1459,8 +1544,8 @@ function drawShape(op) {
   ctx.lineWidth = Math.max(2, op.size * (canvas.width / 800));
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  const x1 = op.x1 * canvas.width, y1 = op.y1 * canvas.height;
-  const x2 = op.x2 * canvas.width, y2 = op.y2 * canvas.height;
+  const x1 = op.x1 * canvas.width, y1 = op.y1 * canvas.width;
+  const x2 = op.x2 * canvas.width, y2 = op.y2 * canvas.width;
   ctx.beginPath();
   if (base === "line") { ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }
   else if (base === "rect") { ctx.rect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)); }
