@@ -99,8 +99,13 @@
   .kickBtn:hover { background:#ffcdd2; }
 
   #canvasWrap { flex:1; background:var(--panel); border-radius:12px; display:flex; flex-direction:column; min-width:0; position:relative; }
-  #canvasContainer { flex:1; position:relative; min-height:0; }
-  #board { position:absolute; inset:0; width:100%; height:100%; border-radius:12px; background:#fff; touch-action:none; }
+  /* اللوحة بنسبة ثابتة ٤:٣ على كل الأجهزة — لأن الإحداثيات نسبية،
+     فاختلاف نسبة العرض للطول كان يمطّ الرسم (دائرة ⇒ بيضة) بين الجوال والكمبيوتر */
+  #canvasContainer { flex:1; position:relative; min-height:0; display:flex;
+                     align-items:center; justify-content:center; background:#e9eef4; border-radius:12px; }
+  #board { position:static; width:100%; height:auto; aspect-ratio:4 / 3;
+           max-width:100%; max-height:100%; border-radius:12px; background:#fff; touch-action:none;
+           box-shadow:0 2px 10px rgba(20,40,70,.10); }
   #board.drawing { cursor:crosshair; }
   #pauseBanner { display:none; position:absolute; inset:0; background:rgba(30,58,95,.55); border-radius:12px; flex-direction:column; align-items:center; justify-content:center; gap:8px; z-index:9; color:#fff; text-align:center; padding:16px; }
   #pauseText { font-size:20px; font-weight:900; }
@@ -919,9 +924,8 @@ socket.on("roomState", s => {
   $("board").classList.toggle("drawing", canDraw);
   // في الجوال: نُخفي شريط الأسماء وقت دوري في الرسم لتوسيع مساحة اللوحة
   document.body.classList.toggle("iDraw", canDraw);
-  // تنبيه «دورك!» عند انتقال دور الرسم إليك
-  if (canDraw && !wasMyDraw) turnFlash();
-  wasMyDraw = canDraw;
+  // تنبيه «دورك!»: يُطلق في مرحلة اختيار الكلمة (أسفل)، ونصفّر العلم بعد انتهاء دورك
+  if (!isDrawer) wasMyDraw = false;
 
   // صوت بداية الدور
   if ((s.state === "drawing" || s.state === "drawAll") && prevState !== "drawing" && prevState !== "drawAll") sndStart();
@@ -974,6 +978,9 @@ socket.on("roomState", s => {
   } else if (s.state === "picking") {
     $("roundInfo").textContent = `الجولة ${s.round + 1} من ${s.totalRounds}`;
     renderHint("");
+    // تنبيه «دورك!» يسبق اختيار الكلمة
+    if (isDrawer && !wasMyDraw) { turnFlash(); wasMyDraw = true; }
+    if (!isDrawer) wasMyDraw = false;
     if (!isDrawer) {
       $("waitText").textContent = `${s.drawerName} يختار الكلمة... 🤔`;
       showOverlay("waitOverlay");
@@ -1385,7 +1392,8 @@ function redrawAll() {
 }
 
 function resizeCanvas() {
-  const rect = $("canvasContainer").getBoundingClientRect();
+  // نقيس اللوحة نفسها لا الحاوية: اللوحة بنسبة ٤:٣ ومتوسّطة داخل الحاوية
+  const rect = canvas.getBoundingClientRect();
   const w = Math.round(rect.width), h = Math.round(rect.height);
   if (w < 10 || h < 10) return; // تجاهل القياسات غير الجاهزة
   if (canvas.width === w && canvas.height === h) return;
