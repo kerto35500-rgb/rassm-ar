@@ -117,9 +117,12 @@
   .turnArrow .head  { fill:#ffb300; }
   /* في الشريط: السهم أفقي على يسار البطاقة، يشير إليها */
   .chip { position:relative; }
-  .chip .turnArrow { position:absolute; inset-inline-start:-19px; top:50%;
-                     width:20px; height:16px; margin-top:-8px; animation:slideIn 1.1s ease-in-out infinite; }
-  @keyframes slideIn { 0%,100%{transform:translateX(0);opacity:.75} 50%{transform:translateX(-5px);opacity:1} }
+  /* مثلث صغير تحت شارة «دورك» يشير لاسم اللاعب (كالمرجع) */
+  .chip .turnArrow { position:absolute; top:15px; left:50%; width:0; height:0; margin-left:-6px;
+                     border-left:6px solid transparent; border-right:6px solid transparent;
+                     border-top:7px solid var(--accent); animation:bobDown 1s ease-in-out infinite; }
+  .chip .turnArrow svg { display:none; }
+  @keyframes bobDown { 0%,100%{transform:translateY(0)} 50%{transform:translateY(3px)} }
   /* في الحلقة: السهم فوق الصورة يشير للأسفل */
   .pl .turnArrow { width:22px; height:18px; margin:0 auto 1px; transform:rotate(90deg);
                    animation:bob .9s ease-in-out infinite; }
@@ -135,26 +138,36 @@
              scrollbar-width:none; align-items:stretch; justify-content:space-between; }
   #plStrip::-webkit-scrollbar { display:none; }
 
-  /* بطاقة الدور: أسماء اللاعبين + المقطع في بطاقة واحدة (بنمط التصميم المرجعي) */
+  /* بطاقة الدور: صاحب الدور يميناً · المقطع في الوسط تماماً · الباقون يساراً */
   #turnCard { flex-shrink:0; }
-  #stage.compact #turnCard { margin:8px 9px 4px; padding:6px 0 2px; border-radius:20px;
+  #stage.compact #turnCard { display:flex; align-items:center; gap:8px;
+             margin:8px 9px 4px; padding:9px 10px; border-radius:20px;
              background:linear-gradient(180deg,#fff4ec,#fffaf7); border:1.5px solid #ffe0cd; }
-  /* المقطع: كبير وواضح فوق حلقة الحروف */
+  .tcSide { display:none; }
+  #stage.compact .tcSide { display:flex; flex:0 0 auto; gap:6px; max-width:33%;
+             overflow-x:auto; scrollbar-width:none; }
+  #stage.compact .tcSide::-webkit-scrollbar { display:none; }
+  #stage.compact #plStrip { display:none; }          /* استُبدل بالعمودين */
+
+  /* المقطع في منتصف البطاقة بين اللاعبين (لا تحتهم) */
   #sylHead { display:none; flex-shrink:0; text-align:center; padding:2px 10px 9px; }
-  #stage.compact #sylHead { display:block; }
-  #sylHead.hide { display:none !important; }
+  #stage.compact #sylHead { display:block; flex:1; min-width:0; padding:0; }
+  #sylHead.hide { visibility:hidden; }
   #sylHead .v { font-size:34px; font-weight:900; color:var(--ink); letter-spacing:3px; line-height:1.1; }
   #sylHead .t { font-size:12.5px; font-weight:700; color:#a08672; margin-top:3px; }
-  .chip { flex:0 0 auto; min-width:66px; text-align:center; padding:5px 8px 4px; border-radius:11px;
+  .chip { flex:0 0 auto; min-width:66px; text-align:center; padding:5px 8px 4px; border-radius:14px;
           background:#f2f5f9; border:2px solid transparent; transition:.18s; }
-  .chip.turn { background:#fff2eb; border-color:var(--accent); }
+  .chip.turn { background:#fff5ef; border-color:#ffa361; padding-top:16px; }
+  /* شارة «دورك» أعلى بطاقة صاحب الدور (كالمرجع) */
+  .chip.turn::before { content:"دورك"; position:absolute; top:-2px; left:50%; transform:translateX(-50%);
+          padding:2px 12px 3px; border-radius:0 0 10px 10px; background:var(--accent);
+          color:#fff; font-size:10.5px; font-weight:900; letter-spacing:.3px; white-space:nowrap; }
   .chip.dead { opacity:.4; filter:grayscale(1); }
   .chip .nm { font-size:11.5px; font-weight:800; color:var(--ink); max-width:82px;
               overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .chip .hearts { font-size:10px; letter-spacing:-1.5px; height:13px; }
   .chip .typed { font-size:10.5px; color:var(--accent); font-weight:800; min-height:13px;
                  max-width:82px; overflow:hidden; white-space:nowrap; }
-  .chip .turnArrow { font-size:14px; height:14px; }
 
   /* القنبلة في المنتصف */
   #bombWrap { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; width:210px; }
@@ -238,8 +251,8 @@
          transition:transform .18s ease, box-shadow .18s ease, background .18s ease; }
   .ral.on { background:linear-gradient(160deg,#43c97c,#1f8b52); color:#fff;
             box-shadow:0 5px 14px rgba(31,139,82,.42); transform:scale(1.04); }
-  #ringNote { position:absolute; left:0; right:0; bottom:2px; text-align:center;
-              font-size:11px; color:#a7aebb; pointer-events:none; display:none; }
+  #ringNote { flex-shrink:0; text-align:center; font-size:11px; color:#a7aebb;
+              pointer-events:none; display:none; padding:2px 8px 4px; }
   #stage.compact #ringNote { display:block; }
 
   /* ===== فقاعة دردشة واحدة، أيقونة فقط، يمكن سحبها لأي مكان ===== */
@@ -458,8 +471,10 @@
   <div id="main">
     <div id="stage">
       <div id="turnCard">
-        <div id="plStrip"></div>
+        <div class="tcSide" id="plOthers"></div>
         <div id="sylHead"><div class="v" id="sylBig">—</div><div class="t">✨ أكمل بالكلمة</div></div>
+        <div class="tcSide" id="plTurn"></div>
+        <div id="plStrip"></div>
       </div>
       <div id="ring">
         <div id="alphaRing"></div>
@@ -852,7 +867,8 @@
       dragging = false;
       f.classList.remove("dragging");
       // النقرة على الجوال تتحرك قليلاً بطبيعتها ⇒ عتبة متسامحة
-      if (moved < 14) { justDragged = false; return sheetToggle(); }
+      // نقرة = حركة صغيرة أو ضغطة قصيرة (الإصبع يهتز دائماً على الجوال)
+      if (moved < 20 || (Date.now() - downAt < 320 && moved < 30)) { justDragged = false; return sheetToggle(); }
       justDragged = true;
       setTimeout(() => { justDragged = false; }, 350);
       const w = host.clientWidth, h = host.clientHeight;
@@ -1009,39 +1025,32 @@
     const t = tiles[0].offsetWidth || 42;
     const n = tiles.length;
 
-    const maxRx = W / 2 - t * 0.55;          // أقصى نصف قطر يبقي المفتاح داخل الشاشة
-    const maxRy = H / 2 - t * 0.58;
+    // حلقتان **دائريتان** (لا بيضاويتان): البيضاوي يجعل المسافات متفاوتة
+    // فتتكتّل الحروف عند الطرفين — الدائرة تعطي مسافات متساوية تماماً كالمرجع.
+    const maxR = Math.min(W / 2 - t * 0.55, H / 2 - t * 0.58);
     const gap = t * 1.12;                    // المسافة بين الحلقتين
-    const innerBase = half + t * 0.68;       // الحلقة الداخلية تلامس القرص
-
     const nIn = Math.round(n * 0.43);        // ١٢ من ٢٨
     const nOut = n - nIn;
 
-    // نصف قطر كل حلقة (بيضاوي: أوسع أفقياً لأن العرض أكبر عادةً)
-    const ring = (R, pad) => ({
-      rx: Math.min(R * 1.22, maxRx - pad),
-      ry: Math.min(R,        maxRy - pad)
-    });
-    const inR = ring(innerBase, gap);
-    const outR = ring(innerBase + gap, 0);
+    const outR = maxR;
+    const inR = Math.max(half + t * 0.72, maxR - gap);
 
     const fits = (r, count) =>
-      r.rx > half + t * 0.45 && r.ry > half + t * 0.45 &&
-      ellipsePerimeter(r.rx, r.ry) / count >= t * 1.04;
+      r > half + t * 0.45 && (2 * Math.PI * r) / count >= t * 1.04;
 
-    const tight = !(fits(inR, nIn) && fits(outR, nOut));
+    const tight = !(fits(inR, nIn) && fits(outR, nOut) && outR - inR >= t * 1.05);
     $("stage").classList.toggle("tight", tight);
     if (tight) return;                       // الشريط المسطّح سيظهر بدلاً منها
 
     const place = (el, i, count, r, offset) => {
       const a = (Math.PI * 2 * i / count) - Math.PI / 2 + offset;
-      el.style.left = (W / 2 + Math.cos(a) * r.rx) + "px";
-      el.style.top  = (H / 2 + Math.sin(a) * r.ry) + "px";
+      el.style.left = (W / 2 + Math.cos(a) * r) + "px";
+      el.style.top  = (H / 2 + Math.sin(a) * r) + "px";
     };
     tiles.forEach((el, i) => {
       if (i < nOut) place(el, i, nOut, outR, 0);
-      // الحلقة الداخلية مُزاحة نصف خطوة حتى لا تحجب حروف الخارجية
-      else place(el, i - nOut, nIn, inR, Math.PI / nIn);
+      // الداخلية تقع في **فراغات** الخارجية (إزاحة نصف خطوة من الحلقة الخارجية)
+      else place(el, i - nOut, nIn, inR, Math.PI / nOut);
     });
   }
 
@@ -1164,25 +1173,30 @@
     });
   }
 
-  // شريط اللاعبين الأفقي (الجوال) — يستغل الفراغ يمين ويسار بدل التداخل
+  // بطاقة الدور: صاحب الدور في عمود يمين، والباقون في عمود يسار، والمقطع بينهما
   function renderStrip(){
-    const box = $("plStrip");
-    box.innerHTML = "";
-    ST.players.forEach(p => {
+    const turnBox = $("plTurn"), otherBox = $("plOthers"), flat = $("plStrip");
+    turnBox.innerHTML = ""; otherBox.innerHTML = ""; flat.innerHTML = "";
+    const chip = p => {
       const d = document.createElement("div");
-      d.className = "chip" + (p.id===ST.turnId ? " turn":"") +
-                    (!p.alive && ST.state==="playing" ? " dead":"");
+      d.className = "chip" + (p.id === ST.turnId ? " turn" : "") +
+                    (!p.alive && ST.state === "playing" ? " dead" : "");
       d.dataset.id = p.id;
       d.innerHTML =
-        `<div class="turnArrow"><svg viewBox="0 0 40 26" xmlns="http://www.w3.org/2000/svg"><rect class="shaft" x="0" y="9.5" width="24" height="7" rx="3.5"/><path class="head" d="M20 2.5 L38 13 L20 23.5 Z"/></svg></div>` +
+        `<div class="turnArrow"></div>` +
         `<div class="nm">${p.id===ST.ownerId?'<span class="crown">♛</span> ':''}${esc(p.name)}${p.id===ME?" (أنت)":""}</div>` +
         `<div class="hearts">${ST.state==="playing"? hearts(p.lives) : (p.spectator?"👁":"")}</div>` +
         `<div class="typed"></div>`;
-      box.appendChild(d);
+      return d;
+    };
+    ST.players.forEach(p => {
+      (p.id === ST.turnId ? turnBox : otherBox).appendChild(chip(p));
     });
-    // نُظهر صاحب الدور تلقائياً لو كان خارج الشريط
-    const t = box.querySelector(".chip.turn");
-    if (t && t.scrollIntoView) t.scrollIntoView({ inline:"center", block:"nearest", behavior:"smooth" });
+    // لو لم يبدأ الدور بعد نضع الأول يميناً حتى لا يبقى العمود فارغاً
+    if (!turnBox.children.length && otherBox.children.length)
+      turnBox.appendChild(otherBox.removeChild(otherBox.firstElementChild));
+    const t = turnBox.querySelector(".chip.turn");
+    if (t && t.scrollIntoView) t.scrollIntoView({ inline:"center", block:"nearest" });
   }
 
   function renderList(){
