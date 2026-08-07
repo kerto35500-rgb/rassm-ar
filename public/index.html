@@ -120,6 +120,19 @@
   .tbRow { display:flex; align-items:center; gap:6px; justify-content:center;
            overflow-x:auto; overflow-y:hidden; scrollbar-width:none; }
   .tbRow::-webkit-scrollbar { display:none; }
+  /* ===== أسهم تنبّه أن في الشريط بقيّة يمكن تمريرها =====
+     يظهر السهم فقط في الجهة التي فيها عناصر مخفية، ويختفي عند الوصول للنهاية */
+  .tbWrap { position:relative; }
+  .tbArrow { position:absolute; top:50%; transform:translateY(-50%); z-index:4;
+             width:26px; height:100%; max-height:44px; border:none; padding:0; cursor:pointer;
+             display:none; align-items:center; justify-content:center;
+             font-size:19px; font-weight:900; color:#1e3a5f; line-height:1;
+             border-radius:9px; }
+  .tbArrow.on { display:flex; animation:tbPulse 1.5s ease-in-out infinite; }
+  .tbArrow.s { left:0;  background:linear-gradient(90deg,#f7f9fc 62%,rgba(247,249,252,0)); }
+  .tbArrow.e { right:0; background:linear-gradient(270deg,#f7f9fc 62%,rgba(247,249,252,0)); }
+  .tbArrow:active { color:#0d6efd; }
+  @keyframes tbPulse { 0%,100%{opacity:.55} 50%{opacity:1} }
   .tbGroup { display:flex; align-items:center; gap:5px; flex-shrink:0; }
   .tbSep { width:2px; align-self:stretch; background:#dde4ec; border-radius:2px; margin:2px 3px; flex-shrink:0; }
 
@@ -204,24 +217,31 @@
   #vkb .k.del { background:#ffe0e0; color:#c62828; }
   #vkb .k.send { background:var(--green); color:#fff; }
 
-  /* ===== تنبيه «دورك!» — يظهر بحركة ثم يختفي ===== */
-  #turnFlash { position:fixed; inset:0; z-index:70; display:none; align-items:center; justify-content:center; pointer-events:none; }
+  /* ===== تنبيه «دورك!» — شريط ينبثق من أعلى الشاشة ثم يختفي =====
+     أعلى الشاشة حتى لا يغطّي خيارات الكلمات ويبقى واضحاً على الجوال والكمبيوتر */
+  #turnFlash { position:fixed; inset-inline:0; top:0; z-index:70; display:none;
+               align-items:flex-start; justify-content:center; pointer-events:none; }
   #turnFlash.on { display:flex; }
-  #turnFlash .halo { position:absolute; width:min(86vw,420px); aspect-ratio:1; border-radius:50%;
-              background:radial-gradient(circle,rgba(124,77,255,.34),rgba(66,165,245,.18) 55%,transparent 72%);
+  #turnFlash .band { position:relative; margin-top:max(6px, env(safe-area-inset-top));
+              padding:8px clamp(18px,6vw,42px); border-radius:0 0 22px 22px;
+              display:flex; align-items:center; justify-content:center;
+              background:linear-gradient(180deg,rgba(20,36,58,.96),rgba(20,36,58,.80));
+              box-shadow:0 10px 30px rgba(8,16,30,.45), 0 0 0 2px rgba(255,255,255,.10) inset;
+              animation:tfBand 1.5s cubic-bezier(.2,1.4,.3,1) forwards; }
+  @keyframes tfBand { 0%{transform:translateY(-115%);opacity:0} 18%{transform:translateY(0);opacity:1}
+                      76%{transform:translateY(0);opacity:1} 100%{transform:translateY(-115%);opacity:0} }
+  #turnFlash .halo { position:absolute; inset:-40% -12%; border-radius:50%;
+              background:radial-gradient(ellipse,rgba(124,77,255,.42),rgba(66,165,245,.20) 55%,transparent 74%);
               animation:tfHalo 1.5s ease-out forwards; }
-  @keyframes tfHalo { 0%{transform:scale(.3);opacity:0} 25%{transform:scale(1);opacity:1} 100%{transform:scale(1.5);opacity:0} }
-  #turnFlash .word { position:relative; font-size:clamp(58px,19vw,132px); font-weight:900; letter-spacing:2px; line-height:1;
+  @keyframes tfHalo { 0%{transform:scale(.5);opacity:0} 25%{transform:scale(1);opacity:1} 100%{transform:scale(1.35);opacity:0} }
+  #turnFlash .word { position:relative; font-size:clamp(34px,10vw,64px); font-weight:900; letter-spacing:2px; line-height:1.1;
               animation:tfWord 1.5s cubic-bezier(.2,1.5,.3,1) forwards;
               background:linear-gradient(110deg,#7c4dff 0%,#1e88e5 34%,#ef5350 64%,#ffb300 100%);
               -webkit-background-clip:text; background-clip:text; color:transparent;
-              -webkit-text-stroke:3px #14243a;
-              filter:drop-shadow(0 6px 0 rgba(0,0,0,.28)) drop-shadow(0 0 24px rgba(124,77,255,.75)); }
-  @keyframes tfWord { 0%{transform:scale(.35) rotate(-9deg);opacity:0} 22%{transform:scale(1.14) rotate(2deg);opacity:1}
-                      38%{transform:scale(1) rotate(0)} 74%{transform:scale(1);opacity:1} 100%{transform:scale(1.16);opacity:0} }
-  #turnFlash .sub { position:absolute; top:calc(50% + clamp(42px,13vw,88px)); font-size:clamp(14px,4.2vw,20px);
-              font-weight:900; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.7); animation:tfSub 1.5s ease-out forwards; }
-  @keyframes tfSub { 0%{transform:translateY(14px);opacity:0} 30%{transform:translateY(0);opacity:1} 78%{opacity:1} 100%{opacity:0} }
+              -webkit-text-stroke:2.5px #14243a;
+              filter:drop-shadow(0 4px 0 rgba(0,0,0,.3)) drop-shadow(0 0 18px rgba(124,77,255,.8)); }
+  @keyframes tfWord { 0%{transform:scale(.6);opacity:0} 22%{transform:scale(1.1);opacity:1}
+                      38%{transform:scale(1)} 76%{transform:scale(1);opacity:1} 100%{transform:scale(1.08);opacity:0} }
   #turnFlash .spark { position:absolute; width:9px; height:9px; border-radius:2px;
               animation:tfSpark 1.4s ease-out forwards; }
   @keyframes tfSpark { 0%{transform:translate(0,0) rotate(0) scale(1);opacity:1}
@@ -392,9 +412,10 @@
 
 <!-- تنبيه «دورك!» -->
 <div id="turnFlash">
-  <div class="halo"></div>
-  <div class="word">دورك!</div>
-  <div class="sub">🎨 ارسم الكلمة</div>
+  <div class="band">
+    <div class="halo"></div>
+    <div class="word">دورك!</div>
+  </div>
 </div>
 
 <!-- شاشة اللعبة -->
@@ -621,16 +642,18 @@ const FLASH_COLORS = ["#7c4dff","#1e88e5","#ef5350","#ffb300","#4caf50","#e8329b
 function turnFlash() {
   const el = $("turnFlash");
   if (!el) return;
-  el.querySelectorAll(".spark").forEach(x => x.remove());
-  for (let i = 0; i < 16; i++) {
+  const band = el.querySelector(".band") || el;
+  band.querySelectorAll(".spark").forEach(x => x.remove());
+  for (let i = 0; i < 14; i++) {
     const sp = document.createElement("span");
     sp.className = "spark";
-    const a = Math.random() * Math.PI * 2, d = 90 + Math.random() * 140;
+    // الشرارات تتناثر للجانبين وللأسفل (الشريط في الأعلى)
+    const a = (Math.random() * 0.8 + 0.1) * Math.PI, d = 60 + Math.random() * 110;
     sp.style.setProperty("--dx", Math.cos(a) * d + "px");
-    sp.style.setProperty("--dy", Math.sin(a) * d + "px");
+    sp.style.setProperty("--dy", Math.abs(Math.sin(a)) * d + "px");
     sp.style.background = FLASH_COLORS[i % FLASH_COLORS.length];
     sp.style.animationDelay = (Math.random() * .18) + "s";
-    el.appendChild(sp);
+    band.appendChild(sp);
   }
   el.classList.remove("on"); void el.offsetWidth; el.classList.add("on");
   clearTimeout(flashT);
@@ -969,6 +992,8 @@ socket.on("roomState", s => {
     drawAspect = s.canvasAspect;
   }
   if (typeof announceAspect === "function") setTimeout(announceAspect, 0);
+  // شريط الأدوات يظهر/يختفي مع الدور ⇒ نحدّث أسهم التمرير
+  if (typeof refreshToolHints === "function") setTimeout(refreshToolHints, 60);
   // تنبيه «دورك!»: يُطلق في مرحلة اختيار الكلمة (أسفل)، ونصفّر العلم بعد انتهاء دورك
   if (!isDrawer) wasMyDraw = false;
 
@@ -1476,6 +1501,51 @@ function view() {
 }
 const VX = (x, v) => v.ox + x * v.s;
 const VY = (y, v) => v.oy + y * v.s;
+
+/* ===== أسهم التمرير في شريط الأدوات =====
+   نحسب الاتجاه فيزيائياً بمقارنة مواضع العناصر بالشريط نفسه، فيصحّ مع RTL و LTR. */
+(function toolScrollHints() {
+  document.querySelectorAll("#toolBar .tbRow").forEach(row => {
+    const wrap = document.createElement("div");
+    wrap.className = "tbWrap";
+    row.parentNode.insertBefore(wrap, row);
+    wrap.appendChild(row);
+    const mk = (cls, ch) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "tbArrow " + cls; b.textContent = ch;
+      b.setAttribute("aria-label", "مرِّر الشريط");
+      wrap.appendChild(b);
+      return b;
+    };
+    const start = mk("s", "‹"), end = mk("e", "›");
+    const hidden = () => {
+      const rr = row.getBoundingClientRect();
+      let L = 0, R = 0;
+      for (const k of row.children) {
+        const r = k.getBoundingClientRect();
+        if (r.left < rr.left - 2) L++;
+        if (r.right > rr.right + 2) R++;
+      }
+      return { L, R };
+    };
+    const update = () => {
+      const h = hidden();
+      start.classList.toggle("on", h.L > 0);
+      end.classList.toggle("on", h.R > 0);
+    };
+    const nudge = dir => { row.scrollBy({ left: dir * Math.max(80, row.clientWidth * 0.6), behavior: "smooth" }); };
+    start.addEventListener("click", () => nudge(-1));
+    end.addEventListener("click", () => nudge(1));
+    row.addEventListener("scroll", update, { passive: true });
+    if (window.ResizeObserver) new ResizeObserver(update).observe(row);
+    window.addEventListener("resize", update);
+    setTimeout(update, 0); setTimeout(update, 500);
+    row._tbUpdate = update;
+  });
+})();
+function refreshToolHints() {
+  document.querySelectorAll("#toolBar .tbRow").forEach(r => r._tbUpdate && r._tbUpdate());
+}
 
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();

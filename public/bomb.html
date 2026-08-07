@@ -359,31 +359,34 @@
   #winOverlay h2 { color:var(--ink); font-size:26px; }
   #winOverlay p { color:#7b8494; font-size:14px; }
 
-  /* ===== تنبيه «دورك!» — يظهر بحركة ثم يختفي ===== */
-  #turnFlash { position:fixed; inset:0; z-index:70; display:none; align-items:center; justify-content:center;
-               pointer-events:none; }
+  /* ===== تنبيه «دورك!» — شريط ينبثق من أعلى الشاشة ثم يختفي (لا يغطّي اللعب) ===== */
+  #turnFlash { position:fixed; inset-inline:0; top:0; z-index:70; display:none;
+               align-items:flex-start; justify-content:center; pointer-events:none; }
   #turnFlash.on { display:flex; }
-  #turnFlash .halo { position:absolute; width:min(86vw,420px); aspect-ratio:1; border-radius:50%;
-              background:radial-gradient(circle,rgba(255,138,0,.42),rgba(255,60,0,.16) 55%,transparent 72%);
+  #turnFlash .band { position:relative; margin-top:max(6px, env(safe-area-inset-top));
+              padding:8px clamp(18px,6vw,42px); border-radius:0 0 22px 22px;
+              display:flex; align-items:center; justify-content:center;
+              background:linear-gradient(180deg,rgba(42,20,0,.96),rgba(42,20,0,.80));
+              box-shadow:0 10px 30px rgba(20,8,0,.5), 0 0 0 2px rgba(255,255,255,.10) inset;
+              animation:tfBand 1.5s cubic-bezier(.2,1.4,.3,1) forwards; }
+  @keyframes tfBand { 0%{transform:translateY(-115%);opacity:0} 18%{transform:translateY(0);opacity:1}
+                      76%{transform:translateY(0);opacity:1} 100%{transform:translateY(-115%);opacity:0} }
+  #turnFlash .halo { position:absolute; inset:-40% -12%; border-radius:50%;
+              background:radial-gradient(ellipse,rgba(255,138,0,.5),rgba(255,60,0,.18) 55%,transparent 74%);
               animation:tfHalo 1.5s ease-out forwards; }
-  @keyframes tfHalo { 0%{transform:scale(.3);opacity:0} 25%{transform:scale(1);opacity:1}
-                      100%{transform:scale(1.5);opacity:0} }
-  #turnFlash .word { position:relative; font-size:clamp(58px,19vw,132px); font-weight:900; letter-spacing:2px;
-              line-height:1; animation:tfWord 1.5s cubic-bezier(.2,1.5,.3,1) forwards;
+  @keyframes tfHalo { 0%{transform:scale(.5);opacity:0} 25%{transform:scale(1);opacity:1}
+                      100%{transform:scale(1.35);opacity:0} }
+  #turnFlash .word { position:relative; font-size:clamp(34px,10vw,64px); font-weight:900; letter-spacing:2px;
+              line-height:1.1; animation:tfWord 1.5s cubic-bezier(.2,1.5,.3,1) forwards;
               background:linear-gradient(180deg,#fff3d0 0%,#ffb43a 42%,#ff5a12 78%,#c1290a 100%);
               -webkit-background-clip:text; background-clip:text; color:transparent;
-              -webkit-text-stroke:3px #2a1400;
-              filter:drop-shadow(0 6px 0 rgba(0,0,0,.35)) drop-shadow(0 0 26px rgba(255,140,20,.95)); }
-  @keyframes tfWord { 0%{transform:scale(.35) rotate(-9deg);opacity:0}
-                      22%{transform:scale(1.14) rotate(2deg);opacity:1}
-                      38%{transform:scale(1) rotate(0)}
-                      74%{transform:scale(1);opacity:1}
-                      100%{transform:scale(1.16);opacity:0} }
-  #turnFlash .sub { position:absolute; top:calc(50% + clamp(42px,13vw,88px)); font-size:clamp(14px,4.2vw,20px);
-              font-weight:900; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.75);
-              animation:tfSub 1.5s ease-out forwards; }
-  @keyframes tfSub { 0%{transform:translateY(14px);opacity:0} 30%{transform:translateY(0);opacity:1}
-                     78%{opacity:1} 100%{opacity:0} }
+              -webkit-text-stroke:2.5px #2a1400;
+              filter:drop-shadow(0 4px 0 rgba(0,0,0,.35)) drop-shadow(0 0 20px rgba(255,140,20,.95)); }
+  @keyframes tfWord { 0%{transform:scale(.6);opacity:0}
+                      22%{transform:scale(1.1);opacity:1}
+                      38%{transform:scale(1)}
+                      76%{transform:scale(1);opacity:1}
+                      100%{transform:scale(1.08);opacity:0} }
   #turnFlash .spark { position:absolute; width:7px; height:7px; border-radius:50%; background:#ffcf5a;
               box-shadow:0 0 12px #ff9020; animation:tfSpark 1.4s ease-out forwards; }
   @keyframes tfSpark { 0%{transform:translate(0,0) scale(1);opacity:1}
@@ -702,9 +705,10 @@
 </div>
 
 <div id="turnFlash">
-  <div class="halo"></div>
-  <div class="word">دورك!</div>
-  <div class="sub">💣 اكتب كلمة بسرعة</div>
+  <div class="band">
+    <div class="halo"></div>
+    <div class="word">دورك!</div>
+  </div>
 </div>
 <div id="toast"></div>
 
@@ -728,15 +732,17 @@
   function turnFlash(){
     const el = $("turnFlash");
     if (!el) return;
-    el.querySelectorAll(".spark").forEach(x => x.remove());
+    const band = el.querySelector(".band") || el;
+    band.querySelectorAll(".spark").forEach(x => x.remove());
     for (let i = 0; i < 14; i++) {
       const sp = document.createElement("span");
       sp.className = "spark";
-      const a = Math.random() * Math.PI * 2, d = 90 + Math.random() * 130;
+      // الشريط في الأعلى ⇒ الشرارات تتناثر للجانبين وللأسفل
+      const a = (Math.random() * 0.8 + 0.1) * Math.PI, d = 60 + Math.random() * 110;
       sp.style.setProperty("--dx", Math.cos(a) * d + "px");
-      sp.style.setProperty("--dy", Math.sin(a) * d + "px");
+      sp.style.setProperty("--dy", Math.abs(Math.sin(a)) * d + "px");
       sp.style.animationDelay = (Math.random() * .18) + "s";
-      el.appendChild(sp);
+      band.appendChild(sp);
     }
     el.classList.remove("on"); void el.offsetWidth; el.classList.add("on");
     clearTimeout(flashT);
