@@ -10,6 +10,7 @@ const { createStore } = require("./store");
 const { setupAdmin } = require("./admin");
 const { setupBomb } = require("./bomb");
 const { setupQuiz } = require("./quiz");
+const { setupSalfa } = require("./salfa");
 const { setupAccounts, nameFromSocket } = require("./account");
 
 const app = express();
@@ -78,19 +79,28 @@ app.get(["/quiz2", "/apex"], (req, res) => {
   if (fs.existsSync(f)) return res.sendFile(f);
   res.status(404).type("text").send("quiz2.html غير موجود");
 });
+// 🕵️ برّا السالفة
+app.get(["/barra", "/salfa"], (req, res) => {
+  if (admin) admin.trackVisit();
+  const f = pageFile("salfa.html");
+  if (fs.existsSync(f)) return res.sendFile(f);
+  res.status(404).type("text").send("salfa.html غير موجود");
+});
 // نقطة إبقاء حيّة (تمنع السيرفر المجاني من النوم أثناء اللعب الطويل)
 app.get("/healthz", (req, res) => res.type("text").send("ok"));
 // حالة الألعاب المباشرة (تستعملها الصفحة الرئيسية)
-let bombApi = null, quizApi = null;
+let bombApi = null, quizApi = null, salfaApi = null;
 app.get("/api/status", (req, res) => {
   const draw = getLiveStats();
   const bomb = bombApi ? bombApi.liveStats() : { online: 0, rooms: [] };
   const quiz = quizApi ? quizApi.liveStats() : { online: 0, rooms: [] };
+  const salfa = salfaApi ? salfaApi.liveStats() : { online: 0, rooms: [] };
   res.json({
     draw: { online: draw.online, rooms: draw.rooms.length },
     bomb: { online: bomb.online, rooms: bomb.rooms.length },
     quiz: { online: quiz.online, rooms: quiz.rooms.length },
-    total: draw.online + bomb.online + quiz.online
+    salfa: { online: salfa.online, rooms: salfa.rooms.length },
+    total: draw.online + bomb.online + quiz.online + salfa.online
   });
 });
 // حساب واحد لكل الألعاب — يُسجّل الدخول من الصفحة الرئيسية فقط
@@ -1148,6 +1158,15 @@ createStore()
       console.log(`🏆 قمّة الهرم جاهزة على /quiz — ${qbank.countAll()} سؤال`);
     } catch (e) {
       console.error("quiz setup:", e.message);
+    }
+    // 🕵️ تفعيل «برّا السالفة» (namespace مستقل /salfa)
+    try {
+      const sw = require("./salfa-words");
+      salfaApi = setupSalfa(io, { store, hashPass, publicStats, getAdmin: () => admin });
+      const st = sw.stats();
+      console.log(`🕵️ برّا السالفة جاهزة على /barra — ${st.words} كلمة في ${st.packs} تصنيفاً`);
+    } catch (e) {
+      console.error("salfa setup:", e.message);
     }
     server.listen(PORT, () => {
       console.log(`🎨 لعبة ارسمها! تعمل على المنفذ ${PORT}`);
