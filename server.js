@@ -407,15 +407,40 @@ function hintBudget(word) {
   return Math.max(1, Math.min(n - 1, Math.round(n / 2)));
 }
 
+/* جدول كشف التلميح:
+   • أول حرف بعد انقضاء ثلث الوقت.
+   • آخر حرف حين يتبقّى ١٥ ثانية.
+   • الباقي موزّع بالتساوي بين اللحظتين.
+   مثال: كلمة ٨ أحرف والوقت ٦٠ث ⇒ الميزانية ٤ أحرف، أول حرف عند مضي ٢٠ث
+   (يتبقّى ٤٠) وآخر حرف عند تبقّي ١٥ث، والحرفان الوسطيان موزّعان بينهما.
+   يُرجِع Map: ثانية متبقّية → إجمالي الحروف المكشوفة عندها. */
+const HINT_TAIL = 15;   // ثواني تبقى بعد اكتمال التلميح
+function hintSchedule(T, budget) {
+  const map = new Map();
+  if (budget <= 0 || T <= 2) return map;
+  const first = Math.max(1, T - Math.round(T / 3));   // المتبقّي عند أول حرف
+  let last = HINT_TAIL;                               // المتبقّي عند آخر حرف
+  if (last >= first) last = Math.max(1, Math.floor(first / 2));  // أوقات قصيرة: انضغاط آمن
+  if (budget === 1) { map.set(first, 1); return map; }
+  const used = new Set();
+  for (let i = 0; i < budget; i++) {
+    let s = Math.round(first - (first - last) * (i / (budget - 1)));
+    s = Math.min(first, Math.max(1, s));
+    while (used.has(s) && s > 1) s--;                 // لا حرفان في الثانية نفسها
+    used.add(s);
+  }
+  // الإجمالي التراكمي: الأحدث زمنياً يحمل رقماً أكبر
+  [...used].sort((a, b) => b - a).forEach((s, i) => map.set(s, i + 1));
+  return map;
+}
+
 function startDrawCountdown(room) {
   clearTimers(room);
   const T = room.settings.turnTime;
   const word = room.currentWord;
-  // التلميح: يظهر مرة واحدة بعد انقضاء ثلث الوقت، وتُكشف كل حروفه دفعة واحدة
-  // (نصف حروف الكلمة) — لا كشف تدريجي حرفاً حرفاً.
+  // التلميح تدريجي: أول حرف بعد ثلث الوقت، وآخر حرف عند تبقّي ١٥ ثانية
   const budget = hintBudget(word);
-  const revealAt = new Map();                       // ثانية متبقّية → عدد الحروف المكشوفة عندها
-  if (budget > 0) revealAt.set(Math.max(1, Math.round(T * 2 / 3)), budget);
+  const revealAt = hintSchedule(T, budget);         // ثانية متبقّية → إجمالي الحروف المكشوفة
   room.timer = setInterval(() => {
     room.timeLeft--;
     const want = revealAt.get(room.timeLeft);
