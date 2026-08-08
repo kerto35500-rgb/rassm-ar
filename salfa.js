@@ -362,7 +362,11 @@ function setupSalfa(io, deps) {
       sys(room, `🏆 ${champ.name} فاز باللعبة بـ ${champ.score} نقطة!`, "good");
     } else {
       setPhase(room, "result", Math.round(RESULT_MS / 1000), () => {
-        if (room.state === "result") { room.state = "lobby"; broadcast(room); }
+        if (room.state !== "result") return;
+        clearTimers(room);          // مهم: نوقف نبض المؤقت وإلا بقي يبثّ صفراً
+        room.state = "lobby";
+        room.endsAt = 0;
+        broadcast(room);
       });
     }
   }
