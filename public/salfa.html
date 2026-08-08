@@ -713,7 +713,9 @@ $("chatForm").onsubmit = e => {
 socket.on("tick", left => paintClock(left));
 function paintClock(left){
   const c = $("clock");
-  c.hidden = !(left > 0);
+  // بلا مرحلة موقوتة أو انتهى العدّ ⇒ نخفي الشريحة (لا تبقى صفراً)
+  if (!endsAt || left <= 0) { c.hidden = true; if (!endsAt) return; }
+  else c.hidden = false;
   const mm = Math.floor(left/60), ss = left % 60;
   c.textContent = mm ? (mm + ":" + String(ss).padStart(2,"0")) : String(left);
   c.className = left <= 10 ? "danger" : (left <= 30 ? "warn" : "");
@@ -853,7 +855,9 @@ socket.on("state", s => {
     lobby: "في الانتظار…", reveal: "🤫 اكشف دورك", talking: "🗣️ النقاش",
     voting: "🗳️ التصويت", spyGuess: "😈 فرصة برّا السالفة", result: "📊 النتائج", gameEnd: "🏆 نهاية اللعبة"
   }[s.state] || s.state;
-  $("phaseInfo").textContent = (s.roundNo ? "الجولة " + s.roundNo + " — " : "") + phaseTxt;
+  // في اللوبي والنهاية لا نضيف بادئة الجولة حتى لا يُقتطع النص على الجوال
+  const showRound = s.roundNo && !["lobby", "gameEnd"].includes(s.state);
+  $("phaseInfo").textContent = (showRound ? "الجولة " + s.roundNo + " — " : "") + phaseTxt;
 
   paintPlayers("lobbyPlayers", s);
   paintPlayers("playPlayers", s);
