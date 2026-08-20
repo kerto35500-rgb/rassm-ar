@@ -375,20 +375,27 @@ function setupSalfa(io, deps) {
       gains, picks: {}, phase: "votes"
     };
 
-    if (room.result.caught) {
-      // كُشفوا جميعاً → لكل مكشوف فرصة اختيار الكلمة من قائمة
-      room.guessRound = { ids: [...caughtSpies], answered: {}, stolenBy: null };
+    // 😈 بعد كل تصويت: كل برّا السالفة (مكشوفاً كان أو ناجياً) يحاول اكتشاف
+    // السالفة من قائمة كلمات — الاختيار الصحيح = نقطتان، الخطأ = لا شيء
+    const guessers = room.spyIds.filter(id => {
+      const p = room.players.find(x => x.id === id);
+      return p && p.connected && !p.spectator;
+    });
+    if (guessers.length) {
+      room.guessRound = { ids: [...guessers], answered: {} };
       room.result.phase = "spyGuess";
       broadcast(room);
       setPhase(room, "spyGuess", Math.round(GUESS_MS / 1000), () => finishRound(room));
-      caughtSpies.forEach(id => {
+      guessers.forEach(id => {
         nsp.to(id).emit("yourGuess", {
           category: room.category,
           choices: guessChoices(room),
           seconds: Math.round(GUESS_MS / 1000)
         });
       });
-      sys(room, "تم كشف برّا السالفة! أمامه فرصة أخيرة يختار فيها السالفة 😈", "warn");
+      sys(room, room.result.caught
+        ? "تم كشف برّا السالفة! أمامه فرصة أخيرة يختار فيها السالفة 😈"
+        : "انتهى التصويت — برّا السالفة يحاول الآن اكتشاف السالفة 😈", "warn");
     } else {
       finishRound(room);
     }
