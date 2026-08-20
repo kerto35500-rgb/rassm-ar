@@ -39,30 +39,51 @@
   #clock.warn{background:var(--amber);} #clock.danger{background:var(--red); animation:pulse .9s infinite;}
   @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 
-  /* ===== شاشة الدخول ===== */
-  #joinScreen{display:flex; flex-direction:column; gap:12px; align-items:center; padding:22px 16px;}
-  .logo{font-size:clamp(30px,9vw,52px); font-weight:900; letter-spacing:1px;
-        background:linear-gradient(110deg,#7ee8a5,#2e9e5b 45%,#1668c7);
-        -webkit-background-clip:text; background-clip:text; color:transparent;}
+  /* ===== شاشة الدخول — نسخة مطابقة لشاشة «ارسمها» ===== */
+  #joinScreen{position:relative; display:flex; flex-direction:column; align-items:center;
+              justify-content:center; min-height:100vh; gap:16px; padding:24px 16px; overflow:hidden;}
+  #joinScreen::before,#joinScreen::after{content:""; position:absolute; border-radius:50%;
+              filter:blur(70px); pointer-events:none; z-index:0;}
+  #joinScreen::before{width:420px; height:420px; background:rgba(46,158,91,.28); top:-120px; right:-120px;}
+  #joinScreen::after{width:380px; height:380px; background:rgba(22,104,199,.20); bottom:-120px; left:-100px;}
+  #joinScreen > *{position:relative; z-index:1;}
+  .logo{font-size:clamp(42px,9vw,58px); font-weight:900; color:#fff;
+        text-shadow:0 4px 14px rgba(0,0,0,.35); letter-spacing:1px;}
+  .logo span{color:#7ee8a5;}
+  .tagline{color:#cfe3f7; margin-top:-10px; font-size:clamp(14px,3.5vw,17px); text-align:center;}
+  #joinScreen .card{background:var(--panel); border-radius:18px; padding:20px; width:100%;
+        max-width:400px; box-shadow:0 12px 34px rgba(0,0,0,.28); display:flex; flex-direction:column; gap:10px;}
+  #joinScreen .card input{width:100%; min-width:0; padding:11px 13px; border:2px solid #e3e8ee;
+        border-radius:10px; font-size:16px; text-align:center; background:#f8fafc; font-family:inherit;}
+  #joinScreen .card input:focus{outline:none; border-color:#1668c7; background:#fff;}
   .sub{color:var(--muted); font-size:14px; text-align:center; max-width:520px; line-height:1.7;}
-  .field{width:100%; max-width:380px;}
   input[type=text],input[type=password]{width:100%; padding:13px 14px; border:2px solid var(--line);
         border-radius:12px; font-size:16px; font-family:inherit; text-align:center;}
   input:focus{outline:none; border-color:var(--green);}
   .btn{border:none; border-radius:12px; padding:13px 18px; font-size:16px; font-weight:800;
-       cursor:pointer; font-family:inherit; color:#fff; width:100%; max-width:380px;}
+       cursor:pointer; font-family:inherit; color:#fff; width:100%;}
+  #joinScreen .btn{border-radius:10px; padding:12px; transition:transform .1s, filter .15s;}
+  #joinScreen .btn:hover{filter:brightness(1.08); transform:translateY(-1px);}
   .btn-green{background:linear-gradient(180deg,var(--green),var(--green2));}
   .btn-blue{background:linear-gradient(180deg,#3b8fe0,#1668c7);}
   .btn-red{background:linear-gradient(180deg,#f4696d,var(--red));}
+  .btn-violet{background:linear-gradient(180deg,#9a6bff,#6a37e0);}
   .btn-ghost{background:var(--soft); color:var(--ink); border:2px solid var(--line);}
   .btn:active{transform:translateY(1px);}
   .btn:disabled{opacity:.5; cursor:not-allowed;}
-  .divider{display:flex; align-items:center; gap:10px; width:100%; max-width:380px; color:var(--muted); font-size:13px;}
-  .divider::before,.divider::after{content:""; flex:1; height:2px; background:var(--line);}
-  #joinErr{color:var(--red); font-weight:700; font-size:14px; min-height:20px;}
-  #whoLine{font-size:13px; color:var(--muted);}
-  .backLink{display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,.14);
-            color:#fff; text-decoration:none; font-weight:800; padding:9px 16px; border-radius:11px; font-size:14px;}
+  .divider{text-align:center; color:#999; font-size:13px;}
+  #joinErr{color:var(--red); text-align:center; font-size:14px; min-height:16px; font-weight:700;}
+  #whoLine{display:none; text-align:center; font-size:13.5px; color:var(--green); font-weight:800; margin:-4px 0 4px;}
+  .row2{display:flex; gap:8px;}
+  .row2 > *{flex:1 1 0; min-width:0;}
+  .backLink{display:inline-flex; align-items:center; justify-content:center; gap:6px;
+            margin:2px auto 4px; padding:9px 20px; border-radius:999px;
+            background:rgba(255,255,255,.14); border:1.5px solid rgba(255,255,255,.32);
+            color:#fff; font-size:15.5px; font-weight:900; text-decoration:none;
+            backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+            box-shadow:0 4px 14px rgba(0,0,0,.18); transition:.18s;}
+  .backLink:hover{background:rgba(255,255,255,.26); transform:translateY(-2px);}
+  .backLink:active{transform:none;}
 
   /* ===== اللوبي ===== */
   #lobby{display:none; flex-direction:column; gap:10px; padding:14px; flex:1; min-height:0; overflow:auto;}
@@ -187,7 +208,61 @@
   .scoreRow .g{margin-inline-start:auto; font-weight:900; color:var(--green);}
   .spyTag{background:#ffe6e6; color:#c62828; border-radius:999px; padding:2px 9px; font-size:11px; font-weight:900;}
 
+  /* ===== نافذة إدارة الكلمات ===== */
+  #wordsModal{display:none; position:fixed; inset:0; background:rgba(10,20,34,.78); z-index:100;
+              align-items:center; justify-content:center; padding:14px;}
+  #wordsModal.on{display:flex;}
+  #wordsPanel{background:#fff; border-radius:16px; width:100%; max-width:640px; max-height:88vh;
+              display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.4);}
+  #wordsHeader{display:flex; align-items:center; justify-content:space-between; padding:13px 15px;
+               border-bottom:2px solid var(--line);}
+  #wordsHeader h3{font-size:17px; margin:0;}
+  #wordsCount{font-size:11px; color:var(--muted); font-weight:400;}
+  #wordsClose{border:none; background:var(--soft); border-radius:9px; width:32px; height:32px;
+              font-size:15px; cursor:pointer;}
+  #wordsSearchRow{padding:10px 15px 0;}
+  #wordsSearch{width:100%; padding:9px 12px; border:2px solid var(--line); border-radius:10px;
+               font-size:15px; font-family:inherit; text-align:start;}
+  #wordsCats{display:flex; gap:6px; overflow-x:auto; padding:10px 15px; flex-shrink:0;}
+  .catChip{border:none; background:#eef3f8; color:#345; padding:6px 12px; border-radius:20px;
+           font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; font-family:inherit;}
+  .catChip.active{background:#1668c7; color:#fff;}
+  .catChip.removedCat{background:#ffebee; color:#b71c1c; text-decoration:line-through;}
+  #wordsGrid{flex:1; overflow-y:auto; padding:4px 15px 12px; display:flex; flex-wrap:wrap; gap:6px;
+             align-content:flex-start; min-height:120px;}
+  .wordChip{display:inline-flex; align-items:center; gap:6px; background:#f5f8fb; border:1px solid var(--line);
+            border-radius:18px; padding:5px 11px; font-size:14px; font-weight:600;}
+  .wordChip.added{background:#eafaf0; border-color:#c8e6c9;}
+  .wordChip.removed{background:#ffebee; border-color:#ffcdd2; text-decoration:line-through; color:#b71c1c;}
+  .wordChip button{border:none; background:none; cursor:pointer; font-size:13px; padding:0; line-height:1; color:#c62828;}
+  .wordChip.removed button{color:var(--green2); text-decoration:none;}
+  #wordsAddRow{display:flex; gap:8px; padding:11px 15px 6px; border-top:2px solid var(--line);}
+  #wordsAddCat{max-width:140px; padding:10px 8px; border:2px solid var(--line); border-radius:10px;
+               font-size:14px; font-weight:700; background:#f8fafc; font-family:inherit;}
+  #wordsAddInput{flex:1; min-width:0; padding:10px 12px; border:2px solid var(--line); border-radius:10px;
+                 font-size:15px; font-family:inherit; text-align:start;}
+  #wordsAddBtn{padding:10px 14px; border:none; border-radius:10px; background:var(--green); color:#fff;
+               font-weight:800; cursor:pointer; white-space:nowrap; font-family:inherit;}
+  #wordsCatRow{display:flex; gap:8px; padding:6px 15px 13px;}
+  #catAddInput{flex:1; min-width:0; padding:10px 12px; border:2px solid var(--line); border-radius:10px;
+               font-size:14px; font-family:inherit; text-align:start;}
+  #catAddBtn{padding:10px 14px; border:none; border-radius:10px; background:var(--violet); color:#fff;
+             font-weight:800; cursor:pointer; white-space:nowrap; font-family:inherit;}
+  #wordsNote{font-size:11px; color:var(--muted); padding:0 15px 10px; text-align:center;}
+
   /* ===== نوافذ ===== */
+  .guessGrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px;}
+  .gch{border:3px solid var(--line); background:#fff; border-radius:14px; padding:14px 10px;
+       font-family:inherit; font-size:16px; font-weight:900; cursor:pointer; color:var(--ink);}
+  .gch:hover{border-color:var(--amber); background:#fff8e8;}
+  .gch.chosen{border-color:var(--red); background:#fff0f0;}
+  .gch:disabled{opacity:.45; cursor:default;}
+  .modeBox{display:flex; flex-direction:column; gap:8px; border:2px dashed var(--line);
+           border-radius:12px; padding:9px; background:#fbfdff;}
+  .modeTag{font-size:12px; font-weight:900; color:var(--muted);}
+  .vc .pk{position:absolute; top:-9px; inset-inline-start:-6px; width:24px; height:24px; border-radius:999px;
+          background:var(--red); color:#fff; font-weight:900; font-size:12px; display:flex;
+          align-items:center; justify-content:center;}
   .modal{position:fixed; inset:0; background:rgba(10,20,34,.72); z-index:60; display:none;
          align-items:center; justify-content:center; padding:14px;}
   .modal.on{display:flex;}
@@ -240,21 +315,24 @@
 <div class="wrap">
 
   <!-- ================= شاشة الدخول ================= -->
-  <div class="card" id="joinScreen">
-    <div class="logo">🕵️ برّا السالفة</div>
-    <div class="sub">
-      الكل يعرف كلمة السر… إلا واحد فيكم! اسألوا بعضكم أسئلة ذكية، اكتشفوا الدخيل قبل ما يفهم السالفة —
-      وإذا كُشف، له فرصة أخيرة يخمّن الكلمة ويسرق الفوز.
+  <!-- بنفس ترتيب شاشة دخول «ارسمها» تماماً: شعار + سطر تعريف + رابط رجوع + بطاقة واحدة -->
+  <div id="joinScreen">
+    <div class="logo">برّا السالفة<span>!</span></div>
+    <div class="tagline">لعبة تجمعات عربية — الكل يعرف السالفة إلا واحد 🕵️</div>
+    <a class="backLink" href="/">← رجوع لاختيار الألعاب</a>
+
+    <div class="card">
+      <input id="pName" maxlength="20" placeholder="اكتب اسمك هنا" autocomplete="off">
+      <div id="whoLine"></div>
+      <button class="btn btn-green" id="createBtn">إنشاء غرفة جديدة ➕</button>
+      <div class="divider">— أو انضم لغرفة موجودة —</div>
+      <div class="row2">
+        <input id="pRoom" maxlength="6" placeholder="رمز الغرفة" inputmode="numeric" autocomplete="off">
+        <button class="btn btn-blue" id="joinBtn">انضمام 🚪</button>
+      </div>
+      <input id="pPass" type="password" maxlength="24" placeholder="كلمة مرور الغرفة (إن وُجدت)" autocomplete="off" style="display:none">
+      <div id="joinErr"></div>
     </div>
-    <div id="whoLine"></div>
-    <div class="field"><input id="pName" type="text" placeholder="اكتب اسمك هنا" maxlength="20" autocomplete="off"></div>
-    <button class="btn btn-green" id="createBtn">🎮 إنشاء غرفة جديدة</button>
-    <div class="divider">أو انضم لغرفة</div>
-    <div class="field"><input id="pRoom" type="text" placeholder="رمز الغرفة" maxlength="6" inputmode="numeric" autocomplete="off"></div>
-    <div class="field"><input id="pPass" type="password" placeholder="كلمة مرور الغرفة (إن وُجدت)" maxlength="24" autocomplete="off" style="display:none"></div>
-    <button class="btn btn-blue" id="joinBtn">🚪 انضمام</button>
-    <div id="joinErr"></div>
-    <a class="backLink" href="/">🏠 رجوع لاختيار الألعاب</a>
   </div>
 
   <!-- ================= شاشة اللعبة ================= -->
@@ -263,8 +341,6 @@
     <div class="card" id="topBar">
       <div id="roomChip" title="انسخ رابط الدعوة"><b id="roomCode">—</b><span>🔗 انسخ الرابط</span></div>
       <div id="phaseInfo">في الانتظار…</div>
-      <div id="clock" hidden>0</div>
-      <button class="iconBtn" id="wordBtn" title="راجع كلمة السر (اضغط مطولاً)" hidden>👁️</button>
       <button class="iconBtn" id="setBtn" title="الإعدادات" hidden>⚙️</button>
       <a class="iconBtn" href="/" title="الصفحة الرئيسية" style="text-decoration:none; color:inherit;">🏠</a>
     </div>
@@ -359,7 +435,7 @@
 
     <!-- ===== التصويت ===== -->
     <div class="card" id="vote">
-      <div class="h">🗳️ مَن برّا السالفة؟</div>
+      <div class="h" id="voteTitle">🗳️ مَن برّا السالفة؟</div>
       <div class="sub" style="max-width:none;">التصويت سرّي — لا أحد يشوف صوتك حتى ينتهي الجميع.</div>
       <div class="voteGrid" id="voteGrid"></div>
       <div id="voteProg"></div>
@@ -373,6 +449,9 @@
       <div class="h" style="font-size:15px;">🗳️ الأصوات</div>
       <div class="voteCards" id="resVotes"></div>
       <div class="h" style="font-size:15px;">🏅 النقاط</div>
+      <div class="sub" style="max-width:none; text-align:start;">
+        نقطة لكل من اكتشف برّا السالفة بصوته • نقطتان لمن نجا • نقطتان لمن كُشف واختار السالفة صح
+      </div>
       <div id="resScores" style="display:flex; flex-direction:column; gap:6px;"></div>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button class="btn btn-green" id="nextRoundBtn" style="width:auto;" hidden>🔄 جولة جديدة</button>
@@ -387,10 +466,9 @@
 <div class="modal" id="guessModal">
   <div class="sheet">
     <h3>😈 فرصتك الأخيرة!</h3>
-    <div class="sub" style="max-width:none;">كُشفت! خمّن كلمة السر الآن وتسرق الفوز. التصنيف: <b id="guessCat">—</b></div>
-    <input id="guessInput" type="text" placeholder="اكتب تخمينك" maxlength="40">
-    <button class="btn btn-red" id="guessSend">أرسل التخمين</button>
-    <div class="sub" id="guessTimer"></div>
+    <div class="sub" style="max-width:none;">كُشفت! أيّ واحدة كانت السالفة؟ التصنيف: <b id="guessCat">—</b></div>
+    <div class="guessGrid" id="guessGrid"></div>
+    <div class="sub" id="guessTimer">اختر كلمة واحدة — الصحيحة تسرق الفوز بنقطتين</div>
   </div>
 </div>
 
@@ -407,6 +485,29 @@
   </div>
 </div>
 
+<!-- نافذة إدارة الكلمات -->
+<div id="wordsModal">
+  <div id="wordsPanel">
+    <div id="wordsHeader">
+      <h3>📚 إدارة الكلمات <span id="wordsCount"></span></h3>
+      <button id="wordsClose">✖</button>
+    </div>
+    <div id="wordsSearchRow"><input id="wordsSearch" placeholder="🔍 ابحث عن كلمة..."></div>
+    <div id="wordsCats"></div>
+    <div id="wordsGrid"></div>
+    <div id="wordsAddRow">
+      <select id="wordsAddCat" title="التصنيف"></select>
+      <input id="wordsAddInput" maxlength="40" placeholder="أضف كلمة جديدة...">
+      <button id="wordsAddBtn">إضافة ➕</button>
+    </div>
+    <div id="wordsCatRow">
+      <input id="catAddInput" maxlength="24" placeholder="اسم تصنيف جديد (مثال: سيارات، ألعاب...)">
+      <button id="catAddBtn">تصنيف جديد 🗂️</button>
+    </div>
+    <div id="wordsNote"></div>
+  </div>
+</div>
+
 <div id="turnFlash"><div class="band"><div class="word">دورك!</div></div></div>
 <div id="toast"></div>
 
@@ -418,7 +519,7 @@ const AV = ["🦊","🐼","🦁","🐯","🐨","🐸","🐵","🦉","🐺","🐙
 
 let ME = null, TOKEN = null, ROOM = null, ST = null, MYROLE = null, HOST = false;
 let PACKS = [], DEFAULTS = null, settings = null, wakeLock = null, endsAt = 0, phaseTotal = 0;
-let lastPhase = null, myVote = null, wasMyTurn = false;
+let lastPhase = null, myVotes = [], wasMyTurn = false;
 
 /* ============ أدوات ============ */
 function toast(t){ const el=$("toast"); el.textContent=t; el.classList.add("on");
@@ -470,7 +571,7 @@ if (inviteRoom){
 socket.on("hello", h => {
   DEFAULTS = h.defaults; PACKS = h.packs || [];
   settings = JSON.parse(JSON.stringify(DEFAULTS));
-  if (h.you){ $("whoLine").innerHTML = "مسجّل باسم <b>"+esc(h.you)+"</b>"; $("pName").value = h.you; }
+  if (h.you){ $("whoLine").innerHTML = "مسجّل باسم <b>"+esc(h.you)+"</b>"; $("whoLine").style.display = "block"; $("pName").value = h.you; }
   $("pName").placeholder = h.you ? h.you : "اكتب اسمك هنا";
   buildSettings();
   tryRejoin();
@@ -547,24 +648,42 @@ function buildSettings(){
         <button data-v="timer">وقت مفتوح</button>
         <button data-v="circle">دورة كاملة</button>
       </div>
-      <div class="hint">وقت مفتوح: نقاش حر حتى ينتهي المؤقت. دورة كاملة: تنتهي الجولة لمّا كل لاعب يسأل ويُسأل.</div>
+      <div class="hint">وقت مفتوح: نقاش حر حتى ينتهي المؤقت. دورة كاملة: كل لاعب يسأل ويُسأل بالترتيب.</div>
     </div>
-    <div class="setRow"><label>مدة النقاش</label>
-      <select id="sRound">
-        <option value="120">دقيقتان</option><option value="180">٣ دقائق</option>
-        <option value="300">٥ دقائق</option><option value="420">٧ دقائق</option><option value="600">١٠ دقائق</option>
-      </select></div>
-    <div class="setRow"><label>مهلة السؤال (نمط الدورة)</label>
-      <select id="sAsk"><option value="30">٣٠ث</option><option value="45">٤٥ث</option>
-        <option value="60">٦٠ث</option><option value="90">٩٠ث</option></select></div>
+
+    <!-- إعدادات خاصة بنمط الوقت المفتوح -->
+    <div id="setTimer" class="modeBox">
+      <div class="modeTag">⏱️ إعدادات الوقت المفتوح</div>
+      <div class="setRow"><label>مدة النقاش</label>
+        <select id="sRound">
+          <option value="120">دقيقتان</option><option value="180">٣ دقائق</option>
+          <option value="300">٥ دقائق</option><option value="420">٧ دقائق</option><option value="600">١٠ دقائق</option>
+        </select></div>
+    </div>
+
+    <!-- إعدادات خاصة بنمط الدورة الكاملة -->
+    <div id="setCircle" class="modeBox">
+      <div class="modeTag">🔄 إعدادات الدورة الكاملة</div>
+      <div class="setRow"><label>عدد الدورات</label>
+        <select id="sCircles">
+          <option value="1">دورة واحدة</option><option value="2">دورتان</option>
+          <option value="3">٣ دورات</option><option value="0">مفتوح (المضيف يقرر)</option>
+        </select>
+        <div class="hint">بعد اكتمال العدد يفتح التصويت تلقائياً. «مفتوح» = تكمل الدورات حتى يضغط المضيف «ابدأ التصويت».</div></div>
+      <div class="setRow"><label>مهلة السؤال الواحد</label>
+        <select id="sAsk"><option value="30">٣٠ث</option><option value="45">٤٥ث</option>
+          <option value="60">٦٠ث</option><option value="90">٩٠ث</option><option value="120">١٢٠ث</option></select>
+        <div class="hint">إذا ما ضغط المجيب «أجبت» قبل انتهاء المهلة، ينتقل الدور تلقائياً.</div></div>
+      <div class="setRow"><label>من يبدأ السؤال</label>
+        <div class="seg" id="sFirst"><button data-v="random">عشوائي</button><button data-v="host">المضيف</button></div></div>
+    </div>
+
     <div class="setRow"><label>عدد الخارجين عن السالفة</label>
       <select id="sSpies"><option value="1">واحد</option><option value="2">اثنان</option><option value="3">ثلاثة</option></select>
-      <div class="hint">تلقائياً يصير اثنين إذا كنتم ٧ لاعبين أو أكثر.</div></div>
+      <div class="hint">كل لاعب يصوّت بعدد الخارجين: اثنان ⇒ صوتان لكل لاعب. وتلقائياً يصيرون اثنين من ٧ لاعبين.</div></div>
     <div class="setRow"><label>حدّ النقاط للفوز</label>
       <select id="sLimit"><option value="5">٥</option><option value="10">١٠</option>
         <option value="15">١٥</option><option value="20">٢٠</option></select></div>
-    <div class="setRow"><label>من يبدأ السؤال</label>
-      <div class="seg" id="sFirst"><button data-v="random">عشوائي</button><button data-v="host">المضيف يختار</button></div></div>
     <div class="setRow"><label>زر الاتهام الطارئ</label>
       <div class="seg" id="sEmg"><button data-v="1">مفعّل</button><button data-v="0">مغلق</button></div></div>
     <div class="setRow" style="flex-direction:column; align-items:stretch;">
@@ -572,10 +691,7 @@ function buildSettings(){
       <div class="packs" id="sPacks"></div>
       <div class="hint">عطّل أي تصنيف ما يعرفه الحضور. لا شيء مفعّل = كل التصنيفات.</div>
     </div>
-    <div class="setRow" style="flex-direction:column; align-items:stretch;">
-      <label>حزمة المضيف الخاصة (اختياري)</label>
-      <textarea id="sCustom" placeholder="اكتب كلماتك مفصولة بفاصلة أو سطر جديد… (٣ كلمات على الأقل لتُستخدم)"></textarea>
-    </div>`;
+    <button class="btn btn-violet" id="wordsBtn">📚 إدارة الكلمات (عرض / إضافة / حذف)</button>`;
 
   $("sPacks").innerHTML = PACKS.map(p => `<button data-p="${esc(p)}">${esc(p)}</button>`).join("");
 
@@ -588,7 +704,7 @@ function buildSettings(){
   $("sEmg").querySelectorAll("button").forEach(b => b.onclick = () => {
     settings.emergency = b.dataset.v === "1"; segSet("sEmg", b.dataset.v); push();
   });
-  ["sRound|roundTime","sAsk|askTime","sSpies|spies","sLimit|scoreLimit"].forEach(pair => {
+  ["sRound|roundTime","sAsk|askTime","sCircles|circles","sSpies|spies","sLimit|scoreLimit"].forEach(pair => {
     const [id,key] = pair.split("|");
     $(id).onchange = () => { settings[key] = +$(id).value; push(); };
   });
@@ -599,10 +715,7 @@ function buildSettings(){
     b.classList.toggle("on", settings.packs.includes(p));
     push();
   });
-  $("sCustom").onchange = () => {
-    settings.customWords = $("sCustom").value.split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
-    push();
-  };
+  $("wordsBtn").onclick = openWordsModal;
   function push(){ if (HOST) socket.emit("updateSettings", settings); }
   syncSettingsUI();
 }
@@ -612,7 +725,11 @@ function syncSettingsUI(){
   seg("sFlow", settings.flow); seg("sFirst", settings.firstPlayer); seg("sEmg", settings.emergency ? "1":"0");
   const setv = (id,v)=>{ const el=$(id); if(el) el.value = String(v); };
   setv("sRound", settings.roundTime); setv("sAsk", settings.askTime);
-  setv("sSpies", settings.spies); setv("sLimit", settings.scoreLimit);
+  setv("sCircles", settings.circles); setv("sSpies", settings.spies); setv("sLimit", settings.scoreLimit);
+  // كل نمط يعرض إعداداته فقط
+  const isCircle = settings.flow === "circle";
+  if ($("setTimer")) $("setTimer").style.display = isCircle ? "none" : "flex";
+  if ($("setCircle")) $("setCircle").style.display = isCircle ? "flex" : "none";
   const pk = $("sPacks");
   if (pk) pk.querySelectorAll("button").forEach(b => b.classList.toggle("on", settings.packs.includes(b.dataset.p)));
 }
@@ -654,7 +771,7 @@ $("readyBtn").onclick = () => { socket.emit("ready"); $("readyBtn").disabled = t
     window.addEventListener("blur", hideIt);
     btn.addEventListener("contextmenu", e => e.preventDefault());
   };
-  mk($("reviewBtn")); mk($("wordBtn"));
+  mk($("reviewBtn"));
 })();
 
 /* ============ الاتهام الطارئ ============ */
@@ -665,17 +782,159 @@ $("emgNo").onclick  = () => { socket.emit("emergencyVote", false); $("emgModal")
 /* ============ تخمين برّا السالفة ============ */
 socket.on("yourGuess", d => {
   $("guessCat").textContent = d.category || "—";
-  $("guessInput").value = "";
+  const g = $("guessGrid");
+  g.innerHTML = "";
+  (d.choices || []).forEach(w => {
+    const b = document.createElement("button");
+    b.className = "gch";
+    b.textContent = w;
+    b.onclick = () => {
+      [...g.children].forEach(x => x.disabled = true);
+      b.classList.add("chosen");
+      socket.emit("spyPick", w);
+      setTimeout(() => $("guessModal").classList.remove("on"), 500);
+    };
+    g.appendChild(b);
+  });
   $("guessModal").classList.add("on");
-  $("guessInput").focus();
 });
-$("guessSend").onclick = () => {
-  const t = $("guessInput").value.trim();
-  if (!t) return toast("اكتب تخمينك");
-  socket.emit("spyGuess", t);
-  $("guessModal").classList.remove("on");
-};
-$("guessInput").onkeydown = e => { if (e.key === "Enter") $("guessSend").click(); };
+
+
+/* ============ إدارة الكلمات والتصنيفات (للمضيف) ============ */
+let wordsData = null, wordsCat = "الكل", wordsQuery = "";
+function normAr(t){ return (t||"").trim().replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").toLowerCase(); }
+function wdCatNames(includeRemoved){
+  const builtin = Object.keys(wordsData.builtin);
+  const removed = new Set(wordsData.removedCats);
+  const extra = Object.keys(wordsData.extra).filter(n => !builtin.includes(n));
+  let names = [...builtin, ...extra];
+  if (!includeRemoved) names = names.filter(n => !removed.has(n));
+  return names;
+}
+function openWordsModal(){
+  socket.emit("wordsList", res => {
+    wordsData = res; wordsCat = "الكل"; wordsQuery = "";
+    $("wordsSearch").value = "";
+    renderWords();
+    $("wordsModal").classList.add("on");
+  });
+}
+function renderWords(){
+  if (!wordsData) return;
+  const removedCats = new Set(wordsData.removedCats);
+  const removedWords = new Set(wordsData.removedWords);
+  const isHost = HOST;
+
+  const allNames = ["الكل", ...wdCatNames(true)];
+  $("wordsCats").innerHTML = allNames.map(c => {
+    const isRem = removedCats.has(c);
+    const act = isHost && c !== "الكل"
+      ? (isRem ? ` <b data-catrestore="${esc(c)}" title="استرجاع">↩</b>` : ` <b data-catdel="${esc(c)}" title="حذف">✖</b>`)
+      : "";
+    return `<button class="catChip ${c === wordsCat ? "active" : ""} ${isRem ? "removedCat" : ""}" data-cat="${esc(c)}">${esc(c)}${act}</button>`;
+  }).join("");
+  $("wordsCats").querySelectorAll(".catChip").forEach(b => b.onclick = e => {
+    if (e.target.dataset.catdel || e.target.dataset.catrestore) return;
+    wordsCat = b.dataset.cat; renderWords();
+  });
+  $("wordsCats").querySelectorAll("[data-catdel]").forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const c = b.dataset.catdel;
+    if (!confirm(`حذف تصنيف "${c}" بكل كلماته؟`)) return;
+    socket.emit("removeCategory", c);
+    if (wordsData.builtin[c] && !wordsData.removedCats.includes(c)) wordsData.removedCats.push(c);
+    delete wordsData.extra[c];
+    if (wordsCat === c) wordsCat = "الكل";
+    renderWords();
+  });
+  $("wordsCats").querySelectorAll("[data-catrestore]").forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const c = b.dataset.catrestore;
+    socket.emit("restoreCategory", c);
+    wordsData.removedCats = wordsData.removedCats.filter(x => x !== c);
+    renderWords();
+  });
+
+  const activeNames = wdCatNames(false);
+  const show = wordsCat === "الكل" ? activeNames : (removedCats.has(wordsCat) ? [] : [wordsCat]);
+  let entries = [];
+  show.forEach(c => {
+    (wordsData.builtin[c] || []).forEach(w => entries.push({ w, added:false, removed:removedWords.has(w) }));
+    (wordsData.extra[c] || []).forEach(w => entries.push({ w, added:true, removed:false }));
+  });
+  const q = normAr(wordsQuery);
+  if (q) entries = entries.filter(e2 => normAr(e2.w).includes(q));
+
+  const total = activeNames.reduce((a,c) =>
+    a + (wordsData.builtin[c]||[]).filter(w => !removedWords.has(w)).length + (wordsData.extra[c]||[]).length, 0);
+  $("wordsCount").textContent = `(${total} كلمة فعّالة في ${activeNames.length} تصنيفاً)`;
+  $("wordsNote").textContent = wordsData.saved
+    ? "✅ تعديلاتك محفوظة لحسابك وتُحمَّل تلقائياً في غرفك القادمة"
+    : "ℹ️ أنت ضيف — التعديلات تنتهي مع هذه الغرفة. سجّل دخولك من الصفحة الرئيسية لحفظها";
+
+  $("wordsAddRow").style.display = isHost ? "flex" : "none";
+  $("wordsCatRow").style.display = isHost ? "flex" : "none";
+
+  const sel = $("wordsAddCat"), prev = sel.value;
+  sel.innerHTML = activeNames.map(c => `<option>${esc(c)}</option>`).join("");
+  sel.value = activeNames.includes(wordsCat) ? wordsCat : (activeNames.includes(prev) ? prev : activeNames[0] || "");
+
+  $("wordsGrid").innerHTML = entries.length ? entries.map(e2 => {
+    const btn = !isHost ? "" : e2.removed
+      ? `<button data-restore="${esc(e2.w)}" title="استرجاع">↩</button>`
+      : `<button data-del="${esc(e2.w)}" title="حذف">✖</button>`;
+    return `<span class="wordChip ${e2.removed ? "removed" : e2.added ? "added" : ""}">${esc(e2.w)} ${btn}</span>`;
+  }).join("") : `<div style="color:var(--muted);padding:20px;text-align:center;width:100%;">لا كلمات هنا — أضف أول كلمة من الأسفل 👇</div>`;
+
+  $("wordsGrid").querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
+    const w = b.dataset.del;
+    socket.emit("removeWord", w);
+    let inExtra = false;
+    Object.keys(wordsData.extra).forEach(c => {
+      const i = wordsData.extra[c].indexOf(w);
+      if (i >= 0) { wordsData.extra[c].splice(i,1); inExtra = true; }
+    });
+    if (!inExtra) wordsData.removedWords.push(w);
+    renderWords();
+  });
+  $("wordsGrid").querySelectorAll("[data-restore]").forEach(b => b.onclick = () => {
+    const w = b.dataset.restore;
+    socket.emit("restoreWord", w);
+    wordsData.removedWords = wordsData.removedWords.filter(x => x !== w);
+    renderWords();
+  });
+}
+$("wordsClose").onclick = () => $("wordsModal").classList.remove("on");
+$("wordsModal").onclick = e => { if (e.target === $("wordsModal")) $("wordsModal").classList.remove("on"); };
+$("wordsSearch").oninput = e => { wordsQuery = e.target.value; renderWords(); };
+function addNewWord(){
+  const w = $("wordsAddInput").value.trim(), cat = $("wordsAddCat").value;
+  if (w.length < 2 || !cat) return;
+  socket.emit("addWord", { word:w, cat }, res => {
+    if (res && res.ok){
+      $("wordsAddInput").value = "";
+      if (res.restored) wordsData.removedWords = wordsData.removedWords.filter(x => x !== w);
+      else (wordsData.extra[cat] = wordsData.extra[cat] || []).push(w);
+      wordsCat = cat; renderWords(); $("wordsAddInput").focus();
+    } else if (res && res.error) toast(res.error);
+  });
+}
+$("wordsAddBtn").onclick = addNewWord;
+$("wordsAddInput").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); addNewWord(); } });
+function addNewCat(){
+  const c = $("catAddInput").value.trim();
+  if (c.length < 2) return;
+  socket.emit("addCategory", c, res => {
+    if (res && res.ok){
+      $("catAddInput").value = "";
+      wordsData.removedCats = wordsData.removedCats.filter(x => x !== c);
+      if (!wordsData.builtin[c]) wordsData.extra[c] = wordsData.extra[c] || [];
+      wordsCat = c; renderWords(); $("wordsAddInput").focus();
+    } else if (res && res.error) toast(res.error);
+  });
+}
+$("catAddBtn").onclick = addNewCat;
+$("catAddInput").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); addNewCat(); } });
 
 /* ============ الدور السرّي ============ */
 socket.on("role", r => {
@@ -689,7 +948,6 @@ socket.on("role", r => {
     : "تعرف السالفة — كلمة السر:";
   $("secretWord").textContent = r.spy ? "🕵️ ما تعرف الكلمة" : r.word;
   $("readyBtn").disabled = false;
-  $("wordBtn").hidden = false;
 });
 
 /* ============ الشات ============ */
@@ -712,18 +970,16 @@ $("chatForm").onsubmit = e => {
 /* ============ المؤقت ============ */
 socket.on("tick", left => paintClock(left));
 function paintClock(left){
-  const c = $("clock");
-  // بلا مرحلة موقوتة أو انتهى العدّ ⇒ نخفي الشريحة (لا تبقى صفراً)
-  if (!endsAt || left <= 0) { c.hidden = true; if (!endsAt) return; }
-  else c.hidden = false;
+  // المؤقت الوحيد هو الحلقة الكبيرة — لا شريحة في الشريط العلوي
+  if (!endsAt) { $("ringTime").textContent = "—"; $("ringLbl").textContent = ""; return; }
   const mm = Math.floor(left/60), ss = left % 60;
-  c.textContent = mm ? (mm + ":" + String(ss).padStart(2,"0")) : String(left);
-  c.className = left <= 10 ? "danger" : (left <= 30 ? "warn" : "");
   $("ringTime").textContent = mm ? (mm + ":" + String(ss).padStart(2,"0")) : String(left);
   $("ringLbl").textContent = mm ? "دقيقة" : "ثانية";
   const total = phaseTotal || 1;
   const frac = Math.max(0, Math.min(1, left / total));
   $("ringArc").setAttribute("stroke-dashoffset", String(276.5 * (1 - frac)));
+  const ring = $("ringTime");
+  ring.style.color = left <= 10 ? "var(--red)" : (left <= 30 ? "var(--amber)" : "");
 }
 setInterval(() => {
   if (!endsAt) return;
@@ -734,20 +990,25 @@ setInterval(() => {
 function buildVote(s){
   const grid = $("voteGrid");
   const list = s.players.filter(p => p.connected && !p.spectator);
+  const max = s.voteMax || 1;
   grid.innerHTML = "";
   list.forEach(p => {
     const b = document.createElement("button");
-    b.className = "vc" + (myVote === p.id ? " picked" : "");
+    const picked = myVotes.includes(p.id);
+    b.className = "vc" + (picked ? " picked" : "");
     b.disabled = (p.id === ME);
     b.innerHTML = '<div class="av">'+AV[p.avatar % AV.length]+'</div><div class="nm">'+esc(p.name)+
-                  (p.id===ME?" (أنت)":"")+'</div><div class="cnt">0</div>';
-    b.onclick = () => { myVote = p.id; socket.emit("vote", p.id); buildVote(ST); };
+                  (p.id===ME?" (أنت)":"")+'</div>'+(picked?'<div class="pk">✔</div>':'');
+    b.onclick = () => socket.emit("vote", p.id);   // الخادم يقرّر (إضافة/إلغاء)
     grid.appendChild(b);
   });
+  $("voteTitle").textContent = max > 1
+    ? "🗳️ اختر " + max + " تشكّ فيهم" : "🗳️ مَن برّا السالفة؟";
+  const left = max - myVotes.length;
   $("voteProg").textContent = "صوّت " + s.votesCount + " من " + s.votesNeed +
-    (myVote ? " — صوتك محفوظ ✅" : " — اختر واحداً");
+    (left > 0 ? " — باقي لك " + left + " اختيار" : " — أصواتك محفوظة ✅ (اضغط مرة أخرى للإلغاء)");
 }
-socket.on("voteOk", () => toast("تم تسجيل صوتك 🗳️"));
+socket.on("myVotes", v => { myVotes = v || []; if (ST && ST.state === "voting") buildVote(ST); });
 
 /* ============ النتائج ============ */
 function buildResult(s){
@@ -761,19 +1022,27 @@ function buildResult(s){
                  : "🕵️ برّا السالفة نجا وفاز بالخداع!";
   $("resCat").textContent = "التصنيف: " + (r.category || "—");
   $("resWord").textContent = r.word || "—";
-  $("resSpy").innerHTML = "برّا السالفة: <b>" + r.spyNames.map(esc).join("، ") + "</b>" +
-    (r.spyGuess ? " · تخمينه: <b>" + esc(r.spyGuess) + "</b>" : "") +
-    (r.tie ? " · تعادلت الأصوات فلم يُكشف" : "");
+  const pickTxt = Object.entries(r.picks || {}).map(([id, w]) =>
+    esc(nameOf(id)) + " اختار «" + esc(w) + "»" + (w && r.word && w === r.word ? " ✅" : " ✗")).join(" · ");
+  $("resSpy").innerHTML = "برّا السالفة: <b>" + r.spyNames.map(esc).join("، ") + "</b>"
+    + (r.escapedIds && r.escapedIds.length ? " · نجا: <b>" + r.escapedIds.map(id => esc(nameOf(id))).join("، ") + "</b>" : "")
+    + (pickTxt ? " · " + pickTxt : "")
+    + " · الأغلبية المطلوبة " + r.majority + " صوتاً";
 
   const vc = $("resVotes"); vc.innerHTML = "";
-  Object.entries(r.votes).forEach(([voter, target], i) => {
-    const el = document.createElement("div");
-    el.className = "vcard" + (r.spyIds.includes(target) ? " spyTarget" : "");
-    el.style.animationDelay = (i * 70) + "ms";
-    el.innerHTML = "<span>" + esc(nameOf(voter)) + "</span><span>➜</span><span><b>" + esc(nameOf(target)) + "</b></span>";
-    vc.appendChild(el);
+  let vi = 0;
+  Object.entries(r.votes).forEach(([voter, targets]) => {
+    (targets || []).forEach(target => {
+      const el = document.createElement("div");
+      const hit = r.spyIds.includes(target);
+      el.className = "vcard" + (hit ? " spyTarget" : "");
+      el.style.animationDelay = (vi++ * 70) + "ms";
+      el.innerHTML = "<span>" + esc(nameOf(voter)) + "</span><span>➜</span><span><b>" + esc(nameOf(target)) +
+                     "</b>" + (hit ? " 🎯" : "") + "</span>";
+      vc.appendChild(el);
+    });
   });
-  if (!Object.keys(r.votes).length) vc.innerHTML = '<div class="sub">لم يصوّت أحد</div>';
+  if (!vi) vc.innerHTML = '<div class="sub">لم يصوّت أحد</div>';
 
   const sc = $("resScores"); sc.innerHTML = "";
   [...s.players].filter(p=>p.connected).sort((a,b)=>b.score-a.score).forEach(p => {
@@ -820,17 +1089,31 @@ socket.on("state", s => {
   HOST = s.ownerId === ME;
   if (!ROOM) ROOM = s.id;
   if (JSON.stringify(settings) !== JSON.stringify(s.settings)){ settings = JSON.parse(JSON.stringify(s.settings)); syncSettingsUI(); }
+  // تصنيفات الغرفة قد تتغيّر (إضافة/حذف) ⇒ نعيد بناء شرائح التفعيل
+  if (s.packNames && JSON.stringify(s.packNames) !== JSON.stringify(PACKS)){
+    PACKS = s.packNames;
+    const pk = $("sPacks");
+    if (pk){
+      pk.innerHTML = PACKS.map(x => `<button data-p="${esc(x)}">${esc(x)}</button>`).join("");
+      pk.querySelectorAll("button").forEach(b => b.onclick = () => {
+        const n = b.dataset.p, i = settings.packs.indexOf(n);
+        if (i >= 0) settings.packs.splice(i,1); else settings.packs.push(n);
+        b.classList.toggle("on", settings.packs.includes(n));
+        if (HOST) socket.emit("updateSettings", settings);
+      });
+      syncSettingsUI();
+    }
+  }
 
   endsAt = s.endsAt || 0;
   if (s.state !== lastPhase){
     phaseTotal = s.endsAt ? Math.round((s.endsAt - s.serverNow)/1000) : 0;
     lastPhase = s.state;
-    if (s.state === "reveal"){ $("readyBtn").disabled = false; myVote = null; }
-    if (s.state === "voting") myVote = null;
+    if (s.state === "reveal"){ $("readyBtn").disabled = false; myVotes = []; }
+    if (s.state === "voting") myVotes = [];
     keepAwake(["reveal","talking","voting","spyGuess"].includes(s.state));
     if (s.state !== "spyGuess") $("guessModal").classList.remove("on");
   }
-  if (!s.endsAt){ $("clock").hidden = true; }
 
   // الشاشات
   show("lobby",  s.state === "lobby");
@@ -846,7 +1129,9 @@ socket.on("state", s => {
   $("waitHost").style.display = HOST ? "none" : "block";
   $("plCount").textContent = "(" + s.players.filter(p=>p.connected).length + "/" + s.settings.maxPlayers + ")";
   $("lobbySummary").textContent =
-    (s.settings.flow === "circle" ? "دورة كاملة" : "وقت مفتوح " + Math.round(s.settings.roundTime/60) + " دقائق")
+    (s.settings.flow === "circle"
+      ? "دورة كاملة • " + (s.settings.circles ? s.settings.circles + " دورات" : "دورات مفتوحة")
+      : "وقت مفتوح " + Math.round(s.settings.roundTime/60) + " دقائق")
     + " • " + s.settings.spies + " برّا السالفة • حدّ الفوز " + s.settings.scoreLimit + " نقطة"
     + " • " + (s.settings.packs.length ? s.settings.packs.length + " تصنيفات" : "كل التصنيفات");
 
