@@ -12,8 +12,7 @@ const RESULT_MS = 15000;       // مدة عرض النتائج
 const GUESS_CHOICES = 6;       // عدد الكلمات المعروضة على برّا السالفة
 
 const DEFAULTS = {
-  flow: "timer",        // timer = وقت مفتوح للنقاش | circle = دورة كاملة
-  roundTime: 300,       // ثواني النقاش في نمط الوقت المفتوح
+  flow: "circle",       // النمط الوحيد: الدورة الكاملة (كل لاعب يسأل ويُسأل)
   askTime: 60,          // ثواني السؤال الواحد في نمط الدورة
   circles: 1,           // عدد الدورات الكاملة قبل التصويت (0 = مفتوح: المضيف يقرر)
   spies: 1,             // عدد الخارجين عن السالفة (1–3)
@@ -34,8 +33,7 @@ function clampInt(v, lo, hi, dflt) {
 
 function sanitize(s = {}, old = DEFAULTS) {
   const o = { ...old };
-  if (s.flow !== undefined) o.flow = (s.flow === "circle" ? "circle" : "timer");
-  if (s.roundTime !== undefined) o.roundTime = clampInt(s.roundTime, 60, 900, old.roundTime);
+  o.flow = "circle";                       // لا نمط غيره
   if (s.askTime !== undefined) o.askTime = clampInt(s.askTime, 15, 180, old.askTime);
   if (s.circles !== undefined) o.circles = clampInt(s.circles, 0, 5, old.circles);
   if (s.spies !== undefined) o.spies = clampInt(s.spies, 1, 3, old.spies);
@@ -261,13 +259,27 @@ function setupSalfa(io, deps) {
     room.category = pick.cat;
     room.word = pick.word;
 
-    const ids = shuffle(list.map(p => p.id));
-    room.spyIds = ids.slice(0, spyCount(room));
+    // عشوائي، لكن من كان برّا السالفة الجولة الماضية تنخفض احتماليته كثيراً
+    const prevSpies = new Set(room.lastSpyIds || []);
+    const pickWeighted = (cands, k) => {
+      const pool = cands.map(id => ({ id, w: prevSpies.has(id) ? 0.25 : 1 }));
+      const out = [];
+      while (out.length < k && pool.length) {
+        const total = pool.reduce((a, x) => a + x.w, 0);
+        let t = Math.random() * total;
+        let i = 0;
+        while (i < pool.length - 1 && (t -= pool[i].w) > 0) i++;
+        out.push(pool.splice(i, 1)[0].id);
+      }
+      return out;
+    };
+    room.spyIds = pickWeighted(list.map(p => p.id), spyCount(room));
+    room.lastSpyIds = [...room.spyIds];
 
     if (room.settings.firstPlayer === "host" && list.some(p => p.id === room.ownerId)) {
       room.turnId = room.ownerId;
     } else {
-      room.turnId = ids[Math.floor(Math.random() * ids.length)];
+      room.turnId = list[Math.floor(Math.random() * list.length)].id;
     }
     room.targetId = null;
     room.askerPickPending = true;
@@ -280,17 +292,12 @@ function setupSalfa(io, deps) {
 
   function beginTalk(room) {
     room.players.forEach(p => { p.ready = false; });
-    if (room.settings.flow === "circle") {
-      room.circleNo = Math.max(1, room.circleNo || 1);
-      setPhase(room, "talking", room.settings.askTime, () => passTurn(room, true));
-      const total = room.settings.circles;
-      sys(room, total
-        ? `ابدؤوا! الدورة ${room.circleNo} من ${total} — كل لاعب يسأل لاعباً آخر`
-        : "ابدؤوا! دورات مفتوحة — المضيف يفتح التصويت وقت ما يشوف");
-    } else {
-      setPhase(room, "talking", room.settings.roundTime, () => beginVoting(room));
-      sys(room, "ابدؤوا النقاش! التصويت يفتح عند انتهاء الوقت");
-    }
+    room.circleNo = Math.max(1, room.circleNo || 1);
+    setPhase(room, "talking", room.settings.askTime, () => passTurn(room, true));
+    const total = room.settings.circles;
+    sys(room, total
+      ? `ابدؤوا! الدورة ${room.circleNo} من ${total} — كل لاعب يسأل لاعباً آخر`
+      : "ابدؤوا! دورات مفتوحة — المضيف يفتح التصويت وقت ما يشوف");
   }
 
   // نمط الدورة: المجيب يصير السائل، ولا يسأل من سأله للتو
@@ -352,8 +359,10 @@ function setupSalfa(io, deps) {
     Object.values(room.votes).forEach(arr => (arr || []).forEach(id => { counts[id] = (counts[id] || 0) + 1; }));
     const majority = Math.floor(list.length / 2) + 1;
     const accused = Object.keys(counts).filter(id => counts[id] >= majority);
-    const caughtSpies = room.spyIds.filter(id => accused.includes(id));
-    const escaped = room.spyIds.filter(id => !accused.includes(id));
+    // برّا السالفة «ناجٍ» فقط إذا خمّنه أقل من ٥٠٪ من إجمالي اللاعبين
+    const half = list.length / 2;
+    const escaped = room.spyIds.filter(id => (counts[id] || 0) < half);
+    const caughtSpies = room.spyIds.filter(id => !escaped.includes(id));
 
     // 🎯 نقطة لكل من اكتشف برّا السالفة بصوته — مستقلة عن نتيجة الأغلبية
     // (الجاسوس نفسه لا يُكافأ لو صوّت على زميله؛ المكافأة للعارفين)
@@ -419,15 +428,15 @@ function setupSalfa(io, deps) {
 
   /* توزيع النقاط:
      • كل من صوّت على برّا السالفة يأخذ نقطة (لكل تصويت صحيح).
-     • من نجا من الجواسيس يأخذ نقطتين.
-     • من كُشف واختار الكلمة الصحيحة يسرق الفوز بنقطتين. */
+     • برّا السالفة: إن خمّنه أقل من ٥٠٪ من اللاعبين ⇒ نقطة واحدة.
+     • وإن اختار السالفة الصحيحة ⇒ نقطتان. غير ذلك لا شيء. */
   function finishRound(room) {
     clearTimers(room);
     const r = room.result;
     if (!r || r.phase === "done") return;
     const add = (id, n) => { r.gains[id] = (r.gains[id] || 0) + n; };
 
-    r.escapedIds.forEach(id => add(id, 2));
+    r.escapedIds.forEach(id => add(id, 1));   // أقل من ٥٠٪ خمّنوه ⇒ نقطة واحدة
 
     let stolen = false;
     if (room.guessRound) {
@@ -544,7 +553,7 @@ function setupSalfa(io, deps) {
         ownerUser: socket.userName || null,
         settings: sanitize(settings || {}, DEFAULTS),
         words: emptyWords(),
-        roundNo: 0, circleNo: 0, category: null, word: null, spyIds: [],
+        roundNo: 0, circleNo: 0, category: null, word: null, spyIds: [], lastSpyIds: [],
         turnId: null, targetId: null, askerPickPending: false, lastAskerId: null,
         votes: {}, voteMax: 1, result: null, emergency: null, emergencyStarterId: null,
         guessRound: null, winner: null,
@@ -602,6 +611,7 @@ function setupSalfa(io, deps) {
       if (r.targetId === oldId) r.targetId = socket.id;
       if (r.lastAskerId === oldId) r.lastAskerId = socket.id;
       r.spyIds = r.spyIds.map(x => (x === oldId ? socket.id : x));
+      r.lastSpyIds = (r.lastSpyIds || []).map(x => (x === oldId ? socket.id : x));
       if (r.guessRound) {
         r.guessRound.ids = r.guessRound.ids.map(x => (x === oldId ? socket.id : x));
         if (r.guessRound.answered[oldId]) { r.guessRound.answered[socket.id] = r.guessRound.answered[oldId]; delete r.guessRound.answered[oldId]; }
