@@ -350,14 +350,6 @@
       <div class="h">👥 اللاعبون <span id="plCount" style="font-size:13px; color:var(--muted); font-weight:700;"></span></div>
       <div class="players" id="lobbyPlayers"></div>
 
-      <div class="h">🔗 دعوة الأصدقاء</div>
-      <div class="inviteRow">
-        <canvas id="qr" width="240" height="240" title="امسح الرمز للانضمام"></canvas>
-        <div class="sub" style="flex:1; min-width:180px; text-align:start; max-width:none; align-self:center;">
-          أعطِ أصحابك رمز الغرفة، أو انسخ رابط الدعوة من الزر في الزاوية أعلى الشاشة — يدخلون مباشرة.
-        </div>
-      </div>
-
       <div id="hostArea" style="display:none; flex-direction:column; gap:10px;">
         <button class="btn btn-ghost" id="setOpen" style="width:auto;">⚙️ إعدادات اللعبة</button>
         <div id="setBox"></div>
@@ -608,7 +600,6 @@ function enter(res){
   $("joinScreen").style.display = "none";
   $("game").style.display = "flex";
   $("roomCode").textContent = ROOM;
-  drawRoomCode($("qr"), ROOM);
   history.replaceState(null, "", "?r=" + ROOM);
 }
 
@@ -638,28 +629,9 @@ $("roomChip").onclick = () => {
 function buildSettings(){
   const box = $("setBox");
   box.innerHTML = `
-    <div class="setRow">
-      <label>نمط الجولة</label>
-      <div class="seg" id="sFlow">
-        <button data-v="timer">وقت مفتوح</button>
-        <button data-v="circle">دورة كاملة</button>
-      </div>
-      <div class="hint">وقت مفتوح: نقاش حر حتى ينتهي المؤقت. دورة كاملة: كل لاعب يسأل ويُسأل بالترتيب.</div>
-    </div>
-
-    <!-- إعدادات خاصة بنمط الوقت المفتوح -->
-    <div id="setTimer" class="modeBox">
-      <div class="modeTag">⏱️ إعدادات الوقت المفتوح</div>
-      <div class="setRow"><label>مدة النقاش</label>
-        <select id="sRound">
-          <option value="120">دقيقتان</option><option value="180">٣ دقائق</option>
-          <option value="300">٥ دقائق</option><option value="420">٧ دقائق</option><option value="600">١٠ دقائق</option>
-        </select></div>
-    </div>
-
-    <!-- إعدادات خاصة بنمط الدورة الكاملة -->
+    <!-- اللعبة تعتمد نمط الدورة الكاملة: كل لاعب يسأل ويُسأل بالترتيب -->
     <div id="setCircle" class="modeBox">
-      <div class="modeTag">🔄 إعدادات الدورة الكاملة</div>
+      <div class="modeTag">🔄 إعدادات الجولة</div>
       <div class="setRow"><label>عدد الدورات</label>
         <select id="sCircles">
           <option value="1">دورة واحدة</option><option value="2">دورتان</option>
@@ -698,11 +670,11 @@ function buildSettings(){
     syncSettingsUI();          // يبدّل صندوق إعدادات النمط فوراً
     push();
   });
-  bind("sFlow", "flow"); bind("sFirst", "firstPlayer");
+  bind("sFirst", "firstPlayer");
   $("sEmg").querySelectorAll("button").forEach(b => b.onclick = () => {
     settings.emergency = b.dataset.v === "1"; segSet("sEmg", b.dataset.v); push();
   });
-  ["sRound|roundTime","sAsk|askTime","sCircles|circles","sSpies|spies","sLimit|scoreLimit"].forEach(pair => {
+  ["sAsk|askTime","sCircles|circles","sSpies|spies","sLimit|scoreLimit"].forEach(pair => {
     const [id,key] = pair.split("|");
     $(id).onchange = () => { settings[key] = +$(id).value; push(); };
   });
@@ -720,14 +692,10 @@ function buildSettings(){
 function syncSettingsUI(){
   if (!settings) return;
   const seg = (id, v) => { const el=$(id); if(el) [...el.querySelectorAll("button")].forEach(b=>b.classList.toggle("on", b.dataset.v===String(v))); };
-  seg("sFlow", settings.flow); seg("sFirst", settings.firstPlayer); seg("sEmg", settings.emergency ? "1":"0");
+  seg("sFirst", settings.firstPlayer); seg("sEmg", settings.emergency ? "1":"0");
   const setv = (id,v)=>{ const el=$(id); if(el) el.value = String(v); };
-  setv("sRound", settings.roundTime); setv("sAsk", settings.askTime);
+  setv("sAsk", settings.askTime);
   setv("sCircles", settings.circles); setv("sSpies", settings.spies); setv("sLimit", settings.scoreLimit);
-  // كل نمط يعرض إعداداته فقط
-  const isCircle = settings.flow === "circle";
-  if ($("setTimer")) $("setTimer").style.display = isCircle ? "none" : "flex";
-  if ($("setCircle")) $("setCircle").style.display = isCircle ? "flex" : "none";
   const pk = $("sPacks");
   if (pk) pk.querySelectorAll("button").forEach(b => b.classList.toggle("on", settings.packs.includes(b.dataset.p)));
 }
@@ -1124,9 +1092,7 @@ socket.on("state", s => {
   $("waitHost").style.display = HOST ? "none" : "block";
   $("plCount").textContent = "(" + s.players.filter(p=>p.connected).length + "/" + s.settings.maxPlayers + ")";
   $("lobbySummary").textContent =
-    (s.settings.flow === "circle"
-      ? "دورة كاملة • " + (s.settings.circles ? s.settings.circles + " دورات" : "دورات مفتوحة")
-      : "وقت مفتوح " + Math.round(s.settings.roundTime/60) + " دقائق")
+    (s.settings.circles ? s.settings.circles + " دورات" : "دورات مفتوحة")
     + " • " + s.settings.spies + " برّا السالفة • حدّ الفوز " + s.settings.scoreLimit + " نقطة"
     + " • " + (s.settings.packs.length ? s.settings.packs.length + " تصنيفات" : "كل التصنيفات");
 
