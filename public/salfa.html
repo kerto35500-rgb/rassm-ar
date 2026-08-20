@@ -589,6 +589,7 @@ $("joinBtn").onclick = () => {
       return $("joinErr").textContent = res.error || "تعذّر الانضمام";
     }
     enter(res);
+    if (res.resumed) toast("رجعت بنفس الاسم — نقاطك وتقدمك محفوظة 🔄");
   });
 };
 $("pName").onkeydown = e => { if (e.key === "Enter") ($("pRoom").value.trim() ? $("joinBtn") : $("createBtn")).click(); };
@@ -596,7 +597,7 @@ $("pRoom").onkeydown = e => { if (e.key === "Enter") $("joinBtn").click(); };
 
 function enter(res){
   ME = res.you; TOKEN = res.token; ROOM = res.roomId;
-  try{ sessionStorage.setItem("salfa", JSON.stringify({ room:ROOM, token:TOKEN })); }catch(e){}
+  try{ localStorage.setItem("salfaResume", JSON.stringify({ room:ROOM, token:TOKEN, at:Date.now() })); }catch(e){}
   $("joinScreen").style.display = "none";
   $("game").style.display = "flex";
   $("roomCode").textContent = ROOM;
@@ -606,16 +607,16 @@ function enter(res){
 /* استرداد سلس بعد إعادة التحميل أو انقطاع الشبكة */
 function tryRejoin(){
   let s = null;
-  try{ s = JSON.parse(sessionStorage.getItem("salfa") || "null"); }catch(e){}
+  try{ s = JSON.parse(localStorage.getItem("salfaResume") || "null"); }catch(e){}
   if (!s || !s.room || !s.token) return;
   socket.emit("rejoin", { roomId:s.room, token:s.token }, res => {
-    if (!res.ok){ try{ sessionStorage.removeItem("salfa"); }catch(e){} return; }
+    if (!res.ok){ try{ localStorage.removeItem("salfaResume"); }catch(e){} return; }
     enter(res);
-    toast("رجعت للغرفة 👋");
+    toast("رجعت للغرفة وتقدمك محفوظ 👋");
   });
 }
 socket.io.on("reconnect", () => tryRejoin());
-socket.on("kicked", () => { alert("تم إخراجك من الغرفة"); try{sessionStorage.removeItem("salfa");}catch(e){} location.href="/barra"; });
+socket.on("kicked", () => { alert("تم إخراجك من الغرفة"); try{localStorage.removeItem("salfaResume");}catch(e){} location.href="/barra"; });
 socket.on("toast", t => toast(t));
 
 $("roomChip").onclick = () => {
