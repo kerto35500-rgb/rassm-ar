@@ -4,7 +4,7 @@ const crypto = require("crypto");
 const words = require("./salfa-words");
 const { nameFromSocket } = require("./account");
 
-const RECONNECT_MS = 120000;   // مهلة العودة بعد انقطاع الاتصال
+const EMPTY_ROOM_MS = 600000;  // غرفة انقطع كل لاعبيها تبقى ١٠ دقائق ليعودوا
 const CHAT_MAX = 200;
 const REVEAL_MS = 12000;       // مهلة مرحلة كشف الأدوار (تُتخطّى بالجاهزية)
 const GUESS_MS = 30000;        // مهلة اختيار برّا السالفة للكلمة
@@ -587,6 +587,14 @@ function setupSalfa(io, deps) {
       if (r.players.filter(p => p.connected).length >= r.settings.maxPlayers)
         return cb({ ok: false, error: "الغرفة ممتلئة" });
       if (room) leaveRoom(true);
+      // ✨ كما في لعبة الرسم: الرجوع بنفس الاسم يستعيد النقاط والدور والتقدم
+      const wanted = (socket.userName || String(name || "").trim().slice(0, 20) || "لاعب");
+      const ghost = r.players.find(x => !x.connected && x.name === wanted);
+      if (ghost) {
+        sys(r, `${ghost.name} رجع وواصل من حيث توقف 🔄`);
+        return reattach(r, ghost, cb);
+      }
+      clearTimeout(r._emptyT);
       player = makePlayer(name);
       if (!["lobby", "result", "gameEnd"].includes(r.state)) player.spectator = true;
       r.players.push(player);
@@ -597,13 +605,9 @@ function setupSalfa(io, deps) {
       broadcast(r);
     });
 
-    socket.on("rejoin", ({ roomId, token } = {}, cb) => {
-      if (typeof cb !== "function") return;
-      const r = rooms.get(String(roomId || "").trim());
-      if (!r) return cb({ ok: false, error: "الغرفة انتهت" });
-      const p = r.players.find(x => x.token === token);
-      if (!p) return cb({ ok: false, error: "انتهت جلستك" });
-      if (p.connected && p.id !== socket.id) return cb({ ok: false, error: "الجلسة مفتوحة في مكان آخر" });
+    // إعادة ربط لاعب موجود (منقطع) بهذه الجلسة: يستعيد نقاطه ودوره وأصواته كاملة
+    function reattach(r, p, cb) {
+      clearTimeout(r._emptyT);
       const oldId = p.id;
       p.id = socket.id; p.connected = true; p.disconnectedAt = 0;
       if (r.ownerId === oldId) r.ownerId = socket.id;
@@ -620,7 +624,7 @@ function setupSalfa(io, deps) {
       Object.keys(r.votes).forEach(k => { r.votes[k] = (r.votes[k] || []).map(x => (x === oldId ? socket.id : x)); });
       room = r; player = p;
       socket.join(r.id);
-      cb({ ok: true, roomId: r.id, you: p.id, token: p.token, state: state(r) });
+      cb({ ok: true, roomId: r.id, you: p.id, token: p.token, resumed: true, state: state(r) });
       if (["reveal", "talking", "voting", "spyGuess"].includes(r.state) && !p.spectator) {
         const spy = r.spyIds.includes(p.id);
         nsp.to(p.id).emit("role", { spy, category: r.category, word: spy ? null : r.word, spies: r.spyIds.length, roundNo: r.roundNo });
@@ -629,6 +633,17 @@ function setupSalfa(io, deps) {
         }
       }
       broadcast(r);
+    }
+
+    socket.on("rejoin", ({ roomId, token } = {}, cb) => {
+      if (typeof cb !== "function") return;
+      const r = rooms.get(String(roomId || "").trim());
+      if (!r) return cb({ ok: false, error: "الغرفة انتهت" });
+      const p = r.players.find(x => x.token === token);
+      if (!p) return cb({ ok: false, error: "انتهت جلستك" });
+      if (p.connected && p.id !== socket.id) return cb({ ok: false, error: "الجلسة مفتوحة في مكان آخر" });
+      if (room) leaveRoom(true);
+      reattach(r, p, cb);
     });
 
     socket.on("leaveRoom", () => leaveRoom(true));
@@ -881,13 +896,14 @@ function setupSalfa(io, deps) {
       if (r.state === "voting" && playing(r).length && allVoted(r)) tallyVotes(r);
       if (r.state === "spyGuess" && r.guessRound && r.guessRound.ids.every(id => r.guessRound.answered[id])) finishRound(r);
       broadcast(r);
-      setTimeout(() => {
-        if (!rooms.has(r.id)) return;
-        if (p.connected) return;
-        r.players = r.players.filter(x => x.id !== p.id);
-        if (!r.players.some(x => x.connected)) { clearTimers(r); rooms.delete(r.id); }
-        else broadcast(r);
-      }, RECONNECT_MS);
+      // اللاعب المنقطع يبقى محفوظاً (بنقاطه ودوره) — يرجع بالتوكن أو بنفس الاسم.
+      // وإذا انقطع الجميع تبقى الغرفة مهلةً كافية ثم تُحذف
+      if (!r.players.some(x => x.connected)) {
+        clearTimeout(r._emptyT);
+        r._emptyT = setTimeout(() => {
+          if (rooms.has(r.id) && !r.players.some(x => x.connected)) { clearTimers(r); rooms.delete(r.id); }
+        }, EMPTY_ROOM_MS);
+      }
       room = null; player = null;
     });
   });
