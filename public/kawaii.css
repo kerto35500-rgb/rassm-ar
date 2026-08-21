@@ -986,6 +986,14 @@ body.theme-kawaii #howTo .ht {
 body.theme-kawaii #howTo .ht b { color:var(--kw-ink); }
 body.theme-kawaii #howTo .ht p { color:#8A625A; opacity:1; }
 
+/* v14.1: الجولة المختصرة في الجوال داخل ثيم الكاواي (تغلب قاعدة 17px) */
+@media (max-width: 900px) {
+  body.theme-kawaii #roundInfo[data-s] { font-size:0; }
+  body.theme-kawaii #roundInfo[data-s]::after {
+    content:attr(data-s); font-size:14px; font-weight:800; white-space:nowrap;
+  }
+}
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }
