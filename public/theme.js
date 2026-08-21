@@ -57,6 +57,8 @@
     THEMES.forEach(function (t) {
       if (t.id !== "classic") document.body.classList.toggle("theme-" + t.id, id === t.id);
     });
+    /* برّا السالفة: نسخة خضراء من المارشميلو (تُميَّز بوجود شاشة الدخول الخاصة بها) */
+    document.body.classList.toggle("kw-salfa", id === "kawaii" && !!document.getElementById("joinScreen"));
     if (id === "kawaii") ensureFont();
     doodleLayer(id === "kawaii");
     var pop = document.getElementById("kwThemePop");

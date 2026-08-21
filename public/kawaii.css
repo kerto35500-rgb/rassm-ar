@@ -994,6 +994,188 @@ body.theme-kawaii #howTo .ht p { color:#8A625A; opacity:1; }
   }
 }
 
+/* ═════════ v15: برّا السالفة — مارشميلو أخضر 🕵️🍡 ═════════
+   نفس لغة المارشميلو (حدود بنية، كبسولات، ظلال ناعمة، خط Baloo)
+   لكن بالأخضر المأخوذ من بطاقة السالفة في الرئيسية (#90E0B0→#6CCB93).
+   يميَّز بكلاس kw-salfa الذي يضيفه theme.js تلقائياً. */
+body.theme-kawaii.kw-salfa {
+  --sg-line:#A05F50; --sg-ink:#4A2E2B; --sg-deep:#2E7D46; --sg-soft:#EFF7EB;
+  --sg-white:linear-gradient(180deg,#FFFEFA 0%,#F4FAF0 100%);
+  --sg-band:linear-gradient(180deg,#D9F2DF 0%,#BFE8CC 100%);
+  --sg-btn:linear-gradient(180deg,#C0E8CB 0%,#9AD3A9 100%);
+  --sg-strong:linear-gradient(180deg,#90E0B0 0%,#6CCB93 100%);
+  --sg-shadow:0 4px 10px rgba(80,120,85,.22);
+  background:linear-gradient(165deg,#EFF8EC 0%,#DFF2DD 100%) !important;
+  color:var(--sg-ink);
+  font-family:"Baloo Bhaijaan 2","Segoe UI",Tahoma,sans-serif;
+}
+body.kw-salfa input, body.kw-salfa button, body.kw-salfa select, body.kw-salfa textarea { font-family:inherit; }
+
+/* زر الستايل العائم: أسفل يسار حتى لا يزاحم الشريط العلوي */
+body.kw-salfa #kwThemeBtn { top:auto; bottom:12px; }
+
+/* خربشات تحرّي: عدسة مكبرة، قبعة محقق، علامة سؤال */
+body.theme-kawaii.kw-salfa .kw-doodles .kw-pencil {
+  opacity:.45;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 64'%3E%3Cg transform='rotate(-15 60 32)'%3E%3Ccircle cx='48' cy='26' r='17' fill='%23F2FBF4' stroke='%237FB98D' stroke-width='3'/%3E%3Ccircle cx='48' cy='26' r='11' fill='%23E2F4E6'/%3E%3Crect x='60' y='36' width='27' height='9' rx='4.5' transform='rotate(38 60 36)' fill='%23C9A176' stroke='%23A0764F' stroke-width='2.4'/%3E%3Ccircle cx='44' cy='25' r='1.8' fill='%236B8F6B'/%3E%3Ccircle cx='52' cy='25' r='1.8' fill='%236B8F6B'/%3E%3Cpath d='M45.5 29q2.5 2.5 5 0' stroke='%236B8F6B' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E");
+}
+body.theme-kawaii.kw-salfa .kw-doodles .kw-palette {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Cellipse cx='22' cy='29' rx='19' ry='6.5' fill='%23D8B98C' stroke='%23A0764F' stroke-width='2.4'/%3E%3Cpath d='M10 28c0-9 4-16 12-16s12 7 12 16' fill='%23E4C99E' stroke='%23A0764F' stroke-width='2.4'/%3E%3Cpath d='M10.5 25h23' stroke='%236CCB93' stroke-width='5'/%3E%3C/svg%3E");
+}
+body.theme-kawaii.kw-salfa .kw-doodles .kw-brush {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='16' fill='%23E7F6EA' stroke='%237FB98D' stroke-width='2.6'/%3E%3Ctext x='20' y='27' text-anchor='middle' font-family='Arial' font-size='20' font-weight='900' fill='%233F7A4E'%3E%D8%9F%3C/text%3E%3C/svg%3E");
+}
+
+/* ───── شاشة الدخول ───── */
+body.kw-salfa #joinScreen::before, body.kw-salfa #joinScreen::after { display:none; }
+body.kw-salfa .logo {
+  color:#FBF6E3;
+  text-shadow:
+    -2px -2px 0 #55814B, 2px -2px 0 #55814B, -2px 2px 0 #55814B, 2px 2px 0 #55814B,
+    -2.5px 0 0 #55814B, 2.5px 0 0 #55814B, 0 -2.5px 0 #55814B, 0 2.5px 0 #55814B,
+    0 7px 14px rgba(85,130,75,.35);
+}
+body.kw-salfa .logo span { color:#FFD668; }
+body.kw-salfa .tagline { color:#5E8A55; font-weight:800; }
+body.kw-salfa .backLink {
+  background:var(--sg-white); border:2px solid var(--sg-line); color:var(--sg-ink);
+  box-shadow:var(--sg-shadow); backdrop-filter:none; -webkit-backdrop-filter:none;
+}
+body.kw-salfa .backLink:hover { background:#EAF7EC; transform:scale(1.04) translateY(-2px); }
+body.kw-salfa #joinScreen .card {
+  background:var(--sg-white); border:2px solid var(--sg-line); border-radius:26px;
+  box-shadow:0 10px 24px rgba(80,120,85,.20);
+}
+body.kw-salfa #joinScreen .card input {
+  border:2px solid var(--sg-line); border-radius:999px; background:#fff;
+  color:var(--sg-ink); font-weight:700;
+}
+body.kw-salfa #joinScreen .card input:focus { border-color:var(--sg-line); background:#fff; box-shadow:0 0 0 3px rgba(120,200,145,.4); }
+body.kw-salfa .btn {
+  border:2px solid var(--sg-line); border-radius:999px; color:var(--sg-ink); font-weight:800;
+  box-shadow:var(--sg-shadow); transition:all .2s var(--kw-spring);
+}
+body.kw-salfa .btn:hover { filter:none; transform:scale(1.04) translateY(-1px); }
+body.kw-salfa .btn:active { transform:scale(.95) translateY(1px); }
+body.kw-salfa .btn-green  { background:var(--sg-btn); }
+body.kw-salfa .btn-blue   { background:linear-gradient(180deg,#BCE9D9 0%,#8FD6BC 100%); }
+body.kw-salfa .btn-red    { background:linear-gradient(180deg,#F8B9B4 0%,#F08A84 100%); color:#7A2A24; }
+body.kw-salfa .btn-violet { background:linear-gradient(180deg,#E4D6F6 0%,#CDB4EC 100%); color:#5A3E80; }
+body.kw-salfa .btn-ghost  { background:var(--sg-white); color:var(--sg-ink); }
+body.kw-salfa .divider { color:#7FA477; font-weight:700; }
+body.kw-salfa #whoLine { color:var(--sg-deep); }
+body.kw-salfa .sub { color:#7C9474; }
+
+/* ───── البطاقات والشريط العلوي ───── */
+body.kw-salfa .card { background:var(--sg-white); border:2px solid var(--sg-line); border-radius:20px; box-shadow:var(--sg-shadow); }
+body.theme-kawaii.kw-salfa #topBar {
+  background:var(--sg-band); border:2px solid var(--sg-line); border-radius:20px;
+  padding:8px 10px; box-shadow:var(--sg-shadow);
+}
+body.kw-salfa #roomChip { background:#fff; border:2px solid var(--sg-line); border-radius:16px; }
+body.kw-salfa #roomChip b { color:var(--sg-deep); }
+body.kw-salfa #roomChip span { color:#7FA477; }
+body.kw-salfa #phaseInfo { color:var(--sg-ink); }
+body.kw-salfa .iconBtn { border:2px solid var(--sg-line); border-radius:50%; background:var(--sg-white); box-shadow:var(--sg-shadow); }
+body.kw-salfa #clock { border:2px solid var(--sg-line); border-radius:999px; background:var(--sg-strong); box-shadow:var(--sg-shadow); }
+
+/* ───── اللوبي واللاعبون ───── */
+body.kw-salfa .h { color:var(--sg-ink); }
+body.kw-salfa .pl { background:#fff; border:2px solid #C99A72; border-radius:14px; }
+body.kw-salfa .pl .av { background:#D9F2DF; }
+body.kw-salfa .pl.me { border-color:#6CCB93; background:#EAF7EC; }
+body.kw-salfa .pl .sc { color:var(--sg-deep); }
+body.kw-salfa #qr { border:2px solid var(--sg-line); border-radius:16px; }
+body.kw-salfa .setRow { background:var(--sg-soft); border-radius:14px; }
+body.kw-salfa .setRow .hint { color:#7C9474; }
+body.kw-salfa select, body.kw-salfa textarea { border:2px solid var(--sg-line); border-radius:12px; color:var(--sg-ink); font-weight:700; }
+body.kw-salfa .packs button { border:2px solid #C99A72; border-radius:999px; color:#7C9474; font-weight:700; }
+body.kw-salfa .packs button.on { background:#EAF7EC; border-color:#6CCB93; color:var(--sg-deep); }
+body.kw-salfa .seg { border:2px solid var(--sg-line); border-radius:999px; }
+body.kw-salfa .seg button { color:#7C9474; }
+body.kw-salfa .seg button.on { background:var(--sg-strong); color:#fff; }
+body.kw-salfa .modeBox { border:2px dashed #C99A72; border-radius:14px; background:#FDFCF6; }
+body.kw-salfa .modeTag { color:#7C9474; }
+
+/* ───── كشف الدور ───── */
+body.kw-salfa .catPill { background:#E6F5E9; border:2px solid var(--sg-line); color:var(--sg-deep); }
+body.kw-salfa #holdBtn {
+  border:3px dashed #C99A72; border-radius:24px;
+  background:linear-gradient(180deg,#FDFCF6 0%,#F3F8EE 100%);
+}
+body.kw-salfa #holdBtn.showing { border-color:#6CCB93; background:linear-gradient(180deg,#EAF7EC 0%,#DBF0E0 100%); }
+body.kw-salfa #secretWord { color:var(--sg-ink); }
+body.kw-salfa #secretRole { color:#7C9474; }
+body.kw-salfa #holdBtn .t2 { color:#7C9474; }
+body.kw-salfa .warnNote { background:#FBF3DC; border:2px solid #E4C98F; color:#7A5A20; border-radius:14px; }
+
+/* ───── النقاش ───── */
+body.kw-salfa .ring .big { color:var(--sg-ink); }
+body.kw-salfa .ring .lil { color:#7C9474; }
+body.kw-salfa #turnLine b { color:var(--sg-deep); }
+body.kw-salfa .msg { background:var(--sg-soft); border-radius:12px; }
+body.kw-salfa .msg b { color:var(--sg-deep); }
+body.kw-salfa .msg.system { background:#E6F5E9; color:var(--sg-deep); }
+body.kw-salfa .msg.warn { background:#FBF3DC; color:#8A6A20; }
+body.theme-kawaii.kw-salfa #chatForm {
+  background:none; border:none; box-shadow:none; border-top:2px solid #E3EEDD;
+  border-radius:0; padding:8px; margin:0; flex-wrap:nowrap; gap:6px; position:static;
+}
+body.theme-kawaii.kw-salfa #chatInput {
+  flex:1; order:0; background:#fff; border:2px solid var(--sg-line); border-radius:999px;
+  padding:10px 14px; font-size:14px; color:var(--sg-ink); box-shadow:none;
+}
+body.theme-kawaii.kw-salfa #chatForm button[type=submit], body.theme-kawaii.kw-salfa #chatForm button {
+  position:static; order:0; margin:0; transform:none;
+  background:var(--sg-btn); color:var(--sg-ink); border:2px solid var(--sg-line);
+  border-radius:999px; font-weight:800; padding:9px 16px; box-shadow:var(--sg-shadow);
+}
+
+/* ───── التصويت ───── */
+body.kw-salfa .vc { border:2px solid #C99A72; border-radius:18px; background:#fff; }
+body.kw-salfa .vc .av { background:#D9F2DF; }
+body.kw-salfa .vc.picked { border-color:#E5484D; background:#FFF0F0; }
+body.kw-salfa #voteProg { color:#7C9474; }
+
+/* ───── النتائج ───── */
+body.kw-salfa .banner { border:2px solid var(--sg-line); border-radius:18px; }
+body.kw-salfa .revealWord { background:#fff; border:2px solid var(--sg-line); border-radius:18px; }
+body.kw-salfa .revealWord .w { color:var(--sg-ink); }
+body.kw-salfa .revealWord .c { color:#7C9474; }
+body.kw-salfa .vcard { border:2px solid #C99A72; border-radius:14px; }
+body.kw-salfa .scoreRow { background:var(--sg-soft); border-radius:12px; }
+body.kw-salfa .scoreRow .g { color:var(--sg-deep); }
+
+/* ───── النوافذ ───── */
+body.kw-salfa .sheet { background:var(--sg-white); border:2px solid var(--sg-line); border-radius:22px; }
+body.kw-salfa .gch { border:2px solid #C99A72; border-radius:16px; color:var(--sg-ink); }
+body.kw-salfa .gch:hover { border-color:#E4A93C; background:#FBF3DC; }
+body.theme-kawaii.kw-salfa #wordsPanel { background:var(--sg-white); border:2px solid var(--sg-line); border-radius:22px; }
+body.theme-kawaii.kw-salfa .catChip.active { background:var(--sg-strong); color:#fff; }
+body.kw-salfa #wordsAddBtn { border-radius:999px; background:var(--sg-strong); border:2px solid var(--sg-line); }
+body.kw-salfa #catAddBtn { border-radius:999px; }
+body.kw-salfa #toast { background:var(--sg-ink); border-radius:16px; }
+
+/* ───── تنبيه «دورك» بالسالفة: بطاقة خضراء فاتحة بدل الداكنة ───── */
+body.kw-salfa #turnFlash .band {
+  background:var(--sg-band); border:2px solid var(--sg-line);
+  box-shadow:0 14px 40px rgba(70,110,80,.35);
+}
+body.kw-salfa #turnFlash .word {
+  background:none; color:var(--sg-deep); -webkit-text-stroke:0;
+  filter:drop-shadow(0 3px 0 rgba(255,255,255,.7));
+}
+
+/* ───── جوال السالفة: تحييد قواعد الرسم المحمولة ───── */
+@media (max-width: 900px) {
+  body.theme-kawaii.kw-salfa #chatInput { padding:10px 14px; }
+  body.theme-kawaii.kw-salfa #chatForm button[type=submit] {
+    position:static; top:auto; transform:none; padding:9px 14px; font-size:13px;
+  }
+  body.theme-kawaii.kw-salfa #chatForm button[type=submit]:hover,
+  body.theme-kawaii.kw-salfa #chatForm button[type=submit]:active { transform:none; }
+}
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }
