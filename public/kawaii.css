@@ -483,6 +483,15 @@ body.theme-kawaii #kbBtn {
   background:url("/kw-i-kb.webp") center / 26px no-repeat;
 }
 
+/* v6.1: تصحيحات دقيقة — أيقونة الزر المفعّل + سعة صف الأدوات */
+body.theme-kawaii .toolBtn { width:40px; height:40px; }
+body.theme-kawaii .toolBtn svg { display:none; }
+body.theme-kawaii .toolBtn.active {
+  background-size:64%, 100%; background-position:center, center; background-repeat:no-repeat, no-repeat;
+}
+body.theme-kawaii .tbRow { padding:6px 8px; gap:5px; }
+body.theme-kawaii #hintBox { border-width:9px; border-image-width:9px; }
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }
