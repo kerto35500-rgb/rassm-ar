@@ -777,6 +777,9 @@ body.theme-kawaii:has(#grid) .now { color:#8A5A3E; box-shadow:0 2px 0 #E3D5C2; }
 body.theme-kawaii:has(#grid) .badge { color:#8A5A3E; }
 body.theme-kawaii:has(#grid) #accPop { color:#6B4632; }
 
+/* v10.1: إخفاء وسوم المعلومات من بطاقات الرئيسية — مساحة أنظف */
+body.theme-kawaii:has(#grid) .tags { display:none; }
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }
