@@ -1262,6 +1262,9 @@ body.kw-salfa .scoreRow .g {
 }
 body.kw-salfa .scoreRow { padding:7px 10px; }
 
+/* v18.1: كشف الكلمة يتوسط الشاشة — إخفاء turnEndExtra الفارغ كان يضيّع margin-bottom:auto للتوسيط */
+body.theme-kawaii #turnEndOverlay:has(#turnEndExtra:empty) #revealedWord { margin-bottom:auto; }
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }
