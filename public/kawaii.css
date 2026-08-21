@@ -1,0 +1,322 @@
+/* ═══════════════════════════════════════════════════════════════
+   🍡 ثيم «كاواي مارشميلو» — Cozy Kawaii Marshmallow & Pastel Anime
+   يعمل فقط عند body.theme-kawaii — الثيم الأصلي لا يتأثر إطلاقاً.
+   يُطبَّق على: القائمة الرئيسية (hub) + لعبة الرسم (draw).
+   ═══════════════════════════════════════════════════════════════ */
+
+body.theme-kawaii {
+  --kw-bg1:#FFE8DC; --kw-bg2:#FFF0E6;
+  --kw-accent:#F7A8A4; --kw-accent2:#FFB7B2;
+  --kw-panel:#FFF7F2; --kw-panel2:#FFEFE8;
+  --kw-line:#A85850; --kw-ink:#4A2E2B;
+  --kw-pink:#F9CFC8; --kw-pink2:#FBDCD4;
+  --kw-shadow:0 4px 0 rgba(168,88,80,.35);
+  --kw-spring:cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+body.theme-kawaii, body.theme-kawaii * { font-family:'Baloo Bhaijaan 2','Segoe UI',Tahoma,Arial,sans-serif !important; }
+
+/* ───────── الحركات الأساسية ───────── */
+@keyframes kwFloat {
+  0%,100% { transform:translateY(0) rotate(0deg); }
+  50%     { transform:translateY(-8px) rotate(4deg); }
+}
+@keyframes kwPopIn {
+  0%   { opacity:0; transform:scale(.8); }
+  70%  { opacity:1; transform:scale(1.05); }
+  100% { opacity:1; transform:scale(1); }
+}
+@keyframes kwJelly {
+  0%{transform:scale(1)} 30%{transform:scale(1.12,.88)} 50%{transform:scale(.92,1.08)}
+  70%{transform:scale(1.04,.96)} 100%{transform:scale(1)}
+}
+@keyframes kwUrgentPulse {
+  0%,100% { transform:scale(1); }
+  50%     { transform:scale(1.15); }
+}
+@keyframes kwShake {
+  0%,100%{transform:translateX(0)} 25%{transform:translateX(-1.5px)} 75%{transform:translateX(1.5px)}
+}
+@keyframes kwScribble {
+  0%,100% { transform:rotate(-15deg); }
+  50%     { transform:rotate(15deg); }
+}
+@keyframes kwBannerIn {
+  0%   { opacity:0; transform:translateY(-26px); }
+  60%  { opacity:1; transform:translateY(4px); }
+  80%  { transform:translateY(-2px); }
+  100% { opacity:1; transform:translateY(0); }
+}
+@keyframes kwBreath {
+  0%,100% { box-shadow:0 0 0 3px rgba(247,168,164,.55), var(--kw-shadow); }
+  50%     { box-shadow:0 0 0 6px rgba(247,168,164,.25), var(--kw-shadow); }
+}
+
+/* ───────── طبقة الخربشات العائمة (يحقنها theme.js) ───────── */
+body.theme-kawaii .kw-doodles { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+body.theme-kawaii .kw-doodles span {
+  position:absolute; opacity:.24; font-size:26px; filter:saturate(.75);
+  animation:kwFloat 5s ease-in-out infinite;
+}
+body.theme-kawaii .kw-doodles span:nth-child(2n)  { animation-duration:6s; animation-delay:-2s; font-size:20px; }
+body.theme-kawaii .kw-doodles span:nth-child(3n)  { animation-duration:4.2s; animation-delay:-1s; opacity:.18; }
+body.theme-kawaii .kw-doodles span:nth-child(5n)  { font-size:32px; opacity:.2; }
+
+/* ═════════════════════ عناصر مشتركة ═════════════════════ */
+body.theme-kawaii {
+  background:linear-gradient(160deg, var(--kw-bg1) 0%, var(--kw-bg2) 100%) !important;
+  background-attachment:fixed !important;
+  color:var(--kw-ink);
+}
+
+/* زر الثيمات نفسه (يحقنه theme.js في كل الثيمات) */
+#kwThemeBtn {
+  position:fixed; top:10px; inset-inline-end:12px; z-index:90;
+  width:38px; height:38px; border-radius:50%; border:none; cursor:pointer;
+  background:rgba(255,255,255,.85); font-size:19px;
+  box-shadow:0 3px 10px rgba(0,0,0,.18); transition:transform .2s cubic-bezier(0.34,1.56,0.64,1);
+}
+#kwThemeBtn:hover { transform:scale(1.12) rotate(12deg); }
+#kwThemeBtn:active { transform:scale(.9); }
+body.theme-kawaii #kwThemeBtn { background:var(--kw-panel); border:2px solid var(--kw-line); box-shadow:var(--kw-shadow); }
+/* داخل شاشة اللعب: يختفي الزر العائم ويظهر بديل داخل الشريط العلوي */
+#gameScreen[style*="flex"] ~ #kwThemeBtn { display:none; }
+#kwThemeBtnTop { font-size:19px; background:none; border:none; cursor:pointer; transition:transform .2s cubic-bezier(0.34,1.56,0.64,1); }
+#kwThemeBtnTop:hover { transform:scale(1.15) rotate(12deg); }
+#kwThemePop {
+  position:fixed; top:54px; inset-inline-end:12px; z-index:91; display:none;
+  background:#fff; border-radius:16px; padding:12px; min-width:190px;
+  box-shadow:0 14px 40px rgba(0,0,0,.28); color:#333;
+}
+#kwThemePop.on { display:block; animation:kwPopIn .25s var(--kw-spring, cubic-bezier(0.34,1.56,0.64,1)); }
+#kwThemePop h4 { font-size:13.5px; margin:0 0 8px; color:#777; }
+#kwThemePop button {
+  display:flex; align-items:center; gap:8px; width:100%; padding:9px 11px; margin-bottom:6px;
+  border:2px solid #eee; border-radius:11px; background:#fafafa; cursor:pointer;
+  font-size:14.5px; font-weight:800; color:#555; font-family:inherit; transition:.15s;
+}
+#kwThemePop button:hover { border-color:#F7A8A4; background:#fff5f3; }
+#kwThemePop button.on { border-color:#F7A8A4; background:#ffeae6; color:#A85850; }
+body.theme-kawaii #kwThemePop { background:var(--kw-panel); border:2px solid var(--kw-line); color:var(--kw-ink); }
+body.theme-kawaii #kwThemePop button { background:var(--kw-panel2); border-color:var(--kw-pink); color:var(--kw-ink); }
+body.theme-kawaii #kwThemePop button.on { border-color:var(--kw-line); background:var(--kw-pink2); }
+
+/* ═════════════════════ ① القائمة الرئيسية (hub) ═════════════════════ */
+body.theme-kawaii header .logo { color:var(--kw-ink); text-shadow:0 3px 0 rgba(168,88,80,.15); }
+body.theme-kawaii header .logo em { color:#F0837C; }
+body.theme-kawaii header .tag { color:#8a6660; opacity:1; }
+body.theme-kawaii .live {
+  background:var(--kw-panel); border:2px solid var(--kw-line); color:var(--kw-ink);
+  box-shadow:var(--kw-shadow);
+}
+body.theme-kawaii #accBtn {
+  background:var(--kw-panel); border:2px solid var(--kw-line); color:var(--kw-ink);
+  box-shadow:var(--kw-shadow); backdrop-filter:none; -webkit-backdrop-filter:none;
+  transition:all .2s var(--kw-spring);
+}
+body.theme-kawaii #accBtn:hover { transform:scale(1.06) translateY(-2px); background:var(--kw-panel2); border-color:var(--kw-line); }
+body.theme-kawaii #accBtn .ava { background:var(--kw-accent); color:#fff; border-radius:50%; }
+body.theme-kawaii #accPop { background:var(--kw-panel); border:2.5px solid var(--kw-line); color:var(--kw-ink); box-shadow:0 16px 40px rgba(168,88,80,.3); border-radius:20px; }
+body.theme-kawaii #accPop .go { background:var(--kw-accent); color:#fff; border-radius:999px; box-shadow:var(--kw-shadow); }
+body.theme-kawaii #accPop .tabs button.on { border-color:var(--kw-line); color:#A85850; background:var(--kw-pink2); }
+body.theme-kawaii #accPop input { border-color:var(--kw-pink); border-radius:999px; background:#fff; }
+body.theme-kawaii #accPop input:focus { border-color:var(--kw-line); }
+body.theme-kawaii #accStats div { background:var(--kw-panel2); border-radius:14px; }
+body.theme-kawaii #accStats b { color:#A85850; }
+
+body.theme-kawaii .g {
+  background:var(--kw-panel); border:2.5px solid var(--kw-line); border-radius:22px;
+  box-shadow:0 6px 0 rgba(168,88,80,.3);
+  transition:all .2s var(--kw-spring);
+}
+body.theme-kawaii .g:hover { transform:scale(1.03) translateY(-4px); box-shadow:0 9px 0 rgba(168,88,80,.3); }
+body.theme-kawaii .g:active { transform:scale(.97) translateY(2px); box-shadow:0 2px 0 rgba(168,88,80,.3); }
+body.theme-kawaii .g .bar { display:none; }
+body.theme-kawaii .g h2 { color:var(--kw-ink); }
+body.theme-kawaii .g p { color:#8a6660; }
+body.theme-kawaii .g .ic { border-radius:50%; background:var(--kw-pink2) !important; color:var(--kw-ink) !important; border:2px solid var(--kw-pink); }
+body.theme-kawaii .g .go { background:var(--kw-accent) !important; border-radius:999px; box-shadow:var(--kw-shadow); }
+body.theme-kawaii .g .t { background:var(--kw-panel2); color:#a3736c; border:1.5px solid var(--kw-pink); }
+body.theme-kawaii .g.soon { background:rgba(255,247,242,.55); border-style:dashed; color:#a3736c; box-shadow:none; }
+body.theme-kawaii .g.soon p, body.theme-kawaii .g.soon .t { color:#b08a83; }
+body.theme-kawaii .now { color:#a3736c; }
+body.theme-kawaii .now b { color:#5FBF77; }
+body.theme-kawaii footer { color:var(--kw-ink); opacity:.55; }
+
+/* ═════════════════════ ② لعبة الرسم — شاشة الدخول ═════════════════════ */
+body.theme-kawaii #lobbyScreen::before { background:rgba(247,168,164,.4); }
+body.theme-kawaii #lobbyScreen::after  { background:rgba(255,183,178,.35); }
+body.theme-kawaii #lobbyScreen .logo { color:var(--kw-ink); text-shadow:0 3px 0 rgba(168,88,80,.18); }
+body.theme-kawaii #lobbyScreen .logo span { color:#F0837C; }
+body.theme-kawaii .tagline { color:#8a6660; }
+body.theme-kawaii .backLink {
+  background:var(--kw-panel); border:2px solid var(--kw-line); color:var(--kw-ink);
+  box-shadow:var(--kw-shadow); backdrop-filter:none; -webkit-backdrop-filter:none;
+}
+body.theme-kawaii .backLink:hover { background:var(--kw-panel2); transform:scale(1.05) translateY(-2px); }
+body.theme-kawaii .card {
+  background:var(--kw-panel); border:2.5px solid var(--kw-line); border-radius:24px;
+  box-shadow:0 8px 0 rgba(168,88,80,.25);
+}
+body.theme-kawaii .card input { border:2px solid var(--kw-pink); border-radius:999px; background:#fff; color:var(--kw-ink); }
+body.theme-kawaii .card input:focus { border-color:var(--kw-line); background:#fff; }
+body.theme-kawaii .btn {
+  border-radius:999px; box-shadow:var(--kw-shadow);
+  transition:all .2s var(--kw-spring);
+}
+body.theme-kawaii .btn:hover { transform:scale(1.05) translateY(-2px); filter:none; }
+body.theme-kawaii .btn:active { transform:scale(.93) translateY(2px); box-shadow:0 1px 0 rgba(168,88,80,.35); }
+body.theme-kawaii .btn-green  { background:#8CCFA0; color:#1f4a2e; }
+body.theme-kawaii .btn-blue   { background:var(--kw-accent); color:#fff; }
+body.theme-kawaii .btn-purple { background:#CBA8E0; color:#3d2450; }
+body.theme-kawaii .divider { color:#b08a83; }
+
+/* ═════════════════════ ③ لعبة الرسم — شاشة اللعب ═════════════════════ */
+body.theme-kawaii #gameScreen { position:relative; z-index:1; }
+
+/* الشريط العلوي: كبسولة */
+body.theme-kawaii #topBar {
+  background:var(--kw-panel2); border:2.5px solid var(--kw-line); border-radius:999px;
+  box-shadow:0 4px 0 rgba(168,88,80,.25); padding:6px 14px;
+}
+body.theme-kawaii #roundInfo { color:var(--kw-ink); font-weight:800; }
+body.theme-kawaii #roomCodeBox {
+  background:var(--kw-panel); border:2px solid var(--kw-line); border-radius:999px; color:var(--kw-ink);
+  transition:transform .2s var(--kw-spring);
+}
+body.theme-kawaii #roomCodeBox:hover { transform:scale(1.06); }
+body.theme-kawaii .homeBtn {
+  background:var(--kw-panel); border:2px solid var(--kw-line); border-radius:50%; color:var(--kw-ink);
+  transition:transform .2s var(--kw-spring);
+}
+body.theme-kawaii .homeBtn:hover { background:var(--kw-pink2); color:var(--kw-ink); transform:scale(1.1); }
+
+/* المؤقّت: دائرة + نبض عاجل */
+body.theme-kawaii #timerBox {
+  background:var(--kw-panel); color:var(--kw-ink); border:2.5px solid var(--kw-line);
+  box-shadow:0 3px 0 rgba(168,88,80,.3);
+}
+body.theme-kawaii #timerBox.low {
+  background:#F26D62; color:#fff; border-color:#8f3d36;
+  animation:kwUrgentPulse .55s ease-in-out infinite, kwShake .3s linear infinite;
+}
+
+/* بانر الكلمة: كبسولة وردية تنزل بارتداد عند بداية الجولة */
+body.theme-kawaii #hintBox {
+  background:var(--kw-pink); border:2.5px solid var(--kw-line); border-radius:999px;
+  color:var(--kw-ink); box-shadow:0 4px 0 rgba(168,88,80,.25);
+  padding:7px 16px;
+}
+body.theme-kawaii #hintBox:not(:empty) { animation:kwBannerIn .55s var(--kw-spring); }
+body.theme-kawaii #hintBox .slot { background:#fff; border-color:var(--kw-line); color:var(--kw-ink); border-radius:8px; }
+body.theme-kawaii #hintBox .slot.filled, body.theme-kawaii #hintBox .slot.reveal { background:var(--kw-accent2); }
+body.theme-kawaii #hintBox .plain { color:var(--kw-ink); }
+
+/* اللوحات */
+body.theme-kawaii #playersPanel, body.theme-kawaii #chatPanel {
+  background:var(--kw-panel); border:2.5px solid var(--kw-line); border-radius:20px;
+  box-shadow:0 5px 0 rgba(168,88,80,.22);
+}
+
+/* الرسائل: كبسولات + قفزة دخول */
+body.theme-kawaii .msg {
+  background:var(--kw-panel2); border:1.5px solid var(--kw-pink); border-radius:16px;
+  padding:6px 11px; color:var(--kw-ink);
+  animation:kwPopIn .3s var(--kw-spring);
+}
+body.theme-kawaii .msg.system   { background:var(--kw-pink2); border-color:var(--kw-pink); color:#8a5a54; }
+body.theme-kawaii .msg.join     { background:#E9F6EC; border-color:#bfe3c8; color:#3f7a4e; }
+body.theme-kawaii .msg.leave    { background:#FBE9E7; border-color:#f3c8c2; color:#a3564c; }
+body.theme-kawaii .msg.correct  { background:#DFF3E4; border-color:#9ed8ad; color:#2c6e3e; }
+body.theme-kawaii .msg.close    { background:#FFF4D6; border-color:#eed9a0; color:#8a6d1f; }
+body.theme-kawaii #chatInput {
+  border:2px solid var(--kw-pink); border-radius:999px; background:#fff; color:var(--kw-ink);
+}
+body.theme-kawaii #chatInput:focus { border-color:var(--kw-line); }
+body.theme-kawaii #chatForm button[type=submit] {
+  background:var(--kw-accent); border-radius:999px; box-shadow:var(--kw-shadow);
+  transition:all .18s var(--kw-spring);
+}
+body.theme-kawaii #chatForm button[type=submit]:active { transform:scale(.9) translateY(2px); box-shadow:0 1px 0 rgba(168,88,80,.35); }
+
+/* اللاعبون */
+body.theme-kawaii .playerRow {
+  background:var(--kw-panel2); border:1.5px solid var(--kw-pink); border-radius:14px;
+  transition:transform .2s var(--kw-spring);
+}
+body.theme-kawaii .playerRow:hover { transform:scale(1.02); }
+body.theme-kawaii .playerRow.drawer { background:var(--kw-pink2); border:2px solid var(--kw-line); }
+body.theme-kawaii .playerRow.guessed { background:#E9F6EC; border-color:#bfe3c8; }
+body.theme-kawaii .playerRow .pname { color:var(--kw-ink); }
+body.theme-kawaii .playerRow .pscore { color:#a3736c; }
+/* قلم الراسم يتمايل باستمرار */
+body.theme-kawaii .playerRow.drawer .badge { display:inline-block; animation:kwScribble .5s ease-in-out infinite; }
+
+/* الكانفس */
+body.theme-kawaii #canvasContainer, body.theme-kawaii #canvasWrap { background:transparent; }
+body.theme-kawaii #board {
+  background:#fff; border-radius:20px; border:2.5px solid var(--kw-line);
+  box-shadow:0 6px 0 rgba(168,88,80,.2);
+}
+
+/* شريط الأدوات: كبسولة + أزرار جيلي */
+body.theme-kawaii #toolBar {
+  background:var(--kw-panel2); border:2.5px solid var(--kw-line); border-radius:24px;
+  box-shadow:0 4px 0 rgba(168,88,80,.22);
+}
+body.theme-kawaii .toolBtn {
+  background:var(--kw-panel); border:2px solid var(--kw-pink); border-radius:14px; color:var(--kw-ink);
+  transition:all .2s var(--kw-spring);
+}
+body.theme-kawaii .toolBtn:hover { transform:scale(1.08) translateY(-2px); background:#fff; border-color:var(--kw-line); }
+body.theme-kawaii .toolBtn:active { transform:scale(.92) translateY(2px); }
+body.theme-kawaii .toolBtn.active {
+  background:var(--kw-pink2); border-color:var(--kw-line);
+  animation:kwBreath 1.6s ease-in-out infinite;
+}
+body.theme-kawaii .toolBtn.danger { background:#FBE9E7; border-color:#d98d84; color:#a3564c; }
+body.theme-kawaii .tbSep { background:var(--kw-pink); }
+body.theme-kawaii .tbArrow { background:var(--kw-panel); border:2px solid var(--kw-line); color:var(--kw-ink); border-radius:50%; }
+body.theme-kawaii .sizeDot { background:var(--kw-panel); border:2px solid var(--kw-pink); }
+
+/* الألوان: حلقة وتنفّس للمختار */
+body.theme-kawaii .colorBtn { border-radius:50%; border:2px solid rgba(168,88,80,.35); transition:transform .18s var(--kw-spring); }
+body.theme-kawaii .colorBtn:hover { transform:scale(1.18) translateY(-2px); }
+body.theme-kawaii .colorBtn.active {
+  outline:none; border:2.5px solid var(--kw-line);
+  animation:kwBreath 1.6s ease-in-out infinite; transform:scale(1.12);
+}
+body.theme-kawaii #currentColor { border:2.5px solid var(--kw-line); border-radius:50%; }
+
+/* النوافذ المنبثقة والإعدادات */
+body.theme-kawaii .overlay > div,
+body.theme-kawaii #settingsBox, body.theme-kawaii #wordsPanel {
+  background:var(--kw-panel); border:2.5px solid var(--kw-line); border-radius:22px;
+  color:var(--kw-ink); box-shadow:0 10px 0 rgba(168,88,80,.2);
+}
+body.theme-kawaii .overlay h2 { color:var(--kw-ink); }
+body.theme-kawaii .wordChoice {
+  background:var(--kw-pink2); border:2px solid var(--kw-line); border-radius:999px; color:var(--kw-ink);
+  box-shadow:var(--kw-shadow); transition:all .2s var(--kw-spring);
+}
+body.theme-kawaii .wordChoice:hover { transform:scale(1.07) translateY(-2px); background:var(--kw-pink); }
+body.theme-kawaii .setRow select { border:2px solid var(--kw-pink); border-radius:12px; background:#fff; color:var(--kw-ink); }
+body.theme-kawaii #turnFlash .band { background:var(--kw-pink); border-color:var(--kw-line); }
+body.theme-kawaii #turnFlash .word { color:var(--kw-ink); }
+body.theme-kawaii .rankRow, body.theme-kawaii .galleryItem, body.theme-kawaii .rgItem {
+  background:var(--kw-panel2); border:2px solid var(--kw-pink); border-radius:16px; color:var(--kw-ink);
+}
+body.theme-kawaii .wordChip { background:var(--kw-panel2); border:1.5px solid var(--kw-pink); border-radius:999px; color:var(--kw-ink); }
+body.theme-kawaii .wordChip.added { background:#DFF3E4; border-color:#9ed8ad; }
+body.theme-kawaii .wordChip.removed { background:#FBE9E7; border-color:#f3c8c2; }
+body.theme-kawaii .catChip { background:var(--kw-panel); border:2px solid var(--kw-pink); border-radius:999px; color:var(--kw-ink); }
+body.theme-kawaii .catChip.active { background:var(--kw-pink2); border-color:var(--kw-line); }
+
+/* لوحة المفاتيح الافتراضية */
+body.theme-kawaii #vkb { background:var(--kw-panel2); border:2px solid var(--kw-line); border-radius:18px; }
+body.theme-kawaii #vkb .k { background:#fff; border:1.5px solid var(--kw-pink); border-radius:10px; color:var(--kw-ink); }
+body.theme-kawaii #vkb .k:active { background:var(--kw-pink2); transform:scale(.92); }
+
+/* تقليل الحركة لمن يفضّل ذلك */
+@media (prefers-reduced-motion: reduce) {
+  body.theme-kawaii * { animation:none !important; }
+}
