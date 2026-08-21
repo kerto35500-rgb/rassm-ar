@@ -33,14 +33,27 @@
   .btn-green { background:var(--green); }
   .btn-blue { background:var(--accent2); }
   .btn-purple { background:var(--purple); }
-  /* طريقة اللعب — أعمدة نصية بسيطة تحت بطاقة الدخول (بلا إطارات) */
-  #howTo { display:flex; gap:44px; width:100%; max-width:960px; margin-top:28px; align-items:flex-start; padding:0 16px; }
-  #howTo .ht { flex:1 1 0; min-width:0; }
-  #howTo .ht h3 { text-align:center; font-size:21px; margin:0 0 12px; }
-  #howTo .ht p { margin:0 0 12px; font-size:14.5px; line-height:1.9; color:#cfe3f7; text-align:start; }
+  /* أقسام أسفل شاشة الدخول — عن اللعبة / الأخبار / كيفية اللعب (بستايل skribbl) */
+  #howTo { display:flex; gap:22px; width:100%; max-width:1050px; margin-top:30px; align-items:stretch; padding:0 16px; }
+  #howTo .ht { flex:1 1 0; min-width:0; background:rgba(255,255,255,.06); border-radius:14px; padding:16px 18px; }
+  #howTo .ht h3 { text-align:center; font-size:21px; margin:0 0 14px; }
+  #howTo .ht p { margin:0 0 12px; font-size:14px; line-height:1.9; color:#cfe3f7; text-align:start; }
+  #newsBox .nwHead { display:flex; justify-content:space-between; align-items:center; gap:8px;
+                     border-bottom:2px solid rgba(255,255,255,.25); padding-bottom:7px; margin-bottom:10px; }
+  #newsBox .nwHead b { font-size:16px; }
+  #newsBox .nwHead span { font-size:12.5px; opacity:.8; }
+  #newsBox ul { margin:0; padding-inline-start:20px; max-height:230px; overflow-y:auto;
+                font-size:13.5px; line-height:1.9; color:#cfe3f7; text-align:start; }
+  #newsBox li { margin-bottom:5px; }
+  #htSlider { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  #htSlider img { width:100%; border-radius:10px; cursor:pointer; display:block; background:rgba(0,0,0,.15); min-height:120px; object-fit:cover; }
+  #htSlider p { text-align:center !important; margin:0; }
+  #htDots { display:flex; gap:9px; }
+  #htDots button { width:12px; height:12px; border-radius:50%; border:none; cursor:pointer;
+                   background:rgba(255,255,255,.35); padding:0; }
+  #htDots button.on { background:#fff; }
   @media (max-width: 900px) {
-    #howTo { flex-direction:column; gap:16px; margin-top:18px; }
-    #howTo .ht h3 { margin-bottom:6px; }
+    #howTo { flex-direction:column; gap:14px; margin-top:18px; }
   }
   .divider { text-align:center; color:#999; font-size:13px; }
   #joinError { color:var(--red); text-align:center; font-size:14px; min-height:16px; }
@@ -427,24 +440,69 @@
     <div id="joinError"></div>
   </div>
 
-  <!-- طريقة اللعب: ثلاثة أعمدة نصية بسيطة -->
+  <!-- أقسام أسفل شاشة الدخول: عن اللعبة / الأخبار / كيفية اللعب -->
   <div id="howTo">
     <div class="ht">
       <h3>❓ عن اللعبة</h3>
       <p><b>ارسمها!</b> لعبة رسم وتخمين جماعية بالعربي، تلعبها مع أصحابك من أي جهاز.</p>
-      <p>كل جولة يرسم أحد اللاعبين كلمة اختارها، والباقي يحاولون تخمينها لكسب النقاط!</p>
+      <p>اللعبة تتكون من عدة جولات، في كل جولة يرسم أحد اللاعبين كلمة اختارها، والباقي يحاولون تخمينها لكسب النقاط!</p>
+      <p>صاحب أعلى النقاط في نهاية اللعبة يتوّج فائزًا!<br>استمتعوا!</p>
     </div>
     <div class="ht">
-      <h3>✏️ طريقة اللعب</h3>
-      <p>إذا جاك الدور، اختر كلمة من الخيارات وارسمها في اللوحة — بدون حروف أو أرقام!</p>
-      <p>وإذا كان غيرك يرسم، اكتب تخمينك في الدردشة قبل انتهاء الوقت.</p>
+      <h3>📰 الأخبار</h3>
+      <div id="newsBox"></div>
     </div>
     <div class="ht">
-      <h3>🏆 الفوز</h3>
-      <p>أسرع تخمين صحيح ياخذ نقاط أكثر، والراسم ياخذ نقاط لكل من خمّن رسمته.</p>
-      <p>صاحب أعلى النقاط في نهاية الجولات يتوّج فائزًا!</p>
+      <h3>✏️ كيفية اللعب</h3>
+      <div id="htSlider">
+        <img id="htImg" alt="شرح اللعبة">
+        <p id="htText"></p>
+        <div id="htDots"></div>
+      </div>
     </div>
   </div>
+  <script>
+  (function () {
+    /* ═══ محتوى قسمي الأخبار وكيفية اللعب — عدّل النصوص والصور من هنا ═══ */
+    const NEWS = {
+      title: "ستايل كاواي مارشميلو 🍡",
+      date: "أغسطس 2026",
+      items: [
+        "ستايل جديد كامل قابل للتبديل من زر 🎨 أعلى الصفحة",
+        "تحسينات كاملة لواجهة الجوال",
+        "عدّاد وأدوات أوضح أثناء الرسم",
+        "استئناف اللعب تلقائيًا بعد الانقطاع",
+        "معرض رسمات الجولة والتصويت لأفضل رسمة"
+      ]
+    };
+    const HOWTO_SLIDES = [
+      { img: "/howto-1.webp", text: "إذا جاك الدور، اختر كلمة من الخيارات لترسمها!" },
+      { img: "/howto-2.webp", text: "ارسمها باستخدام الأدوات والألوان — بدون حروف أو أرقام!" },
+      { img: "/howto-3.webp", text: "خمّن رسمات غيرك واكتب الجواب في الدردشة قبل انتهاء الوقت!" }
+    ];
+    /* ═══ نهاية منطقة التعديل ═══ */
+    const nb = document.getElementById("newsBox");
+    nb.innerHTML = '<div class="nwHead"><b>' + NEWS.title + '</b><span>' + NEWS.date + '</span></div>'
+      + '<ul>' + NEWS.items.map(i => "<li>" + i + "</li>").join("") + "</ul>";
+    const img = document.getElementById("htImg"), txt = document.getElementById("htText"), dots = document.getElementById("htDots");
+    let cur = 0, timer = 0;
+    function show(i) {
+      cur = (i + HOWTO_SLIDES.length) % HOWTO_SLIDES.length;
+      img.src = HOWTO_SLIDES[cur].img;
+      txt.textContent = HOWTO_SLIDES[cur].text;
+      [...dots.children].forEach((d, k) => d.classList.toggle("on", k === cur));
+    }
+    HOWTO_SLIDES.forEach((s, i) => {
+      const d = document.createElement("button");
+      d.type = "button"; d.title = "شريحة " + (i + 1);
+      d.onclick = () => { show(i); restart(); };
+      dots.appendChild(d);
+    });
+    function restart() { clearInterval(timer); timer = setInterval(() => show(cur + 1), 5000); }
+    img.onclick = () => { show(cur + 1); restart(); };
+    show(0); restart();
+  })();
+  </script>
 </div>
 
 <!-- شاشة اللعبة -->
