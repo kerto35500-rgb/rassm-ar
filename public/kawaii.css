@@ -221,10 +221,12 @@ body.theme-kawaii #chatPanel {
   box-shadow:var(--kw-puff), 0 4px 0 var(--kw-line); padding:11px;
 }
 body.theme-kawaii .msg {
-  display:flex; align-items:center; gap:9px;
-  background:var(--kw-g-white) !important; border:2px solid var(--kw-line); border-radius:9999px;
-  padding:7px 14px; color:var(--kw-ink) !important; font-weight:700; font-size:14.5px;
-  box-shadow:inset 0 2px 0 rgba(255,255,255,.7), var(--kw-3d-sm);
+  display:flex; align-items:center; gap:8px;
+  width:fit-content; max-width:100%;              /* الكبسولة بعرض محتواها مثل المرجع */
+  background:var(--kw-g-white) !important; border:2px solid #C99A72; border-radius:9999px;
+  padding:5px 12px; color:var(--kw-ink) !important; font-weight:700; font-size:13.5px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.7), 0 2px 0 #C99A72;
+  margin-bottom:7px;
   animation:kwPopIn .3s var(--kw-spring);
 }
 body.theme-kawaii .msg b { color:var(--kw-ink) !important; }
@@ -237,10 +239,10 @@ body.theme-kawaii .msg.correct, body.theme-kawaii .msg.close, body.theme-kawaii 
 body.theme-kawaii .msg.system::before, body.theme-kawaii .msg.join::before,
 body.theme-kawaii .msg.leave::before, body.theme-kawaii .msg.correct::before,
 body.theme-kawaii .msg.close::before, body.theme-kawaii .msg.guessedChat::before {
-  flex-shrink:0; width:34px; height:34px; border-radius:50%;
-  background:#fff; border:2px solid var(--kw-line);
+  flex-shrink:0; width:30px; height:30px; border-radius:50%;
+  background:#fff; border:2px solid #C99A72;
   box-shadow:inset 0 -3px 5px rgba(156,90,76,.12);
-  display:inline-flex; align-items:center; justify-content:center; font-size:18px;
+  display:inline-flex; align-items:center; justify-content:center; font-size:16px;
 }
 body.theme-kawaii .msg.system::before  { content:"🎨"; }
 body.theme-kawaii .msg.join::before    { content:"👋"; }
@@ -252,24 +254,35 @@ body.theme-kawaii .msg.correct { background:linear-gradient(180deg,#E8F8EB 0%,#C
 body.theme-kawaii .msg.close   { background:linear-gradient(180deg,#FFF6E0 0%,#FBE7B8 100%) !important; }
 
 /* صندوق الكتابة: حقل أبيض كبير وزر إرسال ضخم */
-body.theme-kawaii #chatForm { gap:6px; }
+/* بطاقة الكتابة بسطرين مثل المرجع: الحقل فوق بعرض كامل، والزر تحت */
+body.theme-kawaii #chatForm {
+  flex-wrap:wrap; gap:8px; margin-top:8px;
+  background:linear-gradient(180deg,#FFEFE9 0%,#FFE2D8 100%);
+  border:2.5px solid #C99A72; border-radius:20px; padding:9px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 #C99A72;
+}
 body.theme-kawaii #chatInput {
-  min-width:0; flex:1;
-  background:var(--kw-g-white); border:2.5px solid var(--kw-line); border-radius:15px;
-  color:var(--kw-ink); font-weight:700; font-size:14px; padding:13px 10px;
-  box-shadow:inset 0 3px 6px rgba(156,90,76,.08);
+  min-width:0; flex:1 1 100%; order:1;
+  background:#fff; border:2px solid #C99A72; border-radius:15px;
+  color:var(--kw-ink); font-weight:700; font-size:14px; padding:13px 12px;
+  box-shadow:inset 0 3px 6px rgba(156,90,76,.07);
 }
 body.theme-kawaii #chatInput::placeholder { color:#b08a7d; font-size:13.5px; }
 body.theme-kawaii #chatForm button[type=submit] {
-  background:var(--kw-g-banner); color:var(--kw-ink); font-weight:800; font-size:14.5px;
-  padding:11px 12px; flex-shrink:0;
-  border:2.5px solid var(--kw-line); border-radius:999px; box-shadow:var(--kw-puff), var(--kw-3d);
+  order:3; margin-inline-start:auto;
+  background:var(--kw-g-white); color:#E86F63; font-weight:800; font-size:15px;
+  padding:9px 22px; flex-shrink:0;
+  border:2.5px solid var(--kw-line); border-radius:999px; box-shadow:var(--kw-puff), var(--kw-3d-sm);
   transition:all .18s var(--kw-spring);
 }
 body.theme-kawaii #chatForm button[type=submit]:hover { transform:scale(1.05) translateY(-1px); }
-body.theme-kawaii #chatForm button[type=submit]:active { transform:scale(.9) translateY(2px); box-shadow:0 1px 0 var(--kw-line); }
-body.theme-kawaii #kbBtn { background:#fff; border:2.5px solid var(--kw-line); border-radius:12px; color:var(--kw-ink); box-shadow:var(--kw-3d-sm); }
-body.theme-kawaii #kbBtn.on { background:var(--kw-header); }
+body.theme-kawaii #chatForm button[type=submit]:active { transform:scale(.9) translateY(2px); box-shadow:var(--kw-puff); }
+body.theme-kawaii #kbBtn {
+  order:2; align-self:center;
+  background:none; border:none; box-shadow:none;
+  color:#C9922E; font-size:19px; padding:4px 6px; border-radius:10px;
+}
+body.theme-kawaii #kbBtn.on { background:rgba(255,255,255,.7); }
 
 /* لوحة اللاعبين: عنبري فانيلا منفوخ — بطاقات ناعمة بحدود كراميل خفيفة */
 body.theme-kawaii #playersPanel {
@@ -311,34 +324,42 @@ body.theme-kawaii .tbRow {
 }
 body.theme-kawaii .toolBtn {
   width:42px; height:42px;
-  background:var(--kw-g-white); border:2px solid var(--kw-line); border-radius:14px;
-  color:var(--kw-line); box-shadow:inset 0 2px 0 rgba(255,255,255,.75), var(--kw-3d-sm);
+  background:var(--kw-g-white); border:2px solid #C99A72; border-radius:14px;
+  color:var(--kw-line); box-shadow:inset 0 2px 0 rgba(255,255,255,.75), 0 2px 0 #C99A72;
   transition:all .2s var(--kw-spring);
 }
 body.theme-kawaii .toolBtn svg { width:24px; height:24px; stroke-width:2.7; }
 body.theme-kawaii .toolBtn:hover { transform:scale(1.08) translateY(-2px); border-color:var(--kw-line); color:var(--kw-ink); }
 body.theme-kawaii .toolBtn:active { transform:scale(.92) translateY(2px); box-shadow:inset 0 2px 0 rgba(255,255,255,.75); }
-body.theme-kawaii .toolBtn.active { background:var(--kw-g-pink); color:var(--kw-ink); animation:kwBreath 1.6s ease-in-out infinite; }
+body.theme-kawaii .toolBtn.active { background:var(--kw-g-pink); border-color:var(--kw-line); color:var(--kw-ink); animation:kwBreath 1.6s ease-in-out infinite; }
 body.theme-kawaii .toolBtn.danger { color:#C0554A; }
 body.theme-kawaii .toolBtn.danger:hover { background:#FFECE9; }
 body.theme-kawaii .sizeDot { background:var(--kw-line); border:none; }
-body.theme-kawaii .toolBtn[data-size] { background:var(--kw-g-pink); }
-body.theme-kawaii .toolBtn[data-size].active { background:#fff; }
-body.theme-kawaii .tbSep { background:var(--kw-line); opacity:.4; }
-body.theme-kawaii .tbArrow { background:var(--kw-g-white); border:2px solid var(--kw-line); color:var(--kw-ink); border-radius:50%; box-shadow:var(--kw-3d-sm); }
+body.theme-kawaii .toolBtn[data-size] { background:var(--kw-g-pink); border-radius:50%; }
+body.theme-kawaii .toolBtn[data-size].active { background:#fff; border-color:var(--kw-line); }
+body.theme-kawaii .tbSep { background:var(--kw-line); opacity:.35; }
+body.theme-kawaii .tbArrow { background:var(--kw-g-white); border:2px solid #C99A72; color:var(--kw-ink); border-radius:50%; box-shadow:0 2px 0 #C99A72; }
 
-/* الألوان: مربعات مدوّرة بإطار أبيض + حلقة كراميل — مضبوطة لتسَع كلها بلا تمرير */
+/* الألوان مثل المرجع: دوائر بسيطة بلا إطارات — والباليتة واللون الحالي أول الصف */
 body.theme-kawaii .colorBtn {
-  width:22px; height:22px;
-  border-radius:8px; border:2.5px solid #fff; box-shadow:0 0 0 1.5px var(--kw-line), 0 2px 0 1.5px rgba(156,90,76,.3);
+  width:25px; height:25px;
+  border-radius:50%; border:2px solid rgba(156,90,76,.4); box-shadow:none;
   transition:transform .18s var(--kw-spring); margin:1px;
 }
-body.theme-kawaii #colors { gap:3px; }
-body.theme-kawaii .colorBtn:hover { transform:scale(1.18) translateY(-2px); }
-body.theme-kawaii .colorBtn.active { transform:scale(1.14); animation:kwBreath 1.6s ease-in-out infinite; }
-body.theme-kawaii #currentColor { border-radius:9px; border:2.5px solid #fff; box-shadow:0 0 0 2px var(--kw-line); }
-body.theme-kawaii #pickerWrap { border-radius:12px; width:36px; height:36px; }
-body.theme-kawaii #pickerWrap svg { width:21px; height:21px; }
+body.theme-kawaii #colors { gap:4px; }
+body.theme-kawaii .colorBtn:hover { transform:scale(1.2) translateY(-2px); border-color:var(--kw-line); }
+body.theme-kawaii .colorBtn.active {
+  transform:scale(1.18); border:2.5px solid #fff;
+  box-shadow:0 0 0 2px var(--kw-line);
+  animation:kwBreath 1.6s ease-in-out infinite;
+}
+/* اللون الحالي: مربع كبير بإطار أبيض وحلقة (مثل الأسود في المرجع) */
+body.theme-kawaii #currentColor { width:32px; height:32px; border-radius:10px; border:3px solid #fff; box-shadow:0 0 0 2px var(--kw-line), 0 2px 0 2px rgba(156,90,76,.3); }
+body.theme-kawaii #pickerWrap { border-radius:12px; width:38px; height:38px; }
+body.theme-kawaii #pickerWrap svg { width:22px; height:22px; }
+/* نقل الباليتة واللون الحالي إلى بداية صف الألوان (ترتيب بصري فقط) */
+body.theme-kawaii .tbRow:has(#colors) .tbGroup { order:-2; }
+body.theme-kawaii .tbRow:has(#colors) .tbSep { order:-1; }
 
 /* النوافذ والإعدادات والمعارض */
 body.theme-kawaii .overlay > div, body.theme-kawaii #settingsBox, body.theme-kawaii #wordsPanel {
