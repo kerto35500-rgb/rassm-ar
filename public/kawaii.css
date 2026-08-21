@@ -5,16 +5,25 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 body.theme-kawaii {
-  --kw-line:#8D4B42;            /* حد الكاكاو الدافئ — في كل مكان */
+  --kw-line:#9C5A4C;            /* حد كراميل دافئ — في كل مكان */
   --kw-ink:#4A2E2B;             /* نص الشوكولاتة */
   --kw-bg1:#FBEFDD; --kw-bg2:#F9E7D2;      /* كريمي فانيلا */
   --kw-header:#FFD4C4;          /* الشريط العلوي + كبسولات الأدوات */
-  --kw-banner:#F8A59E;          /* بانر الكلمة */
+  --kw-banner:#F8B8B2;          /* بانر الكلمة (وردي هادئ) */
   --kw-chat:#FFE4DC;            /* لوحة الدردشة */
-  --kw-players:#FFF3EB;         /* لوحة اللاعبين */
+  --kw-players:#FBE9CD;         /* لوحة اللاعبين (عنبري فانيلا) */
   --kw-white:#FFFFFF;
-  --kw-3d:0 3px 0 #8D4B42;      /* الظل السفلي الصلب */
-  --kw-3d-sm:0 2px 0 #8D4B42;
+  /* الإضاءة الداخلية: سر المظهر «المنفوخ» */
+  --kw-puff:inset 0 2px 0 rgba(255,255,255,.6), inset 0 -4px 8px rgba(156,90,76,.10);
+  --kw-3d:0 3px 0 #9C5A4C;      /* الظل السفلي الصلب */
+  --kw-3d-sm:0 2px 0 #9C5A4C;
+  /* تعبئات متدرجة جاهزة */
+  --kw-g-header:linear-gradient(180deg,#FFE2D2 0%,#FFCDBA 100%);
+  --kw-g-banner:linear-gradient(180deg,#FBD0CB 0%,#F6AFA8 100%);
+  --kw-g-white:linear-gradient(180deg,#FFFFFF 0%,#FFF4EE 100%);
+  --kw-g-pink:linear-gradient(180deg,#FFDDD5 0%,#F9C2B9 100%);
+  --kw-g-players:linear-gradient(180deg,#FDF0DA 0%,#F9E3C2 100%);
+  --kw-g-chat:linear-gradient(180deg,#FFEAE3 0%,#FFDDD3 100%);
   --kw-spring:cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 body.theme-kawaii, body.theme-kawaii * { font-family:'Baloo Bhaijaan 2','Segoe UI',Tahoma,Arial,sans-serif !important; }
@@ -108,8 +117,8 @@ body.theme-kawaii #accStats div { background:#fff; border:2px solid var(--kw-lin
 body.theme-kawaii #accStats b { color:#8D4B42; }
 
 body.theme-kawaii .g {
-  background:var(--kw-players); border:2.5px solid var(--kw-line) !important; border-radius:24px;
-  box-shadow:0 5px 0 var(--kw-line);
+  background:var(--kw-g-white); border:2.5px solid var(--kw-line) !important; border-radius:24px;
+  box-shadow:var(--kw-puff), 0 5px 0 var(--kw-line);
   transition:all .2s var(--kw-spring);
 }
 body.theme-kawaii .g:hover { transform:scale(1.03) translateY(-4px); box-shadow:0 8px 0 var(--kw-line); }
@@ -118,7 +127,7 @@ body.theme-kawaii .g .bar { display:none; }
 body.theme-kawaii .g h2 { color:var(--kw-ink); }
 body.theme-kawaii .g p { color:#7d5a51; }
 body.theme-kawaii .g .ic { border-radius:50%; background:var(--kw-chat) !important; color:var(--kw-ink) !important; border:2.5px solid var(--kw-line); }
-body.theme-kawaii .g .go { background:var(--kw-banner) !important; color:var(--kw-ink); border:2.5px solid var(--kw-line); border-radius:999px; box-shadow:var(--kw-3d); font-weight:800; }
+body.theme-kawaii .g .go { background:var(--kw-g-banner) !important; color:var(--kw-ink); border:2.5px solid var(--kw-line); border-radius:999px; box-shadow:var(--kw-puff), var(--kw-3d); font-weight:800; }
 body.theme-kawaii .g .t { background:#fff; color:var(--kw-ink); border:2px solid var(--kw-line); font-weight:700; }
 body.theme-kawaii .g.soon { background:rgba(255,243,235,.6); border-style:dashed !important; box-shadow:none; }
 body.theme-kawaii .g.soon p, body.theme-kawaii .g.soon .t { color:#a4776b; }
@@ -138,85 +147,92 @@ body.theme-kawaii .backLink {
   box-shadow:var(--kw-3d); backdrop-filter:none; -webkit-backdrop-filter:none;
 }
 body.theme-kawaii .backLink:hover { background:var(--kw-players); transform:scale(1.05) translateY(-2px); }
-body.theme-kawaii .card { background:var(--kw-players); border:2.5px solid var(--kw-line); border-radius:26px; box-shadow:0 6px 0 var(--kw-line); }
+body.theme-kawaii .card { background:var(--kw-g-white); border:2.5px solid var(--kw-line); border-radius:26px; box-shadow:var(--kw-puff), 0 6px 0 var(--kw-line); }
 body.theme-kawaii .card input { border:2.5px solid var(--kw-line); border-radius:999px; background:#fff; color:var(--kw-ink); font-weight:700; }
 body.theme-kawaii .card input:focus { border-color:var(--kw-line); background:#fff; box-shadow:0 0 0 3px rgba(248,165,158,.45); }
 body.theme-kawaii .btn {
   border:2.5px solid var(--kw-line); border-radius:999px; color:var(--kw-ink); font-weight:800;
-  box-shadow:var(--kw-3d); transition:all .2s var(--kw-spring);
+  box-shadow:var(--kw-puff), var(--kw-3d); transition:all .2s var(--kw-spring);
 }
 body.theme-kawaii .btn:hover { transform:scale(1.05) translateY(-2px); filter:none; }
-body.theme-kawaii .btn:active { transform:scale(.93) translateY(2px); box-shadow:0 1px 0 var(--kw-line); }
-body.theme-kawaii .btn-green  { background:#A9DCB6; }
-body.theme-kawaii .btn-blue   { background:var(--kw-banner); }
-body.theme-kawaii .btn-purple { background:#E0C6EE; }
+body.theme-kawaii .btn:active { transform:scale(.93) translateY(2px); box-shadow:var(--kw-puff), 0 1px 0 var(--kw-line); }
+body.theme-kawaii .btn-green  { background:linear-gradient(180deg,#C0E8CB 0%,#9AD3A9 100%); }
+body.theme-kawaii .btn-blue   { background:var(--kw-g-banner); }
+body.theme-kawaii .btn-purple { background:linear-gradient(180deg,#EBD6F5 0%,#D8B9E8 100%); }
 body.theme-kawaii .divider { color:#a4776b; font-weight:700; }
 body.theme-kawaii #whoLine { color:#4E9E63; }
 
 /* ═════════ ③ لعبة الرسم — شاشة اللعب ═════════ */
 body.theme-kawaii #gameScreen { position:relative; z-index:1; max-width:1200px; margin:0 auto; }
 
-/* الشريط العلوي: كبسولة خوخية بحد قوي وأزرار دائرية بيضاء */
+/* الشريط العلوي: كبسولة خوخية منفوخة بأزرار دائرية كبيرة */
 body.theme-kawaii #topBar {
-  background:var(--kw-header); border:2.5px solid var(--kw-line); border-radius:999px;
-  box-shadow:var(--kw-3d); padding:8px 14px;
+  background:var(--kw-g-header); border:2.5px solid var(--kw-line); border-radius:999px;
+  box-shadow:var(--kw-puff), var(--kw-3d); padding:11px 18px;
 }
-body.theme-kawaii #roundInfo { color:var(--kw-ink); font-weight:800; }
+body.theme-kawaii #roundInfo { color:var(--kw-ink); font-weight:800; font-size:17px; }
 body.theme-kawaii #roomCodeBox {
-  background:#FFEBD9; border:2.5px solid var(--kw-line); border-radius:999px; color:var(--kw-ink);
-  font-weight:800; box-shadow:var(--kw-3d-sm); padding:5px 14px;
+  background:var(--kw-g-white); border:2.5px solid var(--kw-line); border-radius:999px; color:var(--kw-ink);
+  font-weight:800; font-size:16px; box-shadow:var(--kw-puff), var(--kw-3d-sm); padding:7px 16px;
   transition:transform .2s var(--kw-spring);
 }
 body.theme-kawaii #roomCodeBox:hover { transform:scale(1.06); }
 body.theme-kawaii #roomCodeBox b { color:var(--kw-ink); }
 body.theme-kawaii .homeBtn, body.theme-kawaii #muteBtn {
-  width:40px; height:40px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;
-  background:#fff; border:2.5px solid var(--kw-line); color:var(--kw-ink);
-  box-shadow:var(--kw-3d-sm); font-size:17px;
+  width:46px; height:46px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;
+  background:var(--kw-g-white); border:2.5px solid var(--kw-line); color:var(--kw-ink);
+  box-shadow:var(--kw-puff), var(--kw-3d-sm); font-size:19px;
   transition:transform .2s var(--kw-spring); cursor:pointer;
 }
-body.theme-kawaii .homeBtn:hover, body.theme-kawaii #muteBtn:hover { transform:scale(1.1); background:#fff; color:var(--kw-ink); }
-body.theme-kawaii .homeBtn:active, body.theme-kawaii #muteBtn:active { transform:scale(.9) translateY(2px); box-shadow:0 0 0 var(--kw-line); }
+body.theme-kawaii .homeBtn:hover, body.theme-kawaii #muteBtn:hover { transform:scale(1.1); background:var(--kw-g-white); color:var(--kw-ink); }
+body.theme-kawaii .homeBtn:active, body.theme-kawaii #muteBtn:active { transform:scale(.9) translateY(2px); box-shadow:var(--kw-puff); }
+body.theme-kawaii .homeBtn svg { width:22px; height:22px; }
 body.theme-kawaii #timerBox {
-  width:44px; height:44px; background:#fff; color:var(--kw-ink); font-weight:900;
-  border:2.5px solid var(--kw-line); box-shadow:var(--kw-3d-sm);
+  width:48px; height:48px; background:var(--kw-g-white); color:var(--kw-ink); font-weight:900; font-size:19px;
+  border:2.5px solid var(--kw-line); box-shadow:var(--kw-puff), var(--kw-3d-sm);
 }
 body.theme-kawaii #timerBox.low {
   background:#F26D62; color:#fff; border-color:var(--kw-line);
   animation:kwUrgentPulse .55s ease-in-out infinite, kwShake .3s linear infinite;
 }
 
-/* بانر الكلمة: سلمون صريح، نص كبير، نزول بارتداد */
+/* بانر الكلمة: وردي هادئ منفوخ، نص كبير، نزول بارتداد */
 body.theme-kawaii #hintBox {
-  background:var(--kw-banner); border:2.5px solid var(--kw-line); border-radius:999px;
-  color:var(--kw-ink); box-shadow:var(--kw-3d);
-  padding:9px 18px; font-size:20px; font-weight:800;
+  background:var(--kw-g-banner); border:2.5px solid var(--kw-line); border-radius:999px;
+  color:var(--kw-ink); box-shadow:var(--kw-puff), var(--kw-3d);
+  padding:12px 20px; font-size:23px; font-weight:800;
 }
 body.theme-kawaii #hintBox:not(:empty) { animation:kwBannerIn .55s var(--kw-spring); }
 body.theme-kawaii #hintBox .plain { color:var(--kw-ink); font-weight:800; }
 body.theme-kawaii #hintBox .slot { background:#fff; border:2px solid var(--kw-line); color:var(--kw-ink); border-radius:9px; }
 body.theme-kawaii #hintBox .slot.filled, body.theme-kawaii #hintBox .slot.reveal { background:#FFD4C4; }
 
-/* لوحة الدردشة: وردية — والرسائل كبسولات بيضاء بستيكرات */
+/* لوحة الدردشة: وردية منفوخة — رسائل الأحداث كبسولات وردية بستيكر أبيض كبير */
 body.theme-kawaii #chatPanel {
-  background:var(--kw-chat); border:2.5px solid var(--kw-line); border-radius:24px;
-  box-shadow:0 4px 0 var(--kw-line); padding:10px;
+  background:var(--kw-g-chat); border:2.5px solid var(--kw-line); border-radius:24px;
+  box-shadow:var(--kw-puff), 0 4px 0 var(--kw-line); padding:11px;
 }
 body.theme-kawaii .msg {
-  display:flex; align-items:center; gap:8px;
-  background:#fff !important; border:2px solid var(--kw-line); border-radius:9999px;
-  padding:6px 13px; color:var(--kw-ink) !important; font-weight:700;
-  box-shadow:var(--kw-3d-sm);
+  display:flex; align-items:center; gap:9px;
+  background:var(--kw-g-white) !important; border:2px solid var(--kw-line); border-radius:9999px;
+  padding:7px 14px; color:var(--kw-ink) !important; font-weight:700; font-size:14.5px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.7), var(--kw-3d-sm);
   animation:kwPopIn .3s var(--kw-spring);
 }
 body.theme-kawaii .msg b { color:var(--kw-ink) !important; }
-/* ستيكر دائري في بداية رسائل الأحداث */
+/* رسائل الأحداث: وردية متدرجة (عكس رسائل اللاعبين البيضاء) */
+body.theme-kawaii .msg.system, body.theme-kawaii .msg.join, body.theme-kawaii .msg.leave,
+body.theme-kawaii .msg.correct, body.theme-kawaii .msg.close, body.theme-kawaii .msg.guessedChat {
+  background:var(--kw-g-pink) !important;
+}
+/* ستيكر أبيض كبير في بداية رسائل الأحداث */
 body.theme-kawaii .msg.system::before, body.theme-kawaii .msg.join::before,
 body.theme-kawaii .msg.leave::before, body.theme-kawaii .msg.correct::before,
 body.theme-kawaii .msg.close::before, body.theme-kawaii .msg.guessedChat::before {
-  flex-shrink:0; width:28px; height:28px; border-radius:50%;
-  background:var(--kw-header); border:2px solid var(--kw-line);
-  display:inline-flex; align-items:center; justify-content:center; font-size:14px;
+  flex-shrink:0; width:34px; height:34px; border-radius:50%;
+  background:#fff; border:2px solid var(--kw-line);
+  box-shadow:inset 0 -3px 5px rgba(156,90,76,.12);
+  display:inline-flex; align-items:center; justify-content:center; font-size:18px;
 }
 body.theme-kawaii .msg.system::before  { content:"🎨"; }
 body.theme-kawaii .msg.join::before    { content:"👋"; }
@@ -224,19 +240,21 @@ body.theme-kawaii .msg.leave::before   { content:"🚪"; }
 body.theme-kawaii .msg.correct::before { content:"🎉"; }
 body.theme-kawaii .msg.close::before   { content:"🔥"; }
 body.theme-kawaii .msg.guessedChat::before { content:"✅"; }
-body.theme-kawaii .msg.correct { background:#EAF7EC !important; }
-body.theme-kawaii .msg.close   { background:#FFF3DB !important; }
+body.theme-kawaii .msg.correct { background:linear-gradient(180deg,#E8F8EB 0%,#CFEDD6 100%) !important; }
+body.theme-kawaii .msg.close   { background:linear-gradient(180deg,#FFF6E0 0%,#FBE7B8 100%) !important; }
 
 /* صندوق الكتابة: حقل أبيض كبير وزر إرسال ضخم */
 body.theme-kawaii #chatForm { gap:8px; }
 body.theme-kawaii #chatInput {
-  background:#fff; border:2.5px solid var(--kw-line); border-radius:18px;
-  color:var(--kw-ink); font-weight:700; padding:12px 14px;
+  background:var(--kw-g-white); border:2.5px solid var(--kw-line); border-radius:18px;
+  color:var(--kw-ink); font-weight:700; font-size:15.5px; padding:15px 16px;
+  box-shadow:inset 0 3px 6px rgba(156,90,76,.08);
 }
 body.theme-kawaii #chatInput::placeholder { color:#b08a7d; }
 body.theme-kawaii #chatForm button[type=submit] {
-  background:var(--kw-banner); color:var(--kw-ink); font-weight:800;
-  border:2.5px solid var(--kw-line); border-radius:999px; box-shadow:var(--kw-3d);
+  background:var(--kw-g-banner); color:var(--kw-ink); font-weight:800; font-size:16px;
+  padding:12px 20px;
+  border:2.5px solid var(--kw-line); border-radius:999px; box-shadow:var(--kw-puff), var(--kw-3d);
   transition:all .18s var(--kw-spring);
 }
 body.theme-kawaii #chatForm button[type=submit]:hover { transform:scale(1.05) translateY(-1px); }
@@ -244,76 +262,85 @@ body.theme-kawaii #chatForm button[type=submit]:active { transform:scale(.9) tra
 body.theme-kawaii #kbBtn { background:#fff; border:2.5px solid var(--kw-line); border-radius:12px; color:var(--kw-ink); box-shadow:var(--kw-3d-sm); }
 body.theme-kawaii #kbBtn.on { background:var(--kw-header); }
 
-/* لوحة اللاعبين: كريم فانيلا — واللاعبون بطاقات كبسولية بيضاء */
+/* لوحة اللاعبين: عنبري فانيلا منفوخ — بطاقات ناعمة بحدود كراميل خفيفة */
 body.theme-kawaii #playersPanel {
-  background:var(--kw-players); border:2.5px solid var(--kw-line); border-radius:24px;
-  box-shadow:0 4px 0 var(--kw-line); padding:10px;
+  background:var(--kw-g-players); border:2.5px solid var(--kw-line); border-radius:24px;
+  box-shadow:var(--kw-puff), 0 4px 0 var(--kw-line); padding:11px;
 }
 body.theme-kawaii .playerRow {
-  background:#fff; border:2px solid var(--kw-line); border-radius:9999px;
-  box-shadow:var(--kw-3d-sm); padding:7px 11px; margin-bottom:8px;
+  background:linear-gradient(180deg,#FFFBF3 0%,#FCF0DC 100%);
+  border:2px solid #C99A72; border-radius:9999px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.7), 0 2px 0 #C99A72;
+  padding:8px 12px; margin-bottom:9px;
   transition:transform .2s var(--kw-spring);
 }
 body.theme-kawaii .playerRow:hover { transform:scale(1.02); }
-body.theme-kawaii .playerRow.drawer { background:var(--kw-header); border:2.5px solid var(--kw-line); }
-body.theme-kawaii .playerRow.guessed { background:#EAF7EC; }
-body.theme-kawaii .playerRow .pname { color:var(--kw-ink); font-weight:800; }
-body.theme-kawaii .playerRow .pscore { color:#8D4B42; font-weight:800; }
-body.theme-kawaii .playerRow .badge {
-  width:27px; height:27px; flex-shrink:0; border-radius:50%; font-size:13px;
-  display:inline-flex; align-items:center; justify-content:center;
-  background:var(--kw-chat); border:2px solid var(--kw-line);
+body.theme-kawaii .playerRow.drawer {
+  background:var(--kw-g-pink); border:2.5px solid var(--kw-line);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.6), var(--kw-3d-sm);
 }
-body.theme-kawaii .playerRow.drawer .badge { background:#fff; animation:kwScribble .5s ease-in-out infinite; }
+body.theme-kawaii .playerRow.guessed { background:linear-gradient(180deg,#EDF9EF 0%,#D8F0DE 100%); border-color:#7FB98E; }
+body.theme-kawaii .playerRow .pname { color:var(--kw-ink); font-weight:800; }
+body.theme-kawaii .playerRow .pscore { color:#9C5A4C; font-weight:800; }
+body.theme-kawaii .playerRow .badge {
+  width:28px; height:28px; flex-shrink:0; border-radius:9px; font-size:14px;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:linear-gradient(180deg,#FFE3DB 0%,#F9CEC4 100%); border:2px solid var(--kw-line);
+}
+body.theme-kawaii .playerRow.drawer .badge { background:#fff; border-radius:50%; animation:kwScribble .5s ease-in-out infinite; }
 body.theme-kawaii .kickBtn { background:#fff; border:2px solid var(--kw-line); border-radius:50%; color:#C0554A; }
 
 /* الكانفس: أبيض نقي بحد كاكاو */
 body.theme-kawaii #canvasContainer, body.theme-kawaii #canvasWrap { background:transparent; }
-body.theme-kawaii #board { background:#FFFFFF; border:2.5px solid var(--kw-line); border-radius:20px; box-shadow:0 4px 0 var(--kw-line); }
+body.theme-kawaii #board { background:#FFFFFF; border:2.5px solid var(--kw-line); border-radius:22px; box-shadow:0 4px 0 var(--kw-line), 0 10px 24px rgba(156,90,76,.14); }
 
-/* شريط الأدوات: كل صف كبسولة خوخية مستقلة، أزرار بيضاء بأيقونات كاكاو */
-body.theme-kawaii #toolBar { background:transparent; border:none; box-shadow:none; padding:0; gap:8px; display:flex; flex-direction:column; }
+/* شريط الأدوات: كل صف كبسولة خوخية منفوخة، أزرار بيضاء كبيرة بأيقونات سميكة */
+body.theme-kawaii #toolBar { background:transparent; border:none; box-shadow:none; padding:0; gap:9px; display:flex; flex-direction:column; }
 body.theme-kawaii .tbRow {
-  background:var(--kw-header); border:2.5px solid var(--kw-line); border-radius:999px;
-  box-shadow:var(--kw-3d); padding:7px 12px;
+  background:var(--kw-g-header); border:2.5px solid var(--kw-line); border-radius:999px;
+  box-shadow:var(--kw-puff), var(--kw-3d); padding:9px 14px;
 }
 body.theme-kawaii .toolBtn {
-  background:#fff; border:2px solid var(--kw-line); border-radius:13px;
-  color:var(--kw-line); box-shadow:var(--kw-3d-sm);
+  width:42px; height:42px;
+  background:var(--kw-g-white); border:2px solid var(--kw-line); border-radius:14px;
+  color:var(--kw-line); box-shadow:inset 0 2px 0 rgba(255,255,255,.75), var(--kw-3d-sm);
   transition:all .2s var(--kw-spring);
 }
-body.theme-kawaii .toolBtn svg { stroke-width:2.4; }
-body.theme-kawaii .toolBtn:hover { transform:scale(1.08) translateY(-2px); background:#fff; border-color:var(--kw-line); color:var(--kw-ink); }
-body.theme-kawaii .toolBtn:active { transform:scale(.92) translateY(2px); box-shadow:0 0 0 var(--kw-line); }
-body.theme-kawaii .toolBtn.active { background:#F8CBBB; color:var(--kw-ink); animation:kwBreath 1.6s ease-in-out infinite; }
+body.theme-kawaii .toolBtn svg { width:24px; height:24px; stroke-width:2.7; }
+body.theme-kawaii .toolBtn:hover { transform:scale(1.08) translateY(-2px); border-color:var(--kw-line); color:var(--kw-ink); }
+body.theme-kawaii .toolBtn:active { transform:scale(.92) translateY(2px); box-shadow:inset 0 2px 0 rgba(255,255,255,.75); }
+body.theme-kawaii .toolBtn.active { background:var(--kw-g-pink); color:var(--kw-ink); animation:kwBreath 1.6s ease-in-out infinite; }
 body.theme-kawaii .toolBtn.danger { color:#C0554A; }
 body.theme-kawaii .toolBtn.danger:hover { background:#FFECE9; }
 body.theme-kawaii .sizeDot { background:var(--kw-line); border:none; }
+body.theme-kawaii .toolBtn[data-size] { background:var(--kw-g-pink); }
+body.theme-kawaii .toolBtn[data-size].active { background:#fff; }
 body.theme-kawaii .tbSep { background:var(--kw-line); opacity:.4; }
-body.theme-kawaii .tbArrow { background:#fff; border:2px solid var(--kw-line); color:var(--kw-ink); border-radius:50%; box-shadow:var(--kw-3d-sm); }
+body.theme-kawaii .tbArrow { background:var(--kw-g-white); border:2px solid var(--kw-line); color:var(--kw-ink); border-radius:50%; box-shadow:var(--kw-3d-sm); }
 
-/* الألوان: مربعات مدوّرة بإطار أبيض + حلقة كاكاو، والمختار يتنفس */
+/* الألوان: مربعات مدوّرة أكبر بإطار أبيض + حلقة كراميل، والمختار يتنفس */
 body.theme-kawaii .colorBtn {
-  border-radius:10px; border:3px solid #fff; box-shadow:0 0 0 2px var(--kw-line);
-  transition:transform .18s var(--kw-spring);
+  width:27px; height:27px;
+  border-radius:9px; border:3px solid #fff; box-shadow:0 0 0 2px var(--kw-line), 0 2px 0 2px rgba(156,90,76,.35);
+  transition:transform .18s var(--kw-spring); margin:2px;
 }
 body.theme-kawaii .colorBtn:hover { transform:scale(1.18) translateY(-2px); }
 body.theme-kawaii .colorBtn.active { transform:scale(1.14); animation:kwBreath 1.6s ease-in-out infinite; }
 body.theme-kawaii #currentColor { border-radius:10px; border:3px solid #fff; box-shadow:0 0 0 2.5px var(--kw-line); }
-body.theme-kawaii #pickerWrap { border-radius:13px; }
+body.theme-kawaii #pickerWrap { border-radius:14px; }
 
 /* النوافذ والإعدادات والمعارض */
 body.theme-kawaii .overlay > div, body.theme-kawaii #settingsBox, body.theme-kawaii #wordsPanel {
-  background:var(--kw-players); border:2.5px solid var(--kw-line); border-radius:26px;
-  color:var(--kw-ink); box-shadow:0 6px 0 var(--kw-line);
+  background:var(--kw-g-white); border:2.5px solid var(--kw-line); border-radius:26px;
+  color:var(--kw-ink); box-shadow:var(--kw-puff), 0 6px 0 var(--kw-line);
 }
 body.theme-kawaii .overlay h2 { color:var(--kw-ink); }
 body.theme-kawaii .bigWord { color:#8D4B42; }
 body.theme-kawaii .wordChoice {
-  background:#fff; border:2.5px solid var(--kw-line); border-radius:999px; color:var(--kw-ink);
-  font-weight:800; box-shadow:var(--kw-3d); transition:all .2s var(--kw-spring);
+  background:var(--kw-g-white); border:2.5px solid var(--kw-line); border-radius:999px; color:var(--kw-ink);
+  font-weight:800; box-shadow:var(--kw-puff), var(--kw-3d); transition:all .2s var(--kw-spring);
 }
-body.theme-kawaii .wordChoice:hover { transform:scale(1.07) translateY(-2px); background:var(--kw-header); }
+body.theme-kawaii .wordChoice:hover { transform:scale(1.07) translateY(-2px); background:var(--kw-g-pink); }
 body.theme-kawaii .setRow label { color:var(--kw-ink); font-weight:700; }
 body.theme-kawaii .setRow select { border:2.5px solid var(--kw-line); border-radius:12px; background:#fff; color:var(--kw-ink); font-weight:700; }
 body.theme-kawaii #setOpenBtn, body.theme-kawaii #setDoneBtn, body.theme-kawaii #wordsBtn, body.theme-kawaii #startBtn {
