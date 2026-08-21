@@ -72,8 +72,16 @@ body.theme-kawaii .kw-doodles .kw-spark {
 #kwThemeBtn:active { transform:scale(.9); }
 body.theme-kawaii #kwThemeBtn { border:2.5px solid var(--kw-line); box-shadow:var(--kw-3d); }
 #gameScreen[style*="flex"] ~ #kwThemeBtn { display:none; }
-#kwThemeBtnTop { font-size:19px; background:none; border:none; cursor:pointer; transition:transform .2s cubic-bezier(0.34,1.56,0.64,1); }
+#kwThemeBtnTop { font-size:18px; background:none; border:none; cursor:pointer; transition:transform .2s cubic-bezier(0.34,1.56,0.64,1); }
 #kwThemeBtnTop:hover { transform:scale(1.15) rotate(12deg); }
+/* داخل الثيم الكاواي: زر الستايل دائرة بيضاء مثل بقية أزرار الشريط */
+body.theme-kawaii #kwThemeBtnTop {
+  width:46px; height:46px; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:var(--kw-g-white); border:2.5px solid var(--kw-line);
+  box-shadow:var(--kw-puff), var(--kw-3d-sm);
+}
+body.theme-kawaii #kwThemeBtnTop:active { transform:scale(.9) translateY(2px); box-shadow:var(--kw-puff); }
 #kwThemePop {
   position:fixed; top:56px; inset-inline-end:12px; z-index:91; display:none;
   background:#fff; border-radius:16px; padding:12px; min-width:200px;
@@ -244,17 +252,17 @@ body.theme-kawaii .msg.correct { background:linear-gradient(180deg,#E8F8EB 0%,#C
 body.theme-kawaii .msg.close   { background:linear-gradient(180deg,#FFF6E0 0%,#FBE7B8 100%) !important; }
 
 /* صندوق الكتابة: حقل أبيض كبير وزر إرسال ضخم */
-body.theme-kawaii #chatForm { gap:7px; }
+body.theme-kawaii #chatForm { gap:6px; }
 body.theme-kawaii #chatInput {
   min-width:0; flex:1;
-  background:var(--kw-g-white); border:2.5px solid var(--kw-line); border-radius:16px;
-  color:var(--kw-ink); font-weight:700; font-size:15px; padding:14px 12px;
+  background:var(--kw-g-white); border:2.5px solid var(--kw-line); border-radius:15px;
+  color:var(--kw-ink); font-weight:700; font-size:14px; padding:13px 10px;
   box-shadow:inset 0 3px 6px rgba(156,90,76,.08);
 }
-body.theme-kawaii #chatInput::placeholder { color:#b08a7d; }
+body.theme-kawaii #chatInput::placeholder { color:#b08a7d; font-size:13.5px; }
 body.theme-kawaii #chatForm button[type=submit] {
-  background:var(--kw-g-banner); color:var(--kw-ink); font-weight:800; font-size:15px;
-  padding:12px 13px; flex-shrink:0;
+  background:var(--kw-g-banner); color:var(--kw-ink); font-weight:800; font-size:14.5px;
+  padding:11px 12px; flex-shrink:0;
   border:2.5px solid var(--kw-line); border-radius:999px; box-shadow:var(--kw-puff), var(--kw-3d);
   transition:all .18s var(--kw-spring);
 }
@@ -272,7 +280,7 @@ body.theme-kawaii .playerRow {
   background:linear-gradient(180deg,#FFFBF3 0%,#FCF0DC 100%);
   border:2px solid #C99A72; border-radius:9999px;
   box-shadow:inset 0 2px 0 rgba(255,255,255,.7), 0 2px 0 #C99A72;
-  padding:8px 12px; margin-bottom:9px;
+  padding:7px 9px; margin-bottom:9px; gap:6px;
   transition:transform .2s var(--kw-spring);
 }
 body.theme-kawaii .playerRow:hover { transform:scale(1.02); }
@@ -281,10 +289,10 @@ body.theme-kawaii .playerRow.drawer {
   box-shadow:inset 0 2px 0 rgba(255,255,255,.6), var(--kw-3d-sm);
 }
 body.theme-kawaii .playerRow.guessed { background:linear-gradient(180deg,#EDF9EF 0%,#D8F0DE 100%); border-color:#7FB98E; }
-body.theme-kawaii .playerRow .pname { color:var(--kw-ink); font-weight:800; }
-body.theme-kawaii .playerRow .pscore { color:#9C5A4C; font-weight:800; }
+body.theme-kawaii .playerRow .pname { color:var(--kw-ink); font-weight:800; font-size:13.5px; }
+body.theme-kawaii .playerRow .pscore { color:#9C5A4C; font-weight:800; font-size:12.5px; }
 body.theme-kawaii .playerRow .badge {
-  width:28px; height:28px; flex-shrink:0; border-radius:9px; font-size:14px;
+  width:24px; height:24px; flex-shrink:0; border-radius:8px; font-size:12px;
   display:inline-flex; align-items:center; justify-content:center;
   background:linear-gradient(180deg,#FFE3DB 0%,#F9CEC4 100%); border:2px solid var(--kw-line);
 }
@@ -319,16 +327,18 @@ body.theme-kawaii .toolBtn[data-size].active { background:#fff; }
 body.theme-kawaii .tbSep { background:var(--kw-line); opacity:.4; }
 body.theme-kawaii .tbArrow { background:var(--kw-g-white); border:2px solid var(--kw-line); color:var(--kw-ink); border-radius:50%; box-shadow:var(--kw-3d-sm); }
 
-/* الألوان: مربعات مدوّرة أكبر بإطار أبيض + حلقة كراميل، والمختار يتنفس */
+/* الألوان: مربعات مدوّرة بإطار أبيض + حلقة كراميل — مضبوطة لتسَع كلها بلا تمرير */
 body.theme-kawaii .colorBtn {
-  width:27px; height:27px;
-  border-radius:9px; border:3px solid #fff; box-shadow:0 0 0 2px var(--kw-line), 0 2px 0 2px rgba(156,90,76,.35);
-  transition:transform .18s var(--kw-spring); margin:2px;
+  width:22px; height:22px;
+  border-radius:8px; border:2.5px solid #fff; box-shadow:0 0 0 1.5px var(--kw-line), 0 2px 0 1.5px rgba(156,90,76,.3);
+  transition:transform .18s var(--kw-spring); margin:1px;
 }
+body.theme-kawaii #colors { gap:3px; }
 body.theme-kawaii .colorBtn:hover { transform:scale(1.18) translateY(-2px); }
 body.theme-kawaii .colorBtn.active { transform:scale(1.14); animation:kwBreath 1.6s ease-in-out infinite; }
-body.theme-kawaii #currentColor { border-radius:10px; border:3px solid #fff; box-shadow:0 0 0 2.5px var(--kw-line); }
-body.theme-kawaii #pickerWrap { border-radius:14px; }
+body.theme-kawaii #currentColor { border-radius:9px; border:2.5px solid #fff; box-shadow:0 0 0 2px var(--kw-line); }
+body.theme-kawaii #pickerWrap { border-radius:12px; width:36px; height:36px; }
+body.theme-kawaii #pickerWrap svg { width:21px; height:21px; }
 
 /* النوافذ والإعدادات والمعارض */
 body.theme-kawaii .overlay > div, body.theme-kawaii #settingsBox, body.theme-kawaii #wordsPanel {
