@@ -402,6 +402,12 @@ body.theme-kawaii #vkb .k:active { background:var(--kw-chat); transform:scale(.9
 /* بانر الإيقاف المؤقت */
 body.theme-kawaii #pauseBanner { background:var(--kw-players); border:2.5px solid var(--kw-line); border-radius:18px; color:var(--kw-ink); box-shadow:var(--kw-3d); }
 
+/* شريط تمرير الرسائل بلون الثيم بدل الرمادي */
+body.theme-kawaii #messages::-webkit-scrollbar { width:6px; }
+body.theme-kawaii #messages::-webkit-scrollbar-track { background:transparent; }
+body.theme-kawaii #messages::-webkit-scrollbar-thumb { background:#E8BCAB; border-radius:99px; }
+body.theme-kawaii #messages { scrollbar-width:thin; scrollbar-color:#E8BCAB transparent; }
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }
