@@ -937,7 +937,11 @@ $("chatForm").onsubmit = e => {
 };
 
 /* ============ المؤقت ============ */
-socket.on("tick", left => paintClock(left));
+socket.on("tick", left => {
+  /* إعادة مزامنة العدّاد المحلي مع السيرفر حتى لا "يمشي ويرجع" */
+  if (endsAt) endsAt = Date.now() + left * 1000;
+  paintClock(left);
+});
 function paintClock(left){
   // المؤقت الوحيد هو الحلقة الكبيرة — لا شريحة في الشريط العلوي
   if (!endsAt) { $("ringTime").textContent = "—"; $("ringLbl").textContent = ""; return; }
@@ -1071,7 +1075,8 @@ socket.on("state", s => {
     }
   }
 
-  endsAt = s.endsAt || 0;
+  /* تصحيح انحراف ساعة الجهاز عن السيرفر */
+  endsAt = s.endsAt ? (s.endsAt + (Date.now() - s.serverNow)) : 0;
   if (s.state !== lastPhase){
     phaseTotal = s.endsAt ? Math.round((s.endsAt - s.serverNow)/1000) : 0;
     lastPhase = s.state;
