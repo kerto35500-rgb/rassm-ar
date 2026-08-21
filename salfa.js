@@ -465,13 +465,8 @@ function setupSalfa(io, deps) {
       saveStats(room, champ);
       sys(room, `🏆 ${champ.name} فاز باللعبة بـ ${champ.score} نقطة!`, "good");
     } else {
-      setPhase(room, "result", Math.round(RESULT_MS / 1000), () => {
-        if (room.state !== "result") return;
-        clearTimers(room);          // مهم: نوقف نبض المؤقت وإلا بقي يبثّ صفراً
-        room.state = "lobby";
-        room.endsAt = 0;
-        broadcast(room);
-      });
+      /* البقاء في شاشة النتائج بلا مؤقت — الرجوع للوبي أو جولة جديدة قرار المضيف فقط */
+      setPhase(room, "result", 0, null);
     }
   }
 
