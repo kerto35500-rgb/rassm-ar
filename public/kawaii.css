@@ -711,6 +711,72 @@ body.theme-kawaii .overlay { box-shadow: inset 0 6px 12px rgba(255,255,255,.8), 
 body.theme-kawaii #waitingNote { box-shadow: inset 0 2px 3px rgba(255,255,255,.9), 0 2px 5px rgba(140,75,60,.28); }
 body.theme-kawaii #chatInput { border-width:2px; border-color:#C99A72; }
 
+/* ═════ v10: الرئيسية — خلفية مارشميلو، أيقونات مرسومة، 3D سميك، نص بستروك ═════ */
+body.theme-kawaii:has(#grid) {
+  background:linear-gradient(165deg,#FBEFDD 0%,#F9E7D2 100%) !important;
+}
+/* نجوم ذهبية كريمية بدل الزرقاء */
+body.theme-kawaii:has(#grid)::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'%3E%3Cpath d='M60 40l4.6 11.8 12.6.9-9.7 8 3.2 12.3L60 66.4 49.3 73l3.2-12.3-9.7-8 12.6-.9z' fill='%23EBCF9F' opacity='.55'/%3E%3Cpath d='M170 140l3 7.6 8.1.6-6.2 5.1 2 7.9-6.9-4.2-6.9 4.2 2-7.9-6.2-5.1 8.1-.6z' fill='%23F0DAB2' opacity='.5'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'%3E%3Cpath d='M220 60l3.8 9.7 10.4.7-8 6.6 2.6 10.1-8.8-5.4-8.8 5.4 2.6-10.1-8-6.6 10.4-.7z' fill='%23E7CB99' opacity='.5'/%3E%3Ccircle cx='80' cy='210' r='5' fill='%23F0DAB2' opacity='.45'/%3E%3C/svg%3E");
+}
+/* العنوان: كريمي بحد بني حول الحروف */
+body.theme-kawaii:has(#grid) header .logo {
+  color:#FBEDC8;
+  text-shadow:
+    -2px -2px 0 #8A5A3E, 2px -2px 0 #8A5A3E, -2px 2px 0 #8A5A3E, 2px 2px 0 #8A5A3E,
+    -2.5px 0 0 #8A5A3E, 2.5px 0 0 #8A5A3E, 0 -2.5px 0 #8A5A3E, 0 2.5px 0 #8A5A3E,
+    0 7px 14px rgba(130,85,55,.35);
+}
+body.theme-kawaii:has(#grid) header .logo em { color:#FFD668; }
+body.theme-kawaii:has(#grid) header .tag { color:#8A5A3E; text-shadow:none; font-weight:800; }
+body.theme-kawaii:has(#grid) .live { color:#8A5A3E; box-shadow:0 3px 0 #E3D5C2, 0 8px 16px rgba(150,110,80,.2); }
+body.theme-kawaii:has(#grid) .live .dot { background:#3ddc84; }
+body.theme-kawaii:has(#grid) #accBtn { color:#8A5A3E; box-shadow:0 3px 0 #E3D5C2, 0 8px 16px rgba(150,110,80,.2); }
+body.theme-kawaii:has(#grid) footer { color:#A98B6E; }
+/* البطاقات: قاعدة 3D سميكة (سماكة بيضاء + ظل) */
+body.theme-kawaii:has(#grid) .g {
+  box-shadow: 0 9px 0 #E9DFD2, 0 11px 0 rgba(150,120,95,.28), 0 24px 34px rgba(140,100,70,.24);
+}
+body.theme-kawaii:has(#grid) .g:hover {
+  box-shadow: 0 12px 0 #E9DFD2, 0 14px 0 rgba(150,120,95,.28), 0 28px 38px rgba(140,100,70,.28);
+}
+body.theme-kawaii:has(#grid) .g:active {
+  box-shadow: 0 5px 0 #E9DFD2, 0 7px 0 rgba(150,120,95,.28), 0 14px 22px rgba(140,100,70,.22);
+}
+/* الأيقونات: صور مرسومة كبيرة (مولّدة) */
+body.theme-kawaii:has(#grid) .g .ic {
+  font-size:0 !important; width:112px; height:112px; margin:2px auto 0;
+  background-size:contain !important; background-position:center !important; background-repeat:no-repeat !important;
+  filter:drop-shadow(0 4px 5px rgba(0,0,0,.18));
+}
+body.theme-kawaii:has(#grid) .g.c-blue   .ic { background-image:url("/kw-g-draw.webp") !important; }
+body.theme-kawaii:has(#grid) .g.c-fire   .ic { background-image:url("/kw-g-bomb.webp") !important; }
+body.theme-kawaii:has(#grid) .g.c-violet .ic { background-image:url("/kw-g-quiz.webp") !important; }
+body.theme-kawaii:has(#grid) .g.c-green  .ic { background-image:url("/kw-g-salfa.webp") !important; }
+/* العناوين: أبيض عريض كبير بستروك بني حول الحروف */
+body.theme-kawaii:has(#grid) .g h2 {
+  font-size:27px; letter-spacing:.5px;
+  text-shadow:
+    -1.5px -1.5px 0 #7A4A38, 1.5px -1.5px 0 #7A4A38, -1.5px 1.5px 0 #7A4A38, 1.5px 1.5px 0 #7A4A38,
+    -2px 0 0 #7A4A38, 2px 0 0 #7A4A38, 0 -2px 0 #7A4A38, 0 2px 0 #7A4A38,
+    0 4px 0 rgba(0,0,0,.18);
+}
+body.theme-kawaii:has(#grid) .g p { font-size:14.5px; }
+/* الأزرار: نص أكبر بظل + قاعدة 3D بلون أغمق من الزر */
+body.theme-kawaii:has(#grid) .g .go {
+  font-size:17px; padding:12px;
+  text-shadow:-1px -1px 0 rgba(0,0,0,.25), 1px -1px 0 rgba(0,0,0,.25), -1px 1px 0 rgba(0,0,0,.25), 1px 1px 0 rgba(0,0,0,.25);
+}
+body.theme-kawaii:has(#grid) .g.c-blue   .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #3E93BE, 0 9px 14px rgba(0,0,0,.2) !important; }
+body.theme-kawaii:has(#grid) .g.c-fire   .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #A96410, 0 9px 14px rgba(0,0,0,.2) !important; }
+body.theme-kawaii:has(#grid) .g.c-violet .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #8F72C8, 0 9px 14px rgba(0,0,0,.2) !important; }
+body.theme-kawaii:has(#grid) .g.c-green  .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #1F7A48, 0 9px 14px rgba(0,0,0,.2) !important; }
+body.theme-kawaii:has(#grid) .now { color:#8A5A3E; box-shadow:0 2px 0 #E3D5C2; }
+body.theme-kawaii:has(#grid) .badge { color:#8A5A3E; }
+body.theme-kawaii:has(#grid) #accPop { color:#6B4632; }
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }
