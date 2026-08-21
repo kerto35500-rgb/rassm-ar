@@ -483,6 +483,44 @@ body.theme-kawaii .card, body.theme-kawaii .g {
 }
 body.theme-kawaii #chatInput { box-shadow: inset 0 3px 6px rgba(156,90,76,.12), inset 0 -2px 3px rgba(255,255,255,.7); }
 
+/* ═════ v7.2: بيفل قوي للوحات والأشرطة + لحم الظل السفلي بالحد (لا ستروك مزدوج) ═════ */
+body.theme-kawaii {
+  /* spread ‎1px يلحم الظل الصلب بالحد فتختفي الفجوة الهلالية */
+  --kw-3d:0 3px 0 1px #9C5A4C;
+  --kw-3d-sm:0 2px 0 1px #9C5A4C;
+}
+body.theme-kawaii #chatPanel, body.theme-kawaii #playersPanel {
+  box-shadow: inset 0 8px 14px rgba(255,255,255,.9), inset 0 -12px 18px rgba(156,90,76,.28), 0 4px 0 1px var(--kw-line);
+}
+body.theme-kawaii #topBar, body.theme-kawaii .tbRow,
+body.theme-kawaii #chatForm, body.theme-kawaii #hintBox {
+  box-shadow: inset 0 6px 10px rgba(255,255,255,.95), inset 0 -8px 12px rgba(156,90,76,.32), 0 3px 0 1px var(--kw-line);
+}
+body.theme-kawaii .msg { box-shadow: var(--kw-bev-sm), 0 2px 0 1px #C99A72; }
+body.theme-kawaii .playerRow { box-shadow: var(--kw-bev-sm), 0 2px 0 1px #C99A72; }
+body.theme-kawaii .toolBtn { box-shadow: var(--kw-bev-md), 0 2px 0 1px #C99A72; }
+body.theme-kawaii .toolBtn.active { box-shadow: var(--kw-bev-md), 0 2px 0 1px var(--kw-line); }
+body.theme-kawaii .homeBtn, body.theme-kawaii #muteBtn, body.theme-kawaii #timerBox,
+body.theme-kawaii #kwThemeBtnTop, body.theme-kawaii #roomCodeBox {
+  box-shadow: var(--kw-bev-md), 0 2px 0 1px var(--kw-line);
+}
+body.theme-kawaii #chatForm button[type=submit], body.theme-kawaii .btn,
+body.theme-kawaii .wordChoice, body.theme-kawaii .g .go, body.theme-kawaii #accPop .go {
+  box-shadow: var(--kw-bev-md), 0 3px 0 1px var(--kw-line);
+}
+body.theme-kawaii .card, body.theme-kawaii .g {
+  box-shadow: inset 0 8px 14px rgba(255,255,255,.9), inset 0 -12px 18px rgba(156,90,76,.22), 0 5px 0 1px var(--kw-line);
+}
+body.theme-kawaii #board { box-shadow: 0 4px 0 1px var(--kw-line), 0 10px 24px rgba(156,90,76,.14); }
+/* نوافذ التغطية الداخلية (الانتظار/النتائج): كريمية بدل الكحلي القديم */
+body.theme-kawaii .overlay {
+  background:rgba(252,238,220,.97); color:var(--kw-ink);
+  border:2.5px solid var(--kw-line); border-radius:20px;
+  box-shadow: inset 0 8px 14px rgba(255,255,255,.85), inset 0 -12px 18px rgba(156,90,76,.20);
+}
+body.theme-kawaii .overlay h2 { color:var(--kw-ink); }
+body.theme-kawaii #waitingNote { background:var(--kw-g-pink); color:var(--kw-ink); border:2px solid var(--kw-line); border-radius:999px; padding:6px 14px; box-shadow: var(--kw-bev-sm), 0 2px 0 1px var(--kw-line); }
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }
