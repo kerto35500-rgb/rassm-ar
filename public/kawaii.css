@@ -1213,6 +1213,42 @@ body.kw-salfa .catPill { background:#FBF3D5; border:2px solid #E4CB8F; color:#7A
 body.kw-salfa .actions { gap:10px; }
 body.kw-salfa .actions .btn { padding:13px 22px; font-size:15.5px; }
 
+/* ═════════ v17: السالفة — لوبي ملتف حول المحتوى + بطاقات منفصلة + إعدادات مضغوطة + فصل الشات ═════════ */
+/* ١) اللوبي: الحاوية شفافة وتلتف حول المحتوى — يختفي الفراغ الكبير والإطار الممتد */
+body.kw-salfa #lobby { background:none; border:none; box-shadow:none; padding:2px; flex:0 0 auto; overflow:visible; gap:10px; }
+body.kw-salfa #lobby .players {
+  background:var(--sg-white); border:2px solid var(--sg-line); border-radius:18px;
+  padding:12px; box-shadow:var(--sg-shadow);
+}
+
+/* ٢) ابدأ اللعبة فوق، والإعدادات تحتها كبطاقة مستقلة */
+body.kw-salfa #hostArea #startBtn { order:-1; }
+body.kw-salfa #hostArea #setOpen { background:var(--sg-white); }
+body.kw-salfa #setBox.open {
+  background:var(--sg-white); border:2px solid var(--sg-line); border-radius:18px;
+  padding:10px; box-shadow:var(--sg-shadow);
+}
+
+/* ٣) صفوف الإعدادات مضغوطة — بلا فراغات زائدة */
+body.kw-salfa #setBox { gap:7px; }
+body.kw-salfa .setRow { padding:7px 10px; gap:6px; }
+body.kw-salfa .setRow .hint { font-size:10.5px; line-height:1.45; }
+body.kw-salfa .packs { gap:5px; }
+body.kw-salfa .packs button { padding:5px 11px; font-size:12.5px; }
+body.kw-salfa .modeBox { padding:7px; gap:6px; }
+
+/* ٤) النقاش: فصل سجل الشات عن حقل الكتابة — بطاقتان مستقلتان (مثل ارسمها) */
+body.kw-salfa #chatCard { background:none; border:none; box-shadow:none; overflow:visible; gap:8px; }
+body.kw-salfa #msgs {
+  background:var(--sg-white); border:2px solid var(--sg-line); border-radius:18px;
+  padding:10px; box-shadow:var(--sg-shadow);
+}
+body.theme-kawaii.kw-salfa #chatForm {
+  border-top:none; background:linear-gradient(180deg,#F3FAF0 0%,#E7F4E4 100%);
+  border:2px solid var(--sg-line); border-radius:999px; padding:6px 7px;
+  box-shadow:var(--sg-shadow);
+}
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }
