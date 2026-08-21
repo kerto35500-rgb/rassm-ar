@@ -409,6 +409,80 @@ body.theme-kawaii #messages::-webkit-scrollbar-track { background:transparent; }
 body.theme-kawaii #messages::-webkit-scrollbar-thumb { background:#E8BCAB; border-radius:99px; }
 body.theme-kawaii #messages { scrollbar-width:thin; scrollbar-color:#E8BCAB transparent; }
 
+/* ═════════ طبقة الأصول المرسومة (مولّدة بالإيربرش) ═════════ */
+
+/* ① الإطار المرسوم 9-slice على اللوحات الكبيرة — الحد نفسه صار رسمة */
+body.theme-kawaii #chatPanel, body.theme-kawaii #playersPanel,
+body.theme-kawaii .overlay > div, body.theme-kawaii #settingsBox,
+body.theme-kawaii #wordsPanel, body.theme-kawaii .card, body.theme-kawaii .g,
+body.theme-kawaii #vkb {
+  border:16px solid transparent;
+  border-image:url("/kw-frame.webp") 120 fill / 16px / 2px stretch;
+  border-radius:0;
+  box-shadow:0 5px 0 rgba(156,90,76,.3);
+}
+/* الكبسولات العريضة: نفس الإطار بحد أنحف */
+body.theme-kawaii #topBar, body.theme-kawaii #hintBox,
+body.theme-kawaii .tbRow, body.theme-kawaii #chatForm {
+  border:11px solid transparent;
+  border-image:url("/kw-frame.webp") 120 fill / 11px / 1px stretch;
+  border-radius:0;
+  box-shadow:0 4px 0 rgba(156,90,76,.3);
+}
+/* الكانفس: إطار مرسوم أيضاً */
+body.theme-kawaii #board {
+  border:13px solid transparent;
+  border-image:url("/kw-frame.webp") 120 / 13px / 1px stretch;
+  border-radius:0;
+}
+
+/* ② الخربشات المرسومة بدل الـSVG */
+body.theme-kawaii .kw-doodles .kw-cloud { background-image:url("/kw-d-cloud1.webp"); opacity:.7; }
+body.theme-kawaii .kw-doodles span.kw-cloud:nth-child(3n) { background-image:url("/kw-d-cloud2.webp"); }
+body.theme-kawaii .kw-doodles .kw-heart { background-image:url("/kw-d-heart.webp"); opacity:.65; }
+body.theme-kawaii .kw-doodles .kw-spark { background-image:url("/kw-d-star.webp"); opacity:.7; }
+body.theme-kawaii .kw-doodles span.kw-spark:nth-child(2n) { background-image:url("/kw-d-spark2.webp"); }
+
+/* ③ أيقونات الأدوات المرسومة بدل SVG */
+body.theme-kawaii .toolBtn svg { display:none; }
+body.theme-kawaii .toolBtn {
+  background-repeat:no-repeat, no-repeat;
+  background-position:center, center;
+  background-size:64%, 100%;
+}
+body.theme-kawaii #eraserBtn     { background-image:url("/kw-i-eraser.webp"),     var(--kw-g-white); }
+body.theme-kawaii #penBtn        { background-image:url("/kw-i-pen.webp"),        var(--kw-g-white); }
+body.theme-kawaii #circleBtn     { background-image:url("/kw-i-circle.webp"),     var(--kw-g-white); }
+body.theme-kawaii #rectBtn       { background-image:url("/kw-i-rect.webp"),       var(--kw-g-white); }
+body.theme-kawaii #circleFillBtn { background-image:url("/kw-i-circlefill.webp"), var(--kw-g-white); }
+body.theme-kawaii #rectFillBtn   { background-image:url("/kw-i-rectfill.webp"),   var(--kw-g-white); }
+body.theme-kawaii #fillBtn       { background-image:url("/kw-i-fill.webp"),       var(--kw-g-white); }
+body.theme-kawaii #lineBtn       { background-image:url("/kw-i-line.webp"),       var(--kw-g-white); }
+body.theme-kawaii #undoBtn       { background-image:url("/kw-i-undo.webp"),       var(--kw-g-white); }
+body.theme-kawaii #redoBtn       { background-image:url("/kw-i-redo.webp"),       var(--kw-g-white); }
+body.theme-kawaii #clearBtn      { background-image:url("/kw-i-trash.webp"),      var(--kw-g-white); }
+body.theme-kawaii #pickerWrap    { background-image:url("/kw-i-palette.webp"),    var(--kw-g-white); }
+/* الزر المفعّل يبقى وردياً خلف الأيقونة */
+body.theme-kawaii .toolBtn.active { background-image:none; }
+body.theme-kawaii #penBtn.active        { background-image:url("/kw-i-pen.webp"),        var(--kw-g-pink); }
+body.theme-kawaii #eraserBtn.active     { background-image:url("/kw-i-eraser.webp"),     var(--kw-g-pink); }
+body.theme-kawaii #circleBtn.active     { background-image:url("/kw-i-circle.webp"),     var(--kw-g-pink); }
+body.theme-kawaii #rectBtn.active       { background-image:url("/kw-i-rect.webp"),       var(--kw-g-pink); }
+body.theme-kawaii #circleFillBtn.active { background-image:url("/kw-i-circlefill.webp"), var(--kw-g-pink); }
+body.theme-kawaii #rectFillBtn.active   { background-image:url("/kw-i-rectfill.webp"),   var(--kw-g-pink); }
+body.theme-kawaii #fillBtn.active       { background-image:url("/kw-i-fill.webp"),       var(--kw-g-pink); }
+body.theme-kawaii #lineBtn.active       { background-image:url("/kw-i-line.webp"),       var(--kw-g-pink); }
+/* أيقونة البيت المرسومة وزر الكيبورد */
+body.theme-kawaii .homeBtn svg { display:none; }
+body.theme-kawaii .homeBtn {
+  background-image:url("/kw-i-home.webp"), var(--kw-g-white);
+  background-repeat:no-repeat; background-position:center; background-size:58%, 100%;
+}
+body.theme-kawaii #kbBtn {
+  font-size:0; width:36px; height:36px;
+  background:url("/kw-i-kb.webp") center / 26px no-repeat;
+}
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }
