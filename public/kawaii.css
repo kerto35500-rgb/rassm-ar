@@ -780,6 +780,44 @@ body.theme-kawaii:has(#grid) #accPop { color:#6B4632; }
 /* v10.1: إخفاء وسوم المعلومات من بطاقات الرئيسية — مساحة أنظف */
 body.theme-kawaii:has(#grid) .tags { display:none; }
 
+/* ═════ v10.2: شارات متراكبة على الحواف + قاعدة 3D أسمك + وصف سطرين + هيدر سطرين ═════ */
+/* ② الشارات راكبة على حافة البطاقة مثل المرجع */
+body.theme-kawaii:has(#grid) .g > a[href="/quiz"] {
+  top:-24px !important; inset-inline-start:16px !important;
+  background:#fff !important; color:#7A5A42 !important;
+  font-size:12px !important; font-weight:800 !important; padding:6px 13px !important;
+  box-shadow:0 3px 0 #E3D5C2, 0 6px 10px rgba(150,110,80,.2);
+}
+body.theme-kawaii:has(#grid) .foot { position:static; }
+body.theme-kawaii:has(#grid) .now {
+  position:absolute; bottom:-26px; inset-inline-start:20px;
+  background:#fff; color:#7A5A42; font-size:12px; padding:5px 12px; border-radius:999px;
+  box-shadow:0 3px 0 #E3D5C2, 0 6px 10px rgba(150,110,80,.2);
+}
+body.theme-kawaii:has(#grid) .now:empty { display:none; }
+/* ③ قاعدة 3D أسمك: البطاقة قطعة بسماكة واضحة */
+body.theme-kawaii:has(#grid) .g {
+  border-width:12px !important;
+  box-shadow: 0 13px 0 #E9DFD2, 0 16px 0 rgba(150,120,95,.30), 0 30px 40px rgba(140,100,70,.25);
+}
+body.theme-kawaii:has(#grid) .g:hover {
+  box-shadow: 0 16px 0 #E9DFD2, 0 19px 0 rgba(150,120,95,.30), 0 34px 44px rgba(140,100,70,.28);
+}
+body.theme-kawaii:has(#grid) .g:active {
+  box-shadow: 0 7px 0 #E9DFD2, 0 10px 0 rgba(150,120,95,.30), 0 18px 26px rgba(140,100,70,.22);
+}
+/* ④ الوصف سطران فقط — بطاقات متساوية */
+body.theme-kawaii:has(#grid) .g p {
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+/* ⑤ الهيدر سطران: كريمي كبير ثم وصف بني فاتح */
+body.theme-kawaii:has(#grid) .tagSep { display:none; }
+body.theme-kawaii:has(#grid) .tagA {
+  display:block; font-size:21px; font-weight:900; color:#F6E8C6; margin-bottom:3px;
+  text-shadow:-1.5px -1.5px 0 #8A5A3E, 1.5px -1.5px 0 #8A5A3E, -1.5px 1.5px 0 #8A5A3E, 1.5px 1.5px 0 #8A5A3E, 0 3px 6px rgba(130,85,55,.3);
+}
+body.theme-kawaii:has(#grid) .tagB { display:block; font-size:14px; color:#A98B6E; font-weight:700; }
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }
