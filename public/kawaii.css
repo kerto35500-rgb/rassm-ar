@@ -1249,6 +1249,19 @@ body.theme-kawaii.kw-salfa #chatForm {
   box-shadow:var(--sg-shadow);
 }
 
+/* ═════════ v18: السالفة — التصويت والنتائج ملتفة + شارة نقاط نظيفة ═════════ */
+/* ١) بطاقتا التصويت والنتائج تلتفان حول المحتوى — لا فراغ ممتد، ومسافات مضغوطة */
+body.kw-salfa #vote { flex:0 0 auto; overflow:visible; gap:8px; padding:12px; }
+body.kw-salfa #result { flex:0 0 auto; overflow:visible; gap:8px; padding:14px; }
+
+/* ٢) شارة النقاط: كبسولة خضراء واضحة (تلغي وراثة ستايل بطاقات الرئيسية عن .g) */
+body.kw-salfa .scoreRow .g {
+  background:#EAF7EC; border:2px solid #6CCB93; border-radius:999px;
+  padding:2px 12px; color:var(--sg-deep); font-size:14px; font-weight:900;
+  box-shadow:none; width:auto; min-width:46px; text-align:center; display:inline-block;
+}
+body.kw-salfa .scoreRow { padding:7px 10px; }
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }
