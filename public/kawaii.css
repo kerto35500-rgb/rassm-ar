@@ -235,21 +235,22 @@ body.theme-kawaii .msg.system, body.theme-kawaii .msg.join, body.theme-kawaii .m
 body.theme-kawaii .msg.correct, body.theme-kawaii .msg.close, body.theme-kawaii .msg.guessedChat {
   background:var(--kw-g-pink) !important;
 }
-/* ستيكر أبيض كبير في بداية رسائل الأحداث */
+/* ستيكر مرسوم (مولّد) في بداية رسائل الأحداث — داخل دائرة بيضاء */
 body.theme-kawaii .msg.system::before, body.theme-kawaii .msg.join::before,
 body.theme-kawaii .msg.leave::before, body.theme-kawaii .msg.correct::before,
 body.theme-kawaii .msg.close::before, body.theme-kawaii .msg.guessedChat::before {
-  flex-shrink:0; width:30px; height:30px; border-radius:50%;
-  background:#fff; border:2px solid #C99A72;
+  content:""; flex-shrink:0; width:32px; height:32px; border-radius:50%;
+  background-color:#fff; background-size:118%; background-position:center; background-repeat:no-repeat;
+  border:2px solid #C99A72;
   box-shadow:inset 0 -3px 5px rgba(156,90,76,.12);
-  display:inline-flex; align-items:center; justify-content:center; font-size:16px;
+  display:inline-block;
 }
-body.theme-kawaii .msg.system::before  { content:"🎨"; }
-body.theme-kawaii .msg.join::before    { content:"👋"; }
-body.theme-kawaii .msg.leave::before   { content:"🚪"; }
-body.theme-kawaii .msg.correct::before { content:"🎉"; }
-body.theme-kawaii .msg.close::before   { content:"🔥"; }
-body.theme-kawaii .msg.guessedChat::before { content:"✅"; }
+body.theme-kawaii .msg.system::before  { background-image:url("/kw-palette.webp"); }
+body.theme-kawaii .msg.join::before    { background-image:url("/kw-hand.webp"); }
+body.theme-kawaii .msg.leave::before   { background-image:url("/kw-eraser.webp"); }
+body.theme-kawaii .msg.correct::before { background-image:url("/kw-party.webp"); }
+body.theme-kawaii .msg.close::before   { background-image:url("/kw-flame.webp"); }
+body.theme-kawaii .msg.guessedChat::before { background-image:url("/kw-check.webp"); }
 body.theme-kawaii .msg.correct { background:linear-gradient(180deg,#E8F8EB 0%,#CFEDD6 100%) !important; }
 body.theme-kawaii .msg.close   { background:linear-gradient(180deg,#FFF6E0 0%,#FBE7B8 100%) !important; }
 
