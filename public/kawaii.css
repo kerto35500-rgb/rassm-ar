@@ -978,13 +978,11 @@ body.theme-kawaii:has(#grid) .goArr {
   box-shadow:0 2px 4px rgba(120,80,55,.28);
 }
 
-/* ٣) بطاقات "طريقة اللعب" تحت شاشة الدخول */
-body.theme-kawaii #howTo .ht {
-  background:var(--kw-g-white); border:2px solid #A05F50; border-radius:18px;
-  box-shadow:0 4px 10px rgba(140,75,60,.22);
-}
-body.theme-kawaii #howTo .ht b { color:var(--kw-ink); }
-body.theme-kawaii #howTo .ht p { color:#8A625A; opacity:1; }
+/* ٣) "طريقة اللعب" تحت شاشة الدخول: أعمدة نصية بسيطة بألوان الثيم (بلا بطاقات) */
+body.theme-kawaii #howTo .ht { background:none; border:none; box-shadow:none; }
+body.theme-kawaii #howTo .ht h3 { color:var(--kw-ink); }
+body.theme-kawaii #howTo .ht p { color:#8A625A; }
+body.theme-kawaii #howTo .ht p b { color:var(--kw-ink); }
 
 /* v14.1: الجولة المختصرة في الجوال داخل ثيم الكاواي (تغلب قاعدة 17px) */
 @media (max-width: 900px) {
