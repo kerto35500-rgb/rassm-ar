@@ -569,6 +569,100 @@ body.theme-kawaii .card, body.theme-kawaii .g {
 }
 body.theme-kawaii #board { box-shadow: 0 4px 0 4px var(--kw-line), 0 10px 24px rgba(156,90,76,.14); }
 
+/* ═════════ v8: الصفحة الرئيسية — بطاقات ستيكر ملونة على سماوي (حسب المرجع) ═════════
+   مقيّد بـ :has(#grid) الموجود في الرئيسية فقط — لعبة الرسم لا تتأثر */
+body.theme-kawaii:has(#grid) {
+  background:#A6D9EE !important;
+  color:#3E6E8C;
+}
+/* نجوم مبعثرة بأحجام متنوعة */
+body.theme-kawaii:has(#grid)::before {
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 6l3.2 8.2 8.8.6-6.8 5.6 2.2 8.6L20 24.2 12.6 29l2.2-8.6L8 14.8l8.8-.6z' fill='%237FBBDA' opacity='.55'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 10l2.3 5.8 6.2.4-4.8 4 1.6 6.1L20 22.9 14.7 26.3l1.6-6.1-4.8-4 6.2-.4z' fill='%2390C9E4' opacity='.5'/%3E%3C/svg%3E");
+  background-size:150px 150px, 95px 95px;
+  background-position:0 0, 47px 61px;
+}
+body.theme-kawaii:has(#grid) .kw-doodles { display:none; }
+
+/* العنوان الكريمي */
+body.theme-kawaii:has(#grid) header .logo {
+  color:#F6E8C6;
+  text-shadow:0 2px 0 rgba(110,150,175,.45), 0 6px 14px rgba(70,110,140,.35);
+}
+body.theme-kawaii:has(#grid) header .logo em { color:#FFD668; }
+body.theme-kawaii:has(#grid) header .tag { color:#F6E8C6; opacity:1; font-weight:800; text-shadow:0 1px 0 rgba(110,150,175,.4); }
+body.theme-kawaii:has(#grid) .live {
+  background:#fff; border:none; color:#3E6E8C;
+  box-shadow:0 3px 0 rgba(90,125,150,.3);
+}
+body.theme-kawaii:has(#grid) #accBtn {
+  background:#fff; border:none; color:#3E6E8C;
+  box-shadow:0 3px 0 rgba(90,125,150,.3);
+}
+body.theme-kawaii:has(#grid) #accBtn .ava { background:#7FC8EE; border:none; color:#fff; }
+body.theme-kawaii:has(#grid) #kwThemeBtn { border:none; box-shadow:0 3px 0 rgba(90,125,150,.3), 0 6px 16px rgba(70,110,140,.25); }
+
+/* البطاقات: إطار أبيض عريض + لون مشبع لكل لعبة + توسيط */
+body.theme-kawaii:has(#grid) .g {
+  border:10px solid #fff !important; border-radius:28px;
+  box-shadow:0 7px 0 rgba(105,140,165,.35), 0 18px 34px rgba(70,110,140,.28);
+  text-align:center; align-items:center; color:#fff;
+  overflow:visible;
+}
+body.theme-kawaii:has(#grid) .g:hover { box-shadow:0 10px 0 rgba(105,140,165,.35), 0 22px 38px rgba(70,110,140,.32); }
+body.theme-kawaii:has(#grid) .g:active { box-shadow:0 4px 0 rgba(105,140,165,.35), 0 12px 24px rgba(70,110,140,.28); }
+body.theme-kawaii:has(#grid) .g.c-blue   { background:linear-gradient(180deg,#F79BB5 0%,#F1738F 100%); }
+body.theme-kawaii:has(#grid) .g.c-fire   { background:linear-gradient(180deg,#F8B152 0%,#F09B2B 100%); }
+body.theme-kawaii:has(#grid) .g.c-violet { background:linear-gradient(180deg,#AC8EE9 0%,#9070D6 100%); }
+body.theme-kawaii:has(#grid) .g.c-green  { background:linear-gradient(180deg,#90E0B0 0%,#6CCB93 100%); }
+/* الأيقونة: كبيرة حرة على البطاقة */
+body.theme-kawaii:has(#grid) .g .ic {
+  background:transparent !important; border:none !important;
+  width:auto; height:auto; font-size:58px; margin:4px auto 0;
+  filter:drop-shadow(0 3px 4px rgba(0,0,0,.22));
+}
+body.theme-kawaii:has(#grid) .g h2 {
+  color:#fff; justify-content:center;
+  text-shadow:0 2px 0 rgba(0,0,0,.18), 0 4px 8px rgba(0,0,0,.15);
+}
+body.theme-kawaii:has(#grid) .g p { color:rgba(255,255,255,.94); text-shadow:0 1px 2px rgba(0,0,0,.12); }
+body.theme-kawaii:has(#grid) .tags { justify-content:center; }
+body.theme-kawaii:has(#grid) .g .t {
+  background:rgba(255,255,255,.28); color:#fff; border:none; font-weight:800;
+}
+body.theme-kawaii:has(#grid) .foot { width:100%; }
+/* أزرار الدخول: لون مميز لكل بطاقة مثل المرجع + حد أبيض وبيفل */
+body.theme-kawaii:has(#grid) .g .go {
+  border:2.5px solid #fff !important; border-radius:999px; color:#fff !important; font-weight:900;
+  box-shadow: inset 0 3px 5px rgba(255,255,255,.5), inset 0 -4px 6px rgba(0,0,0,.22), 0 4px 0 rgba(0,0,0,.22) !important;
+  text-shadow:0 1px 2px rgba(0,0,0,.2);
+}
+body.theme-kawaii:has(#grid) .g.c-blue   .go { background:#66BEE8 !important; }
+body.theme-kawaii:has(#grid) .g.c-fire   .go { background:#DE8B17 !important; }
+body.theme-kawaii:has(#grid) .g.c-violet .go { background:#C4A9F2 !important; }
+body.theme-kawaii:has(#grid) .g.c-green  .go { background:#2FA666 !important; }
+/* شارة عدد اللاعبين: كبسولة بيضاء */
+body.theme-kawaii:has(#grid) .now {
+  background:#fff; color:#3E6E8C; padding:4px 10px; border-radius:999px;
+  box-shadow:0 2px 0 rgba(105,140,165,.3);
+}
+body.theme-kawaii:has(#grid) .now b { color:#2FA666; }
+body.theme-kawaii:has(#grid) .badge { background:#fff; color:#3E6E8C; border:none; }
+body.theme-kawaii:has(#grid) .g.soon {
+  background:rgba(255,255,255,.35); border:10px dashed rgba(255,255,255,.8) !important;
+  color:#4E7E9C; box-shadow:none;
+}
+body.theme-kawaii:has(#grid) .g.soon h2, body.theme-kawaii:has(#grid) .g.soon p { color:#4E7E9C; text-shadow:none; }
+body.theme-kawaii:has(#grid) footer { color:#5E8CA8; opacity:1; }
+body.theme-kawaii:has(#grid) #accPop { background:#fff; border:none; color:#3E6E8C; box-shadow:0 6px 0 rgba(105,140,165,.3), 0 18px 40px rgba(70,110,140,.3); }
+body.theme-kawaii:has(#grid) #accPop .go { background:#66BEE8; border:2.5px solid #fff; color:#fff; box-shadow:inset 0 3px 5px rgba(255,255,255,.5), inset 0 -4px 6px rgba(0,0,0,.22), 0 3px 0 rgba(0,0,0,.22); }
+body.theme-kawaii:has(#grid) #accPop input { border:2px solid #CFE6F2; }
+body.theme-kawaii:has(#grid) #accPop .tabs button.on { background:#E8F4FB; border-color:#66BEE8; color:#3E6E8C; }
+body.theme-kawaii:has(#grid) #accStats div { background:#EFF7FC; border:none; }
+body.theme-kawaii:has(#grid) #accStats b { color:#3E8CC0; }
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }
