@@ -848,6 +848,50 @@ body.theme-kawaii #startBtn, body.theme-kawaii .rgBtn {
   box-shadow: inset 0 2px 4px rgba(255,255,255,.85), inset 0 -3px 5px rgba(156,90,76,.25), 0 3px 7px rgba(140,75,60,.3);
 }
 
+/* ═════ v11: تجاوب الجوال + أدوات غير الراسم ═════ */
+/* ④ الكمبيوتر: الكبسولتان ثابتتان دائماً، والعناصر داخلهما تظهر/تختفي بأنيميشن حسب الدور */
+@media (min-width: 901px) {
+  body.theme-kawaii #toolBar { display:flex; }
+  body.theme-kawaii .toolBtn, body.theme-kawaii .colorBtn, body.theme-kawaii #currentColor,
+  body.theme-kawaii #pickerWrap, body.theme-kawaii .tbSep {
+    transition: opacity .22s ease, transform .3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  body.theme-kawaii #canvasWrap:not(.drawmode) .toolBtn,
+  body.theme-kawaii #canvasWrap:not(.drawmode) .colorBtn,
+  body.theme-kawaii #canvasWrap:not(.drawmode) #currentColor,
+  body.theme-kawaii #canvasWrap:not(.drawmode) #pickerWrap,
+  body.theme-kawaii #canvasWrap:not(.drawmode) .tbSep {
+    opacity:0; transform:scale(.4); pointer-events:none;
+  }
+  body.theme-kawaii #canvasWrap:not(.drawmode) .tbRow { min-height:53px; }
+}
+@media (max-width: 900px) {
+  /* ③ المخمّن في الجوال: الشريطان يختفيان كلياً والدردشة ترتفع وتتوسع */
+  body.theme-kawaii #canvasWrap:not(.drawmode) #toolBar { display:none; }
+  body.theme-kawaii #canvasWrap.drawmode #toolBar { display:flex; }
+  body.theme-kawaii #chatPanel { height:auto; flex:1; min-height:220px; }
+  body.theme-kawaii #messages { min-height:150px; }
+  /* ② الشريط العلوي: أيقونات موحدة الحجم ورمز الدعوة كبسولة سطر واحد */
+  body.theme-kawaii #topBar { padding:6px 10px; gap:6px; }
+  body.theme-kawaii #roomCodeBox {
+    display:inline-flex; flex-direction:row; align-items:center; gap:4px;
+    width:auto; height:36px; padding:2px 12px; font-size:13px; white-space:nowrap;
+    border-radius:999px;
+  }
+  body.theme-kawaii #roomCodeBox b { font-size:14px; }
+  body.theme-kawaii .homeBtn, body.theme-kawaii #muteBtn,
+  body.theme-kawaii #timerBox, body.theme-kawaii #kwThemeBtnTop {
+    width:36px; height:36px; font-size:15px; flex-shrink:0;
+  }
+  body.theme-kawaii .homeBtn svg { width:18px; height:18px; }
+  /* ① شاشة الدخول: حقول وأزرار متناسبة بسطر واحد */
+  body.theme-kawaii .card { padding:16px; gap:9px; }
+  body.theme-kawaii .card input { padding:10px 12px; font-size:15px; }
+  body.theme-kawaii .btn { padding:11px 10px; font-size:14px; white-space:nowrap; overflow:hidden; }
+  body.theme-kawaii .backLink { padding:8px 16px; font-size:14px; }
+  body.theme-kawaii #lobbyScreen .logo { font-size:44px; }
+}
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }
