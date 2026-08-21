@@ -1364,24 +1364,36 @@ function buildKeyboard() {
   space.onmousedown = e => { e.preventDefault(); kbInsert(" "); };
   const del = document.createElement("button");
   del.type = "button"; del.className = "k del"; del.textContent = "⌫";
-  del.onmousedown = e => { e.preventDefault(); kbBackspace(); };
+  // مسح متكرر عند الاستمرار بالضغط (ماوس أو لمس)
+  let delT = null, delI = null;
+  const delStart = e => {
+    e.preventDefault(); kbBackspace();
+    delT = setTimeout(() => { delI = setInterval(kbBackspace, 65); }, 380);
+  };
+  const delStop = () => { clearTimeout(delT); clearInterval(delI); delT = delI = null; };
+  del.onmousedown = delStart;
+  del.addEventListener("touchstart", delStart, { passive: false });
+  ["mouseup", "mouseleave", "touchend", "touchcancel"].forEach(ev => del.addEventListener(ev, delStop));
   const send = document.createElement("button");
   send.type = "button"; send.className = "k send"; send.textContent = "إرسال";
   send.onmousedown = e => { e.preventDefault(); $("chatForm").requestSubmit(); };
   ctrl.appendChild(del); ctrl.appendChild(space); ctrl.appendChild(send);
   vkb.appendChild(ctrl);
 }
-// الإدراج دائمًا في نهاية النص (يمنع انعكاس الحروف)
+// الإدراج والمسح عند موضع المؤشر (يمكن التعديل من وسط الكلمة)
 function kbInsert(ch) {
   const inp = $("chatInput");
   if (inp.disabled) return;
   if (inp.value.length + ch.length > 100) return;
-  inp.value += ch;
+  const s = inp.selectionStart ?? inp.value.length, e = inp.selectionEnd ?? s;
+  inp.setRangeText(ch, s, e, "end");
 }
 function kbBackspace() {
   const inp = $("chatInput");
   if (inp.disabled) return;
-  inp.value = inp.value.slice(0, -1);
+  const s = inp.selectionStart ?? inp.value.length, e = inp.selectionEnd ?? s;
+  if (s !== e) inp.setRangeText("", s, e, "end");
+  else if (s > 0) inp.setRangeText("", s - 1, s, "end");
 }
 let kbOpen = false;
 $("kbBtn").onclick = () => {
