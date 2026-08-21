@@ -965,6 +965,27 @@ body.theme-kawaii #turnFlash { display:none !important; }
   body.theme-kawaii #messages { min-height:190px; }
 }
 
+/* ═════════ v14 ═════════ */
+/* ١) الرئيسية: النجوم خلف النص والبطاقات (كانت تُرسم فوقها) */
+body.theme-kawaii:has(#grid)::before { z-index:-1; }
+
+/* ٢) سهم "ادخل اللعبة": دائرة بيضاء واضحة بسهم بني بحجم مناسب */
+body.theme-kawaii:has(#grid) .goArr {
+  display:inline-grid; place-items:center; vertical-align:middle;
+  width:23px; height:23px; margin-inline-start:7px; margin-top:-2px;
+  border-radius:50%; background:rgba(255,255,255,.9); color:#7A4A38;
+  font-size:14px; font-weight:900; line-height:1;
+  box-shadow:0 2px 4px rgba(120,80,55,.28);
+}
+
+/* ٣) بطاقات "طريقة اللعب" تحت شاشة الدخول */
+body.theme-kawaii #howTo .ht {
+  background:var(--kw-g-white); border:2px solid #A05F50; border-radius:18px;
+  box-shadow:0 4px 10px rgba(140,75,60,.22);
+}
+body.theme-kawaii #howTo .ht b { color:var(--kw-ink); }
+body.theme-kawaii #howTo .ht p { color:#8A625A; opacity:1; }
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }
