@@ -17,10 +17,10 @@
     } catch (e) { return "classic"; }
   }
 
-  /* خربشات الخلفية العائمة: غيوم بوجوه، قلوب، بريق (SVG مرسومة في CSS) */
-  var DOODLES = ["kw-cloud", "kw-heart", "kw-spark", "kw-cloud", "kw-heart", "kw-cloud",
-                 "kw-spark", "kw-heart", "kw-cloud", "kw-spark", "kw-cloud", "kw-heart",
-                 "kw-cloud", "kw-spark", "kw-heart", "kw-cloud"];
+  /* خربشات الخلفية العائمة: أدوات رسم — قلم، باليتة ألوان، فرشاة (SVG مرسومة في CSS) */
+  var DOODLES = ["kw-pencil", "kw-palette", "kw-brush", "kw-pencil", "kw-palette", "kw-pencil",
+                 "kw-brush", "kw-palette", "kw-pencil", "kw-brush", "kw-pencil", "kw-palette",
+                 "kw-pencil", "kw-brush", "kw-palette", "kw-pencil"];
   function doodleLayer(on) {
     var old = document.querySelector(".kw-doodles");
     if (!on) { if (old) old.remove(); return; }
@@ -35,7 +35,7 @@
       s.style.top = ((i * 37 + 9) % 92) + "%";
       s.style.animationDelay = (-(i * 0.8) % 6) + "s";
       /* أحجام متنوعة (لا نستخدم transform حتى لا يتعارض مع حركة الطفو) */
-      var base = DOODLES[i] === "kw-cloud" ? [110, 74] : DOODLES[i] === "kw-heart" ? [34, 34] : [28, 28];
+      var base = DOODLES[i] === "kw-pencil" ? [110, 64] : DOODLES[i] === "kw-palette" ? [44, 44] : [40, 40];
       var sc = 0.7 + ((i * 13) % 7) / 10;
       s.style.width = Math.round(base[0] * sc) + "px";
       s.style.height = Math.round(base[1] * sc) + "px";
