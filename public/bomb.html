@@ -1287,7 +1287,7 @@
     }, 60);
   }
   // إعادة ترتيب كاملة: الحروف + اللاعبون + السهم (حتى تبقى الكرة في منتصفهم تماماً)
-  function relayoutAll(){ reflowRing(); if (typeof ST !== "undefined" && ST) renderRing(); aimBomb(); }
+  function relayoutAll(){ reflowRing(); placePlayers(); aimBomb(); }
   addEventListener("resize", relayoutAll);
   addEventListener("orientationchange", () => setTimeout(relayoutAll, 300));
   if (window.visualViewport) visualViewport.addEventListener("resize", reflowRing);
@@ -1336,6 +1336,29 @@
         `<div class="typed"></div>` +
         (p.connected?"":'<div class="off">غير متصل…</div>');
       ring.appendChild(d);
+    });
+    aimBomb();
+    // بعد استقرار التخطيط نعيد التموضع بدقة (القياسات وقت الرسم قد تكون مؤقتة)
+    requestAnimationFrame(placePlayers);
+    setTimeout(placePlayers, 260);
+  }
+
+  /* إعادة توزيع البطاقات على دائرة متساوية حول القنبلة (بلا إعادة بناء) */
+  function placePlayers(){
+    const ring = $("ring"), bomb = $("bombCircle");
+    const cards = [...ring.querySelectorAll(".pl")];
+    if (!cards.length || !bomb) return;
+    const W = ring.clientWidth, H = ring.clientHeight;
+    const rr = ring.getBoundingClientRect(), br = bomb.getBoundingClientRect();
+    if (!br.width || W < 40) return;
+    const cX = br.left + br.width / 2 - rr.left, cY = br.top + br.height / 2 - rr.top;
+    const bombR = br.width / 2, cardHalf = 58;
+    const room = Math.min(W / 2 - cardHalf - 8, H / 2 - cardHalf - 8);
+    const R = Math.max(bombR + 54, Math.min(room, bombR + 132));
+    cards.forEach(el => {
+      const a = parseFloat(el.dataset.ang) || 0;
+      el.style.right = (W - (cX + Math.cos(a) * R)) + "px";
+      el.style.top = (cY + Math.sin(a) * R) + "px";
     });
     aimBomb();
   }
