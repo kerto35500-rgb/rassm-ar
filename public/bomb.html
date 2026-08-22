@@ -96,11 +96,11 @@
   /* حلقة اللاعبين */
   #ring { flex:1; position:relative; min-height:0; }
   .pl {
-    position:absolute; transform:translate(50%,-50%); width:104px; text-align:center;
+    position:absolute; transform:translate(50%,-50%); width:84px; text-align:center;
     transition:opacity .2s;
   }
-  .pl .av { width:52px; height:52px; margin:0 auto; border-radius:50%; background:#eef2f7; border:3px solid #dfe5ec;
-            display:flex; align-items:center; justify-content:center; font-size:21px; font-weight:900; color:var(--ink); }
+  .pl .av { width:42px; height:42px; margin:0 auto; border-radius:50%; background:#eef2f7; border:3px solid #dfe5ec;
+            display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:900; color:var(--ink); }
   .pl.turn .av { border-color:var(--accent); box-shadow:0 0 0 5px rgba(229,84,30,.18); animation:pulse 1s infinite; }
   .pl.dead { opacity:.34; filter:grayscale(1); }
   .pl.spec .av { border-style:dashed; }
@@ -133,8 +133,8 @@
   /* ============ شريط اللاعبين ============ */
   /* يُستعمل في الجوال، وأيضاً على أي شاشة صار فيها ارتفاع الحلقة صغيراً
      (مثلاً عند فتح لوحة المفاتيح) — يمنع تداخل الأسماء مع القنبلة */
-  #stage.compact #plStrip { display:flex; }
-  #stage.compact #ring .pl { display:none; }
+  #stage.compact #plStrip { display:none; }
+  #stage.compact #ring .pl { display:block; }
   #stage.compact #ring { flex:1 1 auto; min-height:150px; }
   #plStrip { display:none; gap:7px; padding:2px 9px 4px; overflow-x:auto; flex-shrink:0;
              scrollbar-width:none; align-items:stretch; justify-content:space-between; }
@@ -171,11 +171,9 @@
   .chip .typed { font-size:10.5px; color:var(--accent); font-weight:800; min-height:13px;
                  max-width:82px; overflow:hidden; white-space:nowrap; }
 
-  /* العدّاد فوق القنبلة مباشرة */
-  #bigTimer { display:none; position:absolute; left:50%; transform:translateX(-50%);
-              bottom:calc(100% + 14px); z-index:4;
-              flex-direction:column; align-items:center; line-height:1;
-              min-width:92px; padding:0; }
+  /* العدّاد داخل الشريط العلوي */
+  #bigTimer { display:none; flex-direction:row; align-items:baseline; gap:5px;
+              line-height:1; padding:0 6px; }
   #bigTimer.on { display:flex; }
   #bigTimer b { font-size:34px; font-weight:900; color:var(--accent); font-variant-numeric:tabular-nums;
                 transition:color .2s; }
@@ -201,8 +199,8 @@
 
   /* القنبلة في المنتصف */
   #bombWrap { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; z-index:3;
-              width:clamp(126px, 19vh, 168px); }
-  #bombCircle { position:relative; width:clamp(104px, 16vh, 140px); aspect-ratio:1; margin:0 auto; z-index:3; }
+              width:clamp(110px, 16vh, 140px); }
+  #bombCircle { position:relative; width:clamp(92px, 13.5vh, 118px); aspect-ratio:1; margin:0 auto; z-index:3; }
   /* حلقة التقدّم مخفية — القنبلة بسيطة كالمرجع، والوقت أعلى الشاشة */
   #bombCircle svg { display:none; }
   /* جسم القنبلة: قرص داكن كبير والمقطع مكتوب في منتصفه (كالمرجع) */
@@ -323,7 +321,7 @@
              box-shadow:0 6px 18px rgba(22,104,214,.42); touch-action:manipulation; cursor:grab;
              -webkit-tap-highlight-color:rgba(255,255,255,.25);
              transition:transform .15s, box-shadow .15s; }
-  #stage.compact #fabChat { display:flex; }
+  #fabChat { display:flex; }   /* زر الدردشة العائم في كل المقاسات */
   #fabChat:active { cursor:grabbing; }
   #fabChat.dragging { transform:scale(1.1); box-shadow:0 10px 26px rgba(22,104,214,.55); transition:none; }
   #fabChat .badge { position:absolute; top:-4px; inset-inline-end:-4px; min-width:21px; height:21px; padding:0 5px;
@@ -338,16 +336,25 @@
   #chatToast.on { display:block; opacity:1; transform:translateY(0); }
 
   /* لوحة الحروف */
-  #alphaBox { flex-shrink:0; padding:8px 12px; border-top:2px solid var(--line); background:#fff; }
+  /* الحروف سادة بلا إطار ولا شرح */
+  #alphaBox { flex-shrink:0; padding:6px 12px; border-top:none; background:none; }
   #alphaGrid { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; }
   .al { width:25px; height:25px; border-radius:6px; background:#eef2f7; color:#aeb6c4; font-size:13px; font-weight:800;
         display:flex; align-items:center; justify-content:center; transition:.15s; }
   .al.on { background:var(--good); color:#fff; }
-  #alphaHead { display:flex; align-items:center; gap:6px; font-size:12px; color:#8a93a3; margin-bottom:6px; }
+  #alphaHead { display:none !important; }
   #alphaHead b { color:var(--ink); }
 
   /* الشريط الجانبي */
-  #side { width:270px; display:flex; flex-direction:column; gap:10px; flex-shrink:0; }
+  /* اللاعبون والدردشة: نافذة منبثقة دائماً (الساحة تاخذ العرض كامل) */
+  #side { position:fixed; inset-inline:auto 12px; bottom:12px; z-index:56;
+          width:min(340px, calc(100vw - 24px)); max-height:min(70vh, 560px);
+          display:none; flex-direction:column; gap:10px;
+          background:var(--panel); border-radius:18px; padding:10px;
+          box-shadow:0 18px 46px rgba(15,30,55,.28); }
+  #side.open { display:flex; }
+  #sheetBack { display:none; position:fixed; inset:0; background:rgba(10,20,36,.35); z-index:55; }
+  #sheetBack.on { display:block; }
   .panel { background:var(--panel); border-radius:14px; display:flex; flex-direction:column; overflow:hidden; }
   .panel h4 { padding:9px 12px; font-size:13.5px; color:var(--ink); border-bottom:2px solid var(--line); }
   #chatLog { flex:1; overflow-y:auto; padding:8px 10px; display:flex; flex-direction:column; gap:5px; font-size:13.5px; min-height:120px; }
@@ -468,9 +475,9 @@
     #playersPanel { max-height:32dvh; }
     #chatPanel { max-height:38dvh; }
     #chatLog { min-height:90px; }
-    /* اللاعبون ينتقلون لشريط أفقي أعلى الشاشة — لا تداخل مع القنبلة */
-    #plStrip { display:flex; }
-    #ring .pl { display:none; }
+    /* الجوال: نفس تخطيط الحلقة (لاعبون حول القنبلة) كالمرجع */
+    #plStrip { display:none; }
+    #ring .pl { display:block; }
     #stage { overflow-y:auto; }          /* السكرول ممكن والكيبورد مفتوح */
     #ring { flex:1 1 auto; min-height:300px; }
     #bombWrap { width:min(40vw,160px); }
@@ -545,6 +552,9 @@
       <div class="l2" id="dictInfo"></div>
     </div>
 
+    <!-- العدّاد في الشريط العلوي -->
+    <div id="bigTimer"><b id="bigTimeNum">—</b><span>ثانية</span></div>
+
     <div class="tbGrp">
       <a class="iconBtn" href="/" title="رجوع لكل الألعاب">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.8V20h14V9.8"/><path d="M9.5 20v-6h5v6"/></svg>
@@ -571,8 +581,6 @@
         <div id="alphaRing"></div>
         <div id="bombPointer" aria-hidden="true"><div class="pShaft"></div><div class="pHead"></div></div>
         <div id="bombWrap">
-          <!-- العدّاد فوق القنبلة مباشرة -->
-          <div id="bigTimer"><b id="bigTimeNum">—</b><span>ثانية</span></div>
           <div id="bombCircle">
             <svg viewBox="0 0 100 100">
               <circle id="ringBg" cx="50" cy="50" r="44"></circle>
@@ -596,12 +604,12 @@
       <!-- أزرار عائمة: الدردشة واللاعبون (الجوال) -->
 
       <div id="alphaBox">
-        <div id="alphaHead"><b>لوحتك</b> <span id="alphaCount">0/28</span> <span style="opacity:.7">— اكمل الحروف = ❤️ إضافي</span></div>
+        <div id="alphaHead" hidden><b>لوحتك</b> <span id="alphaCount">0/28</span></div>
         <div id="alphaGrid"></div>
       </div>
 
       <div id="inputZone">
-        <div id="sylPill">
+        <div id="sylPill" hidden>
           <span class="lb">المقطع</span>
           <span class="vv" id="pillSyl">—</span>
           <span class="tt" id="pillTime"></span>
@@ -1023,11 +1031,8 @@
   })();
 
   // ☰ من قائمة «المزيد»: في الجوال يفتح النافذة، وعلى الكمبيوتر يُظهر/يخفي العمود
-  $("sideBtn").onclick = () => {
-    closeMore();
-    if ($("stage").classList.contains("compact")) return sheetToggle();
-    $("side").classList.toggle("hidden");
-  };
+  // اللاعبون والدردشة نافذة منبثقة في كل المقاسات
+  $("sideBtn").onclick = () => { closeMore(); sheetToggle(); };
 
   // قائمة «المزيد»
   function closeMore(){ $("moreMenu").classList.remove("on"); }
@@ -1300,8 +1305,11 @@
     // نبتعد عن حافة القنبلة الكبيرة حتى لا تتداخل البطاقات معها
     const bombEl = $("bombCircle");
     const bombR = (bombEl ? bombEl.offsetWidth : 232) / 2;
-    const rx = Math.max(bombR + 70, Math.min(W/2 - (W<520?46:92), bombR + 152));
-    const ry = Math.max(bombR + 58, Math.min(H/2 - (H<300?40:72), bombR + 124));
+    // دائرة متساوية الأبعاد: كل اللاعبين على نفس البُعد وبمسافات متساوية
+    const cardHalf = 58;
+    const room = Math.min(W / 2 - cardHalf - 8, H / 2 - cardHalf - 8);
+    const R = Math.max(bombR + 54, Math.min(room, bombR + 132));
+    const rx = R, ry = R;
     // نمركز اللاعبين حول كرة القنبلة نفسها (لا حول مركز الساحة المحسوب سابقاً)
     let cX = W / 2, cY = H / 2;
     if (bombEl) {
