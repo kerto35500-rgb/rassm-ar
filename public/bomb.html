@@ -199,8 +199,8 @@
 
   /* القنبلة في المنتصف */
   #bombWrap { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; z-index:3;
-              width:clamp(150px, 24vh, 210px); }
-  #bombCircle { position:relative; width:clamp(128px, 21vh, 176px); aspect-ratio:1; margin:0 auto; z-index:3; }
+              width:clamp(126px, 19vh, 168px); }
+  #bombCircle { position:relative; width:clamp(104px, 16vh, 140px); aspect-ratio:1; margin:0 auto; z-index:3; }
   /* حلقة التقدّم مخفية — القنبلة بسيطة كالمرجع، والوقت أعلى الشاشة */
   #bombCircle svg { display:none; }
   /* جسم القنبلة: قرص داكن كبير والمقطع مكتوب في منتصفه (كالمرجع) */
@@ -218,7 +218,7 @@
               font-size:clamp(20px,4.6vh,34px); animation:kwFuse .75s ease-in-out infinite; }
   @keyframes kwFuse { 0%,100%{ transform:scale(1) rotate(-8deg); opacity:.95; } 50%{ transform:scale(1.24) rotate(12deg); opacity:.65; } }
   #bombEmoji { display:none; }
-  #syl { font-size:clamp(26px,4.6vh,38px); font-weight:900; color:#fff; letter-spacing:2px;
+  #syl { font-size:clamp(22px,3.8vh,31px); font-weight:900; color:#fff; letter-spacing:2px;
          text-shadow:0 3px 10px rgba(0,0,0,.45); line-height:1.05; }
   /* الوقت لم يعد داخل القنبلة — انتقل لأعلى الشاشة */
   #timeNum, #timeUnit { display:none !important; }
@@ -468,9 +468,9 @@
     #ring .pl { display:none; }
     #stage { overflow-y:auto; }          /* السكرول ممكن والكيبورد مفتوح */
     #ring { flex:1 1 auto; min-height:300px; }
-    #bombWrap { width:min(48vw,190px); }
-    #bombCircle { width:min(42vw,165px); }
-    #syl { font-size:clamp(24px,7vw,36px); }
+    #bombWrap { width:min(40vw,160px); }
+    #bombCircle { width:min(34vw,135px); }
+    #syl { font-size:clamp(21px,6vw,30px); }
     #poolHint, #roundHint { display:none; }   /* موجودة في شارة المقطع وأسفل الحلقة */
     #sylPill { margin-bottom:6px; padding:5px 10px; }
     #sylPill .vv { font-size:19px; }
@@ -485,9 +485,9 @@
     #topBar .rid { font-size:13.5px; }
     .iconBtn { width:32px; height:32px; font-size:15px; border-radius:8px; }
     #ring { min-height:230px; }
-    #bombWrap { width:min(50vw,165px); }
-    #bombCircle { width:min(44vw,142px); }
-    #syl { font-size:clamp(22px,7vw,32px); }
+    #bombWrap { width:min(42vw,140px); }
+    #bombCircle { width:min(36vw,118px); }
+    #syl { font-size:clamp(19px,6vw,27px); }
     .al { width:20px; height:20px; font-size:11px; border-radius:5px; }
     #stage.compact #timeNum { font-size:27px; }
     #stage.compact #bombEmoji { font-size:36px; }
@@ -1337,7 +1337,11 @@
     const bomb = $("bombCircle");
     const ringEl = $("ring");
     const tRect = target.getBoundingClientRect(), rRect = ringEl.getBoundingClientRect();
-    const cx = rRect.left + rRect.width / 2, cy = rRect.top + rRect.height / 2;
+    // مركز الدوران = مركز كرة القنبلة نفسها (لا مركز الساحة) ليمرّ السهم في منتصفها تماماً
+    const bRect = bomb ? bomb.getBoundingClientRect() : rRect;
+    const cx = bRect.left + bRect.width / 2, cy = bRect.top + bRect.height / 2;
+    ptr.style.left = (cx - rRect.left) + "px";
+    ptr.style.top  = (cy - rRect.top) + "px";
     const dist = Math.hypot(tRect.left + tRect.width / 2 - cx, tRect.top + tRect.height / 2 - cy);
     const start = (bomb ? bomb.offsetWidth / 2 : 75) + 10;
     const len = Math.max(26, dist - start - Math.max(tRect.width, tRect.height) / 2 - 16);
