@@ -1,5 +1,6 @@
-// قاموس عربي للعبة "القنبلة" — تحميل، توحيد حروف، وفهرسة المقاطع
-// يبحث عن ملف قاموس كبير (ar.dic) في مجلد المشروع، وإن لم يجده يستخدم القائمة المدمجة.
+// قاموس عربي للعبة "القنبلة" — كلمات يومية شائعة + مقاطع منطقية
+// المصدر الأساسي: ar-words.txt (كلمة<مسافة>طبقة) — 1 شائعة جداً، 2 شائعة، 3 موسّعة.
+// احتياطياً: ar.dic (هَنسبِل) ثم القائمة المدمجة.
 const fs = require("fs");
 const path = require("path");
 
@@ -144,7 +145,8 @@ const FALLBACK = `
 let LOADED = false;
 let SOURCE = "مدمج";
 const WORDS = new Set();        // كل الكلمات (بعد التوحيد)
-const SIMPLE = new Set();       // كلمات قصيرة (قاموس مبسّط)
+const SIMPLE = new Set();       // الطبقة الشائعة (قاموس مبسّط)
+const TIER = new Map();         // كلمة -> 1|2|3
 // فهارس المقاطع — واحدة لكل قاموس (شامل / مبسّط)
 const IDX = {
   full:   { syl2: [], syl3: [], count: new Map() },
@@ -152,7 +154,7 @@ const IDX = {
 };
 
 // أسماء ملفات القاموس التي نبحث عنها بالترتيب
-const CANDIDATES = ["ar.dic", "ar.txt", "arabic.txt", "words.txt", "dictionary.txt"];
+const CANDIDATES = ["ar-words.txt", "ar.dic", "ar.txt", "arabic.txt", "words.txt"];
 
 function findDictFile() {
   for (const name of CANDIDATES) {
@@ -162,7 +164,7 @@ function findDictFile() {
   return null;
 }
 
-function addWord(raw) {
+function addWord(raw, tier) {
   // hunspell: الكلمة قد تكون "كلمة/FLAGS"
   let w = raw;
   const slash = w.indexOf("/");
@@ -171,35 +173,45 @@ function addWord(raw) {
   if (w.length < MIN_LEN || w.length > MAX_LEN) return;
   if (!isPureArabic(w)) return;
   WORDS.add(w);
-  if (w.length <= 6) SIMPLE.add(w);
+  const t = tier || 2;
+  const prev = TIER.get(w);
+  if (prev === undefined || t < prev) TIER.set(w, t);
+  if (t <= 2) SIMPLE.add(w);
+}
+
+/* ═══ اختيار المقاطع ═══
+   المقطع يجب أن يكون "طبيعياً": لا حروف مكررة متجاورة، ولا يبدأ بسابقة لصيقة. */
+const CLITIC_START = new Set(["و", "ف", "ب", "ك", "ل"]);
+function badSyllable(s) {
+  if (!s || s.length < 2) return true;
+  for (let i = 1; i < s.length; i++) if (s[i] === s[i - 1]) return true;   // وو، اا، لل
+  if (CLITIC_START.has(s[0]) && (s[1] === "ا" || s[1] === "ل")) return true; // وال، بال، لل
+  if (/^[اوي]+$/.test(s)) return true;                                      // حروف علة فقط
+  return false;
 }
 
 function buildIndex(wordSet, target) {
   const c2 = new Map(), c3 = new Map();
+  // نزن المقاطع بشيوع الكلمات: الشائعة جداً ×3، الشائعة ×1، الموسّعة لا تُحتسب
   for (const w of wordSet) {
+    const t = TIER.get(w) || 3;
+    const weight = t === 1 ? 3 : t === 2 ? 1 : 0;
+    if (!weight) continue;
     const L = w.length;
-    if (L >= 2) {
-      const seen = new Set();
-      for (let i = 0; i + 2 <= L; i++) {
-        const s = w.slice(i, i + 2);
-        if (!seen.has(s)) { seen.add(s); c2.set(s, (c2.get(s) || 0) + 1); }
-      }
+    const seen2 = new Set(), seen3 = new Set();
+    for (let i = 0; i + 2 <= L; i++) {
+      const s = w.slice(i, i + 2);
+      if (!seen2.has(s)) { seen2.add(s); c2.set(s, (c2.get(s) || 0) + weight); }
     }
-    if (L >= 3) {
-      const seen = new Set();
-      for (let i = 0; i + 3 <= L; i++) {
-        const s = w.slice(i, i + 3);
-        if (!seen.has(s)) { seen.add(s); c3.set(s, (c3.get(s) || 0) + 1); }
-      }
+    for (let i = 0; i + 3 <= L; i++) {
+      const s = w.slice(i, i + 3);
+      if (!seen3.has(s)) { seen3.add(s); c3.set(s, (c3.get(s) || 0) + weight); }
     }
   }
   target.count = new Map([...c2, ...c3]);
-  // عتبة أدنى حتى لا نعطي اللاعب مقطعاً شبه مستحيل
-  const total = wordSet.size;
-  const min2 = Math.max(8, Math.round(total * 0.0006));
-  const min3 = Math.max(5, Math.round(total * 0.0002));
-  target.syl2 = [...c2].filter(([, n]) => n >= min2).sort((a, b) => b[1] - a[1]);
-  target.syl3 = [...c3].filter(([, n]) => n >= min3).sort((a, b) => b[1] - a[1]);
+  const min2 = 400, min3 = 120;
+  target.syl2 = [...c2].filter(([s, n]) => n >= min2 && !badSyllable(s)).sort((a, b) => b[1] - a[1]);
+  target.syl3 = [...c3].filter(([s, n]) => n >= min3 && !badSyllable(s)).sort((a, b) => b[1] - a[1]);
 }
 
 function buildSyllables() {
@@ -214,18 +226,25 @@ function load() {
     try {
       const txt = fs.readFileSync(file, "utf8");
       const lines = txt.split(/\r?\n/);
+      const tiered = path.basename(file) === "ar-words.txt";
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         if (!line || line[0] === "#") continue;
-        addWord(line);
+        if (tiered) {
+          const sp = line.lastIndexOf(" ");
+          if (sp > 0) addWord(line.slice(0, sp), parseInt(line.slice(sp + 1), 10) || 2);
+          else addWord(line, 2);
+        } else {
+          addWord(line, 2);
+        }
       }
       SOURCE = path.basename(file);
     } catch (e) {
       console.error("dict: فشل قراءة الملف:", e.message);
     }
   }
-  // دائماً نضيف القائمة المدمجة (تضمن وجود كلمات شائعة)
-  for (const w of FALLBACK) addWord(w);
+  // القائمة المدمجة دائماً ضمن الطبقة الأولى (كلمات يومية مضمونة)
+  for (const w of FALLBACK) addWord(w, 1);
   buildSyllables();
   LOADED = true;
   console.log(`📖 القاموس: ${WORDS.size.toLocaleString("en")} كلمة (المصدر: ${SOURCE}) — مقاطع: ${IDX.full.syl2.length} ثنائي / ${IDX.full.syl3.length} ثلاثي`);
@@ -247,12 +266,12 @@ function pickSyllable(difficulty = 40, allowTriple = true, dictName = "full") {
   const idx = IDX[dictName === "simple" ? "simple" : "full"];
   const d = Math.min(100, Math.max(0, Number(difficulty) || 0));
   // كلما زادت الصعوبة، اخترنا مقاطع أندر (أبعد في القائمة المرتبة)
-  const useTriple = allowTriple && Math.random() < (0.15 + d / 400);
-  const list = (useTriple && idx.syl3.length > 30) ? idx.syl3 : idx.syl2;
+  const useTriple = allowTriple && Math.random() < (0.10 + d / 350);
+  const list = (useTriple && idx.syl3.length > 40) ? idx.syl3 : idx.syl2;
   if (!list.length) return { syllable: "ال", pool: 0 };
-  // نافذة الاختيار: من نسبة البداية إلى نسبة النهاية بحسب الصعوبة
-  const start = Math.floor(list.length * (d / 100) * 0.75);
-  const span = Math.max(12, Math.floor(list.length * 0.25));
+  // نافذة الاختيار: الأسهل يبقى في أشيع المقاطع، والأصعب يصل ~83% من القائمة
+  const start = Math.floor(list.length * (d / 100) * 0.55);
+  const span = Math.max(15, Math.floor(list.length * 0.28));
   const end = Math.min(list.length, start + span);
   const at = start + Math.floor(Math.random() * Math.max(1, end - start));
   const [syllable, n] = list[Math.min(at, list.length - 1)];
@@ -272,7 +291,7 @@ function check(word, syllable, opts = {}) {
   const syl = normalize(syllable);
   if (syl && !w.includes(syl)) return { ok: false, reason: "noSyllable" };
   if (used && used.has(w)) return { ok: false, reason: "used" };
-  if (!pool(dictName).has(w)) return { ok: false, reason: "notFound" };
+  if (!pool(dictName).has(w)) return { ok: false, reason: "notFound", word: w };
   return { ok: true, word: w };
 }
 
@@ -281,6 +300,18 @@ function lettersOf(word) {
   const out = new Set();
   for (const ch of normalize(word)) if (LETTER_SET.has(ch)) out.add(ch);
   return out;
+}
+
+/* إضافة كلمات وافق عليها الأدمن (تدخل الطبقة الشائعة مباشرة) */
+function addApproved(list) {
+  let n = 0;
+  for (const raw of (list || [])) {
+    const w = normalize(raw);
+    if (!w || !isPureArabic(w) || w.length < MIN_LEN || w.length > MAX_LEN) continue;
+    if (!WORDS.has(w)) n++;
+    addWord(w, 1);
+  }
+  return n;
 }
 
 function stats() {
@@ -298,5 +329,5 @@ function syllablePool(syl, dictName) {
 
 module.exports = {
   load, has, check, pickSyllable, lettersOf, normalize, stats,
-  syllablePool, ALPHABET, isPureArabic
+  syllablePool, addApproved, ALPHABET, isPureArabic
 };

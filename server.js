@@ -1144,6 +1144,7 @@ createStore()
     // 💣 تفعيل لعبة القنبلة (namespace مستقل /bomb)
     try {
       bombApi = setupBomb(io, { store, hashPass, publicStats, getAdmin: () => admin });
+      require("./wadmin").setupWordAdmin(app, { getBank: () => bombApi && bombApi.wordBank });
       console.log("💣 لعبة القنبلة جاهزة على /bomb");
     } catch (e) {
       console.error("bomb setup:", e.message);

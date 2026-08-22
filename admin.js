@@ -205,7 +205,10 @@ th{color:#9fb3c8;font-weight:600}
 @keyframes p{50%{opacity:.3}}
 </style></head><body>
 <div class="head"><h1>🎨 لوحة مراقبة ارسمها <span class="dot"></span></h1>
-<a class="logout" href="LOGOUT">خروج</a></div>
+<div style="display:flex;gap:8px;align-items:center">
+<a class="logout" href="ADMIN_URL/q" style="background:#1668c7">📚 الأسئلة</a>
+<a class="logout" href="ADMIN_URL/w" style="background:#e07b39">💬 كلمات القنبلة</a>
+<a class="logout" href="LOGOUT">خروج</a></div></div>
 <div class="grid">
 <div class="card live"><div class="n" id="online">–</div><div class="l">متصل الآن</div></div>
 <div class="card live"><div class="n" id="rooms">–</div><div class="l">غرف نشطة</div></div>

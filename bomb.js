@@ -62,6 +62,90 @@ function setupBomb(io, deps) {
 
   dict.load();
 
+  /* ═══ بنك الكلمات المقترحة من اللاعبين ═══
+     كل كلمة عربية سليمة كتبها لاعب ولم يجدها القاموس تُسجَّل هنا،
+     ويراجعها الأدمن من لوحة الكلمات (قبول = تُضاف للقاموس فوراً). */
+  const WORD_BANK = { pending: {}, approved: [], rejected: [] };
+  let bankTimer = null;
+
+  store.getKV("bombWordBank").then(v => {
+    if (v) {
+      WORD_BANK.pending = v.pending || {};
+      WORD_BANK.approved = v.approved || [];
+      WORD_BANK.rejected = v.rejected || [];
+      const n = dict.addApproved(WORD_BANK.approved);
+      if (WORD_BANK.approved.length) console.log(`💬 كلمات معتمدة من الأدمن: ${WORD_BANK.approved.length}`);
+    }
+  }).catch(() => {});
+
+  function saveBank() {
+    clearTimeout(bankTimer);
+    bankTimer = setTimeout(() => { store.setKV("bombWordBank", WORD_BANK).catch(() => {}); }, 1500);
+  }
+
+  function suggestWord(word, by) {
+    const w = dict.normalize(word);
+    if (!w || w.length < 2 || w.length > 12) return;
+    if (!dict.isPureArabic(w)) return;
+    if (dict.has(w)) return;
+    if (WORD_BANK.rejected.includes(w)) return;
+    const e = WORD_BANK.pending[w] || { word: w, count: 0, by: [], first: Date.now() };
+    e.count++;
+    if (by && !e.by.includes(by) && e.by.length < 8) e.by.push(by);
+    e.last = Date.now();
+    WORD_BANK.pending[w] = e;
+    saveBank();
+  }
+
+  const wordBankApi = {
+    list() { return Object.values(WORD_BANK.pending).sort((a, b) => b.count - a.count || b.last - a.last); },
+    counts() { return { pending: Object.keys(WORD_BANK.pending).length, approved: WORD_BANK.approved.length, rejected: WORD_BANK.rejected.length }; },
+    approve(words) {
+      let n = 0;
+      for (const raw of (words || [])) {
+        const w = dict.normalize(raw);
+        if (!w || !WORD_BANK.pending[w]) continue;
+        delete WORD_BANK.pending[w];
+        if (!WORD_BANK.approved.includes(w)) { WORD_BANK.approved.push(w); n++; }
+      }
+      if (n) dict.addApproved(WORD_BANK.approved);
+      saveBank();
+      return n;
+    },
+    reject(words) {
+      let n = 0;
+      for (const raw of (words || [])) {
+        const w = dict.normalize(raw);
+        if (!w || !WORD_BANK.pending[w]) continue;
+        delete WORD_BANK.pending[w];
+        if (!WORD_BANK.rejected.includes(w)) WORD_BANK.rejected.push(w);
+        n++;
+      }
+      saveBank();
+      return n;
+    },
+    addDirect(words) {
+      let n = 0;
+      for (const raw of (words || [])) {
+        const w = dict.normalize(raw);
+        if (!w || !dict.isPureArabic(w) || w.length < 2 || w.length > 12) continue;
+        if (!WORD_BANK.approved.includes(w)) { WORD_BANK.approved.push(w); n++; }
+        delete WORD_BANK.pending[w];
+      }
+      if (n) dict.addApproved(WORD_BANK.approved);
+      saveBank();
+      return n;
+    },
+    approvedList() { return [...WORD_BANK.approved]; },
+    removeApproved(words) {
+      const set = new Set((words || []).map(w => dict.normalize(w)));
+      const before = WORD_BANK.approved.length;
+      WORD_BANK.approved = WORD_BANK.approved.filter(w => !set.has(w));
+      saveBank();
+      return before - WORD_BANK.approved.length;
+    }
+  };
+
   // ====== أدوات ======
   function makeRoomId() {
     let id;
@@ -300,7 +384,12 @@ function setupBomb(io, deps) {
         used: "الكلمة مستعملة في هذه الجولة",
         notFound: "الكلمة غير موجودة في القاموس"
       };
-      nsp.to(p.id).emit("reject", { reason: res.reason, msg: msgs[res.reason] || "غير مقبولة" });
+      // كلمة عربية سليمة غير موجودة ⇒ تُرسل للأدمن كاقتراح
+      if (res.reason === "notFound") suggestWord(res.word || raw, p.name);
+      nsp.to(p.id).emit("reject", {
+        reason: res.reason,
+        msg: res.reason === "notFound" ? "غير موجودة في القاموس — أُرسلت للمراجعة 📩" : (msgs[res.reason] || "غير مقبولة")
+      });
       return;
     }
 
@@ -587,7 +676,7 @@ function setupBomb(io, deps) {
     });
   }, 30000);
 
-  return { liveStats, publicRooms, rooms };
+  return { liveStats, publicRooms, rooms, wordBank: wordBankApi };
 }
 
 module.exports = { setupBomb, DEFAULTS };
