@@ -189,15 +189,15 @@
   #stage.compact #bombPointer, #stage.tight #bombPointer { display:none !important; }
 
   /* القنبلة في المنتصف */
-  #bombWrap { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; width:210px; }
-  #bombCircle { position:relative; width:150px; height:150px; margin:0 auto; }
+  #bombWrap { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; width:300px; }
+  #bombCircle { position:relative; width:232px; height:232px; margin:0 auto; }
   #bombCircle svg { position:absolute; inset:0; transform:rotate(-90deg); }
   #ringBg { fill:none; stroke:#eef2f7; stroke-width:9; }
   #ringFg { fill:none; stroke:var(--accent); stroke-width:9; stroke-linecap:round; transition:stroke .2s; }
   #bombFace { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
-  #bombEmoji { font-size:40px; line-height:1; }
-  #syl { font-size:29px; font-weight:900; color:var(--ink); letter-spacing:2px; }
-  #timeNum { font-size:13px; font-weight:800; color:#8a93a3; }
+  #bombEmoji { font-size:62px; line-height:1; }
+  #syl { font-size:44px; font-weight:900; color:var(--ink); letter-spacing:2px; }
+  #timeNum { font-size:17px; font-weight:800; color:#8a93a3; }
   #timeUnit { display:none; font-size:12px; font-weight:700; color:#a7aebb; margin-top:-2px; }
 
   /* ===== قرص القنبلة الناعم (نمط التصميم المرجعي) — في الوضع المدمج ===== */
@@ -436,10 +436,10 @@
     #ring .pl { display:none; }
     #stage { overflow-y:auto; }          /* السكرول ممكن والكيبورد مفتوح */
     #ring { flex:1 1 auto; min-height:300px; }
-    #bombWrap { width:150px; }
-    #bombCircle { width:136px; height:136px; }
-    #bombEmoji { font-size:30px; }
-    #syl { font-size:25px; }
+    #bombWrap { width:210px; }
+    #bombCircle { width:190px; height:190px; }
+    #bombEmoji { font-size:46px; }
+    #syl { font-size:34px; }
     #poolHint, #roundHint { display:none; }   /* موجودة في شارة المقطع وأسفل الحلقة */
     #sylPill { margin-bottom:6px; padding:5px 10px; }
     #sylPill .vv { font-size:19px; }
@@ -454,10 +454,10 @@
     #topBar .rid { font-size:13.5px; }
     .iconBtn { width:32px; height:32px; font-size:15px; border-radius:8px; }
     #ring { min-height:230px; }
-    #bombWrap { width:130px; }
-    #bombCircle { width:108px; height:108px; }
-    #syl { font-size:21px; }
-    #bombEmoji { font-size:25px; }
+    #bombWrap { width:186px; }
+    #bombCircle { width:164px; height:164px; }
+    #syl { font-size:29px; }
+    #bombEmoji { font-size:40px; }
     .al { width:20px; height:20px; font-size:11px; border-radius:5px; }
     #stage.compact #timeNum { font-size:27px; }
     #stage.compact #bombEmoji { font-size:36px; }
@@ -1258,10 +1258,14 @@
     const list = ST.players;
     const n = list.length || 1;
     const W = ring.clientWidth, H = ring.clientHeight;
-    const rx = Math.max(70, W/2 - (W<520?42:62));
-    const ry = Math.max(60, H/2 - (H<300?38:56));
+    // نبتعد عن حافة القنبلة الكبيرة حتى لا تتداخل البطاقات معها
+    const bombEl = $("bombCircle");
+    const bombR = (bombEl ? bombEl.offsetWidth : 232) / 2;
+    const rx = Math.max(bombR + 78, W/2 - (W<520?42:62));
+    const ry = Math.max(bombR + 62, H/2 - (H<300?38:56));
     list.forEach((p, i) => {
-      const ang = (Math.PI*2 * i / n) - Math.PI/2;
+      // البداية من اليمين: لاعبان ⇒ واحد يمين وواحد يسار (كالمرجع)
+      const ang = (Math.PI*2 * i / n);
       const x = W/2 + Math.cos(ang)*rx;
       const y = H/2 + Math.sin(ang)*ry;
       const d = document.createElement("div");
