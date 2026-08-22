@@ -126,7 +126,8 @@
   .chip .turnArrow svg { display:none; }
   @keyframes bobDown { 0%,100%{transform:translateY(0)} 50%{transform:translateY(3px)} }
   /* في الحلقة: السهم فوق الصورة يشير للأسفل */
-  .pl .turnArrow { width:22px; height:18px; margin:0 auto 1px; transform:rotate(90deg);
+  .pl .turnArrow { position:absolute; top:3px; left:50%; margin-inline-start:-11px;
+                   width:22px; height:18px; transform:rotate(90deg);
                    animation:bob .9s ease-in-out infinite; }
   @keyframes bob { 0%,100%{transform:rotate(90deg) translateX(0);} 50%{transform:rotate(90deg) translateX(-4px);} }
 
