@@ -1332,7 +1332,9 @@ body.kw-bomb .chip.turn { background:#FFF0DC; border-color:#F09B2B; }
 body.kw-bomb .chip.turn::before { background:var(--bo-strong); color:#fff; }
 body.kw-bomb .chip .nm { color:var(--bo-ink); }
 body.kw-bomb .chip .typed { color:var(--bo-deep); }
-body.kw-bomb .pl { background:#fff; border:2px solid #C99A72; border-radius:16px; }
+body.kw-bomb .pl { background:#fff; border:2px solid #C99A72; border-radius:18px;
+  padding:12px 10px 10px; box-shadow:0 3px 9px rgba(160,100,60,.16); }
+body.kw-bomb .pl.turn { padding-top:20px; }   /* مكان لسهم «دورك» فوق الصورة */
 body.kw-bomb .pl.turn .av { border-color:#F09B2B; }
 body.kw-bomb #inputZone { background:none; border-top:2px solid #F0DEC9; }
 body.kw-bomb #wordInput {
@@ -1366,8 +1368,8 @@ body.kw-bomb #bombFace {
 }
 body.kw-bomb #bombFace::before { border-color:#C9A176 transparent transparent #C9A176; }
 body.kw-bomb #syl { color:#FFF6E3; text-shadow:0 3px 10px rgba(60,30,20,.5); }
-/* العدّاد الكبير أعلى الشاشة */
-body.kw-bomb #bigTimer { background:var(--bo-white); border:2px solid var(--bo-line); box-shadow:var(--bo-shadow); }
+/* العدّاد فوق القنبلة — بلا صندوق */
+body.kw-bomb #bigTimer { background:none; border:none; box-shadow:none; }
 body.kw-bomb #bigTimer b { color:var(--bo-deep); }
 body.kw-bomb #bigTimer span { color:#A5764F; }
 body.kw-bomb #bigTimer.hot b { color:#E5341E; }
