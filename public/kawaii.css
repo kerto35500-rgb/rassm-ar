@@ -1387,6 +1387,10 @@ body.kw-bomb #bombCircle::after {
   45% { transform:translate(calc(-50% + 9px),-50%) rotate(6deg); }
   70% { transform:translate(calc(-50% - 5px),-50%) rotate(-3deg); }
 }
+/* سهم القنبلة بألوان الثيم */
+body.kw-bomb #bombPointer .pShaft { background:#F0A73C; box-shadow:0 2px 6px rgba(160,95,60,.28); }
+body.kw-bomb #bombPointer .pHead { border-left-color:#E0862A; }
+
 body.kw-bomb #bombWrap.boom { animation:kwBoomShake .5s ease-in-out; }
 body.kw-bomb .kwBoom {
   position:absolute; left:50%; top:50%; z-index:30; pointer-events:none;

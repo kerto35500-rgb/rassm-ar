@@ -171,6 +171,23 @@
   .chip .typed { font-size:10.5px; color:var(--accent); font-weight:800; min-height:13px;
                  max-width:82px; overflow:hidden; white-space:nowrap; }
 
+  /* سهم القنبلة: يدور من مركز القنبلة نحو صاحب الدور (كـ jklm) */
+  #bombPointer { position:absolute; left:50%; top:50%; width:0; height:0; z-index:4; pointer-events:none;
+                 display:none; transform:rotate(var(--pa,0deg));
+                 transition:transform .5s cubic-bezier(.22,.9,.25,1.1); }
+  #bombPointer.on { display:block; }
+  #bombPointer .pShaft { position:absolute; left:var(--p0,84px); top:-6px; height:12px;
+                 width:var(--plen,52px); border-radius:7px; background:#ffc21f;
+                 box-shadow:0 2px 6px rgba(0,0,0,.22); transform-origin:0 50%; }
+  #bombPointer .pHead { position:absolute; top:-14px; left:calc(var(--p0,84px) + var(--plen,52px) - 2px);
+                 width:0; height:0; border-top:14px solid transparent; border-bottom:14px solid transparent;
+                 border-left:22px solid #ffb300; filter:drop-shadow(0 2px 4px rgba(0,0,0,.22)); }
+  #bombPointer.pass .pShaft { animation:shaftPush .45s ease-out; }
+  #bombPointer.pass .pHead  { animation:headPush .45s ease-out; }
+  @keyframes shaftPush { 0%,100%{ transform:scaleX(1); } 45%{ transform:scaleX(1.35); } }
+  @keyframes headPush  { 0%,100%{ transform:translateX(0); } 45%{ transform:translateX(17px); } }
+  #stage.compact #bombPointer, #stage.tight #bombPointer { display:none !important; }
+
   /* القنبلة في المنتصف */
   #bombWrap { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; width:210px; }
   #bombCircle { position:relative; width:150px; height:150px; margin:0 auto; }
@@ -517,6 +534,7 @@
       </div>
       <div id="ring">
         <div id="alphaRing"></div>
+        <div id="bombPointer" aria-hidden="true"><div class="pShaft"></div><div class="pHead"></div></div>
         <div id="bombWrap">
           <div id="bombCircle">
             <svg viewBox="0 0 100 100">
@@ -1225,8 +1243,8 @@
       if (ST) renderRing();
     }, 60);
   }
-  addEventListener("resize", reflowRing);
-  addEventListener("orientationchange", () => setTimeout(reflowRing, 300));
+  addEventListener("resize", () => { reflowRing(); aimBomb(); });
+  addEventListener("orientationchange", () => setTimeout(() => { reflowRing(); aimBomb(); }, 300));
   if (window.visualViewport) visualViewport.addEventListener("resize", reflowRing);
   if (window.ResizeObserver) {
     // أدق من resize: يرصد تغيّر ارتفاع الحلقة نفسه (فتح لوحة الحروف، ظهور شريط المضيف…)
@@ -1249,6 +1267,7 @@
       const d = document.createElement("div");
       d.className = "pl" + (p.id===ST.turnId ? " turn":"") + (!p.alive && ST.state==="playing" ? " dead":"") + (p.spectator?" spec":"");
       d.dataset.id = p.id;
+      d.dataset.ang = ang;
       d.style.right = (W - x) + "px";
       d.style.top = y + "px";
       d.innerHTML =
@@ -1260,6 +1279,40 @@
         (p.connected?"":'<div class="off">غير متصل…</div>');
       ring.appendChild(d);
     });
+    aimBomb();
+  }
+
+  /* ───── سهم القنبلة: يشير لصاحب الدور ويقذف عند تبدّل الدور ───── */
+  let lastAimId = null, aimDeg = 0;
+  function aimBomb(){
+    const ptr = $("bombPointer");
+    if (!ptr) return;
+    const playing = ST && ST.state === "playing" && ST.turnId;
+    const target = playing ? $("ring").querySelector('.pl[data-id="' + ST.turnId + '"]') : null;
+    if (!playing || !target || $("stage").classList.contains("compact")) {
+      ptr.classList.remove("on");
+      lastAimId = null;
+      return;
+    }
+    let deg = (parseFloat(target.dataset.ang) || 0) * 180 / Math.PI;
+    let diff = ((deg - aimDeg + 180) % 360 + 360) % 360 - 180;
+    aimDeg += diff;
+    const bomb = $("bombCircle");
+    const ringEl = $("ring");
+    const tRect = target.getBoundingClientRect(), rRect = ringEl.getBoundingClientRect();
+    const cx = rRect.left + rRect.width / 2, cy = rRect.top + rRect.height / 2;
+    const dist = Math.hypot(tRect.left + tRect.width / 2 - cx, tRect.top + tRect.height / 2 - cy);
+    const start = (bomb ? bomb.offsetWidth / 2 : 75) + 10;
+    const len = Math.max(26, dist - start - Math.max(tRect.width, tRect.height) / 2 - 16);
+    ptr.style.setProperty("--p0", start + "px");
+    ptr.style.setProperty("--plen", len + "px");
+    ptr.style.setProperty("--pa", aimDeg + "deg");
+    ptr.classList.add("on");
+    if (lastAimId && lastAimId !== ST.turnId) {
+      ptr.classList.remove("pass"); void ptr.offsetWidth; ptr.classList.add("pass");
+      setTimeout(() => ptr.classList.remove("pass"), 480);
+    }
+    lastAimId = ST.turnId;
   }
 
   // بطاقة الدور: صاحب الدور في عمود يمين، والباقون في عمود يسار، والمقطع بينهما
