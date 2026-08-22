@@ -46,11 +46,13 @@
                 font-size:13.5px; line-height:1.9; color:#cfe3f7; text-align:start; }
   #newsBox li { margin-bottom:5px; }
   #htSlider { display:flex; flex-direction:column; align-items:center; gap:10px; }
-  #htSlider img { width:100%; border-radius:10px; cursor:pointer; display:block; background:rgba(0,0,0,.15); min-height:120px; object-fit:cover; }
-  #htSlider p { text-align:center !important; margin:0; }
-  #htDots { display:flex; gap:9px; }
-  #htDots button { width:12px; height:12px; border-radius:50%; border:none; cursor:pointer;
-                   background:rgba(255,255,255,.35); padding:0; }
+  #htSlider img { width:100%; aspect-ratio:4/3; border-radius:10px; cursor:pointer; display:block;
+                  background:rgba(0,0,0,.15); object-fit:contain; }
+  #htSlider p { text-align:center !important; margin:0; min-height:38px; }
+  #htDots { display:flex; gap:10px; }
+  #htDots button { width:13px; height:13px; border-radius:50%; border:none; cursor:pointer;
+                   background:rgba(255,255,255,.35); padding:0; transition:transform .15s, background .15s; }
+  #htDots button:hover { transform:scale(1.2); }
   #htDots button.on { background:#fff; }
   @media (max-width: 900px) {
     #howTo { flex-direction:column; gap:14px; margin-top:18px; }
@@ -476,16 +478,18 @@
       ]
     };
     const HOWTO_SLIDES = [
-      { img: "/howto-1.webp", text: "إذا جاك الدور، اختر كلمة من الخيارات لترسمها!" },
-      { img: "/howto-2.webp", text: "ارسمها باستخدام الأدوات والألوان — بدون حروف أو أرقام!" },
-      { img: "/howto-3.webp", text: "خمّن رسمات غيرك واكتب الجواب في الدردشة قبل انتهاء الوقت!" }
+      { img: "/howto-1.webp", text: "إذا جاك الدور، اختر كلمة من الخيارات لترسمها" },
+      { img: "/howto-2.webp", text: "قم برسمها بدون حروف أو كلمات." },
+      { img: "/howto-3.webp", text: "يحاول باقي اللاعبون تخمين الكلمة التي ترسمها." },
+      { img: "/howto-4.webp", text: "عندما لا يكون دورك في الرسم، حاول تخمين رسمات الآخرين." },
+      { img: "/howto-5.webp", text: "من يجمع أكبر عدد من النقاط يتوج فائزاً." }
     ];
     /* ═══ نهاية منطقة التعديل ═══ */
     const nb = document.getElementById("newsBox");
     nb.innerHTML = '<div class="nwHead"><b>' + NEWS.title + '</b><span>' + NEWS.date + '</span></div>'
       + '<ul>' + NEWS.items.map(i => "<li>" + i + "</li>").join("") + "</ul>";
     const img = document.getElementById("htImg"), txt = document.getElementById("htText"), dots = document.getElementById("htDots");
-    let cur = 0, timer = 0;
+    let cur = 0;
     function show(i) {
       cur = (i + HOWTO_SLIDES.length) % HOWTO_SLIDES.length;
       img.src = HOWTO_SLIDES[cur].img;
@@ -495,12 +499,12 @@
     HOWTO_SLIDES.forEach((s, i) => {
       const d = document.createElement("button");
       d.type = "button"; d.title = "شريحة " + (i + 1);
-      d.onclick = () => { show(i); restart(); };
+      d.onclick = () => show(i);
       dots.appendChild(d);
     });
-    function restart() { clearInterval(timer); timer = setInterval(() => show(cur + 1), 5000); }
-    img.onclick = () => { show(cur + 1); restart(); };
-    show(0); restart();
+    /* التنقل يدوي فقط: بالضغط على النقاط أو على الصورة */
+    img.onclick = () => show(cur + 1);
+    show(0);
   })();
   </script>
 </div>
