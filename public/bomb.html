@@ -190,14 +190,14 @@
 
   /* القنبلة في المنتصف */
   #bombWrap { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center;
-              width:clamp(260px, 46vh, 400px); }
-  #bombCircle { position:relative; width:clamp(240px, 42vh, 360px); aspect-ratio:1; margin:0 auto; }
+              width:clamp(230px, 38vh, 330px); }
+  #bombCircle { position:relative; width:clamp(210px, 35vh, 300px); aspect-ratio:1; margin:0 auto; }
   #bombCircle svg { position:absolute; inset:0; transform:rotate(-90deg); }
   #ringBg { fill:none; stroke:#eef2f7; stroke-width:9; }
   #ringFg { fill:none; stroke:var(--accent); stroke-width:9; stroke-linecap:round; transition:stroke .2s; }
   /* جسم القنبلة: قرص داكن كبير والمقطع مكتوب في منتصفه (كالمرجع) */
   #bombFace { position:absolute; inset:9%; border-radius:50%;
-              display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+              display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
               background:radial-gradient(circle at 34% 28%, #5a5f6b 0%, #2f333c 46%, #1d2027 100%);
               box-shadow:inset 0 -14px 30px rgba(0,0,0,.45), inset 0 10px 22px rgba(255,255,255,.10),
                          0 12px 30px rgba(20,26,40,.35); }
@@ -210,9 +210,10 @@
               font-size:clamp(20px,4.6vh,34px); animation:kwFuse .75s ease-in-out infinite; }
   @keyframes kwFuse { 0%,100%{ transform:scale(1) rotate(-8deg); opacity:.95; } 50%{ transform:scale(1.24) rotate(12deg); opacity:.65; } }
   #bombEmoji { display:none; }
-  #syl { font-size:clamp(40px,9vh,74px); font-weight:900; color:#fff; letter-spacing:3px;
+  #syl { font-size:clamp(36px,8vh,64px); font-weight:900; color:#fff; letter-spacing:3px;
          text-shadow:0 3px 10px rgba(0,0,0,.45); line-height:1.05; }
-  #timeNum { font-size:clamp(15px,2.6vh,22px); font-weight:800; color:#c9d2e2; transition:color .2s; }
+  #timeNum { font-size:clamp(14px,2.3vh,19px); font-weight:800; color:#c9d2e2; transition:color .2s;
+             margin-top:4px; }
   /* الثواني الأخيرة: الرقم ينبض بالأحمر */
   #timeNum.hot { color:#ff8a7a; animation:numTick .34s ease-in-out infinite; }
   @keyframes numTick { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.18); } }
