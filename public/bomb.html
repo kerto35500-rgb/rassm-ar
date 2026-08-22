@@ -1301,11 +1301,17 @@
     const bombR = (bombEl ? bombEl.offsetWidth : 232) / 2;
     const rx = Math.max(bombR + 70, Math.min(W/2 - (W<520?46:92), bombR + 152));
     const ry = Math.max(bombR + 58, Math.min(H/2 - (H<300?40:72), bombR + 124));
+    // نمركز اللاعبين حول كرة القنبلة نفسها (لا حول مركز الساحة المحسوب سابقاً)
+    let cX = W / 2, cY = H / 2;
+    if (bombEl) {
+      const rr = ring.getBoundingClientRect(), br = bombEl.getBoundingClientRect();
+      if (br.width) { cX = br.left + br.width / 2 - rr.left; cY = br.top + br.height / 2 - rr.top; }
+    }
     list.forEach((p, i) => {
       // البداية من اليمين: لاعبان ⇒ واحد يمين وواحد يسار (كالمرجع)
       const ang = (Math.PI*2 * i / n);
-      const x = W/2 + Math.cos(ang)*rx;
-      const y = H/2 + Math.sin(ang)*ry;
+      const x = cX + Math.cos(ang)*rx;
+      const y = cY + Math.sin(ang)*ry;
       const d = document.createElement("div");
       d.className = "pl" + (p.id===ST.turnId ? " turn":"") + (!p.alive && ST.state==="playing" ? " dead":"") + (p.spectator?" spec":"");
       d.dataset.id = p.id;
