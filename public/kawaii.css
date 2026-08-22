@@ -1264,6 +1264,11 @@ body.kw-salfa .scoreRow .g {
   box-shadow:none; width:auto; min-width:46px; text-align:center; display:inline-block;
 }
 body.kw-salfa .scoreRow { padding:7px 10px; }
+/* شارة «صوّت عليه» داخل صف النقاط */
+body.kw-salfa .scoreRow .voters {
+  background:#fff; border:1.5px solid #C99A72; color:#7C9474; border-radius:999px;
+}
+body.kw-salfa .scoreRow .voters .vcount { background:#E5484D; color:#fff; }
 
 /* v18.1: كشف الكلمة يتوسط الشاشة — إخفاء turnEndExtra الفارغ كان يضيّع margin-bottom:auto للتوسيط */
 body.theme-kawaii #turnEndOverlay:has(#turnEndExtra:empty) #revealedWord { margin-bottom:auto; }

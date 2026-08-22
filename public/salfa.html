@@ -204,8 +204,13 @@
          animation:flip .5s ease both;}
   @keyframes flip{from{transform:rotateY(90deg); opacity:0} to{transform:rotateY(0); opacity:1}}
   .vcard.spyTarget{border-color:var(--red); background:#fff3f3;}
-  .scoreRow{display:flex; align-items:center; gap:8px; background:var(--soft); border-radius:10px; padding:8px 10px;}
+  .scoreRow{display:flex; align-items:center; gap:8px; background:var(--soft); border-radius:10px; padding:8px 10px; flex-wrap:wrap;}
   .scoreRow .g{margin-inline-start:auto; font-weight:900; color:var(--green);}
+  .scoreRow .voters{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700;
+                    color:#6b7b8f; background:#fff; border:1.5px solid var(--line); border-radius:999px; padding:3px 10px;}
+  .scoreRow .voters.none{opacity:.6; font-weight:600;}
+  .scoreRow .voters .vcount{min-width:19px; height:19px; border-radius:999px; background:var(--red); color:#fff;
+                            font-size:11px; font-weight:900; display:inline-flex; align-items:center; justify-content:center; padding:0 5px;}
   .spyTag{background:#ffe6e6; color:#c62828; border-radius:999px; padding:2px 9px; font-size:11px; font-weight:900;}
 
   /* ===== نافذة إدارة الكلمات ===== */
@@ -438,8 +443,6 @@
       <div class="banner" id="resBanner">—</div>
       <div class="revealWord"><div class="c" id="resCat">—</div><div class="w" id="resWord">—</div></div>
       <div id="resSpy" class="sub" style="max-width:none;"></div>
-      <div class="h" style="font-size:15px;">🗳️ الأصوات</div>
-      <div class="voteCards" id="resVotes"></div>
       <div class="h" style="font-size:15px;">🏅 النقاط</div>
       <div class="sub" style="max-width:none; text-align:start;">
         نقطة لكل من اكتشف برّا السالفة بصوته • نقطتان لمن نجا • نقطتان لمن كُشف واختار السالفة صح
@@ -1001,28 +1004,26 @@ function buildResult(s){
     + (pickTxt ? " · " + pickTxt : "")
     + " · الأغلبية المطلوبة " + r.majority + " صوتاً";
 
-  const vc = $("resVotes"); vc.innerHTML = "";
-  let vi = 0;
-  Object.entries(r.votes).forEach(([voter, targets]) => {
+  /* من صوّت على كل لاعب — تُعرض بجانب اسمه في صفوف النقاط */
+  const votersOf = {};
+  Object.entries(r.votes || {}).forEach(([voter, targets]) => {
     (targets || []).forEach(target => {
-      const el = document.createElement("div");
-      const hit = r.spyIds.includes(target);
-      el.className = "vcard" + (hit ? " spyTarget" : "");
-      el.style.animationDelay = (vi++ * 70) + "ms";
-      el.innerHTML = "<span>" + esc(nameOf(voter)) + "</span><span>➜</span><span><b>" + esc(nameOf(target)) +
-                     "</b>" + (hit ? " 🎯" : "") + "</span>";
-      vc.appendChild(el);
+      (votersOf[target] = votersOf[target] || []).push(nameOf(voter));
     });
   });
-  if (!vi) vc.innerHTML = '<div class="sub">لم يصوّت أحد</div>';
 
   const sc = $("resScores"); sc.innerHTML = "";
   [...s.players].filter(p=>p.connected).sort((a,b)=>b.score-a.score).forEach(p => {
     const g = r.gains[p.id] || 0;
+    const vs = votersOf[p.id] || [];
     const el = document.createElement("div");
     el.className = "scoreRow";
     el.innerHTML = '<b>' + esc(p.name) + '</b>'
       + (r.spyIds.includes(p.id) ? ' <span class="spyTag">برّا السالفة</span>' : '')
+      + (vs.length
+          ? '<span class="voters">🗳️ صوّت عليه: ' + vs.map(esc).join("، ")
+            + '<span class="vcount">' + vs.length + '</span></span>'
+          : '<span class="voters none">— لم يصوّت عليه أحد</span>')
       + '<span class="g">' + p.score + (g ? ' <small style="color:#2e9e5b">(+' + g + ')</small>' : '') + '</span>';
     sc.appendChild(el);
   });
