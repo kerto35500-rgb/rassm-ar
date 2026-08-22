@@ -171,17 +171,26 @@
   .chip .typed { font-size:10.5px; color:var(--accent); font-weight:800; min-height:13px;
                  max-width:82px; overflow:hidden; white-space:nowrap; }
 
-  /* سهم القنبلة: يدور من مركز القنبلة نحو صاحب الدور (كـ jklm) */
-  #bombPointer { position:absolute; left:50%; top:50%; width:0; height:0; z-index:4; pointer-events:none;
+  /* عدّاد كبير أعلى الشاشة (بدل العدّاد داخل القنبلة) */
+  #bigTimer { display:none; flex-direction:column; align-items:center; line-height:1;
+              min-width:96px; padding:2px 14px; border-radius:16px; }
+  #bigTimer.on { display:flex; }
+  #bigTimer b { font-size:34px; font-weight:900; color:var(--accent); font-variant-numeric:tabular-nums;
+                transition:color .2s; }
+  #bigTimer span { font-size:11px; font-weight:800; color:#a7aebb; margin-top:2px; }
+  #bigTimer.hot b { color:#e5341e; animation:numTick .34s ease-in-out infinite; }
+
+  /* سهم القنبلة: يمرّ عبر القنبلة كاملة من اللاعب المقابل إلى صاحب الدور */
+  #bombPointer { position:absolute; left:50%; top:50%; width:0; height:0; z-index:2; pointer-events:none;
                  display:none; transform:rotate(var(--pa,0deg));
                  transition:transform .5s cubic-bezier(.22,.9,.25,1.1); }
   #bombPointer.on { display:block; }
-  #bombPointer .pShaft { position:absolute; left:var(--p0,84px); top:-6px; height:12px;
-                 width:var(--plen,52px); border-radius:7px; background:#ffc21f;
-                 box-shadow:0 2px 6px rgba(0,0,0,.22); transform-origin:0 50%; }
-  #bombPointer .pHead { position:absolute; top:-14px; left:calc(var(--p0,84px) + var(--plen,52px) - 2px);
-                 width:0; height:0; border-top:14px solid transparent; border-bottom:14px solid transparent;
-                 border-left:22px solid #ffb300; filter:drop-shadow(0 2px 4px rgba(0,0,0,.22)); }
+  #bombPointer .pShaft { position:absolute; left:calc(-1 * var(--pback,120px)); top:-6px; height:12px;
+                 width:calc(var(--pback,120px) + var(--p0,84px) + var(--plen,52px)); border-radius:7px;
+                 background:#ffc21f; box-shadow:0 2px 6px rgba(0,0,0,.22); transform-origin:100% 50%; }
+  #bombPointer .pHead { position:absolute; top:-15px; left:calc(var(--p0,84px) + var(--plen,52px) - 2px);
+                 width:0; height:0; border-top:15px solid transparent; border-bottom:15px solid transparent;
+                 border-left:24px solid #ffb300; filter:drop-shadow(0 2px 4px rgba(0,0,0,.22)); }
   #bombPointer.pass .pShaft { animation:shaftPush .45s ease-out; }
   #bombPointer.pass .pHead  { animation:headPush .45s ease-out; }
   @keyframes shaftPush { 0%,100%{ transform:scaleX(1); } 45%{ transform:scaleX(1.35); } }
@@ -192,12 +201,11 @@
   #bombWrap { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center;
               width:clamp(230px, 38vh, 330px); }
   #bombCircle { position:relative; width:clamp(210px, 35vh, 300px); aspect-ratio:1; margin:0 auto; }
-  #bombCircle svg { position:absolute; inset:0; transform:rotate(-90deg); }
-  #ringBg { fill:none; stroke:#eef2f7; stroke-width:9; }
-  #ringFg { fill:none; stroke:var(--accent); stroke-width:9; stroke-linecap:round; transition:stroke .2s; }
+  /* حلقة التقدّم مخفية — القنبلة بسيطة كالمرجع، والوقت أعلى الشاشة */
+  #bombCircle svg { display:none; }
   /* جسم القنبلة: قرص داكن كبير والمقطع مكتوب في منتصفه (كالمرجع) */
-  #bombFace { position:absolute; inset:9%; border-radius:50%;
-              display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  #bombFace { position:absolute; inset:0; border-radius:50%;
+              display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0;
               background:radial-gradient(circle at 34% 28%, #5a5f6b 0%, #2f333c 46%, #1d2027 100%);
               box-shadow:inset 0 -14px 30px rgba(0,0,0,.45), inset 0 10px 22px rgba(255,255,255,.10),
                          0 12px 30px rgba(20,26,40,.35); }
@@ -212,10 +220,8 @@
   #bombEmoji { display:none; }
   #syl { font-size:clamp(36px,8vh,64px); font-weight:900; color:#fff; letter-spacing:3px;
          text-shadow:0 3px 10px rgba(0,0,0,.45); line-height:1.05; }
-  #timeNum { font-size:clamp(14px,2.3vh,19px); font-weight:800; color:#c9d2e2; transition:color .2s;
-             margin-top:4px; }
-  /* الثواني الأخيرة: الرقم ينبض بالأحمر */
-  #timeNum.hot { color:#ff8a7a; animation:numTick .34s ease-in-out infinite; }
+  /* الوقت لم يعد داخل القنبلة — انتقل لأعلى الشاشة */
+  #timeNum, #timeUnit { display:none !important; }
   @keyframes numTick { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.18); } }
   #timeUnit { display:none; font-size:12px; font-weight:700; color:#a7aebb; margin-top:-2px; }
 
@@ -253,10 +259,18 @@
            background:#eef2f7; font-size:19px; color:var(--ink); }
   #kbBtn.on { background:var(--accent2); border-color:var(--accent2); color:#fff; }
 
-  /* لوحة مفاتيح عربية على الشاشة */
-  #vkb { display:none; margin-top:8px; padding:6px; background:#dfe6ee; border-radius:11px;
-         flex-direction:column; gap:5px; }
+  /* لوحة مفاتيح عربية: نافذة عائمة فوق الشاشة — لا تزحزح اللاعبين ولا الحروف */
+  #vkb { display:none; position:fixed; left:50%; bottom:10px; transform:translateX(-50%);
+         width:min(660px, calc(100vw - 16px)); z-index:80;
+         padding:8px 8px 10px; background:#e7edf4; border:2px solid #cfd9e4; border-radius:16px;
+         flex-direction:column; gap:5px; box-shadow:0 -6px 26px rgba(20,40,70,.22); }
   #vkb.on { display:flex; }
+  #vkbBar { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 2px 4px; }
+  #vkbBar .ttl { font-size:12.5px; font-weight:800; color:#5b6a7d; }
+  #vkbClose { border:none; border-radius:10px; background:#e5484d; color:#fff;
+              font-weight:900; font-size:13.5px; padding:7px 14px; cursor:pointer;
+              display:flex; align-items:center; gap:6px; }
+  #vkbClose:active { transform:scale(.95); }
   #vkb .krow { display:flex; gap:4px; justify-content:center; }
   #vkb .k { flex:1 1 0; min-width:0; padding:9px 0; background:#fff; border:1px solid #c4d0dc;
             border-radius:6px; font-size:17px; font-weight:700; color:var(--ink); text-align:center; user-select:none; }
@@ -520,6 +534,9 @@
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13.5a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.2 1.2"/><path d="M14 10.5a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.2-1.2"/></svg>
       </button>
     </div>
+
+    <!-- العدّاد الكبير في المساحة الفارغة أعلى الشاشة -->
+    <div id="bigTimer"><b id="bigTimeNum">—</b><span>ثانية</span></div>
 
     <div id="roomChip">
       <div class="l1">غرفة <b id="ridNum">—</b></div>
@@ -1324,6 +1341,8 @@
     const dist = Math.hypot(tRect.left + tRect.width / 2 - cx, tRect.top + tRect.height / 2 - cy);
     const start = (bomb ? bomb.offsetWidth / 2 : 75) + 10;
     const len = Math.max(26, dist - start - Math.max(tRect.width, tRect.height) / 2 - 16);
+    // ذيل السهم يمتد للخلف عبر القنبلة كلها (كالمرجع)
+    ptr.style.setProperty("--pback", ((bomb ? bomb.offsetWidth / 2 : 75) + 46) + "px");
     ptr.style.setProperty("--p0", start + "px");
     ptr.style.setProperty("--plen", len + "px");
     ptr.style.setProperty("--pa", aimDeg + "deg");
@@ -1395,7 +1414,7 @@
         $("timeUnit").style.visibility = "hidden";
         $("pillTime").textContent = "";
         setBeat(0);
-        $("timeNum").classList.remove("hot");
+        $("bigTimer").classList.remove("on", "hot");
         return;
       }
       const localEnd = ST.endsAt - OFFSET;
@@ -1410,9 +1429,12 @@
       $("timeNum").textContent = compact ? (left/1000).toFixed(1) : txt;
       $("timeUnit").style.visibility = "";
       $("pillTime").textContent = txt;
-      // نبض القنبلة يتسارع كلما اقترب الانفجار + نبضة الرقم في آخر ٣ ثوانٍ
+      // نبض القنبلة يتسارع + عدّاد أعلى الشاشة ينبض في آخر ٣ ثوانٍ
       setBeat(left < 3000 ? 3 : left < 6000 ? 2 : 1);
-      $("timeNum").classList.toggle("hot", left < 3000);
+      const bt = $("bigTimer");
+      bt.classList.add("on");
+      bt.classList.toggle("hot", left < 3000);
+      $("bigTimeNum").textContent = (left / 1000).toFixed(1);
       rafId = requestAnimationFrame(frame);
     }
     frame();
@@ -1497,6 +1519,14 @@
   function buildVKB(){
     const v = $("vkb");
     v.innerHTML = "";
+    const bar = document.createElement("div");
+    bar.id = "vkbBar";
+    bar.innerHTML = '<span class="ttl">⌨️ لوحة الحروف العربية</span>';
+    const close = document.createElement("button");
+    close.id = "vkbClose"; close.type = "button"; close.textContent = "✕ إغلاق";
+    close.onclick = () => $("kbBtn").click();
+    bar.appendChild(close);
+    v.appendChild(bar);
     KB_ROWS.forEach(row => {
       const r = document.createElement("div"); r.className = "krow";
       row.forEach(ch => {
@@ -1535,7 +1565,7 @@
     const i = $("wordInput");
     if (kbOpen) { i.blur(); i.readOnly = true; }
     else { i.readOnly = false; }
-    reflowRing();                        // اللوحة أخذت مساحة ⇒ نعيد حساب المواضع
+    // اللوحة عائمة فوق الشاشة ⇒ لا حاجة لإعادة ترتيب اللاعبين والحروف
     try { localStorage.setItem("bombKB", kbOpen ? "1" : "0"); } catch(e){}
   };
   try { if (localStorage.getItem("bombKB") === "1") $("kbBtn").click(); } catch(e){}
