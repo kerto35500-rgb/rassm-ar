@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>💣 القنبلة — لعبة كلمات عربية</title>
+<link rel="stylesheet" href="/kawaii.css">
+<script src="/theme.js" defer></script>
 <style>
   :root {
     --bg1:#16324f; --bg2:#1e4976; --panel:#ffffff; --ink:#1e3a5f;
@@ -1033,6 +1035,7 @@
   socket.on("boom", d => {
     const w = $("bombWrap");
     w.classList.remove("shake"); void w.offsetWidth; w.classList.add("shake");
+    bombBurst();
     $("bombEmoji").textContent = "💥";
     $("wordInput").value = "";
     if (d && d.id === ME) flash("💥 انفجرت عندك!", "bad");
@@ -1318,6 +1321,7 @@
         $("timeNum").textContent = "";
         $("timeUnit").style.visibility = "hidden";
         $("pillTime").textContent = "";
+        setBeat(0);
         return;
       }
       const localEnd = ST.endsAt - OFFSET;
@@ -1332,9 +1336,48 @@
       $("timeNum").textContent = compact ? (left/1000).toFixed(1) : txt;
       $("timeUnit").style.visibility = "";
       $("pillTime").textContent = txt;
+      // نبض القنبلة يتسارع كلما اقترب الانفجار
+      setBeat(left < 3000 ? 3 : left < 6000 ? 2 : 1);
       rafId = requestAnimationFrame(frame);
     }
     frame();
+  }
+
+  // ---------- نبض القنبلة والانفجار ----------
+  let beatLvl = -1;
+  function setBeat(lvl){
+    if (lvl === beatLvl) return;
+    beatLvl = lvl;
+    const c = $("bombCircle");
+    if (!c) return;
+    c.classList.remove("beat", "beat2", "beat3");
+    if (lvl === 1) c.classList.add("beat");
+    else if (lvl === 2) c.classList.add("beat2");
+    else if (lvl === 3) c.classList.add("beat3");
+  }
+  function bombBurst(){
+    const wrap = $("bombWrap");
+    if (!wrap) return;
+    wrap.classList.remove("boom"); void wrap.offsetWidth; wrap.classList.add("boom");
+    const host = $("ring") || wrap.parentNode;
+    const flash = document.createElement("div");
+    flash.className = "kwBoom"; flash.textContent = "💥";
+    host.appendChild(flash);
+    for (let i = 0; i < 10; i++) {
+      const s = document.createElement("div");
+      s.textContent = ["✨","💥","🔥","⭐"][i % 4];
+      const ang = (i / 10) * Math.PI * 2, dist = 90 + Math.random() * 70;
+      s.style.cssText = "position:absolute;left:50%;top:50%;z-index:29;pointer-events:none;font-size:" +
+        (16 + Math.random() * 12) + "px;transition:transform .8s cubic-bezier(.2,.8,.3,1),opacity .8s;transform:translate(-50%,-50%)";
+      host.appendChild(s);
+      requestAnimationFrame(() => {
+        s.style.transform = "translate(calc(-50% + " + Math.cos(ang) * dist + "px), calc(-50% + " + Math.sin(ang) * dist + "px)) scale(.4) rotate(" + (Math.random() * 360 | 0) + "deg)";
+        s.style.opacity = "0";
+      });
+      setTimeout(() => s.remove(), 900);
+    }
+    setTimeout(() => { flash.remove(); wrap.classList.remove("boom"); }, 800);
+    try { navigator.vibrate && navigator.vibrate([60, 40, 90]); } catch (e) {}
   }
 
   // ---------- الإدخال ----------

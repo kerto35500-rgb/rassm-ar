@@ -1273,6 +1273,130 @@ body.kw-salfa .scoreRow .voters .vcount { background:#E5484D; color:#fff; }
 /* v18.1: كشف الكلمة يتوسط الشاشة — إخفاء turnEndExtra الفارغ كان يضيّع margin-bottom:auto للتوسيط */
 body.theme-kawaii #turnEndOverlay:has(#turnEndExtra:empty) #revealedWord { margin-bottom:auto; }
 
+/* ═════════ v22: القنبلة — مارشميلو برتقالي 💣🍡 ═════════ */
+body.theme-kawaii.kw-bomb {
+  --bo-line:#A05F50; --bo-ink:#4A2E2B; --bo-deep:#C2551A; --bo-soft:#FFF3E8;
+  --bo-white:linear-gradient(180deg,#FFFDF8 0%,#FFF4E9 100%);
+  --bo-band:linear-gradient(180deg,#FFE0C2 0%,#FFCC9E 100%);
+  --bo-btn:linear-gradient(180deg,#FFD3A5 0%,#FFB870 100%);
+  --bo-strong:linear-gradient(180deg,#F8B152 0%,#F09B2B 100%);
+  --bo-shadow:0 4px 10px rgba(160,95,60,.24);
+  background:linear-gradient(165deg,#FFF6EA 0%,#FFEAD6 100%) !important;
+  color:var(--bo-ink);
+  font-family:"Baloo Bhaijaan 2","Segoe UI",Tahoma,sans-serif;
+}
+body.kw-bomb input, body.kw-bomb button, body.kw-bomb select, body.kw-bomb textarea { font-family:inherit; }
+body.kw-bomb .kw-doodles { z-index:-1; }
+body.kw-bomb .kw-doodles span { opacity:.3; }
+body.kw-bomb #kwThemeBtn { top:auto; bottom:12px; }
+
+/* خربشات القنبلة: قنيبلات، شرارات، حروف */
+body.theme-kawaii.kw-bomb .kw-doodles .kw-pencil {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 64'%3E%3Ccircle cx='52' cy='38' r='20' fill='%23F6E3CE' stroke='%23C08A5E' stroke-width='3'/%3E%3Cpath d='M66 24c6-6 12-4 14-12' stroke='%23C08A5E' stroke-width='3.4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M80 6l2.5 5.5L88 14l-5.5 2.5L80 22l-2.5-5.5L72 14l5.5-2.5z' fill='%23FFC96B'/%3E%3Ccircle cx='47' cy='36' r='2' fill='%23A5764F'/%3E%3Ccircle cx='57' cy='36' r='2' fill='%23A5764F'/%3E%3Cpath d='M48.5 42q3.5 3 7 0' stroke='%23A5764F' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+body.theme-kawaii.kw-bomb .kw-doodles .kw-palette {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Cpath d='M22 4l4.6 11.5L38 20l-11.4 4.5L22 36l-4.6-11.5L6 20l11.4-4.5z' fill='%23FFD79B' stroke='%23E0A75E' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+body.theme-kawaii.kw-bomb .kw-doodles .kw-brush {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='16' fill='%23FFF0DC' stroke='%23E0A75E' stroke-width='2.6'/%3E%3Ctext x='20' y='28' text-anchor='middle' font-family='Arial' font-size='19' font-weight='900' fill='%23C2551A'%3E%D8%A8%3C/text%3E%3C/svg%3E");
+}
+
+/* شاشة الدخول */
+body.kw-bomb .brand h1 {
+  color:#FFF6E3;
+  text-shadow:-2px -2px 0 #A85D2A, 2px -2px 0 #A85D2A, -2px 2px 0 #A85D2A, 2px 2px 0 #A85D2A,
+              -2.5px 0 0 #A85D2A, 2.5px 0 0 #A85D2A, 0 -2.5px 0 #A85D2A, 0 2.5px 0 #A85D2A,
+              0 7px 14px rgba(170,100,50,.35);
+}
+body.kw-bomb .brand p { color:#9A6438; opacity:1; font-weight:800; }
+body.kw-bomb .brand a.back {
+  background:var(--bo-white); border:2px solid var(--bo-line); color:var(--bo-ink);
+  box-shadow:var(--bo-shadow); backdrop-filter:none; -webkit-backdrop-filter:none;
+}
+
+/* الألواح والبطاقات */
+body.theme-kawaii.kw-bomb #topBar, body.kw-bomb #hostBar {
+  background:var(--bo-band); border:2px solid var(--bo-line); border-radius:20px;
+  box-shadow:var(--bo-shadow);
+}
+body.kw-bomb #stage, body.kw-bomb #playersPanel, body.kw-bomb #chatPanel, body.kw-bomb #alphaBox {
+  background:var(--bo-white); border:2px solid var(--bo-line); border-radius:22px; box-shadow:var(--bo-shadow);
+}
+body.kw-bomb #stage.compact #turnCard {
+  background:var(--bo-band); border:2px solid var(--bo-line); border-radius:20px;
+}
+body.kw-bomb #sylHead .v { color:var(--bo-deep); }
+body.kw-bomb #sylHead .t { color:#A5764F; }
+body.kw-bomb .chip { background:#fff; border:2px solid #C99A72; border-radius:16px; }
+body.kw-bomb .chip.turn { background:#FFF0DC; border-color:#F09B2B; }
+body.kw-bomb .chip.turn::before { background:var(--bo-strong); color:#fff; }
+body.kw-bomb .chip .nm { color:var(--bo-ink); }
+body.kw-bomb .chip .typed { color:var(--bo-deep); }
+body.kw-bomb .pl { background:#fff; border:2px solid #C99A72; border-radius:16px; }
+body.kw-bomb .pl.turn .av { border-color:#F09B2B; }
+body.kw-bomb #inputZone { background:none; border-top:2px solid #F0DEC9; }
+body.kw-bomb #wordInput {
+  background:#fff; border:2px solid var(--bo-line); border-radius:999px; color:var(--bo-ink); font-weight:700;
+}
+body.kw-bomb #wordInput:focus { box-shadow:0 0 0 3px rgba(240,155,43,.35); }
+body.kw-bomb .btn, body.kw-bomb #startBtn {
+  border:2px solid var(--bo-line); border-radius:999px; color:var(--bo-ink);
+  font-weight:800; box-shadow:var(--bo-shadow);
+}
+body.kw-bomb .btn-green { background:linear-gradient(180deg,#C0E8CB,#9AD3A9); }
+body.kw-bomb .btn-blue  { background:var(--bo-btn); }
+body.kw-bomb .btn-red   { background:linear-gradient(180deg,#F8B9B4,#F08A84); color:#7A2A24; }
+body.kw-bomb #alphaGrid .a { border:1.5px solid #E0BB93; border-radius:9px; background:#FFF8EF; color:#A5764F; }
+body.kw-bomb #alphaGrid .a.on { background:var(--bo-strong); color:#fff; border-color:#C2551A; }
+body.kw-bomb .msg, body.kw-bomb #chatLog .m { background:var(--bo-soft); border-radius:12px; }
+
+/* القنبلة: حلقة كريمية + وميض ونبض */
+body.kw-bomb #bombCircle {
+  background:#FFFDF6; border-radius:50%; border:2px solid var(--bo-line); padding:8px;
+  box-shadow:0 6px 18px rgba(160,100,50,.28), inset 0 2px 0 rgba(255,255,255,.85);
+}
+body.kw-bomb #ringBg { stroke:#F3E4D2; }
+body.kw-bomb #ringFg { stroke:#F09B2B; }
+body.kw-bomb #bombFace { background:#fff; border-radius:50%; inset:14%; border:2px solid #EFD9C0; }
+body.kw-bomb #timeNum, body.kw-bomb #syl { color:var(--bo-ink); }
+body.kw-bomb #timeUnit { color:#A5764F; }
+
+@keyframes kwBombBeat { 0%,100% { transform:scale(1); } 50% { transform:scale(1.06); } }
+body.kw-bomb #bombCircle.beat   { animation:kwBombBeat 1.1s ease-in-out infinite; }
+body.kw-bomb #bombCircle.beat2  { animation:kwBombBeat .62s ease-in-out infinite; }
+body.kw-bomb #bombCircle.beat3  { animation:kwBombBeat .34s ease-in-out infinite;
+  box-shadow:0 0 0 6px rgba(229,84,30,.16), 0 6px 18px rgba(160,100,50,.3); }
+
+body.kw-bomb #bombCircle::after {
+  content:"✨"; position:absolute; top:-6px; inset-inline-end:2px; font-size:20px;
+  animation:kwSpark .7s ease-in-out infinite; pointer-events:none;
+}
+@keyframes kwSpark {
+  0%,100% { transform:scale(1) rotate(-8deg); opacity:.95; }
+  50%     { transform:scale(1.25) rotate(10deg); opacity:.6; }
+}
+
+@keyframes kwBoomFlash {
+  0%   { transform:translate(-50%,-50%) scale(.2); opacity:1; }
+  55%  { transform:translate(-50%,-50%) scale(1.5); opacity:.95; }
+  100% { transform:translate(-50%,-50%) scale(2.4); opacity:0; }
+}
+@keyframes kwBoomShake {
+  0%,100% { transform:translate(-50%,-50%) rotate(0); }
+  20% { transform:translate(calc(-50% - 9px),-50%) rotate(-6deg); }
+  45% { transform:translate(calc(-50% + 9px),-50%) rotate(6deg); }
+  70% { transform:translate(calc(-50% - 5px),-50%) rotate(-3deg); }
+}
+body.kw-bomb #bombWrap.boom { animation:kwBoomShake .5s ease-in-out; }
+body.kw-bomb .kwBoom {
+  position:absolute; left:50%; top:50%; z-index:30; pointer-events:none;
+  font-size:100px; line-height:1; animation:kwBoomFlash .75s ease-out forwards;
+}
+
+@media (max-width: 900px) {
+  body.theme-kawaii.kw-bomb #chatForm button[type=submit] { position:static; transform:none; }
+}
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }

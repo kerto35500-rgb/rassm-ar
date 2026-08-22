@@ -59,6 +59,8 @@
     });
     /* برّا السالفة: نسخة خضراء من المارشميلو (تُميَّز بوجود شاشة الدخول الخاصة بها) */
     document.body.classList.toggle("kw-salfa", id === "kawaii" && !!document.getElementById("joinScreen"));
+    /* القنبلة: نسخة برتقالية */
+    document.body.classList.toggle("kw-bomb", id === "kawaii" && !!document.getElementById("bombCircle"));
     if (id === "kawaii") ensureFont();
     doodleLayer(id === "kawaii");
     var pop = document.getElementById("kwThemePop");
