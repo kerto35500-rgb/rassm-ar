@@ -1277,8 +1277,8 @@
     // نبتعد عن حافة القنبلة الكبيرة حتى لا تتداخل البطاقات معها
     const bombEl = $("bombCircle");
     const bombR = (bombEl ? bombEl.offsetWidth : 232) / 2;
-    const rx = Math.max(bombR + 62, Math.min(W/2 - (W<520?42:62), bombR + 105));
-    const ry = Math.max(bombR + 52, Math.min(H/2 - (H<300?38:56), bombR + 88));
+    const rx = Math.max(bombR + 70, Math.min(W/2 - (W<520?46:92), bombR + 152));
+    const ry = Math.max(bombR + 58, Math.min(H/2 - (H<300?40:72), bombR + 124));
     list.forEach((p, i) => {
       // البداية من اليمين: لاعبان ⇒ واحد يمين وواحد يسار (كالمرجع)
       const ang = (Math.PI*2 * i / n);
