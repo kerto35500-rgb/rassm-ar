@@ -189,15 +189,30 @@
   #stage.compact #bombPointer, #stage.tight #bombPointer { display:none !important; }
 
   /* القنبلة في المنتصف */
-  #bombWrap { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; width:300px; }
-  #bombCircle { position:relative; width:232px; height:232px; margin:0 auto; }
+  #bombWrap { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center;
+              width:clamp(260px, 46vh, 400px); }
+  #bombCircle { position:relative; width:clamp(240px, 42vh, 360px); aspect-ratio:1; margin:0 auto; }
   #bombCircle svg { position:absolute; inset:0; transform:rotate(-90deg); }
   #ringBg { fill:none; stroke:#eef2f7; stroke-width:9; }
   #ringFg { fill:none; stroke:var(--accent); stroke-width:9; stroke-linecap:round; transition:stroke .2s; }
-  #bombFace { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
-  #bombEmoji { font-size:62px; line-height:1; }
-  #syl { font-size:44px; font-weight:900; color:var(--ink); letter-spacing:2px; }
-  #timeNum { font-size:17px; font-weight:800; color:#8a93a3; }
+  /* جسم القنبلة: قرص داكن كبير والمقطع مكتوب في منتصفه (كالمرجع) */
+  #bombFace { position:absolute; inset:9%; border-radius:50%;
+              display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+              background:radial-gradient(circle at 34% 28%, #5a5f6b 0%, #2f333c 46%, #1d2027 100%);
+              box-shadow:inset 0 -14px 30px rgba(0,0,0,.45), inset 0 10px 22px rgba(255,255,255,.10),
+                         0 12px 30px rgba(20,26,40,.35); }
+  /* الفتيل والشرارة أعلى يمين القرص */
+  #bombFace::before { content:""; position:absolute; top:-4%; inset-inline-end:12%;
+              width:16%; height:16%; border-radius:50%;
+              border:5px solid #7a6248; border-color:#7a6248 transparent transparent #7a6248;
+              transform:rotate(28deg); }
+  #bombFace::after { content:"✨"; position:absolute; top:-13%; inset-inline-end:2%;
+              font-size:clamp(20px,4.6vh,34px); animation:kwFuse .75s ease-in-out infinite; }
+  @keyframes kwFuse { 0%,100%{ transform:scale(1) rotate(-8deg); opacity:.95; } 50%{ transform:scale(1.24) rotate(12deg); opacity:.65; } }
+  #bombEmoji { display:none; }
+  #syl { font-size:clamp(40px,9vh,74px); font-weight:900; color:#fff; letter-spacing:3px;
+         text-shadow:0 3px 10px rgba(0,0,0,.45); line-height:1.05; }
+  #timeNum { font-size:clamp(15px,2.6vh,22px); font-weight:800; color:#c9d2e2; }
   #timeUnit { display:none; font-size:12px; font-weight:700; color:#a7aebb; margin-top:-2px; }
 
   /* ===== قرص القنبلة الناعم (نمط التصميم المرجعي) — في الوضع المدمج ===== */
@@ -208,10 +223,9 @@
   }
   #stage.compact #ringBg { stroke:#f1f4f8; stroke-width:7; }
   #stage.compact #ringFg { stroke-width:7; }
-  #stage.compact #syl { display:none; }          /* المقطع يظهر كبيراً فوق الحلقة */
-  #stage.compact #bombEmoji { font-size:44px; margin-bottom:1px;
-                              filter:drop-shadow(0 4px 7px rgba(30,58,95,.28)); }
-  #stage.compact #timeNum { font-size:31px; font-weight:900; color:var(--ink); line-height:1.05; }
+  #stage.compact #syl { display:block; }         /* المقطع داخل القنبلة دائماً */
+  #stage.compact #bombEmoji { display:none; }
+  #stage.compact #timeNum { font-size:clamp(15px,2.4vh,20px); font-weight:800; color:#c9d2e2; line-height:1.05; }
   #stage.compact #timeUnit { display:block; }
   #poolHint { font-size:11.5px; color:#a7aebb; margin-top:6px; }
   #roundHint { font-size:12.5px; color:#6b7280; margin-top:2px; }
@@ -436,10 +450,9 @@
     #ring .pl { display:none; }
     #stage { overflow-y:auto; }          /* السكرول ممكن والكيبورد مفتوح */
     #ring { flex:1 1 auto; min-height:300px; }
-    #bombWrap { width:210px; }
-    #bombCircle { width:190px; height:190px; }
-    #bombEmoji { font-size:46px; }
-    #syl { font-size:34px; }
+    #bombWrap { width:min(78vw,300px); }
+    #bombCircle { width:min(72vw,280px); }
+    #syl { font-size:clamp(34px,11vw,56px); }
     #poolHint, #roundHint { display:none; }   /* موجودة في شارة المقطع وأسفل الحلقة */
     #sylPill { margin-bottom:6px; padding:5px 10px; }
     #sylPill .vv { font-size:19px; }
@@ -454,10 +467,9 @@
     #topBar .rid { font-size:13.5px; }
     .iconBtn { width:32px; height:32px; font-size:15px; border-radius:8px; }
     #ring { min-height:230px; }
-    #bombWrap { width:186px; }
-    #bombCircle { width:164px; height:164px; }
-    #syl { font-size:29px; }
-    #bombEmoji { font-size:40px; }
+    #bombWrap { width:min(80vw,250px); }
+    #bombCircle { width:min(74vw,235px); }
+    #syl { font-size:clamp(30px,11vw,46px); }
     .al { width:20px; height:20px; font-size:11px; border-radius:5px; }
     #stage.compact #timeNum { font-size:27px; }
     #stage.compact #bombEmoji { font-size:36px; }
