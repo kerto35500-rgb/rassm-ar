@@ -1367,6 +1367,7 @@ body.kw-bomb #bombFace {
 body.kw-bomb #bombFace::before { border-color:#C9A176 transparent transparent #C9A176; }
 body.kw-bomb #syl { color:#FFF6E3; text-shadow:0 3px 10px rgba(60,30,20,.5); }
 body.kw-bomb #timeNum { color:#F0D6B8; }
+body.kw-bomb #timeNum.hot { color:#FF9C86; }   /* آخر ٣ ثوانٍ: نبضة حمراء */
 body.kw-bomb #timeUnit { color:#E0BFA0; }
 
 @keyframes kwBombBeat { 0%,100% { transform:scale(1); } 50% { transform:scale(1.06); } }
