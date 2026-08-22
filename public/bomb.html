@@ -212,7 +212,10 @@
   #bombEmoji { display:none; }
   #syl { font-size:clamp(40px,9vh,74px); font-weight:900; color:#fff; letter-spacing:3px;
          text-shadow:0 3px 10px rgba(0,0,0,.45); line-height:1.05; }
-  #timeNum { font-size:clamp(15px,2.6vh,22px); font-weight:800; color:#c9d2e2; }
+  #timeNum { font-size:clamp(15px,2.6vh,22px); font-weight:800; color:#c9d2e2; transition:color .2s; }
+  /* الثواني الأخيرة: الرقم ينبض بالأحمر */
+  #timeNum.hot { color:#ff8a7a; animation:numTick .34s ease-in-out infinite; }
+  @keyframes numTick { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.18); } }
   #timeUnit { display:none; font-size:12px; font-weight:700; color:#a7aebb; margin-top:-2px; }
 
   /* ===== قرص القنبلة الناعم (نمط التصميم المرجعي) — في الوضع المدمج ===== */
@@ -1273,8 +1276,8 @@
     // نبتعد عن حافة القنبلة الكبيرة حتى لا تتداخل البطاقات معها
     const bombEl = $("bombCircle");
     const bombR = (bombEl ? bombEl.offsetWidth : 232) / 2;
-    const rx = Math.max(bombR + 78, W/2 - (W<520?42:62));
-    const ry = Math.max(bombR + 62, H/2 - (H<300?38:56));
+    const rx = Math.max(bombR + 62, Math.min(W/2 - (W<520?42:62), bombR + 105));
+    const ry = Math.max(bombR + 52, Math.min(H/2 - (H<300?38:56), bombR + 88));
     list.forEach((p, i) => {
       // البداية من اليمين: لاعبان ⇒ واحد يمين وواحد يسار (كالمرجع)
       const ang = (Math.PI*2 * i / n);
@@ -1391,6 +1394,7 @@
         $("timeUnit").style.visibility = "hidden";
         $("pillTime").textContent = "";
         setBeat(0);
+        $("timeNum").classList.remove("hot");
         return;
       }
       const localEnd = ST.endsAt - OFFSET;
@@ -1405,8 +1409,9 @@
       $("timeNum").textContent = compact ? (left/1000).toFixed(1) : txt;
       $("timeUnit").style.visibility = "";
       $("pillTime").textContent = txt;
-      // نبض القنبلة يتسارع كلما اقترب الانفجار
+      // نبض القنبلة يتسارع كلما اقترب الانفجار + نبضة الرقم في آخر ٣ ثوانٍ
       setBeat(left < 3000 ? 3 : left < 6000 ? 2 : 1);
+      $("timeNum").classList.toggle("hot", left < 3000);
       rafId = requestAnimationFrame(frame);
     }
     frame();
