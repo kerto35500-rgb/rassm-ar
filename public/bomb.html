@@ -237,8 +237,11 @@
   #stage.compact #bombEmoji { display:none; }
   #stage.compact #timeNum { font-size:clamp(15px,2.4vh,20px); font-weight:800; color:#c9d2e2; line-height:1.05; }
   #stage.compact #timeUnit { display:block; }
-  #poolHint { font-size:11.5px; color:#a7aebb; margin-top:6px; }
-  #roundHint { font-size:12.5px; color:#6b7280; margin-top:2px; }
+  /* النصوص أسفل الكرة خارج التدفق: تبقى الكرة في منتصف الساحة تماماً */
+  #poolHint { position:absolute; left:50%; transform:translateX(-50%); top:calc(100% + 8px);
+              white-space:nowrap; font-size:11.5px; color:#a7aebb; }
+  #roundHint { position:absolute; left:50%; transform:translateX(-50%); top:calc(100% + 26px);
+               white-space:nowrap; font-size:12.5px; color:#6b7280; }
   .shake { animation:shake .35s; }
   @keyframes shake { 0%,100%{transform:translate(-50%,-50%);} 25%{transform:translate(calc(-50% - 7px),-50%);} 75%{transform:translate(calc(-50% + 7px),-50%);} }
 
@@ -1276,12 +1279,14 @@
       if (ST) renderRing();
     }, 60);
   }
-  addEventListener("resize", () => { reflowRing(); aimBomb(); });
-  addEventListener("orientationchange", () => setTimeout(() => { reflowRing(); aimBomb(); }, 300));
+  // إعادة ترتيب كاملة: الحروف + اللاعبون + السهم (حتى تبقى الكرة في منتصفهم تماماً)
+  function relayoutAll(){ reflowRing(); if (typeof ST !== "undefined" && ST) renderRing(); aimBomb(); }
+  addEventListener("resize", relayoutAll);
+  addEventListener("orientationchange", () => setTimeout(relayoutAll, 300));
   if (window.visualViewport) visualViewport.addEventListener("resize", reflowRing);
   if (window.ResizeObserver) {
     // أدق من resize: يرصد تغيّر ارتفاع الحلقة نفسه (فتح لوحة الحروف، ظهور شريط المضيف…)
-    new ResizeObserver(reflowRing).observe($("ring"));
+    new ResizeObserver(() => relayoutAll()).observe($("ring"));
   }
 
   function renderRing(){
