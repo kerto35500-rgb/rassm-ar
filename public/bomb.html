@@ -115,8 +115,10 @@
   @keyframes pulse { 0%,100%{box-shadow:0 0 0 5px rgba(229,84,30,.18);} 50%{box-shadow:0 0 0 9px rgba(229,84,30,.07);} }
 
   /* ➡ سهم عريض يشير للاعب صاحب الدور (بنمط «القنبلة تتمرّر») */
+  /* سهم التأشير فوق اللاعب أُلغي — سهم القنبلة نفسه يكفي */
   .turnArrow { display:none; }
-  .pl.turn .turnArrow, .chip.turn .turnArrow { display:block; }
+  .pl .turnArrow { display:none !important; }
+  .chip.turn .turnArrow { display:block; }
   .turnArrow svg { width:100%; height:100%; display:block;
                    filter:drop-shadow(0 2px 4px rgba(0,0,0,.28)); }
   .turnArrow .shaft { fill:#ffc21f; }
@@ -219,9 +221,12 @@
               width:16%; height:16%; border-radius:50%;
               border:5px solid #7a6248; border-color:#7a6248 transparent transparent #7a6248;
               transform:rotate(28deg); }
-  #bombFace::after { content:"✨"; position:absolute; top:-13%; inset-inline-end:2%;
-              font-size:clamp(20px,4.6vh,34px); animation:kwFuse .75s ease-in-out infinite; }
-  @keyframes kwFuse { 0%,100%{ transform:scale(1) rotate(-8deg); opacity:.95; } 50%{ transform:scale(1.24) rotate(12deg); opacity:.65; } }
+  /* شرارة صغيرة على رأس الفتيل فقط — لا تغطّي الحروف */
+  #bombFace::after { content:""; position:absolute; top:-12%; inset-inline-end:7%;
+              width:15%; height:15%; border-radius:50%; pointer-events:none;
+              background:radial-gradient(circle, #FFFBE8 0%, #FFD264 38%, #FF8A1E 62%, rgba(255,138,30,0) 74%);
+              animation:kwFuse .7s ease-in-out infinite; }
+  @keyframes kwFuse { 0%,100%{ transform:scale(1); opacity:.95; } 50%{ transform:scale(1.3); opacity:.6; } }
   #bombEmoji { display:none; }
   #syl { font-size:clamp(18px,3.1vh,25px); font-weight:900; color:#fff; letter-spacing:2px;
          text-shadow:0 3px 10px rgba(0,0,0,.45); line-height:1.05; }
@@ -349,10 +354,8 @@
   #side.open { display:flex; }
   #side #chatPanel { flex:1 1 auto; min-height:0; }
   #sheetGrip { align-self:center; width:52px; height:6px; border-radius:99px; background:#c3ccd8; flex-shrink:0; cursor:pointer; }
-  /* الساحة تنكمش وقت فتح اللوحة فلا تغطّي اللاعبين */
+  /* اللوحة تطفو في الفراغ يمين الصفحة — الساحة لا تنكمش أبداً */
   @media (min-width: 881px) {
-    body.sideOpen #main   { margin-right:336px; }
-    body.sideOpen #topBar { margin-right:336px; }
     #sheetBack { display:none !important; }   /* اللوحة مثبّتة ⇒ لا تعتيم للصفحة */
   }
   #sheetBack { display:none; position:fixed; inset:0; background:rgba(10,20,36,.35); z-index:55; }
@@ -1208,7 +1211,7 @@
     $("setBtn").style.display = isHost ? "" : "none";
 
     // القنبلة
-    $("syl").textContent = ST.syllable || (ST.state==="lobby" ? "🎮" : "—");
+    $("syl").textContent = ST.syllable || (ST.state==="lobby" ? "" : "—");
     $("poolHint").textContent = playing && ST.sylPool ? `${ST.sylPool} كلمة ممكنة` : "";
     $("roundHint").textContent = playing ? `الجولة ${ST.roundNo} · ${ST.usedCount} كلمة مستعملة` :
                                  ST.state==="lobby" ? "بانتظار بدء اللعبة…" : "";
