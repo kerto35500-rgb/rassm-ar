@@ -1332,9 +1332,9 @@ body.kw-bomb .chip.turn { background:#FFF0DC; border-color:#F09B2B; }
 body.kw-bomb .chip.turn::before { background:var(--bo-strong); color:#fff; }
 body.kw-bomb .chip .nm { color:var(--bo-ink); }
 body.kw-bomb .chip .typed { color:var(--bo-deep); }
-/* كل البطاقات بنفس الارتفاع (مكان السهم محجوز دائماً) ⇒ توزيع دائري متساوٍ */
-body.kw-bomb .pl { background:#fff; border:2px solid #C99A72; border-radius:18px;
-  padding:22px 8px 10px; box-shadow:0 3px 9px rgba(160,100,60,.16); }
+/* بطاقة اللاعب مفرّغة: صورة + قلوب + اسم فقط، بلا مربع ولا إطار ولا خلفية */
+body.kw-bomb .pl { background:none; border:none; border-radius:0;
+  padding:0; box-shadow:none; }
 body.kw-bomb .pl.turn .av { border-color:#F09B2B; }
 body.kw-bomb #inputZone { background:none; border-top:2px solid #F0DEC9; }
 body.kw-bomb #wordInput {
@@ -1421,6 +1421,13 @@ body.kw-bomb .kwBoom {
 @media (max-width: 900px) {
   body.theme-kawaii.kw-bomb #chatForm button[type=submit] { position:static; transform:none; }
 }
+
+/* ══════════════ v37 — القنبلة: تفريغ بطاقة اللاعب + لوحة جانبية يمين ══════════════ */
+body.kw-bomb .pl .nm { color:var(--bo-ink); text-shadow:0 1px 0 rgba(255,255,255,.85); }
+body.kw-bomb .pl .hearts { text-shadow:0 1px 3px rgba(160,100,60,.25); }
+body.kw-bomb #side { background:var(--bo-band); border:2px solid var(--bo-line);
+  box-shadow:0 18px 46px rgba(120,70,40,.28); }
+body.kw-bomb #sheetGrip { background:var(--bo-line); }
 
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {

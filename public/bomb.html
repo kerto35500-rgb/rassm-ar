@@ -95,8 +95,11 @@
 
   /* حلقة اللاعبين */
   #ring { flex:1; position:relative; min-height:0; }
+  /* بطاقة اللاعب مفرّغة: صورة + قلوب فوقها + الاسم فقط (بلا مربع ولا إطار) */
   .pl {
     position:absolute; transform:translate(50%,-50%); width:84px; text-align:center;
+    display:flex; flex-direction:column; align-items:center;
+    background:none; border:none; box-shadow:none; padding:0;
     transition:opacity .2s;
   }
   .pl .av { width:42px; height:42px; margin:0 auto; border-radius:50%; background:#eef2f7; border:3px solid #dfe5ec;
@@ -104,8 +107,9 @@
   .pl.turn .av { border-color:var(--accent); box-shadow:0 0 0 5px rgba(229,84,30,.18); animation:pulse 1s infinite; }
   .pl.dead { opacity:.34; filter:grayscale(1); }
   .pl.spec .av { border-style:dashed; }
-  .pl .nm { font-size:12.5px; font-weight:800; color:var(--ink); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .pl .hearts { font-size:11px; letter-spacing:-1px; height:14px; }
+  .pl .nm { font-size:12.5px; font-weight:800; color:var(--ink); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  /* القلوب فوق الصورة وملاصقة لها */
+  .pl .hearts { order:-1; font-size:11px; letter-spacing:-1px; height:13px; line-height:13px; margin-bottom:1px; }
   .pl .typed { font-size:12px; color:var(--accent); font-weight:800; min-height:15px; direction:rtl; white-space:nowrap; overflow:hidden; }
   .pl .off { font-size:10px; color:#b0b7c3; }
   @keyframes pulse { 0%,100%{box-shadow:0 0 0 5px rgba(229,84,30,.18);} 50%{box-shadow:0 0 0 9px rgba(229,84,30,.07);} }
@@ -126,7 +130,7 @@
   .chip .turnArrow svg { display:none; }
   @keyframes bobDown { 0%,100%{transform:translateY(0)} 50%{transform:translateY(3px)} }
   /* في الحلقة: السهم فوق الصورة يشير للأسفل */
-  .pl .turnArrow { position:absolute; top:3px; left:50%; margin-inline-start:-11px;
+  .pl .turnArrow { position:absolute; top:-15px; left:50%; margin-inline-start:-11px;
                    width:22px; height:18px; transform:rotate(90deg);
                    animation:bob .9s ease-in-out infinite; }
   @keyframes bob { 0%,100%{transform:rotate(90deg) translateX(0);} 50%{transform:rotate(90deg) translateX(-4px);} }
@@ -200,8 +204,8 @@
 
   /* القنبلة في المنتصف */
   #bombWrap { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; z-index:3;
-              width:clamp(110px, 16vh, 140px); }
-  #bombCircle { position:relative; width:clamp(92px, 13.5vh, 118px); aspect-ratio:1; margin:0 auto; z-index:3; }
+              width:clamp(92px, 13vh, 116px); }
+  #bombCircle { position:relative; width:clamp(76px, 11vh, 96px); aspect-ratio:1; margin:0 auto; z-index:3; }
   /* حلقة التقدّم مخفية — القنبلة بسيطة كالمرجع، والوقت أعلى الشاشة */
   #bombCircle svg { display:none; }
   /* جسم القنبلة: قرص داكن كبير والمقطع مكتوب في منتصفه (كالمرجع) */
@@ -219,7 +223,7 @@
               font-size:clamp(20px,4.6vh,34px); animation:kwFuse .75s ease-in-out infinite; }
   @keyframes kwFuse { 0%,100%{ transform:scale(1) rotate(-8deg); opacity:.95; } 50%{ transform:scale(1.24) rotate(12deg); opacity:.65; } }
   #bombEmoji { display:none; }
-  #syl { font-size:clamp(22px,3.8vh,31px); font-weight:900; color:#fff; letter-spacing:2px;
+  #syl { font-size:clamp(18px,3.1vh,25px); font-weight:900; color:#fff; letter-spacing:2px;
          text-shadow:0 3px 10px rgba(0,0,0,.45); line-height:1.05; }
   /* الوقت لم يعد داخل القنبلة — انتقل لأعلى الشاشة */
   #timeNum, #timeUnit { display:none !important; }
@@ -238,26 +242,15 @@
   #stage.compact #bombEmoji { display:none; }
   #stage.compact #timeNum { font-size:clamp(15px,2.4vh,20px); font-weight:800; color:#c9d2e2; line-height:1.05; }
   #stage.compact #timeUnit { display:block; }
-  /* النصوص أسفل الكرة خارج التدفق: تبقى الكرة في منتصف الساحة تماماً */
-  #poolHint { position:absolute; left:50%; transform:translateX(-50%); top:calc(100% + 8px);
-              white-space:nowrap; font-size:11.5px; color:#a7aebb; }
-  #roundHint { position:absolute; left:50%; transform:translateX(-50%); top:calc(100% + 26px);
-               white-space:nowrap; font-size:12.5px; color:#6b7280; }
+  /* نصوص «كلمة ممكنة/الجولة» محذوفة — لا داعي لها */
+  #poolHint, #roundHint { display:none !important; }
   .shake { animation:shake .35s; }
   @keyframes shake { 0%,100%{transform:translate(-50%,-50%);} 25%{transform:translate(calc(-50% - 7px),-50%);} 75%{transform:translate(calc(-50% + 7px),-50%);} }
 
   /* منطقة الإدخال */
   #inputZone { flex-shrink:0; padding:10px 12px 12px; border-top:2px solid var(--line); background:#fbfcfe; }
-  /* شارة المقطع فوق المربع: تبقى ظاهرة والكيبورد مفتوح فلا حاجة للسكرول */
-  #sylPill { display:none; align-items:center; justify-content:center; gap:8px; margin-bottom:8px;
-             padding:7px 12px; border-radius:11px; background:#fff3ec; border:2px solid #ffd3bf; }
-  #sylPill.on { display:flex; }
-  /* في الجوال نحجز مكانها دائماً: الشاشة لا «تقفز» عند بدء اللعب */
-  #stage.compact #sylPill { display:flex; }
-  #stage.compact #sylPill:not(.on) { visibility:hidden; }
-  #sylPill .lb { font-size:11.5px; font-weight:700; color:#a06a4e; }
-  #sylPill .vv { font-size:22px; font-weight:900; color:var(--accent); letter-spacing:2px; }
-  #sylPill .tt { font-size:12.5px; font-weight:800; color:#8a93a3; font-variant-numeric:tabular-nums; }
+  /* شارة المقطع محذوفة بالكامل — المقطع مكتوب داخل القنبلة والوقت في الشريط العلوي */
+  #sylPill { display:none !important; }
   #wordForm { display:flex; gap:8px; min-width:0; }
   #kbBtn { flex:0 0 auto; width:46px; border:2px solid var(--line); border-radius:12px;
            background:#eef2f7; font-size:19px; color:var(--ink); }
@@ -347,13 +340,21 @@
   #alphaHead b { color:var(--ink); }
 
   /* الشريط الجانبي */
-  /* اللاعبون والدردشة: نافذة منبثقة دائماً (الساحة تاخذ العرض كامل) */
-  #side { position:fixed; inset-inline:auto 12px; bottom:12px; z-index:56;
-          width:min(340px, calc(100vw - 24px)); max-height:min(70vh, 560px);
+  /* اللاعبون والدردشة: لوحة مثبّتة على يمين الصفحة بطول الشاشة (مغلقة افتراضياً) */
+  #side { position:fixed; right:10px; left:auto; top:10px; bottom:10px; z-index:56;
+          width:min(320px, calc(100vw - 24px)); max-height:none;
           display:none; flex-direction:column; gap:10px;
           background:var(--panel); border-radius:18px; padding:10px;
           box-shadow:0 18px 46px rgba(15,30,55,.28); }
   #side.open { display:flex; }
+  #side #chatPanel { flex:1 1 auto; min-height:0; }
+  #sheetGrip { align-self:center; width:52px; height:6px; border-radius:99px; background:#c3ccd8; flex-shrink:0; cursor:pointer; }
+  /* الساحة تنكمش وقت فتح اللوحة فلا تغطّي اللاعبين */
+  @media (min-width: 881px) {
+    body.sideOpen #main   { margin-right:336px; }
+    body.sideOpen #topBar { margin-right:336px; }
+    #sheetBack { display:none !important; }   /* اللوحة مثبّتة ⇒ لا تعتيم للصفحة */
+  }
   #sheetBack { display:none; position:fixed; inset:0; background:rgba(10,20,36,.35); z-index:55; }
   #sheetBack.on { display:block; }
   .panel { background:var(--panel); border-radius:14px; display:flex; flex-direction:column; overflow:hidden; }
@@ -467,7 +468,7 @@
     #sheetBack { position:fixed; inset:0; background:rgba(8,22,40,.5); z-index:55;
                  opacity:0; pointer-events:none; transition:opacity .2s; }
     #sheetBack.on { opacity:1; pointer-events:auto; }
-    #side { position:fixed; inset-inline:0; bottom:0; z-index:56; width:auto; max-height:74dvh;
+    #side { position:fixed; inset-inline:0; left:0; right:0; top:auto; bottom:0; z-index:56; width:auto; max-height:74dvh;
             flex-direction:column; gap:8px; padding:10px 10px 14px; background:#eef2f7;
             border-radius:20px 20px 0 0; box-shadow:0 -10px 34px rgba(0,0,0,.3);
             transform:translateY(102%); transition:transform .26s cubic-bezier(.2,.85,.3,1); }
@@ -481,26 +482,22 @@
     #ring .pl { display:block; }
     #stage { overflow-y:auto; }          /* السكرول ممكن والكيبورد مفتوح */
     #ring { flex:1 1 auto; min-height:300px; }
-    #bombWrap { width:min(40vw,160px); }
-    #bombCircle { width:min(34vw,135px); }
-    #syl { font-size:clamp(21px,6vw,30px); }
-    #poolHint, #roundHint { display:none; }   /* موجودة في شارة المقطع وأسفل الحلقة */
-    #sylPill { margin-bottom:6px; padding:5px 10px; }
-    #sylPill .vv { font-size:19px; }
+    #bombWrap { width:min(32vw,124px); }
+    #bombCircle { width:min(27vw,104px); }
+    #syl { font-size:clamp(17px,4.8vw,24px); }
     #wordInput { font-size:17px; padding:13px 10px; }
     #kbBtn { width:40px; font-size:17px; }
     #sendBtn { padding:0 12px; font-size:15px; }
     #inputZone { padding:8px 8px 10px; }
-    #sylPill { display:flex; }
   }
   @media (max-width: 520px) {
     #topBar { padding:6px 8px; gap:5px; }
     #topBar .rid { font-size:13.5px; }
     .iconBtn { width:32px; height:32px; font-size:15px; border-radius:8px; }
     #ring { min-height:230px; }
-    #bombWrap { width:min(42vw,140px); }
-    #bombCircle { width:min(36vw,118px); }
-    #syl { font-size:clamp(19px,6vw,27px); }
+    #bombWrap { width:min(34vw,112px); }
+    #bombCircle { width:min(29vw,94px); }
+    #syl { font-size:clamp(16px,4.9vw,22px); }
     .al { width:20px; height:20px; font-size:11px; border-radius:5px; }
     #stage.compact #timeNum { font-size:27px; }
     #stage.compact #bombEmoji { font-size:36px; }
@@ -610,11 +607,6 @@
       </div>
 
       <div id="inputZone">
-        <div id="sylPill" hidden>
-          <span class="lb">المقطع</span>
-          <span class="vv" id="pillSyl">—</span>
-          <span class="tt" id="pillTime"></span>
-        </div>
         <form id="wordForm" autocomplete="off">
           <button type="button" id="kbBtn" title="لوحة مفاتيح عربية">⌨️</button>
           <input id="wordInput" placeholder="انتظر دورك…" maxlength="40" autocomplete="off"
@@ -912,12 +904,16 @@
   function sheetOpen(){
     $("side").classList.add("open");
     $("sheetBack").classList.add("on");
+    document.body.classList.add("sideOpen");
     unread = 0; paintBadges(); hideToast();
+    requestAnimationFrame(relayoutAll); setTimeout(relayoutAll, 280);
     setTimeout(()=>{ const l=$("chatLog"); l.scrollTop = l.scrollHeight; }, 260);
   }
   function sheetClose(){
     $("side").classList.remove("open");
     $("sheetBack").classList.remove("on");
+    document.body.classList.remove("sideOpen");
+    requestAnimationFrame(relayoutAll); setTimeout(relayoutAll, 280);
   }
   function sheetToggle(){
     if ($("side").classList.contains("open")) return sheetClose();
@@ -1226,8 +1222,6 @@
     // المقطع: كبيراً فوق الحلقة، وفي شارة فوق مربع الكتابة (تبقى ظاهرة والكيبورد مفتوح)
     $("sylBig").textContent = ST.syllable || "—";
     $("sylHead").classList.toggle("hide", !playing);
-    $("pillSyl").textContent = ST.syllable || "—";
-    $("sylPill").classList.toggle("on", playing);
 
     // لوحة الحروف (النسخة المسطّحة والنسخة الدائرية)
     const mine = new Set(me ? me.letters : []);
@@ -1460,7 +1454,6 @@
         fg.style.strokeDashoffset = C;
         $("timeNum").textContent = "";
         $("timeUnit").style.visibility = "hidden";
-        $("pillTime").textContent = "";
         setBeat(0);
         $("bigTimer").classList.remove("on", "hot");
         return;
@@ -1476,7 +1469,6 @@
       const compact = $("stage").classList.contains("compact");
       $("timeNum").textContent = compact ? (left/1000).toFixed(1) : txt;
       $("timeUnit").style.visibility = "";
-      $("pillTime").textContent = txt;
       // نبض القنبلة يتسارع + عدّاد أعلى الشاشة ينبض في آخر ٣ ثوانٍ
       setBeat(left < 3000 ? 3 : left < 6000 ? 2 : 1);
       const bt = $("bigTimer");
