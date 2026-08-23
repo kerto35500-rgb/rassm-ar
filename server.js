@@ -65,14 +65,9 @@ app.get(["/bomb", "/qunbula"], (req, res) => {
   if (fs.existsSync(f)) return res.sendFile(f);
   res.status(404).type("text").send("bomb.html غير موجود");
 });
-// لعبة قمّة الهرم (مسابقات) — النسخة الأولى
-app.get(["/quiz", "/qimma"], (req, res) => {
-  if (admin) admin.trackVisit();
-  const f = pageFile("quiz.html");
-  if (fs.existsSync(f)) return res.sendFile(f);
-  res.status(404).type("text").send("quiz.html غير موجود");
-});
-// قمّة الهرم — النسخة البصرية الجديدة (نفس المنطق، واجهة مختلفة تماماً)
+// النسخة الكلاسيكية أُلغيت — أي رابط قديم يوجّه للنسخة المعتمدة
+app.get(["/quiz", "/qimma"], (req, res) => res.redirect(301, "/quiz2"));
+// قمّة الهرم — النسخة المعتمدة
 app.get(["/quiz2", "/apex"], (req, res) => {
   if (admin) admin.trackVisit();
   const f = pageFile("quiz2.html");
