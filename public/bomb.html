@@ -18,27 +18,36 @@
   button { font-family:inherit; cursor:pointer; }
   input, select { font-family:inherit; }
 
-  /* ============ شاشة الدخول ============ */
-  #lobbyScreen { height:100dvh; overflow-y:auto; display:flex; flex-direction:column; align-items:center; gap:16px; padding:26px 14px 40px; }
-  .brand { text-align:center; color:#eaf1fb; }
-  .brand h1 { font-size:clamp(30px,8vw,44px); font-weight:900; }
-  .brand p { opacity:.72; margin-top:6px; font-size:15px; }
+  /* ============ شاشة الدخول — نفس معيار لعبة الرسم بالضبط ============ */
+  #lobbyScreen { position:relative; display:flex; flex-direction:column; align-items:center;
+                 justify-content:flex-start; min-height:100vh; gap:16px; padding:24px 16px 40px; overflow-y:auto; }
+  #lobbyScreen > * { position:relative; z-index:1; }
+  .logo { font-size:clamp(42px, 9vw, 58px); font-weight:900; color:#fff;
+          text-shadow:0 4px 14px rgba(0,0,0,.35); letter-spacing:1px; }
+  .logo span { color:var(--accent); }
+  .tagline { color:#cfe3f7; margin-top:-10px; font-size:clamp(14px, 3.5vw, 17px); text-align:center; }
   /* رابط الرجوع للبوابة — واضح وبارز */
-  .brand a.back {
+  .backLink {
     display:inline-flex; align-items:center; justify-content:center; gap:6px;
-    margin-top:14px; padding:9px 20px; border-radius:999px;
-    background:rgba(255,255,255,.15); border:1.5px solid rgba(255,255,255,.34);
+    margin:2px auto 4px; padding:9px 20px; border-radius:999px;
+    background:rgba(255,255,255,.14); border:1.5px solid rgba(255,255,255,.32);
     color:#fff; font-size:15.5px; font-weight:900; text-decoration:none;
     backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
     box-shadow:0 4px 14px rgba(0,0,0,.2); transition:.18s;
   }
-  .brand a.back:hover { background:rgba(255,255,255,.27); transform:translateY(-2px); }
-  .brand a.back:active { transform:none; }
+  .backLink:hover { background:rgba(255,255,255,.26); transform:translateY(-2px); }
+  .backLink:active { transform:none; }
+  .divider { text-align:center; color:#999; font-size:13px; }
   #whoLine { display:none; text-align:center; font-size:13.5px; color:var(--good); font-weight:800; margin:-2px 0 8px; }
 
   .card { width:100%; max-width:430px; background:var(--panel); border-radius:16px; padding:20px; box-shadow:0 10px 34px rgba(0,0,0,.22); }
+  #lobbyScreen .card { max-width:400px; border-radius:18px; box-shadow:0 12px 34px rgba(0,0,0,.28);
+                       display:flex; flex-direction:column; gap:10px; }
   .card h3 { color:var(--ink); font-size:17px; margin-bottom:12px; }
   .card input { width:100%; padding:12px 14px; border:2px solid var(--line); border-radius:11px; font-size:15px; margin-bottom:10px; }
+  #lobbyScreen .card h3 { margin-bottom:0; }
+  #lobbyScreen .card input { min-width:0; padding:11px 13px; border-radius:10px; font-size:16px;
+                             text-align:center; background:#f8fafc; margin-bottom:0; }
   .card input:focus { outline:none; border-color:var(--accent2); }
   .btn { width:100%; padding:12px; border:none; border-radius:11px; background:var(--accent); color:#fff; font-size:16px; font-weight:800; }
   .btn:hover { filter:brightness(1.06); }
@@ -46,7 +55,7 @@
   .btn.blue { background:var(--accent2); }
   .btn.ghost { background:#eef2f7; color:var(--ink); }
   .row2 { display:flex; gap:8px; }
-  .row2 > * { flex:1; }
+  .row2 > * { flex:1 1 0; min-width:0; }
   .err { color:var(--bad); font-size:13.5px; margin-top:8px; min-height:18px; }
   .muted { color:#7b8494; font-size:13px; }
   .tabs { display:flex; gap:6px; margin-bottom:14px; }
@@ -249,6 +258,18 @@
   #stage.compact #timeUnit { display:block; }
   /* نصوص «كلمة ممكنة/الجولة» محذوفة — لا داعي لها */
   #poolHint, #roundHint { display:none !important; }
+  /* نجمة الانفجار: تنبثق من مركز القنبلة وتكبر حتى تغطّي الساحة */
+  .kwBoom { position:absolute; z-index:40; pointer-events:none;
+            width:clamp(300px, 66vh, 560px); aspect-ratio:1;
+            animation:kwBoomFlash .9s cubic-bezier(.2,.8,.3,1) forwards;
+            filter:drop-shadow(0 0 30px rgba(255,150,40,.6)); }
+  .kwBoom svg { width:100%; height:100%; display:block; }
+  @keyframes kwBoomFlash {
+    0%   { transform:translate(-50%,-50%) scale(.10) rotate(-28deg); opacity:1; }
+    32%  { transform:translate(-50%,-50%) scale(1.12) rotate(4deg);  opacity:1; }
+    66%  { transform:translate(-50%,-50%) scale(1.45) rotate(11deg); opacity:.92; }
+    100% { transform:translate(-50%,-50%) scale(2.05) rotate(18deg); opacity:0; }
+  }
   .shake { animation:shake .35s; }
   @keyframes shake { 0%,100%{transform:translate(-50%,-50%);} 25%{transform:translate(calc(-50% - 7px),-50%);} 75%{transform:translate(calc(-50% + 7px),-50%);} }
 
@@ -513,21 +534,19 @@
 
 <!-- ================= شاشة الدخول ================= -->
 <div id="lobbyScreen">
-  <div class="brand">
-    <h1>💣 القنبلة</h1>
-    <p>اكتب كلمة فيها المقطع قبل ما تنفجر!</p>
-    <a class="back" href="/">← رجوع لاختيار الألعاب</a>
-  </div>
+  <div class="logo">القنبلة<span>!</span></div>
+  <div class="tagline">اكتب كلمة فيها المقطع قبل ما تنفجر! 💣</div>
+  <a class="backLink" href="/">← رجوع لاختيار الألعاب</a>
 
   <!-- بطاقة واحدة: الاسم + ابدأ اللعب -->
   <div class="card" id="roomCard">
     <input id="aName" placeholder="اكتب اسمك هنا" maxlength="20" autocomplete="off">
     <div id="whoLine"></div>
-    <button class="btn" id="createBtn">🎮 إنشاء غرفة جديدة</button>
-    <div style="height:10px"></div>
+    <button class="btn" id="createBtn">إنشاء غرفة جديدة ➕</button>
+    <div class="divider">— أو انضم لغرفة موجودة —</div>
     <div class="row2">
-      <input id="joinId" placeholder="رقم الغرفة" maxlength="6" inputmode="numeric" style="margin:0">
-      <button class="btn ghost" id="joinBtn" style="flex:0 0 110px">انضمام</button>
+      <input id="joinId" placeholder="رقم الغرفة" maxlength="6" inputmode="numeric">
+      <button class="btn ghost" id="joinBtn">انضمام 🚪</button>
     </div>
     <div class="err" id="roomErr"></div>
     <h3 style="margin-top:6px">غرف عامة</h3>
@@ -1095,10 +1114,10 @@
   socket.on("boom", d => {
     const w = $("bombWrap");
     w.classList.remove("shake"); void w.offsetWidth; w.classList.add("shake");
-    bombBurst();
     $("bombEmoji").textContent = "💥";
     $("wordInput").value = "";
-    if (d && d.id === ME) flash("💥 انفجرت عندك!", "bad");
+    // الانفجار يظهر فقط عند اللاعب الذي انفجرت عنده
+    if (d && d.id === ME) { bombBurst(); flash("💥 انفجرت عندك!", "bad"); }
     setTimeout(()=>{ $("bombEmoji").textContent = "💣"; }, 1100);
   });
 
@@ -1495,28 +1514,51 @@
     else if (lvl === 2) c.classList.add("beat2");
     else if (lvl === 3) c.classList.add("beat3");
   }
+  // نجمة انفجار كوميكس
+  function starPath(cx, cy, R, r, n){
+    let p = "";
+    for (let i = 0; i < n * 2; i++){
+      const rad = (i % 2) ? r : R, a = (Math.PI * i) / n - Math.PI / 2;
+      p += (i ? "L" : "M") + (cx + Math.cos(a) * rad).toFixed(1) + " " + (cy + Math.sin(a) * rad).toFixed(1);
+    }
+    return p + "Z";
+  }
+
+  /* الانفجار ينبثق من مركز القنبلة ويكبر حتى يغطّي القنبلة والأسماء */
   function bombBurst(){
-    const wrap = $("bombWrap");
-    if (!wrap) return;
+    const wrap = $("bombWrap"), host = $("ring"), bomb = $("bombCircle");
+    if (!wrap || !host) return;
     wrap.classList.remove("boom"); void wrap.offsetWidth; wrap.classList.add("boom");
-    const host = $("ring") || wrap.parentNode;
+    let cX = host.clientWidth / 2, cY = host.clientHeight / 2;
+    if (bomb) {
+      const hr = host.getBoundingClientRect(), br = bomb.getBoundingClientRect();
+      if (br.width) { cX = br.left + br.width / 2 - hr.left; cY = br.top + br.height / 2 - hr.top; }
+    }
     const flash = document.createElement("div");
-    flash.className = "kwBoom"; flash.textContent = "💥";
+    flash.className = "kwBoom";
+    flash.style.left = cX + "px";
+    flash.style.top  = cY + "px";
+    flash.innerHTML =
+      '<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">' +
+      '<path d="' + starPath(100, 100, 98, 46, 12) + '" fill="#E5341E"/>' +
+      '<path d="' + starPath(100, 100, 74, 33, 12) + '" fill="#FF8A1E"/>' +
+      '<path d="' + starPath(100, 100, 48, 20, 10) + '" fill="#FFD447"/>' +
+      '<path d="' + starPath(100, 100, 26, 11, 8)  + '" fill="#FFF7DA"/></svg>';
     host.appendChild(flash);
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 12; i++) {
       const s = document.createElement("div");
       s.textContent = ["✨","💥","🔥","⭐"][i % 4];
-      const ang = (i / 10) * Math.PI * 2, dist = 90 + Math.random() * 70;
-      s.style.cssText = "position:absolute;left:50%;top:50%;z-index:29;pointer-events:none;font-size:" +
-        (16 + Math.random() * 12) + "px;transition:transform .8s cubic-bezier(.2,.8,.3,1),opacity .8s;transform:translate(-50%,-50%)";
+      const ang = (i / 12) * Math.PI * 2, dist = 150 + Math.random() * 120;
+      s.style.cssText = "position:absolute;left:" + cX + "px;top:" + cY + "px;z-index:39;pointer-events:none;font-size:" +
+        (18 + Math.random() * 14) + "px;transition:transform .9s cubic-bezier(.2,.8,.3,1),opacity .9s;transform:translate(-50%,-50%)";
       host.appendChild(s);
       requestAnimationFrame(() => {
         s.style.transform = "translate(calc(-50% + " + Math.cos(ang) * dist + "px), calc(-50% + " + Math.sin(ang) * dist + "px)) scale(.4) rotate(" + (Math.random() * 360 | 0) + "deg)";
         s.style.opacity = "0";
       });
-      setTimeout(() => s.remove(), 900);
+      setTimeout(() => s.remove(), 1000);
     }
-    setTimeout(() => { flash.remove(); wrap.classList.remove("boom"); }, 800);
+    setTimeout(() => { flash.remove(); wrap.classList.remove("boom"); }, 950);
     try { navigator.vibrate && navigator.vibrate([60, 40, 90]); } catch (e) {}
   }
 
