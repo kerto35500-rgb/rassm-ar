@@ -57,9 +57,10 @@
     THEMES.forEach(function (t) {
       if (t.id !== "classic") document.body.classList.toggle("theme-" + t.id, id === t.id);
     });
-    /* الصفحة الرئيسية (البوابة): تُميَّز ببطاقات الألعاب .g داخل #grid */
+    /* الصفحة الرئيسية (البوابة): فيها #grid ولا يوجد بها مشهد الهرم
+       (البطاقات .g تُبنى لاحقاً بالجافاسكربت فلا نعتمد عليها) */
     document.body.classList.toggle("kw-hub", id === "kawaii" &&
-      !!document.getElementById("grid") && !!document.querySelector(".g"));
+      !!document.getElementById("grid") && !document.getElementById("pyScene"));
     /* برّا السالفة: نسخة خضراء من المارشميلو (تُميَّز بوجود شاشة الدخول الخاصة بها) */
     document.body.classList.toggle("kw-salfa", id === "kawaii" && !!document.getElementById("joinScreen"));
     /* القنبلة: نسخة برتقالية */
