@@ -57,10 +57,15 @@
     THEMES.forEach(function (t) {
       if (t.id !== "classic") document.body.classList.toggle("theme-" + t.id, id === t.id);
     });
+    /* الصفحة الرئيسية (البوابة): تُميَّز ببطاقات الألعاب .g داخل #grid */
+    document.body.classList.toggle("kw-hub", id === "kawaii" &&
+      !!document.getElementById("grid") && !!document.querySelector(".g"));
     /* برّا السالفة: نسخة خضراء من المارشميلو (تُميَّز بوجود شاشة الدخول الخاصة بها) */
     document.body.classList.toggle("kw-salfa", id === "kawaii" && !!document.getElementById("joinScreen"));
     /* القنبلة: نسخة برتقالية */
     document.body.classList.toggle("kw-bomb", id === "kawaii" && !!document.getElementById("bombCircle"));
+    /* قمّة الهرم: نسخة بنفسجية (تُميَّز بمشهد الهرم) */
+    document.body.classList.toggle("kw-quiz", id === "kawaii" && !!document.getElementById("pyScene"));
     if (id === "kawaii") ensureFont();
     doodleLayer(id === "kawaii");
     var pop = document.getElementById("kwThemePop");
