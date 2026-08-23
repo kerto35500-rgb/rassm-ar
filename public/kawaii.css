@@ -1416,10 +1416,7 @@ body.kw-bomb #bombPointer .pShaft { background:#F0A73C; box-shadow:0 2px 6px rgb
 body.kw-bomb #bombPointer .pHead { border-left-color:#E0862A; }
 
 body.kw-bomb #bombWrap.boom { animation:kwBoomShake .5s ease-in-out; }
-body.kw-bomb .kwBoom {
-  position:absolute; left:50%; top:50%; z-index:30; pointer-events:none;
-  font-size:100px; line-height:1; animation:kwBoomFlash .75s ease-out forwards;
-}
+/* نجمة الانفجار: كل أنماطها في bomb.html — لا نتدخّل هنا حتى لا يُكسر التوسيط */
 
 @media (max-width: 900px) {
   body.theme-kawaii.kw-bomb #chatForm button[type=submit] { position:static; transform:none; }
@@ -1434,6 +1431,10 @@ body.kw-bomb #sheetGrip { background:var(--bo-line); }
 
 /* ══════════ v39 — نجمة الانفجار + توحيد شاشات الدخول على معيار لعبة الرسم ══════════ */
 body.kw-bomb .kwBoom { font-size:0; }
+/* حتى مع «تقليل الحركة» تبقى النجمة ظاهرة ومتوسّطة على القنبلة */
+@media (prefers-reduced-motion: reduce) {
+  body.theme-kawaii .kwBoom i { animation:none !important; transform:scale(1.35); opacity:1; }
+}
 
 body.kw-salfa #joinScreen,
 body.kw-bomb  #lobbyScreen {
