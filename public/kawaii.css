@@ -1456,6 +1456,9 @@ body.kw-salfa .backLink, body.kw-bomb .backLink { border-width:2.5px; padding:9p
 body.kw-salfa .logo, body.kw-bomb #lobbyScreen .logo { font-size:clamp(42px, 9vw, 58px); letter-spacing:1px; }
 body.kw-salfa .tagline, body.kw-bomb .tagline { font-size:clamp(14px, 3.5vw, 17px); margin-top:-10px; }
 body.kw-salfa .row2 > *, body.kw-bomb #lobbyScreen .row2 > * { flex:1 1 0; min-width:0; }
+/* برّا السالفة: إلغاء حشوة الـbody (10px) حتى تبدأ الشاشة من نفس ارتفاع لعبة الرسم */
+body.kw-salfa #joinScreen { margin:-10px; width:auto; }
+body.kw-salfa .backLink { line-height:1.5; }
 
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
