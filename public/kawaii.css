@@ -1648,6 +1648,27 @@ body.kw-quiz .kw-doodles .kw-brush {
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='16' fill='%23F1E7FF' stroke='%23B79BEC' stroke-width='2.6'/%3E%3Ctext x='20' y='27' text-anchor='middle' font-family='Arial' font-size='17' font-weight='900' fill='%236B49B8'%3E%3F%3C/text%3E%3C/svg%3E");
 }
 
+/* ══════════ v45 — فقاعة الدردشة العائمة بستايل المارشميلو ══════════ */
+body.theme-kawaii #fabChat {
+  background:var(--kw-fab, #F09B2B) !important;
+  border:2.5px solid var(--kw-fab-line, #A05F50);
+  color:#fff;
+  box-shadow:0 4px 0 var(--kw-fab-line, #A05F50), 0 8px 18px rgba(120,80,40,.28) !important;
+  transition:transform .18s var(--kw-spring), box-shadow .18s;
+}
+body.theme-kawaii #fabChat:hover  { transform:scale(1.08) translateY(-2px); }
+body.theme-kawaii #fabChat:active { transform:translateY(2px);
+  box-shadow:0 1px 0 var(--kw-fab-line, #A05F50) !important; }
+body.theme-kawaii #fabChat.dragging { transform:scale(1.12); }
+body.theme-kawaii #fabChat .badge {
+  background:#E5484D; border:2.5px solid #fff; font-weight:900;
+  box-shadow:0 2px 5px rgba(120,40,40,.35);
+}
+/* لون الفقاعة يتبع لون كل لعبة */
+body.kw-bomb  { --kw-fab:#F09B2B; --kw-fab-line:#A05F50; }
+body.kw-salfa { --kw-fab:#6CCB93; --kw-fab-line:#55814B; }
+body.kw-quiz  { --kw-fab:#AC8EE9; --kw-fab-line:#8F72C8; }
+
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
   body.theme-kawaii * { animation:none !important; }

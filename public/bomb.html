@@ -151,7 +151,7 @@
   /* يُستعمل في الجوال، وأيضاً على أي شاشة صار فيها ارتفاع الحلقة صغيراً
      (مثلاً عند فتح لوحة المفاتيح) — يمنع تداخل الأسماء مع القنبلة */
   #stage.compact #plStrip { display:none; }
-  #stage.compact #ring .pl { display:block; }
+  #stage.compact #ring .pl { display:flex; }   /* flex لا block: يبقي القلوب فوق الصورة */
   #stage.compact #ring { flex:1 1 auto; min-height:150px; }
   #plStrip { display:none; gap:7px; padding:2px 9px 4px; overflow-x:auto; flex-shrink:0;
              scrollbar-width:none; align-items:stretch; justify-content:space-between; }
@@ -491,7 +491,7 @@
     #chatLog { min-height:90px; }
     /* الجوال: نفس تخطيط الحلقة (لاعبون حول القنبلة) كالمرجع */
     #plStrip { display:none; }
-    #ring .pl { display:block; }
+    #ring .pl { display:flex; }
     #stage { overflow-y:auto; }          /* السكرول ممكن والكيبورد مفتوح */
     #ring { flex:1 1 auto; min-height:300px; }
     #bombWrap { width:min(23vw,92px); }
@@ -1317,7 +1317,7 @@
     // دائرة متساوية الأبعاد: كل اللاعبين على نفس البُعد وبمسافات متساوية
     const cardHalf = 58;
     const room = Math.min(W / 2 - cardHalf - 8, H / 2 - cardHalf - 8);
-    const R = Math.max(bombR + 54, Math.min(room, bombR + 132));
+    const R = Math.max(bombR + 82, Math.min(room, bombR + 150));
     const rx = R, ry = R;
     // نمركز اللاعبين حول كرة القنبلة نفسها (لا حول مركز الساحة المحسوب سابقاً)
     let cX = W / 2, cY = H / 2;
@@ -1366,7 +1366,7 @@
     const cX = br.left + br.width / 2 - rr.left, cY = br.top + br.height / 2 - rr.top;
     const bombR = br.width / 2, cardHalf = 58;
     const room = Math.min(W / 2 - cardHalf - 8, H / 2 - cardHalf - 8);
-    const R = Math.max(bombR + 54, Math.min(room, bombR + 132));
+    const R = Math.max(bombR + 82, Math.min(room, bombR + 150));
     cards.forEach(el => {
       const a = parseFloat(el.dataset.ang) || 0;
       el.style.right = (W - (cX + Math.cos(a) * R)) + "px";
@@ -1400,7 +1400,7 @@
     ptr.style.top  = (cy - rRect.top) + "px";
     const dist = Math.hypot(tRect.left + tRect.width / 2 - cx, tRect.top + tRect.height / 2 - cy);
     const start = (bomb ? bomb.offsetWidth / 2 : 75) + 10;
-    const len = Math.max(26, dist - start - Math.max(tRect.width, tRect.height) / 2 - 16);
+    const len = Math.max(22, dist - start - Math.max(tRect.width, tRect.height) / 2 - 28);
     // ذيل السهم يمتد للخلف عبر القنبلة كلها (كالمرجع)
     ptr.style.setProperty("--pback", ((bomb ? bomb.offsetWidth / 2 : 75) + 46) + "px");
     ptr.style.setProperty("--p0", start + "px");
