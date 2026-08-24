@@ -156,20 +156,10 @@
              scrollbar-width:none; align-items:stretch; justify-content:space-between; }
   #plStrip::-webkit-scrollbar { display:none; }
 
-  /* بطاقة الدور: صاحب الدور يميناً · المقطع في الوسط تماماً · الباقون يساراً */
-  #turnCard { flex-shrink:0; }
-  #stage.compact #turnCard { display:flex; align-items:center; gap:8px;
-             margin:8px 9px 4px; padding:9px 10px; border-radius:20px;
-             background:linear-gradient(180deg,#fff4ec,#fffaf7); border:1.5px solid #ffe0cd; }
-  .tcSide { display:none; }
-  #stage.compact .tcSide { display:flex; flex:0 0 auto; gap:6px; max-width:33%;
-             overflow-x:auto; scrollbar-width:none; }
-  #stage.compact .tcSide::-webkit-scrollbar { display:none; }
-  #stage.compact #plStrip { display:none; }          /* استُبدل بالعمودين */
-
-  /* المقطع في منتصف البطاقة بين اللاعبين (لا تحتهم) */
-  #sylHead { display:none; flex-shrink:0; text-align:center; padding:2px 10px 9px; }
-  #stage.compact #sylHead { display:block; flex:1; min-width:0; padding:0; }
+  /* بطاقة الدور أُلغيت بالكامل — الساحة نفسها تُظهر الدور والمقطع */
+  #turnCard, #stage.compact #turnCard { display:none !important; }
+  .tcSide, #stage.compact .tcSide { display:none !important; }
+  #sylHead, #stage.compact #sylHead { display:none !important; }
   #sylHead.hide { visibility:hidden; }
   #sylHead .v { font-size:34px; font-weight:900; color:var(--ink); letter-spacing:3px; line-height:1.1; }
   #sylHead .t { font-size:12.5px; font-weight:700; color:#a08672; margin-top:3px; }
@@ -211,7 +201,7 @@
   #bombPointer.pass .pHead  { animation:headPush .45s ease-out; }
   @keyframes shaftPush { 0%,100%{ transform:scaleX(1); } 45%{ transform:scaleX(1.35); } }
   @keyframes headPush  { 0%,100%{ transform:translateX(0); } 45%{ transform:translateX(17px); } }
-  #stage.compact #bombPointer, #stage.tight #bombPointer { display:none !important; }
+  /* السهم يظهر في كل المقاسات (الجوال أيضاً) */
 
   /* القنبلة في المنتصف */
   #bombWrap { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; z-index:3;
@@ -315,14 +305,9 @@
   #msgLine.good { color:var(--good); }
   #msgLine.info { color:#8a93a3; font-weight:600; }
 
-  /* ===== حلقة الحروف حول القنبلة (وضع الجوال/المدمج) ===== */
-  #alphaRing { position:absolute; inset:0; pointer-events:none; display:none; }
-  #stage.compact #alphaRing { display:block; }
-  #stage.compact #alphaBox { display:none; }
-  /* المساحة أضيق من الحلقة (لوحة مفاتيح مفتوحة مثلاً) ⇒ نرجع للشريط المسطّح */
-  #stage.compact.tight #alphaRing { display:none; }
-  #stage.compact.tight #alphaBox { display:block; }
-  #stage.compact.tight #ringNote { display:none; }
+  /* حلقة الحروف حول القنبلة أُلغيت — الحروف صف مرصوص أسفل الساحة في كل المقاسات */
+  #alphaRing { display:none !important; }
+  #stage.compact #alphaBox, #stage.compact.tight #alphaBox { display:block; }
   /* مفاتيح ناعمة كبيرة تلتصق بحلقة القنبلة (بنمط التصميم المرجعي) */
   .ral { position:absolute; width:var(--ral,40px); height:var(--ral,40px);
          margin:calc(var(--ral,40px) / -2) 0 0 calc(var(--ral,40px) / -2); border-radius:13px;
@@ -333,9 +318,8 @@
          transition:transform .18s ease, box-shadow .18s ease, background .18s ease; }
   .ral.on { background:linear-gradient(160deg,#43c97c,#1f8b52); color:#fff;
             box-shadow:0 5px 14px rgba(31,139,82,.42); transform:scale(1.04); }
-  #ringNote { flex-shrink:0; text-align:center; font-size:11px; color:#a7aebb;
-              pointer-events:none; display:none; padding:2px 8px 4px; }
-  #stage.compact #ringNote { display:block; }
+  /* سطر التلميح أسفل بطاقة الدور أُلغي */
+  #ringNote { display:none !important; }
 
   /* ===== فقاعة دردشة واحدة، أيقونة فقط، يمكن سحبها لأي مكان ===== */
   #fabChat { display:none; position:absolute; z-index:26; width:48px; height:48px; border:none;
@@ -509,9 +493,13 @@
     #ring .pl { display:block; }
     #stage { overflow-y:auto; }          /* السكرول ممكن والكيبورد مفتوح */
     #ring { flex:1 1 auto; min-height:300px; }
-    #bombWrap { width:min(32vw,124px); }
-    #bombCircle { width:min(27vw,104px); }
-    #syl { font-size:clamp(17px,4.8vw,24px); }
+    #bombWrap { width:min(23vw,92px); }
+    #bombCircle { width:min(19vw,76px); }
+    #syl { font-size:clamp(14px,3.8vw,19px); }
+    /* الحروف: صف صغير مرصوص أسفل الساحة */
+    #alphaBox { padding:4px 8px; }
+    #alphaGrid { gap:3px; }
+    .al { width:21px; height:21px; font-size:11px; border-radius:6px; }
     #wordInput { font-size:17px; padding:13px 10px; }
     #kbBtn { width:40px; font-size:17px; }
     #sendBtn { padding:0 12px; font-size:15px; }
@@ -522,13 +510,10 @@
     #topBar .rid { font-size:13.5px; }
     .iconBtn { width:32px; height:32px; font-size:15px; border-radius:8px; }
     #ring { min-height:230px; }
-    #bombWrap { width:min(34vw,112px); }
-    #bombCircle { width:min(29vw,94px); }
-    #syl { font-size:clamp(16px,4.9vw,22px); }
-    .al { width:20px; height:20px; font-size:11px; border-radius:5px; }
-    #stage.compact #timeNum { font-size:27px; }
-    #stage.compact #bombEmoji { font-size:36px; }
-    #sylHead .v { font-size:30px; }
+    #bombWrap { width:min(25vw,84px); }
+    #bombCircle { width:min(21vw,70px); }
+    #syl { font-size:clamp(13px,3.9vw,17px); }
+    .al { width:19px; height:19px; font-size:10.5px; border-radius:5px; }
     #vkb .k { padding:8px 0; font-size:16px; }
   }
 </style>
@@ -596,12 +581,10 @@
     <div id="stage">
       <div id="turnCard">
         <div class="tcSide" id="plOthers"></div>
-        <div id="sylHead"><div class="v" id="sylBig">—</div><div class="t">✨ أكمل بالكلمة</div></div>
         <div class="tcSide" id="plTurn"></div>
         <div id="plStrip"></div>
       </div>
       <div id="ring">
-        <div id="alphaRing"></div>
         <div id="bombPointer" aria-hidden="true"><div class="pShaft"></div><div class="pHead"></div></div>
         <div id="bombWrap">
           <div id="bombCircle">
@@ -619,7 +602,6 @@
           <div id="poolHint"></div>
           <div id="roundHint"></div>
         </div>
-        <div id="ringNote"></div>
       <div id="chatToast"></div>
       <button id="fabChat" title="الدردشة (اسحبها لتحريكها)">💬<span class="badge hide" id="chatBadge">0</span></button>
       </div>
@@ -1146,15 +1128,7 @@
       d.className = "al"; d.dataset.ch = ch; d.textContent = ch;
       g.appendChild(d);
     });
-    // نسخة دائرية تُلفّ حول القنبلة (تُستعمل في الجوال)
-    const r = $("alphaRing");
-    r.innerHTML = "";
-    ALPHABET.forEach(ch => {
-      const d = document.createElement("div");
-      d.className = "ral"; d.dataset.ch = ch; d.textContent = ch;
-      r.appendChild(d);
-    });
-    layoutAlphaRing();
+    // حلقة الحروف حول القنبلة أُلغيت — الصف المسطّح فقط
   }
 
   // محيط البيضاوي (تقريب رامانوجان)
@@ -1166,6 +1140,7 @@
   // مفاتيح كبيرة تلتصق بالقرص، والحلقة الخارجية تستغل الفراغ يمين ويسار.
   // إن ضاقت المساحة عن الحلقتين نرجع للشريط المسطّح.
   function layoutAlphaRing(){
+    return;   // حلقة الحروف أُلغيت — الصف المسطّح فقط
     const box = $("ring"), host = $("alphaRing");
     const tiles = [...host.children];
     if (!tiles.length) return;
@@ -1245,16 +1220,11 @@
     renderList();
 
     // المقطع: كبيراً فوق الحلقة، وفي شارة فوق مربع الكتابة (تبقى ظاهرة والكيبورد مفتوح)
-    $("sylBig").textContent = ST.syllable || "—";
-    $("sylHead").classList.toggle("hide", !playing);
 
     // لوحة الحروف (النسخة المسطّحة والنسخة الدائرية)
     const mine = new Set(me ? me.letters : []);
-    document.querySelectorAll(".al, .ral").forEach(el => el.classList.toggle("on", mine.has(el.dataset.ch)));
+    document.querySelectorAll(".al").forEach(el => el.classList.toggle("on", mine.has(el.dataset.ch)));
     $("alphaCount").textContent = `${mine.size}/${ALPHABET.length}`;
-    $("ringNote").textContent = playing
-      ? `لوحتك ${mine.size}/${ALPHABET.length} · اكمل الحروف = ❤️ إضافي · ${ST.sylPool||0} كلمة ممكنة`
-      : `لوحتك ${mine.size}/${ALPHABET.length} — اكمل الحروف = ❤️ إضافي`;
     paintBadges();
 
     // تنبيه «دورك!» عند انتقال الدور إليك (مرة واحدة لا مع كل تحديث)
@@ -1389,7 +1359,7 @@
     if (!ptr) return;
     const playing = ST && ST.state === "playing" && ST.turnId;
     const target = playing ? $("ring").querySelector('.pl[data-id="' + ST.turnId + '"]') : null;
-    if (!playing || !target || $("stage").classList.contains("compact")) {
+    if (!playing || !target) {
       ptr.classList.remove("on");
       lastAimId = null;
       return;
