@@ -3,6 +3,7 @@
 const crypto = require("crypto");
 const dict = require("./dict");
 const { nameFromSocket } = require("./account");
+const mod = require("./moderation");
 
 const GRACE_MS = 500;          // فترة سماح خفية عند وصول العداد للصفر
 const RECONNECT_MS = 180000;   // مهلة العودة بعد انقطاع الاتصال — ٣ دقائق (تبديل التطبيقات في الجوال)
@@ -547,6 +548,7 @@ function setupBomb(io, deps) {
         return cb({ ok: false, error: "كلمة مرور الغرفة خاطئة", needPass: true });
       const conn = r.players.filter(p => p.connected).length;
       if (conn >= r.settings.maxPlayers) return cb({ ok: false, error: "الغرفة ممتلئة" });
+      if (mod.isBanned(r, { name })) return cb({ ok: false, error: "أنت محظور من هذه الغرفة" });
       if (room) leaveRoom(true);
       player = makePlayer(name);
       // الانضمام المتأخر
@@ -620,6 +622,17 @@ function setupBomb(io, deps) {
       sys(room, `🚪 تم طرد ${t.name}`, "warn");
       if (room.state === "playing" && alivePlayers(room).length <= 1) endGame(room);
       else broadcast(room);
+    });
+
+    /* نظام الإشراف المشترك: طرد / حظر / تصويت طرد / بلاغ */
+    mod.attach(nsp, socket, {
+      getRoom:   () => room,
+      getPlayer: () => player,
+      broadcast, sys,
+      onRemoved: (r) => {
+        if (r.state === "playing" && alivePlayers(r).length <= 1) endGame(r);
+        else broadcast(r);
+      }
     });
 
     socket.on("word", (text) => {

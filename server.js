@@ -10,6 +10,7 @@ const { createStore } = require("./store");
 const { setupAdmin } = require("./admin");
 const { setupBomb } = require("./bomb");
 const { setupQuiz } = require("./quiz");
+const mod = require("./moderation");
 const { setupSalfa } = require("./salfa");
 const { setupAccounts, nameFromSocket } = require("./account");
 
@@ -796,6 +797,7 @@ io.on("connection", (socket) => {
     if (!r) return cb({ ok: false, error: "الغرفة غير موجودة، تأكد من الرمز" });
     if (r.players.filter(p => p.connected).length >= MAX_PLAYERS)
       return cb({ ok: false, error: "الغرفة ممتلئة" });
+    if (mod.isBanned(r, { name })) return cb({ ok: false, error: "أنت محظور من هذه الغرفة" });
 
     room = r;
     // إذا كان لاعب منقطع/مطرود بنفس الاسم: استرجع سجله كاملًا (النقاط والتقدم)
@@ -903,6 +905,24 @@ io.on("connection", (socket) => {
     const sock = io.sockets.sockets.get(targetId);
     if (sock) setTimeout(() => sock.disconnect(true), 400);
     broadcast(room);
+  });
+
+  /* نظام الإشراف المشترك — الإخراج هنا «ناعم» ليحتفظ اللاعب بنقاطه عند العودة */
+  mod.attach(io, socket, {
+    getRoom:   () => room,
+    getPlayer: () => (room ? room.players.find(p => p.id === socket.id) : null),
+    broadcast, sys: sysMsg,
+    remove: (r, t, reason) => {
+      t.connected = false;
+      io.to(t.id).emit("kicked", { reason });
+      if (r.drawerId === t.id && (r.state === "drawing" || r.state === "picking")) {
+        clearTimers(r);
+        setTimeout(() => { if (rooms.has(r.id)) nextTurn(r); }, 1500);
+      }
+      const sock = io.sockets.sockets.get(t.id);
+      if (sock) setTimeout(() => sock.disconnect(true), 400);
+      broadcast(r);
+    }
   });
 
   socket.on("chooseWord", (word) => { if (room) chooseWord(room, socket.id, word); });

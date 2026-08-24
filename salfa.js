@@ -3,6 +3,7 @@
 const crypto = require("crypto");
 const words = require("./salfa-words");
 const { nameFromSocket } = require("./account");
+const mod = require("./moderation");
 
 const EMPTY_ROOM_MS = 600000;  // غرفة انقطع كل لاعبيها تبقى ١٠ دقائق ليعودوا
 const CHAT_MAX = 200;
@@ -581,6 +582,7 @@ function setupSalfa(io, deps) {
         return cb({ ok: false, error: "كلمة مرور الغرفة خاطئة", needPass: true });
       if (r.players.filter(p => p.connected).length >= r.settings.maxPlayers)
         return cb({ ok: false, error: "الغرفة ممتلئة" });
+      if (mod.isBanned(r, { name })) return cb({ ok: false, error: "أنت محظور من هذه الغرفة" });
       if (room) leaveRoom(true);
       // ✨ كما في لعبة الرسم: الرجوع بنفس الاسم يستعيد النقاط والدور والتقدم
       const wanted = (socket.userName || String(name || "").trim().slice(0, 20) || "لاعب");
@@ -774,14 +776,11 @@ function setupSalfa(io, deps) {
       beginVoting(room);
     });
 
-    socket.on("kickPlayer", (targetId) => {
-      if (!room || !player || room.ownerId !== player.id) return;
-      const t = room.players.find(p => p.id === targetId);
-      if (!t || t.id === player.id) return;
-      room.players = room.players.filter(p => p.id !== targetId);
-      nsp.to(targetId).emit("kicked");
-      sys(room, `${t.name} تم إخراجه من الغرفة`, "warn");
-      broadcast(room);
+    /* نظام الإشراف المشترك: طرد / حظر / تصويت طرد / بلاغ */
+    mod.attach(nsp, socket, {
+      getRoom:   () => room,
+      getPlayer: () => player,
+      broadcast, sys
     });
 
     socket.on("chat", (text) => {

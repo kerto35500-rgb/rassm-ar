@@ -3,6 +3,7 @@
 const crypto = require("crypto");
 const qbank = require("./qbank");
 const { nameFromSocket } = require("./account");
+const mod = require("./moderation");
 
 // ====== ثوابت ======
 // وضع الاختبار السريع (يُفعّل بمتغير بيئة فقط — لا يؤثر على اللعب الحقيقي)
@@ -734,6 +735,7 @@ function setupQuiz(io, deps) {
         return cb({ ok: false, error: "كلمة مرور الغرفة خاطئة", needPass: true });
       if (r.players.filter(p => p.connected).length >= r.settings.maxPlayers)
         return cb({ ok: false, error: "الغرفة ممتلئة" });
+      if (mod.isBanned(r, { name })) return cb({ ok: false, error: "أنت محظور من هذه الغرفة" });
       if (room) leave(true);
       player = makePlayer(name);
       player.color = COLORS[r.players.length % COLORS.length];
@@ -783,14 +785,11 @@ function setupQuiz(io, deps) {
       broadcast(room);
     });
 
-    socket.on("kickPlayer", (targetId) => {
-      if (!room || !player || room.ownerId !== player.id) return;
-      const t = room.players.find(p => p.id === targetId);
-      if (!t || t.id === player.id) return;
-      room.players = room.players.filter(p => p.id !== targetId);
-      nsp.to(targetId).emit("kicked");
-      sys(room, `🚪 تم طرد ${t.name}`, "warn");
-      broadcast(room);
+    /* نظام الإشراف المشترك: طرد / حظر / تصويت طرد / بلاغ */
+    mod.attach(nsp, socket, {
+      getRoom:   () => room,
+      getPlayer: () => player,
+      broadcast, sys
     });
 
     // ---- اللعب ----
