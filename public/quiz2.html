@@ -728,6 +728,7 @@ input,select,textarea{font-family:inherit}
 #lobby .err{margin-top:0}
 </style>
 <link rel="stylesheet" href="/kawaii.css">
+<script src="/mod.js" defer></script>
 <script src="/theme.js" defer></script>
 </head>
 <body>
@@ -945,6 +946,12 @@ const socket=io("/quiz",{transports:["websocket","polling"]});
 const RM=matchMedia("(prefers-reduced-motion:reduce)").matches;
 
 let ME=null,ROOM=null,ST=null,OFF=0,TOKEN=null,HELLO=null;
+
+/* نظام الإشراف المشترك */
+window.addEventListener("load",()=>{
+  if(!window.RassmMod)return;
+  RassmMod.attach({socket,getMe:()=>ME,getOwnerId:()=>(ST&&ST.ownerId)||null,getPlayers:()=>(ST&&ST.players)||[]});
+});
 let mode="login",acct=null,raf=0,picked=-1,phaseKey="";
 let previewMode=false;   // أثناء معاينة الفخاخ: لا نسمح لتحديثات الخادم بتبديل المشهد
 let lkSel=null,lkMap=[null,null,null,null],stIdx=0,stAns=[];
@@ -1199,6 +1206,7 @@ function renderRoster(){
     r.dataset.k=ids;r.innerHTML="";
     ST.players.forEach(p=>{
       const d=document.createElement("div");d.className="pl";d.dataset.id=p.id;
+      if(p.id!==ME){d.style.cursor="pointer";d.title="خيارات اللاعب";d.onclick=()=>window.RassmMod&&RassmMod.open(p.id);}
       d.innerHTML=`<div class="crown hide">👑</div><div class="av">${avatar(p.name,p.color)}</div>
         <div class="sc">0</div><div class="nm"></div><div class="x2 hide">×2</div>`;
       r.appendChild(d);
@@ -2165,6 +2173,7 @@ function stopFx(){FX.stop();}
 
 /* ═══ الدردشة ═══ */
 function addChat(m){
+  if(!m.system&&m.name&&window.RassmMod&&RassmMod.isMuted(m.name))return;   // كتم محلي
   const l=$("chatLog"),d=document.createElement("div");
   d.className="cm "+(m.cls||(m.system?"system":""));
   d.innerHTML=m.system?esc(m.text):`<b style="color:${m.color||"var(--cyan)"}">${esc(m.name)}</b>: ${esc(m.text)}`;

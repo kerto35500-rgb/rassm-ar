@@ -315,6 +315,7 @@
   @media (max-width: 900px){ #play.on{display:flex;} }
 </style>
 <link rel="stylesheet" href="/kawaii.css">
+<script src="/mod.js" defer></script>
 <script src="/theme.js" defer></script>
 </head>
 <body>
@@ -513,6 +514,17 @@ const socket = io("/salfa");
 const AV = ["🦊","🐼","🦁","🐯","🐨","🐸","🐵","🦉","🐺","🐙","🦄","🐝"];
 
 let ME = null, TOKEN = null, ROOM = null, ST = null, MYROLE = null, HOST = false;
+
+/* نظام الإشراف المشترك */
+window.addEventListener("load", () => {
+  if (!window.RassmMod) return;
+  RassmMod.attach({
+    socket,
+    getMe: () => ME,
+    getOwnerId: () => (ST && ST.ownerId) || null,
+    getPlayers: () => (ST && ST.players) || []
+  });
+});
 let PACKS = [], DEFAULTS = null, settings = null, wakeLock = null, endsAt = 0, phaseTotal = 0;
 let lastPhase = null, myVotes = [], wasMyTurn = false;
 
@@ -924,6 +936,7 @@ socket.on("role", r => {
 
 /* ============ الشات ============ */
 socket.on("chat", m => {
+  if (!m.system && m.name && window.RassmMod && RassmMod.isMuted(m.name)) return;   // كتم محلي
   const el = document.createElement("div");
   el.className = "msg " + (m.system ? (m.cls || "system") : "");
   el.innerHTML = m.system ? esc(m.text) : "<b>" + esc(m.name) + ":</b> " + esc(m.text);
@@ -1046,11 +1059,10 @@ function paintPlayers(container, s, opts){
       + '<div class="nm">' + esc(p.name) + (p.id === ME ? " (أنت)" : "") + '</div>'
       + '<div class="sc">' + p.score + '</div>'
       + (tick ? '<span class="tick">' + tick + '</span>' : "")
-      + (HOST && p.id !== ME ? '<button class="kick" data-k="' + esc(p.id) + '" title="طرد">✖</button>' : "");
+      ;
+    if (p.id !== ME) { d.style.cursor = "pointer"; d.title = "خيارات اللاعب";
+      d.onclick = () => window.RassmMod && RassmMod.open(p.id); }
     el.appendChild(d);
-  });
-  el.querySelectorAll("[data-k]").forEach(b => b.onclick = () => {
-    if (confirm("طرد هذا اللاعب؟")) socket.emit("kickPlayer", b.dataset.k);
   });
 }
 

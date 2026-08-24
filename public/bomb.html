@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>💣 القنبلة — لعبة كلمات عربية</title>
 <link rel="stylesheet" href="/kawaii.css">
+<script src="/mod.js" defer></script>
 <script src="/theme.js" defer></script>
 <style>
   :root {
@@ -1111,6 +1112,18 @@
       .forEach(el => el.textContent = d.text);
   });
 
+  /* نظام الإشراف المشترك */
+  window.addEventListener("load", () => {
+    if (!window.RassmMod) return;
+    RassmMod.attach({
+      socket,
+      getMe: () => ME,
+      getOwnerId: () => (ST && ST.ownerId) || null,
+      getPlayers: () => (ST && ST.players) || [],
+      onChange: () => { if (ST) renderList(); }
+    });
+  });
+
   socket.on("disconnect", () => flash("انقطع الاتصال… جاري إعادة المحاولة", "bad"));
   /* الرجوع من تطبيق آخر: نعيد الاتصال فوراً بدل انتظار دورة socket.io.
      الخادم يحفظ مكان اللاعب ٣ دقائق ويعرضه «غير متصل…» للبقية. */
@@ -1330,6 +1343,10 @@
         `<div class="hearts">${ST.state==="playing"? hearts(p.lives) : (p.spectator?"متفرج":"")}</div>` +
         `<div class="typed"></div>` +
         (p.connected?"":'<div class="off">غير متصل…</div>');
+      if (p.id !== ME) {
+        d.style.cursor = "pointer";
+        d.onclick = () => window.RassmMod && RassmMod.open(p.id);
+      }
       ring.appendChild(d);
     });
     aimBomb();
@@ -1434,11 +1451,10 @@
                     `<span class="nm">${esc(p.name)}${p.id===ME?" (أنت)":""}</span>` +
                     `<span style="font-size:11px">${ST.state==="playing"?hearts(p.lives):(p.spectator?"👁":"")}</span>` +
                     `<span class="muted" style="font-size:11px">${p.words||0}</span>`;
-      if (ST.ownerId===ME && p.id!==ME) {
-        const k = document.createElement("button");
-        k.className="kick"; k.textContent="✕"; k.title="طرد";
-        k.onclick = () => socket.emit("kickPlayer", p.id);
-        d.appendChild(k);
+      if (p.id !== ME) {
+        d.style.cursor = "pointer";
+        d.title = "خيارات اللاعب";
+        d.onclick = () => window.RassmMod && RassmMod.open(p.id);
       }
       box.appendChild(d);
     });
@@ -1657,6 +1673,8 @@
   };
 
   function addChat(m){
+    // الكتم محلي: رسائل من كتمتَه لا تظهر عندك إطلاقاً
+    if (!m.system && m.name && window.RassmMod && RassmMod.isMuted(m.name)) return;
     const log = $("chatLog");
     const d = document.createElement("div");
     d.className = "cm " + (m.cls || (m.system?"system":""));

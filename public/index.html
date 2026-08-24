@@ -420,6 +420,7 @@
   }
 </style>
 <link rel="stylesheet" href="/kawaii.css">
+<script src="/mod.js" defer></script>
 <script src="/theme.js" defer></script>
 </head>
 <body>
@@ -759,6 +760,17 @@ function turnFlash() {
 }
 
 let myId = null, isDrawer = false, canDraw = false, state = null, prevState = "lobby";
+
+/* نظام الإشراف المشترك */
+window.addEventListener("load", () => {
+  if (!window.RassmMod) return;
+  RassmMod.attach({
+    socket,
+    getMe: () => myId,
+    getOwnerId: () => { const o = state && state.players && state.players.find(p => p.isOwner); return o ? o.id : null; },
+    getPlayers: () => (state && state.players) || []
+  });
+});
 let voteMode = false, myVoted = false;
 
 // نبض إبقاء السيرفر حيًا (يمنع الخطة المجانية من النوم أثناء اللعب الطويل)
@@ -1106,10 +1118,13 @@ socket.on("roomState", s => {
       <span class="badge">${p.isDrawer ? "✏️" : p.guessed ? "✅" : p.isOwner ? "👑" : p.isBot ? "🤖" : "👤"}</span>
       <span class="pname">${esc(p.name)}${p.id === myId ? " (أنت)" : ""}</span>
       <span class="pscore">${p.score}</span>
-      ${iAmOwner && p.id !== myId ? `<button class="kickBtn" data-kick="${esc(p.id)}" title="طرد">✖</button>` : ""}
     </div>`).join("");
-  document.querySelectorAll("[data-kick]").forEach(b => b.onclick = () => {
-    if (confirm("طرد هذا اللاعب من الغرفة؟")) socket.emit("kickPlayer", b.dataset.kick);
+  // الضغط على صف اللاعب يفتح نافذة الإشراف الموحّدة
+  $("playersPanel").querySelectorAll(".playerRow").forEach((row, i) => {
+    const p = s.players.filter(x => x.connected)[i];
+    if (!p || p.id === myId) return;
+    row.style.cursor = "pointer"; row.title = "خيارات اللاعب";
+    row.onclick = () => window.RassmMod && RassmMod.open(p.id);
   });
 
   const me = s.players.find(p => p.id === myId);
