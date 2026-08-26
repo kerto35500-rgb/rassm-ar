@@ -216,8 +216,12 @@ function setupBomb(io, deps) {
   function broadcast(room) { nsp.to(room.id).emit("state", state(room)); }
   function sys(room, text, cls = "system") { nsp.to(room.id).emit("chat", { system: true, cls, text }); }
 
+  /* كل مؤقتات الغرفة تُلغى هنا، ورقم الجيل يُبطل أي مؤقّت قديم فلت.
+     بدون هذا تتراكم سلاسل مؤقتات متوازية وتخنق الخادم بعد عدة انفجارات. */
   function clearTimers(room) {
-    clearTimeout(room.boomTimer); room.boomTimer = null;
+    clearTimeout(room.boomTimer);  room.boomTimer = null;
+    clearTimeout(room.roundTimer); room.roundTimer = null;
+    room.gen = (room.gen || 0) + 1;
   }
 
   function alivePlayers(room) { return room.players.filter(p => p.alive && !p.spectator); }
@@ -273,9 +277,13 @@ function setupBomb(io, deps) {
 
   function armBomb(room, seconds) {
     clearTimers(room);
+    const g = room.gen || 0;
     const ms = Math.max(1000, Math.round(seconds * 1000));
     room.endsAt = Date.now() + ms;
-    room.boomTimer = setTimeout(() => explode(room), ms + GRACE_MS);
+    room.boomTimer = setTimeout(() => {
+      if ((room.gen || 0) !== g) return;      // مؤقّت من جولة قديمة — يُتجاهل
+      explode(room);
+    }, ms + GRACE_MS);
   }
 
   // أول لاعب حيّ بعد الموضع المُعطى (دوراناً حول الحلقة)
@@ -329,7 +337,11 @@ function setupBomb(io, deps) {
     if (list.length <= 1) return endGame(room);
     // بعد الانفجار تنتقل القنبلة للاعب الذي بعده — لا تبقى معلّقة عليه
     const startIdx = nextAliveIdx(room, room.turnIdx);
-    setTimeout(() => { if (room.state === "playing") newRound(room, startIdx); }, 1400);
+    const g = room.gen || 0;
+    room.roundTimer = setTimeout(() => {
+      if ((room.gen || 0) !== g || room.state !== "playing") return;
+      newRound(room, startIdx);
+    }, 1400);
     broadcast(room);
   }
 

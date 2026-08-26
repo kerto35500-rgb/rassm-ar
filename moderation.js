@@ -105,44 +105,87 @@ function attach(nsp, socket, ctx) {
     cb && cb({ ok:true });
   });
 
-  /* ── تصويت طرد (أي لاعب) ── */
+  /* حالة التصويت المرسلة للجميع */
+  const voteState = (r) => {
+    if (!r._vk) return null;
+    const live = r.players.filter(p => p.connected).length;
+    return {
+      targetId: r._vk.targetId, name: r._vk.name,
+      have: r._vk.voters.size, need: Math.floor(live / 2) + 1,
+      endsAt: r._vk.endsAt, starterId: r._vk.starterId
+    };
+  };
+  const endVote = (r) => { if (r._vk) clearTimeout(r._vk.timer); r._vk = null; nsp.to(r.id).emit("mod:vote", null); };
+
+  /* ── بدء تصويت طرد (أي لاعب) ── */
   socket.on("mod:votekick", ({ targetId } = {}, cb) => {
     const r = getRoom(), me = getPlayer();
     if (!r || !me) return cb && cb({ ok:false, error:"لست في غرفة" });
+    if (r.settings && r.settings.noVotekick) return cb && cb({ ok:false, error:"المضيف أوقف تصويت الطرد" });
     const t = target(targetId);
     if (!t || t.id === me.id) return cb && cb({ ok:false, error:"اختيار غير صالح" });
     const live = r.players.filter(p => p.connected);
     if (live.length < 3) return cb && cb({ ok:false, error:"يحتاج ٣ لاعبين على الأقل" });
+    if (r._vk) return cb && cb({ ok:false, error:"يوجد تصويت جارٍ" });
 
-    if (r._vk && r._vk.targetId === t.id && Date.now() < r._vk.endsAt) {
-      if (r._vk.voters.has(me.id)) return cb && cb({ ok:false, error:"صوّتت مسبقاً" });
-      r._vk.voters.add(me.id);
-    } else {
-      clearTimeout(r._vk && r._vk.timer);
-      r._vk = { targetId: t.id, name: t.name, voters: new Set([me.id]),
-                endsAt: Date.now() + VOTE_MS, timer: null };
-      r._vk.timer = setTimeout(() => {
-        if (r._vk && r._vk.targetId === t.id) {
-          sys(r, `🗳️ انتهى وقت التصويت على طرد ${t.name} — لم تكتمل الأغلبية`, "system");
-          r._vk = null;
-          nsp.to(r.id).emit("mod:vote", null);
-        }
-      }, VOTE_MS);
-      sys(r, `🗳️ ${me.name} بدأ تصويتاً لطرد ${t.name}`, "warn");
+    r._vk = { targetId: t.id, name: t.name, starterId: me.id,
+              voters: new Set([me.id]), endsAt: Date.now() + VOTE_MS, timer: null };
+    r._vk.timer = setTimeout(() => {
+      if (r._vk && r._vk.targetId === t.id) {
+        sys(r, `🗳️ انتهى وقت التصويت على طرد ${t.name} — لم تكتمل الأغلبية`, "system");
+        endVote(r);
+      }
+    }, VOTE_MS);
+    sys(r, `🗳️ ${me.name} بدأ تصويتاً لطرد ${t.name} — صوّتوا خلال ${VOTE_MS / 1000} ثانية`, "warn");
+    nsp.to(r.id).emit("mod:vote", voteState(r));
+    cb && cb({ ok:true, ...voteState(r) });
+  });
+
+  /* ── تصويت بنعم/لا على التصويت الجاري ── */
+  socket.on("mod:vote", ({ yes } = {}, cb) => {
+    const r = getRoom(), me = getPlayer();
+    if (!r || !me || !r._vk) return cb && cb({ ok:false, error:"لا يوجد تصويت" });
+    if (me.id === r._vk.targetId) return cb && cb({ ok:false, error:"لا تصوّت على نفسك" });
+    if (r._vk.voters.has(me.id)) return cb && cb({ ok:false, error:"صوّتت مسبقاً" });
+    if (yes === false) {
+      if (!r._vk.no) r._vk.no = new Set();
+      r._vk.no.add(me.id);
+      nsp.to(r.id).emit("mod:vote", voteState(r));
+      return cb && cb({ ok:true, voted:"no" });
     }
-
-    const need = Math.floor(live.length / 2) + 1;
-    const have = r._vk.voters.size;
-    nsp.to(r.id).emit("mod:vote", { targetId: t.id, name: t.name, have, need, endsAt: r._vk.endsAt });
-
-    if (have >= need) {
-      clearTimeout(r._vk.timer);
-      r._vk = null;
-      nsp.to(r.id).emit("mod:vote", null);
-      remove(r, t, "votekick");
-      sys(r, `🗳️ الأغلبية صوّتت — تم طرد ${t.name}`, "warn");
+    r._vk.voters.add(me.id);
+    const st = voteState(r);
+    nsp.to(r.id).emit("mod:vote", st);
+    if (st.have >= st.need) {
+      const t = target(r._vk.targetId);
+      endVote(r);
+      if (t) { remove(r, t, "votekick"); sys(r, `🗳️ الأغلبية صوّتت — تم طرد ${t.name}`, "warn"); }
     }
-    cb && cb({ ok:true, have, need });
+    cb && cb({ ok:true, ...st });
+  });
+
+  /* ── المضيف: إلغاء التصويت الجاري ── */
+  socket.on("mod:voteCancel", (_ = {}, cb) => {
+    const r = getRoom(), me = getPlayer();
+    if (!r || !me) return cb && cb({ ok:false, error:"لست في غرفة" });
+    if (!isOwner()) return cb && cb({ ok:false, error:"للمضيف فقط" });
+    if (!r._vk) return cb && cb({ ok:false, error:"لا يوجد تصويت" });
+    sys(r, `🛑 ${me.name} ألغى تصويت الطرد`, "system");
+    endVote(r);
+    cb && cb({ ok:true });
+  });
+
+  /* ── المضيف: تفعيل/إيقاف تصويت الطرد في الغرفة ── */
+  socket.on("mod:voteToggle", ({ off } = {}, cb) => {
+    const r = getRoom(), me = getPlayer();
+    if (!r || !me) return cb && cb({ ok:false, error:"لست في غرفة" });
+    if (!isOwner()) return cb && cb({ ok:false, error:"للمضيف فقط" });
+    if (!r.settings) r.settings = {};
+    r.settings.noVotekick = !!off;
+    if (off && r._vk) endVote(r);
+    sys(r, off ? "🚫 المضيف أوقف تصويت الطرد" : "✅ المضيف فعّل تصويت الطرد", "system");
+    broadcast(r);
+    cb && cb({ ok:true, off: !!off });
   });
 
   /* ── بلاغ (أي لاعب) ── */

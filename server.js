@@ -949,13 +949,22 @@ io.on("connection", (socket) => {
 
   socket.on("clearCanvas", () => {
     if (!room || room.state !== "drawing" || socket.id !== room.drawerId) return;
+    // المسح عملية قابلة للتراجع: نحفظ اللوحة كاملة قبل إفراغها
+    if (!room.redoStack) room.redoStack = [];
+    if (room.canvasOps.length) room.redoStack.push({ cleared: room.canvasOps });
     room.canvasOps = [];
-    room.redoStack = [];
     io.to(room.id).emit("clearCanvas");
   });
 
   socket.on("undo", () => {
     if (!room || room.state !== "drawing" || socket.id !== room.drawerId) return;
+    // تراجع عن «مسح الكل»: نعيد اللوحة كما كانت
+    const top = room.redoStack && room.redoStack[room.redoStack.length - 1];
+    if (!room.canvasOps.length && top && top.cleared) {
+      room.canvasOps = room.redoStack.pop().cleared;
+      io.to(room.id).emit("canvasHistory", room.canvasOps);
+      return;
+    }
     let i = room.canvasOps.length - 1;
     while (i >= 0 && !room.canvasOps[i].start) i--;
     if (i >= 0) {
@@ -971,7 +980,8 @@ io.on("connection", (socket) => {
     if (!room || room.state !== "drawing" || socket.id !== room.drawerId) return;
     if (!room.redoStack || !room.redoStack.length) return;
     const group = room.redoStack.pop();
-    room.canvasOps.push(...group);
+    if (group && group.cleared) room.canvasOps = [];   // إعادة تنفيذ المسح
+    else room.canvasOps.push(...group);
     io.to(room.id).emit("canvasHistory", room.canvasOps);
   });
 

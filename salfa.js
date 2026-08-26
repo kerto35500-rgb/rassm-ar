@@ -427,10 +427,10 @@ function setupSalfa(io, deps) {
     return shuffle([room.word, ...decoys]);
   }
 
-  /* توزيع النقاط:
-     • كل من صوّت على برّا السالفة يأخذ نقطة (لكل تصويت صحيح).
-     • برّا السالفة: إن خمّنه أقل من ٥٠٪ من اللاعبين ⇒ نقطة واحدة.
-     • وإن اختار السالفة الصحيحة ⇒ نقطتان. غير ذلك لا شيء. */
+  /* توزيع النقاط (نقطة واحدة لكل إنجاز):
+     • نقطة لكل من كشف برّا السالفة بصوته.
+     • نقطة لبرّا السالفة إن نجا (أقل من ٥٠٪ صوّتوا عليه).
+     • نقطة لبرّا السالفة إن خمّن السالفة الصحيحة. */
   function finishRound(room) {
     clearTimers(room);
     const r = room.result;
@@ -444,7 +444,7 @@ function setupSalfa(io, deps) {
       r.picks = { ...room.guessRound.answered };
       room.guessRound.ids.forEach(id => {
         const pick = room.guessRound.answered[id];
-        if (pick && normalize(pick) === normalize(room.word)) { add(id, 2); stolen = true; }
+        if (pick && normalize(pick) === normalize(room.word)) { add(id, 1); stolen = true; }
       });
     }
     if (room.emergencyStarterId && r.caught) add(room.emergencyStarterId, 1);
