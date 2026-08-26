@@ -86,11 +86,23 @@
       "  z-index:9100;background:#4A2E2B;color:#fff;padding:12px 22px;border-radius:999px;",
       "  font-size:14px;font-weight:800;opacity:0;transition:.25s;pointer-events:none}",
       "#rmToast.on{transform:translateX(-50%) translateY(0);opacity:1}",
-      "#rmVote{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:8900;",
-      "  background:#fff;border:2.5px solid var(--rm-line,#C99A72);border-radius:999px;",
-      "  padding:9px 18px;font-size:14px;font-weight:800;color:var(--rm-ink,#4A2E2B);",
-      "  box-shadow:0 4px 0 var(--rm-line,#C99A72);display:none}",
+      "#rmVote{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:8900;",
+      "  background:var(--rm-white,#fff);border:2.5px solid var(--rm-line,#C99A72);border-radius:20px;",
+      "  padding:11px 16px;font-size:14px;font-weight:800;color:var(--rm-ink,#4A2E2B);",
+      "  box-shadow:0 4px 0 var(--rm-line,#C99A72),0 12px 26px rgba(80,50,30,.22);display:none;",
+      "  text-align:center;max-width:calc(100vw - 24px);animation:rmPop .2s cubic-bezier(.34,1.56,.44,1)}",
       "#rmVote.on{display:block}",
+      "#rmVote .rmvT{font-size:15px;margin-bottom:3px}",
+      "#rmVote .rmvC{font-size:12.5px;color:#9A7A66;margin-bottom:8px}",
+      "#rmVote .rmvB{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}",
+      "#rmVote .rmvB button{padding:8px 14px;border-radius:999px;font-size:13.5px;font-weight:800;",
+      "  cursor:pointer;border:2.5px solid var(--rm-line,#C99A72);background:#fff;",
+      "  color:var(--rm-ink,#4A2E2B);box-shadow:0 3px 0 var(--rm-line,#C99A72)}",
+      "#rmVote .rmvB button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--rm-line,#C99A72)}",
+      "#rmVote .rmvB button:disabled{opacity:.55;cursor:default}",
+      "#rmVote .rmvY{background:#E3F8EC !important;border-color:#2FA36B !important;box-shadow:0 3px 0 #2FA36B !important;color:#1C6B45 !important}",
+      "#rmVote .rmvN{background:#FDEBEC !important;border-color:#D6455A !important;box-shadow:0 3px 0 #D6455A !important;color:#8E2230 !important}",
+      "#rmVote .rmvNote{font-size:13px;color:#9A7A66}",
       /* ألوان كل لعبة تُلتقط من الثيم */
       "body.kw-bomb{--rm-line:#A05F50;--rm-ink:#4A2E2B;--rm-band:#FFF0DC;--rm-white:#FFFDF8}",
       "body.kw-salfa{--rm-line:#55814B;--rm-ink:#274A2E;--rm-band:#EAF7EC;--rm-white:#FBFEFB}",
@@ -182,6 +194,15 @@
 
     btn("🚩 إبلاغ", "", function () { reportBox(p); });
 
+    if (iAmOwner) {
+      var off = !!(CFG.getVoteOff && CFG.getVoteOff());
+      btn(off ? "✅ تفعيل تصويت الطرد للجميع" : "🚫 إيقاف تصويت الطرد للجميع", off ? "on" : "", function () {
+        CFG.socket.emit("mod:voteToggle", { off: !off }, function (r) {
+          close(); toast(r && r.ok ? (r.off ? "أوقفت تصويت الطرد" : "فعّلت تصويت الطرد") : "تعذّر التغيير");
+        });
+      });
+    }
+
     var note = document.createElement("div"); note.id = "rmNote";
     note.textContent = iAmOwner
       ? "الحظر يمنعه من العودة لهذه الغرفة فقط. الكتم يخصّك وحدك — لا يراه أحد غيرك."
@@ -239,14 +260,50 @@
     document.getElementById("rmX").onclick = close;
   }
 
-  /* ───── شريط تصويت الطرد الجاري ───── */
+  /* ───── لوحة تصويت الطرد الجاري ───── */
   function showVote(v) {
     css();
     var bar = el("rmVote");
-    if (!v) { bar.classList.remove("on"); vote = null; return; }
+    if (!v) { bar.classList.remove("on"); bar.innerHTML = ""; vote = null; return; }
     vote = v;
-    bar.textContent = "🗳️ تصويت طرد " + v.name + " — " + v.have + "/" + v.need;
+    var me = CFG ? CFG.getMe() : null;
+    var iAmTarget = me && me === v.targetId;
+    var iAmOwner  = CFG && CFG.getOwnerId() === me;
+    var left = Math.max(0, Math.round((v.endsAt - Date.now()) / 1000));
+
+    bar.innerHTML =
+      '<div class="rmvT">🗳️ تصويت لطرد <b>' + esc(v.name) + '</b></div>' +
+      '<div class="rmvC"><span id="rmvHave">' + v.have + '</span>/' + v.need +
+      ' أصوات · <span id="rmvT">' + left + '</span>ث</div>' +
+      '<div class="rmvB">' +
+        (iAmTarget ? '<span class="rmvNote">التصويت عليك…</span>' :
+          '<button class="rmvY">✔ موافق</button><button class="rmvN">✕ رافض</button>') +
+        (iAmOwner ? '<button class="rmvX">🛑 إلغاء التصويت</button>' : "") +
+      '</div>';
     bar.classList.add("on");
+
+    var y = bar.querySelector(".rmvY"), n = bar.querySelector(".rmvN"), x = bar.querySelector(".rmvX");
+    if (y) y.onclick = function () {
+      CFG.socket.emit("mod:vote", { yes: true }, function (r) {
+        if (r && !r.ok) toast(r.error || "تعذّر التصويت");
+        else { y.disabled = n.disabled = true; y.textContent = "✔ صوّتّ"; }
+      });
+    };
+    if (n) n.onclick = function () {
+      CFG.socket.emit("mod:vote", { yes: false }, function () {
+        y.disabled = n.disabled = true; n.textContent = "✕ رفضت";
+      });
+    };
+    if (x) x.onclick = function () { CFG.socket.emit("mod:voteCancel", {}, function () {}); };
+
+    clearInterval(bar._t);
+    bar._t = setInterval(function () {
+      if (!vote) return clearInterval(bar._t);
+      var s = Math.max(0, Math.round((vote.endsAt - Date.now()) / 1000));
+      var e = document.getElementById("rmvT");
+      if (e) e.textContent = s;
+      if (s <= 0) clearInterval(bar._t);
+    }, 500);
   }
 
   /* ───── الربط ───── */

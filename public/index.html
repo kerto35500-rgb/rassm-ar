@@ -338,6 +338,11 @@
   #wordsSearch { width:100%; padding:9px 12px; border:2px solid #e3e8ee; border-radius:10px; font-size:15px; }
   #wordsSearch:focus { outline:none; border-color:var(--accent2); }
   #wordsCats { display:flex; gap:6px; overflow-x:auto; padding:10px 16px; flex-shrink:0; }
+  #wordsBulk { display:none; gap:8px; padding:6px 14px 0; flex-wrap:wrap; }
+  .bulkB { border:2px solid #e3e8ee; background:#fff; color:#345; padding:7px 14px; border-radius:999px;
+           font-size:13px; font-weight:800; cursor:pointer; }
+  .bulkB:hover { background:#f2f6fa; }
+  .bulkB.ok { border-color:#c8e6c9; background:#e8f5e9; color:#2e7d32; }
   .catChip { border:none; background:#eef3f8; color:#345; padding:6px 12px; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; }
   .catChip.active { background:var(--accent2); color:#fff; }
   #wordsGrid { flex:1; overflow-y:auto; padding:4px 16px 12px; display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start; }
@@ -717,6 +722,7 @@
       <input id="wordsSearch" placeholder="🔍 ابحث عن كلمة...">
     </div>
     <div id="wordsCats"></div>
+    <div id="wordsBulk"></div>
     <div id="wordsGrid"></div>
     <div id="wordsAddRow">
       <select id="wordsAddCat" title="الفئة"></select>
@@ -768,7 +774,8 @@ window.addEventListener("load", () => {
     socket,
     getMe: () => myId,
     getOwnerId: () => { const o = state && state.players && state.players.find(p => p.isOwner); return o ? o.id : null; },
-    getPlayers: () => (state && state.players) || []
+    getPlayers: () => (state && state.players) || [],
+    getVoteOff: () => !!(state && state.settings && state.settings.noVotekick)
   });
 });
 let voteMode = false, myVoted = false;
@@ -1013,6 +1020,36 @@ function renderWords() {
   const prev = sel.value;
   sel.innerHTML = activeNames.map(c => `<option>${esc(c)}</option>`).join("");
   sel.value = activeNames.includes(wordsCat) ? wordsCat : (activeNames.includes(prev) ? prev : activeNames[0] || "");
+
+  // ── أزرار جماعية: الفئات عند «الكل» أو كلمات الفئة المعروضة ──
+  const bulk = $("wordsBulk");
+  if (bulk) {
+    bulk.style.display = isOwner ? "flex" : "none";
+    const onAll = wordsCat === "الكل";
+    bulk.innerHTML =
+      '<button class="bulkB" data-bulk="none">🚫 ' + (onAll ? "إلغاء كل الفئات" : "إلغاء كل الكلمات") + '</button>' +
+      '<button class="bulkB ok" data-bulk="all">✅ ' + (onAll ? "اختيار كل الفئات" : "اختيار كل الكلمات") + '</button>';
+    bulk.querySelectorAll("[data-bulk]").forEach(b => b.onclick = () => {
+      const pick = b.dataset.bulk === "all";
+      if (onAll) {
+        const names = wdCatNames(true).filter(c => c !== "الكل");
+        if (!pick && !confirm("إلغاء كل الفئات؟ لن تبقى كلمات للّعب حتى تعيد اختيار فئة.")) return;
+        names.forEach(c => {
+          if (pick) socket.emit("restoreCategory", c);
+          else if (!wordsData.removedCats.includes(c)) { socket.emit("removeCategory", c); wordsData.removedCats.push(c); }
+        });
+        if (pick) wordsData.removedCats = [];
+      } else {
+        const list = [...(wordsData.builtin[wordsCat] || [])];
+        list.forEach(w => {
+          if (pick) socket.emit("restoreWord", w);
+          else if (!wordsData.removedWords.includes(w)) { socket.emit("removeWord", w); wordsData.removedWords.push(w); }
+        });
+        if (pick) wordsData.removedWords = wordsData.removedWords.filter(w => !list.includes(w));
+      }
+      renderWords();
+    });
+  }
 
   $("wordsGrid").innerHTML = entries.length ? entries.map(e2 => {
     const btn = !isOwner ? "" : e2.removed
@@ -1603,6 +1640,17 @@ document.querySelectorAll("[data-size]").forEach((b, i) => {
 });
 $("undoBtn").onclick = () => socket.emit("undo");
 $("redoBtn").onclick = () => socket.emit("redo");
+
+/* اختصارات لوحة المفاتيح للراسم: Ctrl+Z تراجع · Ctrl+Y أو Ctrl+Shift+Z إعادة */
+document.addEventListener("keydown", (e) => {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  const t = e.target;
+  if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+  if (!canDraw) return;
+  const k = (e.key || "").toLowerCase();
+  if (k === "z" && !e.shiftKey) { e.preventDefault(); socket.emit("undo"); }
+  else if (k === "y" || (k === "z" && e.shiftKey)) { e.preventDefault(); socket.emit("redo"); }
+});
 $("clearBtn").onclick = () => socket.emit("clearCanvas");
 
 let localOps = []; // سجل العمليات لإعادة الرسم عند تغير المقاس (أدق من تكبير الصورة)

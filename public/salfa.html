@@ -229,6 +229,10 @@
   #wordsSearch{width:100%; padding:9px 12px; border:2px solid var(--line); border-radius:10px;
                font-size:15px; font-family:inherit; text-align:start;}
   #wordsCats{display:flex; gap:6px; overflow-x:auto; padding:10px 15px; flex-shrink:0;}
+  #wordsBulk{display:none; gap:8px; padding:0 15px 6px; flex-wrap:wrap;}
+  .bulkB{border:2px solid var(--line); background:#fff; color:var(--ink); padding:7px 14px;
+         border-radius:999px; font-size:13px; font-weight:800; cursor:pointer;}
+  .bulkB.ok{border-color:#8fd9ab; background:#eafaf0; color:#1e7a44;}
   .catChip{border:none; background:#eef3f8; color:#345; padding:6px 12px; border-radius:20px;
            font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; font-family:inherit;}
   .catChip.active{background:#1668c7; color:#fff;}
@@ -446,7 +450,7 @@
       <div id="resSpy" class="sub" style="max-width:none;"></div>
       <div class="h" style="font-size:15px;">🏅 النقاط</div>
       <div class="sub" style="max-width:none; text-align:start;">
-        نقطة لكل من اكتشف برّا السالفة بصوته • نقطتان لمن نجا • نقطتان لمن كُشف واختار السالفة صح
+        نقطة لكل من كشف برّا السالفة بصوته • نقطة لبرّا السالفة إن نجا • نقطة له إن خمّن السالفة صح
       </div>
       <div id="resScores" style="display:flex; flex-direction:column; gap:6px;"></div>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -490,6 +494,7 @@
     </div>
     <div id="wordsSearchRow"><input id="wordsSearch" placeholder="🔍 ابحث عن كلمة..."></div>
     <div id="wordsCats"></div>
+    <div id="wordsBulk"></div>
     <div id="wordsGrid"></div>
     <div id="wordsAddRow">
       <select id="wordsAddCat" title="التصنيف"></select>
@@ -522,7 +527,8 @@ window.addEventListener("load", () => {
     socket,
     getMe: () => ME,
     getOwnerId: () => (ST && ST.ownerId) || null,
-    getPlayers: () => (ST && ST.players) || []
+    getPlayers: () => (ST && ST.players) || [],
+    getVoteOff: () => !!(ST && ST.settings && ST.settings.noVotekick)
   });
 });
 let PACKS = [], DEFAULTS = null, settings = null, wakeLock = null, endsAt = 0, phaseTotal = 0;
@@ -863,6 +869,36 @@ function renderWords(){
   sel.innerHTML = activeNames.map(c => `<option>${esc(c)}</option>`).join("");
   sel.value = activeNames.includes(wordsCat) ? wordsCat : (activeNames.includes(prev) ? prev : activeNames[0] || "");
 
+  // ── أزرار جماعية: الفئات عند «الكل» أو كلمات الفئة المعروضة ──
+  const bulk = $("wordsBulk");
+  if (bulk) {
+    bulk.style.display = isHost ? "flex" : "none";
+    const onAll = wordsCat === "الكل";
+    bulk.innerHTML =
+      '<button class="bulkB" data-bulk="none">🚫 ' + (onAll ? "إلغاء كل الفئات" : "إلغاء كل الكلمات") + '</button>' +
+      '<button class="bulkB ok" data-bulk="all">✅ ' + (onAll ? "اختيار كل الفئات" : "اختيار كل الكلمات") + '</button>';
+    bulk.querySelectorAll("[data-bulk]").forEach(b => b.onclick = () => {
+      const pick = b.dataset.bulk === "all";
+      if (onAll) {
+        const names = wdCatNames(true).filter(c => c !== "الكل");
+        if (!pick && !confirm("إلغاء كل الفئات؟ لن تبقى كلمات للّعب حتى تعيد اختيار فئة.")) return;
+        names.forEach(c => {
+          if (pick) socket.emit("restoreCategory", c);
+          else if (!wordsData.removedCats.includes(c)) { socket.emit("removeCategory", c); wordsData.removedCats.push(c); }
+        });
+        if (pick) wordsData.removedCats = [];
+      } else {
+        const list = [...(wordsData.builtin[wordsCat] || [])];
+        list.forEach(w => {
+          if (pick) socket.emit("restoreWord", w);
+          else if (!wordsData.removedWords.includes(w)) { socket.emit("removeWord", w); wordsData.removedWords.push(w); }
+        });
+        if (pick) wordsData.removedWords = wordsData.removedWords.filter(w => !list.includes(w));
+      }
+      renderWords();
+    });
+  }
+
   $("wordsGrid").innerHTML = entries.length ? entries.map(e2 => {
     const btn = !isHost ? "" : e2.removed
       ? `<button data-restore="${esc(e2.w)}" title="استرجاع">↩</button>`
@@ -1040,8 +1076,6 @@ function buildResult(s){
       + '<span class="g">' + p.score + (g ? ' <small style="color:#2e9e5b">(+' + g + ')</small>' : '') + '</span>';
     sc.appendChild(el);
   });
-  $("nextRoundBtn").hidden = !HOST;
-  $("toLobbyBtn").hidden = !HOST;
 }
 
 /* ============ اللاعبون ============ */
@@ -1162,6 +1196,13 @@ socket.on("state", s => {
 
   if (s.state === "voting") buildVote(s);
   if ((s.state === "result" || s.state === "gameEnd") && s.result) buildResult(s);
+  /* أزرار المضيف تُعرَض بالاعتماد على الحالة نفسها لا على وجود نتيجة،
+     حتى لا تختفي أبداً بعد فوز أحدهم */
+  {
+    const endish = (s.state === "result" || s.state === "gameEnd");
+    $("nextRoundBtn").hidden = !(s.state === "result" && HOST);
+    $("toLobbyBtn").hidden  = !(endish && HOST);
+  }
   if (s.state === "gameEnd" && s.winner){
     $("resBanner").className = "banner ins";
     $("resBanner").textContent = "🏆 " + s.winner.name + " فاز باللعبة بـ " + s.winner.score + " نقطة!";

@@ -950,7 +950,7 @@ let ME=null,ROOM=null,ST=null,OFF=0,TOKEN=null,HELLO=null;
 /* نظام الإشراف المشترك */
 window.addEventListener("load",()=>{
   if(!window.RassmMod)return;
-  RassmMod.attach({socket,getMe:()=>ME,getOwnerId:()=>(ST&&ST.ownerId)||null,getPlayers:()=>(ST&&ST.players)||[]});
+  RassmMod.attach({socket,getMe:()=>ME,getOwnerId:()=>(ST&&ST.ownerId)||null,getPlayers:()=>(ST&&ST.players)||[],getVoteOff:()=>!!(ST&&ST.settings&&ST.settings.noVotekick)});
 });
 let mode="login",acct=null,raf=0,picked=-1,phaseKey="";
 let previewMode=false;   // أثناء معاينة الفخاخ: لا نسمح لتحديثات الخادم بتبديل المشهد
