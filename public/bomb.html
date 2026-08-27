@@ -63,7 +63,6 @@
   .tabs button { flex:1; padding:9px; border:2px solid var(--line); background:#fff; border-radius:10px; font-weight:700; color:#6b7280; font-size:14px; }
   .tabs button.on { border-color:var(--accent); color:var(--accent); background:#fff5f1; }
 
-  #roomsList { display:flex; flex-direction:column; gap:7px; max-height:210px; overflow-y:auto; }
   .roomItem { display:flex; align-items:center; gap:8px; padding:10px 12px; border:2px solid var(--line); border-radius:10px; font-size:14px; }
   .roomItem b { color:var(--ink); }
   .roomItem .grow { flex:1; }
@@ -519,7 +518,7 @@
   }
 </style>
 </head>
-<body>
+<body class="theme-kawaii">
 
 <!-- ================= شاشة الدخول ================= -->
 <div id="lobbyScreen">
@@ -538,8 +537,6 @@
       <button class="btn ghost" id="joinBtn">انضمام 🚪</button>
     </div>
     <div class="err" id="roomErr"></div>
-    <h3 style="margin-top:6px">غرف عامة</h3>
-    <div id="roomsList"><div class="muted">لا توجد غرف عامة حالياً</div></div>
   </div>
 </div>
 
@@ -835,27 +832,6 @@
       if (q && !ROOM) doJoin(q.trim(), false);
     })
     .catch(() => {});
-
-  function refreshRooms(){
-    socket.emit("publicRooms", res => {
-      const box = $("roomsList");
-      const list = (res && res.rooms) || [];
-      if (!list.length) { box.innerHTML = '<div class="muted">لا توجد غرف عامة حالياً</div>'; return; }
-      box.innerHTML = "";
-      list.forEach(r => {
-        const d = document.createElement("div");
-        d.className = "roomItem";
-        d.innerHTML = `<b>#${r.id}</b> <span class="grow">${esc(r.owner)} · ${r.players}/${r.max} ${r.locked?"🔒":""} ${r.state==="playing"?"· يلعبون":""}</span>`;
-        const b = document.createElement("button");
-        b.textContent = "دخول";
-        b.onclick = () => doJoin(r.id, r.locked);
-        d.appendChild(b);
-        box.appendChild(d);
-      });
-    });
-  }
-  refreshRooms();
-  setInterval(()=>{ if (!ROOM) refreshRooms(); }, 6000);
 
   // ---------- الدخول للغرف ----------
   function myName(){ return (myAccount && myAccount.name) || $("aName").value.trim() || ""; }

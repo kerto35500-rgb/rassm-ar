@@ -731,7 +731,7 @@ input,select,textarea{font-family:inherit}
 <script src="/mod.js" defer></script>
 <script src="/theme.js" defer></script>
 </head>
-<body>
+<body class="theme-kawaii">
 
 <div id="aurora"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 <canvas id="bgFx"></canvas>
@@ -754,8 +754,6 @@ input,select,textarea{font-family:inherit}
       <button class="btn ghost" id="jB">انضمام 🚪</button>
     </div>
     <div class="err" id="rErr"></div>
-    <h3 style="margin-top:8px">غرف عامة</h3>
-    <div id="rooms"><div class="dim">لا توجد غرف عامة حالياً</div></div>
   </div>
 
   <!-- عناصر مخفية يعتمد عليها المنطق القديم (لا تظهر للاعب) -->
@@ -765,10 +763,6 @@ input,select,textarea{font-family:inherit}
     <input id="aPass" type="password">
   </div>
 
-  <div class="panel glass" id="lbP">
-    <h3>🏆 أفضل اللاعبين</h3>
-    <div id="lbL" class="dim">—</div>
-  </div>
 </div>
 
 <!-- ═══ اللعب ═══ -->
@@ -1035,7 +1029,7 @@ fetch("/api/account/me",{cache:"no-store"}).then(r=>r.json()).then(d=>{
   const q=new URLSearchParams(location.search).get("r");
   if(q&&!ROOM)doJoin(q.trim(),false);
 }).catch(()=>{});
-function showRooms(){ refreshRooms();refreshLB(); }
+function showRooms(){}
 const myName=()=>(acct&&acct.name)||$("aName").value.trim()||"";
 function needName(){
   if(myName().length>=2)return false;
@@ -1045,30 +1039,6 @@ function needName(){
 }
 $("aName").onkeydown=e=>{ if(e.key==="Enter")($("jId").value.trim()?$("jB"):$("crB")).click(); };
 $("jId").onkeydown=e=>{ if(e.key==="Enter")$("jB").click(); };
-
-function refreshRooms(){
-  socket.emit("publicRooms",r=>{
-    const b=$("rooms"),l=(r&&r.rooms)||[];
-    if(!l.length){b.innerHTML='<div class="dim">لا توجد غرف عامة حالياً</div>';return;}
-    b.innerHTML="";
-    l.forEach(x=>{
-      const d=document.createElement("div");d.className="rm";
-      d.innerHTML=`<b>#${x.id}</b><span class="g">${esc(x.owner)} · ${x.players}/${x.max} ${x.locked?"🔒":""}</span>`;
-      const bt=document.createElement("button");bt.textContent="دخول";bt.onclick=()=>doJoin(x.id,x.locked);
-      d.appendChild(bt);b.appendChild(d);
-    });
-  });
-}
-function refreshLB(){
-  socket.emit("leaderboard",r=>{
-    const l=(r&&r.top)||[];
-    $("lbL").innerHTML=l.length?l.map((u,i)=>
-      `<div class="rm"><b style="color:${i===0?'var(--gold)':'var(--cyan)'}">${i+1}</b>
-       <span class="g" style="color:var(--ink);font-weight:700">${esc(u.name)}</span>
-       <span style="color:var(--dim);font-size:12px">${u.wins} فوز · ${u.points}</span></div>`).join(""):'<div class="dim">لا توجد نتائج بعد</div>';
-  });
-}
-setInterval(()=>{if(!ROOM&&!$("roomP").classList.contains("hide"))refreshRooms();},7000);
 
 $("crB").onclick=()=>{ if(needName())return; socket.emit("createRoom",{name:myName()},r=>{
   if(!r||!r.ok){$("rErr").textContent=(r&&r.error)||"خطأ";return;} enter(r);}); };
@@ -2266,7 +2236,7 @@ function fit(){
 addEventListener("resize",fit);
 addEventListener("orientationchange",()=>setTimeout(fit,320));
 if(window.visualViewport){visualViewport.addEventListener("resize",fit);visualViewport.addEventListener("scroll",fit);}
-fit();setMode();refreshRooms();refreshLB();
+fit();setMode();
 })();
 </script>
 </body>
