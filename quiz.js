@@ -17,15 +17,23 @@ const PY_INTRO_MS = FAST ? 300 : 4000;      // مقدمة الهرم
 const PY_REVEAL_MS = FAST ? 300 : 3200;     // كشف حركة الهرم
 const EFFECT_MS = FAST ? 400 : 4000;        // أقصى مدة لتأثير القوة
 const RECONNECT_MS = 180000;   // ٣ دقائق: تبديل التطبيقات في الجوال لا يطرد اللاعب
+const SPIN_MS = FAST ? 300 : 2400;      // روليت كسر التعادل + زوم الباب
+const ZOOM_MS = FAST ? 300 : 1400;      // زوم الباب فقط (بلا تعادل)
+const AR_MS = FAST ? 300 : 2600;        // شاشة الفضح «فلان ألقى عليك…»
+const READY_MS = FAST ? 300 : 2000;     // «جاهزون للسؤال؟»
+const BET_POINTS = 100;                 // مكسب الرهان الصائب
 const PY_MAX_Q = 24;          // سقف أسئلة الهرم
 
 // الحدود الدنيا للمؤقتات (تُخفَّض في وضع الاختبار فقط)
 const MIN_Q = FAST ? 1 : 8, MIN_V = FAST ? 1 : 4, MIN_A = FAST ? 1 : 3, MIN_P = FAST ? 1 : 4;
 
-const POWERS = ["freeze", "gloop", "bombs", "nibble", "shuffle", "double"];
+const POWERS = ["freeze", "gloop", "bombs", "nibble", "shuffle", "double", "bet"];
+// القوى التخريبية فقط — تُستعمل لفخاخ درجات الهرم العشوائية
+const SABOTAGE = ["freeze", "gloop", "bombs", "nibble", "shuffle"];
 const POWER_AR = {
   freeze: "تجميد ❄️", gloop: "وحل 🟢", bombs: "قنابل 💣",
-  nibble: "أكلة الحروف 👾", shuffle: "خلط 🔀", double: "مضاعفة النقاط ✨"
+  nibble: "أكلة الحروف 👾", shuffle: "خلط 🔀", double: "مضاعفة النقاط ✨",
+  bet: "رهان 🎲"
 };
 // قوى تُستعمل على النفس لا على الخصم
 const SELF_POWERS = new Set(["double"]);
@@ -40,7 +48,7 @@ const DEFAULTS = {
   challenges: true,     // تفعيل جولتي الربط والتصنيف
   powers: true,         // تفعيل القوى الهجومية
   powerUses: 4,         // عدد استخدامات القوة لكل لاعب
-  powerChoices: 2,      // كم قوة تُعرض عشوائياً في كل جولة (من المسموحة)
+  powerChoices: 3,      // كم بطاقة مكشوفة تُعرض لكل لاعب في كل جولة
   allowedPowers: POWERS.slice(),
   pyramid: true,        // تفعيل النهائي
   pyramidHeight: 12,
@@ -198,6 +206,7 @@ function setupQuiz(io, deps) {
       p.score = 0; p.spectator = false; p.answered = false;
       p.lastGain = 0; p.powersLeft = room.settings.powers ? room.settings.powerUses : 0;
       p.pyPos = 0; p.effects = []; p.lastTarget = null; p.doubleNext = false;
+      p.lastPower = null; p.menu = null;
       p.color = COLORS[i % COLORS.length];
     });
     room.state = "playing";
@@ -207,6 +216,7 @@ function setupQuiz(io, deps) {
     room.usedLink = new Set();
     room.usedSort = new Set();
     room.lastCats = [];
+    room.bets = [];
     room.winner = null;
     room.pyQIndex = 0;
     sys(room, "بدأت المباراة! 🏆", "good");
@@ -242,16 +252,41 @@ function setupQuiz(io, deps) {
     const tally = {};
     room.catOptions.forEach(c => tally[c] = 0);
     Object.values(room.votes).forEach(c => { if (tally[c] !== undefined) tally[c]++; });
-    let best = room.catOptions[0], bestN = -1;
-    qbank.shuffle(room.catOptions).forEach(c => { if (tally[c] > bestN) { bestN = tally[c]; best = c; } });
+    const max = Math.max(...room.catOptions.map(c => tally[c]));
+    const tied = room.catOptions.filter(c => tally[c] === max);
+    // الفائز يُختار عشوائياً (RNG) من المتعادلين — والروليت البصري في الواجهة يتوقف عليه
+    const best = tied[Math.floor(Math.random() * tied.length)];
     room.chosenCat = best;
     room.lastCats.push(best);
-    nsp.to(room.id).emit("voteResult", { cat: best, tally });
-    // مرحلة الهجوم تبدأ من السؤال الرابع — وتُتخطّى إذا نفدت استخدامات الجميع
+    nsp.to(room.id).emit("voteResult", { cat: best, tally, tie: tied.length > 1 ? tied : null });
+    // مرحلة عرض النتيجة: روليت (عند التعادل) ثم زوم الدخول عبر الباب
+    const ms = tied.length > 1 ? SPIN_MS : ZOOM_MS;
     const canAttack = room.settings.powers && room.stageIdx >= 3 &&
       alive(room).length >= 2 && alive(room).some(p => p.powersLeft > 0);
-    if (canAttack) beginAttack(room);
-    else beginQuestion(room);
+    setPhase(room, "spin", ms / 1000, () => { canAttack ? beginAttack(room) : beginReady(room); });
+    broadcast(room);
+  }
+
+  // ── قائمة بطاقات مكشوفة لكل لاعب، بأوزان احتمالية ──
+  // قبل أول تحدٍّ: القوة المختارة في الجولة السابقة يقل احتمال تكرارها.
+  // بعد أول تحدٍّ: يرتفع احتمال ظهور المضاعفة والرهان.
+  function menuFor(room, p) {
+    let pool = room.settings.allowedPowers.filter(x => POWERS.includes(x));
+    if (alive(room).length < 3) pool = pool.filter(x => x !== "bet");  // الرهان يحتاج ٣ لاعبين
+    const n = Math.max(1, Math.min(room.settings.powerChoices, pool.length));
+    const chIdx = room.stages.findIndex(k => k === "link" || k === "sort");
+    const afterCh = chIdx >= 0 && room.stageIdx > chIdx;
+    const w = {};
+    pool.forEach(x => w[x] = 1);
+    if (!afterCh && p.lastPower && w[p.lastPower]) w[p.lastPower] = 0.3;
+    if (afterCh) { if (w.double) w.double *= 2.2; if (w.bet) w.bet *= 2.2; }
+    const items = pool.slice(), out = [];
+    while (out.length < n && items.length) {
+      let tot = items.reduce((s, x) => s + w[x], 0), r = Math.random() * tot, k = 0;
+      while (k < items.length - 1 && (r -= w[items[k]]) > 0) k++;
+      out.push(items.splice(k, 1)[0]);
+    }
+    return out;
   }
 
   // ====== مرحلة اختيار الهجوم ======
@@ -262,17 +297,53 @@ function setupQuiz(io, deps) {
     const waiting = alive(room).filter(p => p.powersLeft > 0 && !p.pendingAttack);
     if (waiting.length) return;
     clearTimers(room);
-    setTimeout(() => { if (room.phase === "attack") beginQuestion(room); }, FAST ? 50 : 900);
+    setTimeout(() => { if (room.phase === "attack") beginAttackReveal(room); }, FAST ? 50 : 900);
   }
 
   function beginAttack(room) {
     room.attacks = [];
+    room.bets = room.bets || [];
     room.players.forEach(p => { p.pendingAttack = null; });
-    // قائمة قوى عشوائية لهذه الجولة بدل عرضها كلها دفعة واحدة
-    const pool = room.settings.allowedPowers.filter(p => POWERS.includes(p));
-    const n = Math.min(room.settings.powerChoices, pool.length);
-    room.powerMenu = qbank.shuffle(pool).slice(0, Math.max(1, n));
-    setPhase(room, "attack", room.settings.attackTime, () => beginQuestion(room));
+    room.powerMenu = [];   // لم تعد قائمة موحّدة — لكل لاعب قائمته الخاصة
+    alive(room).forEach(p => {
+      if (p.powersLeft > 0) {
+        p.menu = menuFor(room, p);
+        nsp.to(p.id).emit("powerMenu", { menu: p.menu });
+      } else p.menu = null;
+    });
+    setPhase(room, "attack", room.settings.attackTime, () => beginAttackReveal(room));
+    broadcast(room);
+  }
+
+  // ── شاشة الفضح: خطوة إجبارية قبل السؤال — يعرف كل لاعب من استهدفه وبأي مقلب ──
+  function beginAttackReveal(room) {
+    if (!(room.attacks || []).length) return beginReady(room);
+    nsp.to(room.id).emit("attackReveal", {
+      hits: room.attacks.map(a => ({ from: a.from, fromName: a.fromName, to: a.to, toName: a.toName, power: a.power }))
+    });
+    setPhase(room, "attackReveal", AR_MS / 1000, () => beginReady(room));
+    broadcast(room);
+  }
+
+  // ── شاشة الاستعداد الوسيطة: «جاهزون للسؤال؟» — ثانيتان بالضبط ──
+  function beginReady(room) {
+    setPhase(room, "ready", READY_MS / 1000, () => beginRead(room));
+    broadcast(room);
+  }
+
+  // ── مرحلة قراءة السؤال: النص وحده — الخيارات لا تُرسل إطلاقاً في هذه المرحلة ──
+  function beginRead(room) {
+    const q = qbank.draw(room.chosenCat, room.usedQ, autoDifficulty(room));
+    if (!q) { sys(room, "لا توجد أسئلة في هذه الفئة", "warn"); return nextStage(room); }
+    room.usedQ.add(q.id);
+    room.currentQ = q;                 // فيه الإجابة الصحيحة — لا يُرسل أبداً
+    room.pubQuestion = { text: q.text, options: null, cat: q.cat, diff: q.diff, reading: true };
+    room.answers = {};
+    room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
+    // مدة القراءة تتناسب مع طول السؤال (وتسمح لاحقاً بربط قراءة صوتية)
+    const words = String(q.text).split(/\s+/).length;
+    const secs = FAST ? 0.3 : Math.min(7, Math.max(3.5, 2 + words * 0.38));
+    setPhase(room, "read", secs, () => beginQuestion(room));
     broadcast(room);
   }
 
@@ -287,13 +358,10 @@ function setupQuiz(io, deps) {
   }
 
   function beginQuestion(room) {
-    const q = qbank.draw(room.chosenCat, room.usedQ, autoDifficulty(room));
-    if (!q) { sys(room, "لا توجد أسئلة في هذه الفئة", "warn"); return nextStage(room); }
-    room.usedQ.add(q.id);
-    room.currentQ = q;                 // فيه الإجابة الصحيحة — لا يُرسل أبداً
+    // مرحلة الإجابة: الخيارات وحدها تملأ الشاشة — السؤال قُرئ في المرحلة السابقة
+    const q = room.currentQ;
+    if (!q) return nextStage(room);
     room.pubQuestion = { text: q.text, options: q.options, cat: q.cat, diff: q.diff };
-    room.answers = {};
-    room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
 
     // تطبيق الهجمات المعلّقة
     (room.attacks || []).forEach(at => {
@@ -347,6 +415,21 @@ function setupQuiz(io, deps) {
 
   function reveal(room) {
     clearTimers(room);
+    // ── حسم الرهانات: من راهن على أسرع مجيب صحيح يكسب ──
+    if ((room.bets || []).length) {
+      const fastCorrect = alive(room)
+        .filter(p => room.answers[p.id] && room.answers[p.id].correct)
+        .sort((a, b) => room.answers[a.id].elapsed - room.answers[b.id].elapsed)[0];
+      const fastestId = fastCorrect ? fastCorrect.id : null;
+      room.bets.forEach(b => {
+        const by = room.players.find(p => p.id === b.by);
+        if (!by || by.spectator) return;
+        const won = !!fastestId && b.on === fastestId;
+        if (won) { by.score += BET_POINTS; by.lastGain = (by.lastGain || 0) + BET_POINTS; }
+        nsp.to(b.by).emit("betResult", { on: b.onName, won, points: won ? BET_POINTS : 0 });
+      });
+      room.bets = [];
+    }
     const res = alive(room).map(p => {
       const a = room.answers[p.id];
       return {
@@ -495,7 +578,9 @@ function setupQuiz(io, deps) {
     if (room.settings.powers) {
       alive(room).forEach(p => {
         if (p.pyPos > 0 && Math.random() < 0.16) {
-          const pw = room.settings.allowedPowers[Math.floor(Math.random() * room.settings.allowedPowers.length)];
+          const sab = room.settings.allowedPowers.filter(x => SABOTAGE.includes(x));
+          if (!sab.length) return;
+          const pw = sab[Math.floor(Math.random() * sab.length)];
           p.effects.push(pw);
           nsp.to(p.id).emit("attacked", { power: pw, from: "فخّ الدرجة", ms: EFFECT_MS });
         }
@@ -758,6 +843,9 @@ function setupQuiz(io, deps) {
       if (r.ownerId === old) r.ownerId = socket.id;
       room = r; player = p; socket.join(r.id);
       cb({ ok: true, roomId: r.id, you: p.id, token: p.token });
+      // عاد أثناء مرحلة البطاقات؟ نعيد إرسال قائمته الشخصية
+      if (r.phase === "attack" && p.menu && p.menu.length && p.powersLeft > 0 && !p.pendingAttack)
+        socket.emit("powerMenu", { menu: p.menu });
       broadcast(r);
     });
 
@@ -811,13 +899,14 @@ function setupQuiz(io, deps) {
       if (!room || !player || room.phase !== "attack") return;
       if (!room.settings.powers || player.powersLeft <= 0) return;
       if (!room.settings.allowedPowers.includes(power)) return;
-      if (room.powerMenu && room.powerMenu.length && !room.powerMenu.includes(power)) return;
+      if (player.menu && player.menu.length && !player.menu.includes(power)) return;
       if (player.pendingAttack) return;
 
       // ── قوة تُستعمل على النفس (مضاعفة النقاط) ──
       if (SELF_POWERS.has(power)) {
         player.pendingAttack = { to: player.id, power };
         player.powersLeft--;
+        player.lastPower = power;
         if (power === "double") player.doubleNext = true;
         nsp.to(player.id).emit("attackAck", { to: "نفسك", power, self: true });
         broadcast(room);
@@ -827,12 +916,25 @@ function setupQuiz(io, deps) {
 
       const target = room.players.find(p => p.id === to);
       if (!target || target.id === player.id || target.spectator) return;
+
+      // ── الرهان: لا يضر الهدف — تراهن أنه سيجيب صح أولاً ──
+      if (power === "bet") {
+        player.pendingAttack = { to, power };
+        player.powersLeft--;
+        player.lastPower = power;
+        (room.bets = room.bets || []).push({ by: player.id, byName: player.name, on: to, onName: target.name });
+        nsp.to(player.id).emit("attackAck", { to: target.name, power, bet: true });
+        broadcast(room);
+        maybeEndAttack(room);
+        return;
+      }
       // لا تضرب نفس الشخص مرتين متتاليتين — إلا إذا لم يكن هناك خصم آخر أصلاً
       // (في مباراة لاعبَين تعطّل هذه القاعدة القوى نهائياً بعد أول استخدام)
       const others = alive(room).filter(p => p.id !== player.id).length;
       if (others > 1 && player.lastTarget === to) return;
       player.pendingAttack = { to, power };
       player.lastTarget = to;
+      player.lastPower = power;
       player.powersLeft--;
       room.attacks.push({ from: player.id, fromName: player.name, to, toName: target.name, power });
       nsp.to(player.id).emit("attackAck", { to: target.name, power });
