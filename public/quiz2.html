@@ -151,6 +151,54 @@ input,select,textarea{font-family:inherit}
 /* المسرح */
 #stage{position:relative;flex:1;min-height:0;border-radius:24px;overflow:hidden}
 .scene{position:absolute;inset:0;display:none;flex-direction:column;padding:16px;overflow:hidden}
+/* ── روليت كسر التعادل: إطار مضيء يتنقل بين الأبواب المتعادلة ── */
+.door.spin .dArch{box-shadow:0 0 0 4px #fff,0 0 52px 8px var(--c1);filter:brightness(1.4) saturate(1.3)}
+.door.spin{transform:translateY(-6px) scale(1.04)}
+.door.dimmed{opacity:0;transition:opacity .35s}
+/* ── نسخة الباب الطائرة نحو الشاشة (الزوم) ── */
+.zoomClone{will-change:transform}
+.zoomClone .dVotes{display:none}
+/* ── «جاهزون للسؤال؟» ── */
+#sReady{align-items:center;justify-content:center}
+#readyTxt{font-size:clamp(30px,8vw,58px);font-weight:900;text-align:center;
+  background:linear-gradient(120deg,#22e6ff,#8b5cf6 55%,#ff2f8e);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:readyPulse 1s ease-in-out infinite alternate;
+  filter:drop-shadow(0 0 34px rgba(139,92,246,.45))}
+@keyframes readyPulse{from{transform:scale(.96)}to{transform:scale(1.06)}}
+/* ── مرحلة قراءة السؤال: النص وحده في المنتصف ── */
+#sRead{align-items:center;justify-content:center;text-align:center}
+#readMeta{font-size:12.5px;color:var(--dim);font-weight:800;letter-spacing:1px;margin-bottom:16px}
+#readMeta .tag{margin:0 4px}
+#readTxt{font-size:clamp(24px,6vw,40px);font-weight:900;line-height:1.7;max-width:860px;
+  animation:qDrop .6s var(--spring) both}
+#readBar{margin-top:26px;width:min(320px,70%);height:5px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+#readBar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#22e6ff,#8b5cf6);
+  transform-origin:right;animation:readFill linear both}
+@keyframes readFill{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+/* ── مرحلة الإجابة: الخيارات وحدها تملأ الشاشة ── */
+#sQ.ansOnly #qText,#sQ.ansOnly #qMeta{display:none}
+#sQ.ansOnly #answers{flex:1;margin:0;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:12px}
+#sQ.ansOnly .ans{display:flex;align-items:center;justify-content:center;min-height:0;
+  font-size:clamp(17px,3.4vw,26px);padding:12px;border-radius:22px}
+@media(max-width:520px){#sQ.ansOnly #answers{grid-template-columns:1fr 1fr;gap:9px}
+  #sQ.ansOnly .ans{font-size:15.5px;border-radius:16px}}
+/* ── شاشة الفضح ── */
+#sAR{align-items:center;justify-content:center;gap:14px}
+.arCard{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.06);
+  border:1.5px solid var(--stroke);border-radius:20px;padding:16px 24px;max-width:620px;width:min(94%,620px);
+  animation:arPop .55s var(--spring) both}
+.arCard .em{font-size:40px;flex:0 0 auto;filter:drop-shadow(0 0 14px rgba(255,255,255,.3))}
+.arCard .tx{font-size:clamp(16px,3.6vw,22px);font-weight:900;line-height:1.6}
+.arCard .tx b{color:var(--pink)}
+.arCard.onMe{border-color:var(--pink);background:rgba(255,47,142,.1);
+  box-shadow:0 0 44px -10px rgba(255,47,142,.6);animation:arPop .55s var(--spring) both,arShake .5s .55s ease}
+.arCard.byMe{border-color:var(--cyan);background:rgba(34,230,255,.07)}
+.arCard.safe{border-color:var(--lime);background:rgba(57,224,138,.08)}
+.arCard.small{padding:9px 16px}.arCard.small .em{font-size:22px}.arCard.small .tx{font-size:14px;font-weight:700}
+@keyframes arPop{from{opacity:0;transform:scale(.6) translateY(26px)}to{opacity:1;transform:none}}
+@keyframes arShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+#arHead{font-size:12px;font-weight:800;letter-spacing:2.5px;color:var(--dim);margin-bottom:4px}
 .scene.on{display:flex;animation:sceneIn .5s var(--ease)}
 @keyframes sceneIn{from{opacity:0;transform:scale(.975) translateY(10px)}to{opacity:1;transform:none}}
 .eyebrow{text-align:center;font-size:11.5px;font-weight:800;letter-spacing:2.2px;color:var(--cyan);
@@ -372,6 +420,8 @@ input,select,textarea{font-family:inherit}
 .card:hover,.card.flip{filter:brightness(1.12);animation:none;
   transform:translateY(-14px) rotate(0deg) scale(1.08)}
 .card.spent{pointer-events:none;filter:grayscale(1) brightness(.45);animation:none;transform:rotate(var(--tilt)) scale(.92)}
+.card.picked{filter:brightness(1.25);animation:none;transform:translateY(-10px) scale(1.07);
+  box-shadow:0 0 0 3px #fff,0 0 44px -4px var(--pc1)}
 
 .cIn{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .72s var(--ease)}
 .card.flip .cIn{transform:rotateY(180deg)}
@@ -823,7 +873,20 @@ input,select,textarea{font-family:inherit}
       </div>
     </div>
 
-    <div class="scene" id="sQ">
+    <div class="scene" id="sAR">
+      <div id="arHead">⚡ لحظة الحقيقة</div>
+      <div id="arBody" style="display:contents"></div>
+    </div>
+
+    <div class="scene" id="sReady"><div id="readyTxt">جاهزون للسؤال؟</div></div>
+
+    <div class="scene" id="sRead">
+      <div id="readMeta"></div>
+      <div id="readTxt"></div>
+      <div id="readBar"><i id="readFill"></i></div>
+    </div>
+
+    <div class="scene ansOnly" id="sQ">
       <div id="qMeta"></div>
       <div id="qText"></div>
       <div id="answers"></div>
@@ -1075,16 +1138,58 @@ socket.on("chat",m=>addChat(m));
 socket.on("connect",()=>{if(ROOM&&TOKEN)socket.emit("rejoin",{roomId:ROOM,token:TOKEN},r=>{if(r&&r.ok)ME=r.you;});});
 
 socket.on("voteResult",d=>{
+  const doors=[...document.querySelectorAll(".door")];
   const tot=Math.max(1,Object.values(d.tally).reduce((a,b)=>a+b,0));
-  document.querySelectorAll(".door").forEach(v=>{
+  doors.forEach(v=>{
     const n=d.tally[v.dataset.c]||0;
     const bar=v.querySelector(".dBar"),num=v.querySelector(".dVotes b");
     if(bar)bar.style.transform="scaleX("+(n/tot)+")";
     if(num)num.textContent=n;
-    if(v.dataset.c===d.cat){v.classList.add("on");}
-    else{v.style.opacity=".45";v.style.filter="grayscale(.55)";}
+    v.classList.remove("on");
   });
+  const tied=(d.tie&&d.tie.length>1)?d.tie:null;
+  if(tied){
+    /* ── روليت كسر التعادل: تحديد مضيء يتنقل بسرعة بين الأبواب المتعادلة ١.٥ث ── */
+    const seq=doors.filter(x=>tied.includes(x.dataset.c));
+    let i=0;const t0=performance.now();
+    const iv=setInterval(()=>{
+      seq.forEach(x=>x.classList.remove("spin"));
+      if(performance.now()-t0>1500){
+        clearInterval(iv);
+        doorZoom(d.cat);
+        return;
+      }
+      seq[i++%seq.length].classList.add("spin");
+      sTick();
+    },110);
+  }else doorZoom(d.cat);
 });
+
+/* ── الدخول عبر الباب: البقية تتلاشى والفائز يكبر حتى يغطي الشاشة ── */
+function doorZoom(cat){
+  const doors=[...document.querySelectorAll(".door")];
+  const win=doors.find(x=>x.dataset.c===cat);
+  doors.forEach(x=>{x.classList.remove("spin");if(x!==win)x.classList.add("dimmed");});
+  if(!win)return;
+  win.classList.add("on");
+  sWin();
+  if(RM){return;}                      // تقليل الحركة: بلا زوم
+  const r=win.getBoundingClientRect();
+  if(!r.width)return;
+  const cl=win.cloneNode(true);
+  cl.classList.add("zoomClone");
+  cl.style.cssText="position:fixed;left:"+r.left+"px;top:"+r.top+"px;width:"+r.width+"px;height:"+r.height+
+    "px;margin:0;z-index:80;pointer-events:none;transform-origin:center;transition:transform .5s ease-in,opacity .3s .55s";
+  document.body.appendChild(cl);
+  win.style.visibility="hidden";
+  const sc=Math.max(innerWidth/r.width,innerHeight/r.height)*1.18;
+  const dx=innerWidth/2-(r.left+r.width/2), dy=innerHeight/2-(r.top+r.height/2);
+  requestAnimationFrame(()=>{cl.style.transform="translate("+dx+"px,"+dy+"px) scale("+sc+")";});
+  tone(240,.5,"sine",.05,520);
+  setTimeout(()=>{cl.style.opacity="0";},900);
+  setTimeout(()=>{cl.remove();},1300);
+}
+function killZoomClones(){document.querySelectorAll(".zoomClone").forEach(c=>c.remove());}
 
 socket.on("reveal",d=>{
   const A=[...document.querySelectorAll("#answers .ans")];
@@ -1129,7 +1234,19 @@ function tryFx(){
   const d=pendingFx;pendingFx=null;
   FX.start(d.power,d.from,d.ms||4000);
 }
-socket.on("attackAck",d=>{ if(d.self){toast("✨ مضاعفة النقاط مفعّلة للسؤال القادم");tone(1046,.16,"triangle",.06,1568);} else toast("⚡ ضربت "+d.to); });
+socket.on("attackAck",d=>{
+  if(d.self){toast("✨ مضاعفة النقاط مفعّلة للسؤال القادم");tone(1046,.16,"triangle",.06,1568);}
+  else if(d.bet){toast("🎲 راهنت أن "+d.to+" سيجيب صح أولاً");tone(880,.14,"triangle",.05,1175);}
+  else toast("⚡ ضربت "+d.to);
+});
+let MYMENU=[];
+socket.on("powerMenu",d=>{MYMENU=(d&&d.menu)||[];if(ST&&ST.phase==="attack")rAtk(true);});
+let AR=null;
+socket.on("attackReveal",d=>{AR=d;if(ST&&ST.phase==="attackReveal")rAR(true);});
+socket.on("betResult",d=>{
+  if(d.won){toast("🎲 كسبت الرهان! +"+d.points+" — "+d.on+" أجاب أولاً");sWin();}
+  else{toast("🎲 خسرت الرهان — "+d.on+" لم يجب صح أولاً");sLose();}
+});
 socket.on("finish",d=>showFinale(d));
 
 /* ═══ العرض ═══ */
@@ -1148,7 +1265,9 @@ function render(){
     // نُنهي الفخ فقط عند الانتقال لمرحلة غير التي بدأ فيها
     if(FX.active&&FX.key&&FX.key!==key)FX.stop();
     if(ST.phase!=="question"&&ST.phase!=="pyramid")pendingFx=null;
-    if(ST.phase!=="attack"){closeTg();cancelAnimationFrame(atkArcRaf);}
+    if(ST.phase!=="attack"){closeTg();cancelAnimationFrame(atkArcRaf);MYMENU=[];}
+    if(ST.phase!=="attackReveal")AR=null;
+    if(ST.phase!=="vote"&&ST.phase!=="spin")killZoomClones();
   }
 
   if(ST.state==="lobby"){
@@ -1159,7 +1278,11 @@ function render(){
     $("againB").style.display=host?"":"none";
   }else{
     if(ST.phase==="vote")rVote(fresh);
+    else if(ST.phase==="spin"){/* المشهد يبقى على الأبواب — الروليت والزوم يديرهما voteResult */}
     else if(ST.phase==="attack")rAtk(fresh);
+    else if(ST.phase==="attackReveal")rAR(fresh);
+    else if(ST.phase==="ready")rReady(fresh);
+    else if(ST.phase==="read")rRead(fresh);
     else if(ST.phase==="question")rQ(fresh);
     else if(ST.phase==="link")rLink(fresh);
     else if(ST.phase==="sort")rSort(fresh);
@@ -1313,15 +1436,15 @@ function spawnOrbs(){
   }
 }
 
-const PW_EM={freeze:"❄️",gloop:"🟢",bombs:"💣",nibble:"👾",shuffle:"🔀",double:"✨"};
-const PW_NM={freeze:"تجميد",gloop:"وحل",bombs:"قنابل",nibble:"أكلة الحروف",shuffle:"خلط",double:"مضاعفة"};
+const PW_EM={freeze:"❄️",gloop:"🟢",bombs:"💣",nibble:"👾",shuffle:"🔀",double:"✨",bet:"🎲"};
+const PW_NM={freeze:"تجميد",gloop:"وحل",bombs:"قنابل",nibble:"أكلة الحروف",shuffle:"خلط",double:"مضاعفة",bet:"رهان"};
 const SELF_PW=new Set(["double"]);
 
 /* لون كل قوة على وجه البطاقة */
 const PW_CL={
   freeze:["#7ee8ff","#2b6cff"], gloop:["#a8e063","#2f7d32"],
   bombs :["#ff9a5a","#b3261e"], nibble:["#c9a4ff","#5b21b6"],
-  shuffle:["#ffd76e","#c47d00"], double:["#ffe36e","#ff8a00"]
+  shuffle:["#ffd76e","#c47d00"], double:["#ffe36e","#ff8a00"], bet:["#ffcb2e","#ff2f8e"]
 };
 const CARD_GLYPH="✦";
 
@@ -1380,20 +1503,20 @@ function rAtk(fresh){
     return;
   }
 
-  const menu=(ST.powerMenu&&ST.powerMenu.length)?ST.powerMenu:(ST.settings.allowedPowers||[]);
-  $("atkTitle").textContent="اسحب بطاقةً… واختر ضحيّتك";
+  const menu=(MYMENU&&MYMENU.length)?MYMENU:(ST.settings.allowedPowers||[]);
+  $("atkTitle").textContent="اختر قدرة… ثم ضحيّتك";
 
   row.innerHTML="";
   menu.forEach(p=>{
     const cl=PW_CL[p]||["#22e6ff","#8b5cf6"];
     const card=document.createElement("div");
-    card.className="card";
+    card.className="card flip";     /* مكشوفة من البداية — الاسم والأيقونة ظاهران */
     card.style.setProperty("--pc1",cl[0]);card.style.setProperty("--pc2",cl[1]);
     card.innerHTML=
       '<div class="cIn">'+
         '<div class="cFace cBack"><span class="glyph">'+CARD_GLYPH+'</span></div>'+
         '<div class="cFace cFront">'+
-          (SELF_PW.has(p)?'<span class="self">لنفسك</span>':'')+
+          (SELF_PW.has(p)?'<span class="self">لنفسك</span>':(p==="bet"?'<span class="self">مراهنة</span>':''))+
           '<span class="em">'+(PW_EM[p]||"⚡")+'</span>'+
           '<span class="lb">'+(PW_NM[p]||p)+'</span>'+
         '</div>'+
@@ -1409,9 +1532,9 @@ function rAtk(fresh){
 }
 
 function flipCard(card,power,cl,foes){
-  if(atkSent||card.classList.contains("flip"))return;
+  if(atkSent||card.classList.contains("picked"))return;
   atkP=power;
-  card.classList.add("flip");
+  card.classList.add("picked");
   sTap();tone(660,.12,"triangle",.05,1320);
   // البطاقات الأخرى تخبو
   [...card.parentElement.children].forEach(c=>{if(c!==card)c.classList.add("spent");});
@@ -1434,6 +1557,7 @@ function openTargets(card,power,cl,foes){
   $("tgCard").innerHTML='<span class="em">'+(PW_EM[power]||"⚡")+'</span>'+
                         '<span class="lb">'+(PW_NM[power]||power)+'</span>';
   $("tgTitle").textContent=PW_NM[power]||power;
+  $("tgSub").textContent=power==="bet"?"على مَن تراهن أنه سيجيب صح أولاً؟":"على مَن تُسلّطها؟";
   const L=$("tgList");L.innerHTML="";
   foes.forEach(p=>{
     const b=document.createElement("button");b.className="tg";
@@ -1481,9 +1605,54 @@ function flyTo(card,targetId,cl){
   tone(320,.2,"sawtooth",.05,90);
 }
 
+function rReady(fresh){
+  scene("sReady");
+  if(fresh){killZoomClones();tone(660,.12,"sine",.05,880);}
+}
+
+function rRead(fresh){
+  scene("sRead");
+  if(!fresh||!ST.question)return;
+  killZoomClones();
+  const D=["","سهل","متوسط","صعب"][ST.question.diff||1];
+  $("readMeta").innerHTML='<span class="tag">'+esc(ST.question.cat)+'</span><span class="tag">'+D+"</span>";
+  $("readTxt").textContent=ST.question.text;
+  const f=$("readFill");
+  f.style.animation="none";void f.offsetWidth;
+  f.style.animation="readFill "+Math.max(.3,ST.phaseDur||3)+"s linear both";
+  tone(520,.1,"sine",.04,700);
+}
+
+function rAR(fresh){
+  scene("sAR");
+  if(!fresh)return;
+  const b=$("arBody");b.innerHTML="";
+  const hits=(AR&&AR.hits)||[];
+  const onMe=hits.filter(h=>h.to===ME);
+  const byMe=hits.filter(h=>h.from===ME);
+  const rest=hits.filter(h=>h.to!==ME&&h.from!==ME);
+  let delay=0;
+  const add=(cls,em,html)=>{
+    const d=document.createElement("div");
+    d.className="arCard "+cls;
+    d.style.animationDelay=delay+"s";delay+=.18;
+    d.innerHTML='<span class="em">'+em+'</span><span class="tx">'+html+"</span>";
+    b.appendChild(d);
+  };
+  onMe.forEach(h=>add("onMe",PW_EM[h.power]||"⚡",
+    "<b>"+esc(h.fromName)+"</b> ألقى عليك <b>"+(PW_NM[h.power]||h.power)+"</b>!"));
+  byMe.forEach(h=>add("byMe",PW_EM[h.power]||"⚡",
+    "أصبت <b>"+esc(h.toName)+"</b> بـ<b>"+(PW_NM[h.power]||h.power)+"</b>"));
+  rest.forEach(h=>add("small",PW_EM[h.power]||"⚡",
+    esc(h.fromName)+" ← "+(PW_NM[h.power]||h.power)+" ← "+esc(h.toName)));
+  if(!hits.length)add("safe","😮‍💨","نجوتم جميعاً هذه الجولة!");
+  else if(!onMe.length&&!byMe.length&&!rest.length)add("safe","😮‍💨","نجوت هذه الجولة!");
+  if(onMe.length){sHit();}else{sTap();}
+}
+
 function rQ(fresh){
   scene("sQ");mountClock("sQ");
-  if(!fresh||!ST.question)return;
+  if(!fresh||!ST.question||!ST.question.options)return;
   const D=["","سهل","متوسط","صعب"][ST.question.diff||1];
   $("qMeta").innerHTML=`<span class="tag">${esc(ST.question.cat)}</span><span class="tag">${D}</span>`;
   $("qText").textContent=ST.question.text;
