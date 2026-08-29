@@ -456,6 +456,56 @@ body.st-20 .half i{background:url("door20.jpg") center/cover no-repeat}
 body.st-21 .half i{background:url("door21.jpg") center/cover no-repeat}
 body.st-22 .half i{background:url("door22.jpg") center/cover no-repeat}
 
+/* ═══════ خمسة ستايلات بوابات الفئات (٢٣–٢٧): صورة Gemini مخصصة لكل فئة ═══════ */
+body.st-23 .arch,body.st-24 .arch,body.st-25 .arch,body.st-26 .arch,body.st-27 .arch{
+  --fp:0px;border:none;padding:0;border-radius:24px;background:#f6efe2;
+  width:auto;aspect-ratio:1/1;max-width:86%;
+  box-shadow:0 22px 36px -18px rgba(90,60,120,.5), inset 0 0 0 2px rgba(255,255,255,.6)}
+body.st-23 .inner,body.st-24 .inner,body.st-25 .inner,body.st-26 .inner,body.st-27 .inner{
+  inset:0;border-radius:24px}
+body.st-23 .half.L,body.st-24 .half.L,body.st-25 .half.L,body.st-26 .half.L,body.st-27 .half.L{
+  border-radius:24px 0 0 24px}
+body.st-23 .half.R,body.st-24 .half.R,body.st-25 .half.R,body.st-26 .half.R,body.st-27 .half.R{
+  border-radius:0 24px 24px 0}
+body.st-23 .half i::before,body.st-23 .half i::after,
+body.st-24 .half i::before,body.st-24 .half i::after,
+body.st-25 .half i::before,body.st-25 .half i::after,
+body.st-26 .half i::before,body.st-26 .half i::after,
+body.st-27 .half i::before,body.st-27 .half i::after{display:none}
+body.st-23 .half .knb,body.st-24 .half .knb,body.st-25 .half .knb,
+body.st-26 .half .knb,body.st-27 .half .knb{display:none}
+body.st-23 .half.R::before,body.st-23 .half.L::after,
+body.st-24 .half.R::before,body.st-24 .half.L::after,
+body.st-25 .half.R::before,body.st-25 .half.L::after,
+body.st-26 .half.R::before,body.st-26 .half.L::after,
+body.st-27 .half.R::before,body.st-27 .half.L::after{display:none}
+body.st-23 .panel .em,body.st-24 .panel .em,body.st-25 .panel .em,
+body.st-26 .panel .em,body.st-27 .panel .em{display:none}
+body.st-23 .panel .tt,body.st-24 .panel .tt,body.st-25 .panel .tt,
+body.st-26 .panel .tt,body.st-27 .panel .tt{
+  position:absolute;top:4.5%;left:50%;transform:translateX(-50%);margin:0}
+/* كل باب يأخذ صورة فئته: 0 جغرافيا · 1 تاريخ · 2 رياضة · 3 علوم */
+body.st-23 .door[data-i="0"] .half i{background:url("d23-0.jpg") center/cover no-repeat}
+body.st-23 .door[data-i="1"] .half i{background:url("d23-1.jpg") center/cover no-repeat}
+body.st-23 .door[data-i="2"] .half i{background:url("d23-2.jpg") center/cover no-repeat}
+body.st-23 .door[data-i="3"] .half i{background:url("d23-3.jpg") center/cover no-repeat}
+body.st-24 .door[data-i="0"] .half i{background:url("d24-0.jpg") center/cover no-repeat}
+body.st-24 .door[data-i="1"] .half i{background:url("d24-1.jpg") center/cover no-repeat}
+body.st-24 .door[data-i="2"] .half i{background:url("d24-2.jpg") center/cover no-repeat}
+body.st-24 .door[data-i="3"] .half i{background:url("d24-3.jpg") center/cover no-repeat}
+body.st-25 .door[data-i="0"] .half i{background:url("d25-0.jpg") center/cover no-repeat}
+body.st-25 .door[data-i="1"] .half i{background:url("d25-1.jpg") center/cover no-repeat}
+body.st-25 .door[data-i="2"] .half i{background:url("d25-2.jpg") center/cover no-repeat}
+body.st-25 .door[data-i="3"] .half i{background:url("d25-3.jpg") center/cover no-repeat}
+body.st-26 .door[data-i="0"] .half i{background:url("d26-0.jpg") center/cover no-repeat}
+body.st-26 .door[data-i="1"] .half i{background:url("d26-1.jpg") center/cover no-repeat}
+body.st-26 .door[data-i="2"] .half i{background:url("d26-2.jpg") center/cover no-repeat}
+body.st-26 .door[data-i="3"] .half i{background:url("d26-3.jpg") center/cover no-repeat}
+body.st-27 .door[data-i="0"] .half i{background:url("d27-0.jpg") center/cover no-repeat}
+body.st-27 .door[data-i="1"] .half i{background:url("d27-1.jpg") center/cover no-repeat}
+body.st-27 .door[data-i="2"] .half i{background:url("d27-2.jpg") center/cover no-repeat}
+body.st-27 .door[data-i="3"] .half i{background:url("d27-3.jpg") center/cover no-repeat}
+
 .sv.on{outline:3px solid var(--v);outline-offset:2px}
 
 /* ─── طبقات عامة ─── */
@@ -507,6 +557,11 @@ body.st-22 .half i{background:url("door22.jpg") center/cover no-repeat}
   <button class="mv sv" data-s="20"><span class="n">٢٠</span>باب الغيوم AI<small>صورة Gemini — سحاب ونافذتان دائريتان</small></button>
   <button class="mv sv" data-s="21"><span class="n">٢١</span>خشبي بقلب AI<small>صورة Gemini — خشب عسلي ونافذة قلب</small></button>
   <button class="mv sv" data-s="22"><span class="n">٢٢</span>جليد نعناعي AI<small>صورة Gemini — بلور مثلج بجواهر</small></button>
+  <button class="mv sv" data-s="23"><span class="n">٢٣</span>شعار بارز<small>رمز الفئة مجسّم كبير على المصراعين</small></button>
+  <button class="mv sv" data-s="24"><span class="n">٢٤</span>نقش خشبي<small>رمز الفئة ذهب محفور في الخشب</small></button>
+  <button class="mv sv" data-s="25"><span class="n">٢٥</span>زجاج ملوّن<small>نافذة زجاج ملون ترسم رمز الفئة</small></button>
+  <button class="mv sv" data-s="26"><span class="n">٢٦</span>درع البوابة<small>ميدالية ذهبية بالمنتصف تحمل الرمز</small></button>
+  <button class="mv sv" data-s="27"><span class="n">٢٧</span>توهج سحري<small>باب ليلي ورمز الفئة نيون متوهج</small></button>
 </div>
 
 <div id="stageWrap">
