@@ -340,10 +340,11 @@ input,select,textarea{font-family:inherit}
   border-radius:4px 4px 2px 2px;
   box-shadow:0 8px 18px -6px rgba(0,0,0,.8), inset 0 2px 0 rgba(255,255,255,.35)}
 .dArch::before{left:-5%}.dArch::after{right:-5%}
-/* باب «شعار بارز» — صورة مارشميلو كاملة تُفعَّل عند توفر صورة الفئة في /doors/ */
-.dArch.aiArch{padding:0;background:#f6efe2;border-radius:26px;aspect-ratio:1/1.1;
-  box-shadow:0 16px 34px -12px rgba(0,0,0,.55), 0 0 0 2px rgba(255,255,255,.35)}
+/* باب «شعار بارز» بطبقتين — المصراعان (dPanel) والإطار الثابت (dFrame) فوقهما */
+.dArch.aiArch{padding:0;background:transparent;border-radius:0;box-shadow:none}
 .dArch.aiArch::before,.dArch.aiArch::after{display:none}
+.door:hover .dArch.aiArch{box-shadow:none;filter:brightness(1.05)}
+.door.on .dArch.aiArch{box-shadow:none;filter:saturate(1.15) drop-shadow(0 0 12px var(--cyan))}
 /* إخفاء الشريط العلوي أثناء اللعب لتوسيع المسرح */
 body.noTop #hud,body.noTop #roster{display:none}
 
@@ -1219,7 +1220,28 @@ function doorZoom(cat){
     c.querySelectorAll("*").forEach(x=>{x.style.animation="none";});
     box.appendChild(c);return c;
   };
-  const L=mk("L"), R=mk("R");
+  // الأبواب ذات الطبقتين: الإطار يبقى ثابتاً والمصراعان (صورة الأوراق) هما اللذان ينفتحان
+  const frameEl=win.querySelector(".dFrame");
+  let L,R;
+  if(frameEl){
+    glow.style.inset="10%";glow.style.borderRadius="26px";
+    const frC=frameEl.cloneNode(true);
+    frC.style.zIndex="1";
+    box.appendChild(frC);
+    const mkL=(side)=>{
+      const c=win.querySelector(".dPanel").cloneNode(true);
+      c.style.position="absolute";c.style.inset="0";c.style.margin="0";
+      c.style.zIndex="2";c.style.animation="none";
+      c.style.transformOrigin=(side==="L"?"left":"right")+" center";
+      c.style.backfaceVisibility="hidden";
+      c.style.clipPath="inset(0 "+(side==="L"?"50% 0 0":"0 0 0 50%")+")";
+      c.querySelectorAll("*").forEach(x=>{x.style.animation="none";});
+      box.appendChild(c);return c;
+    };
+    L=mkL("L");R=mkL("R");
+  }else{
+    L=mk("L");R=mk("R");
+  }
   document.body.appendChild(box);
   win.style.visibility="hidden";
   // ١· طرقة استعداد  ٢· المصراعان ينفتحان  ٣· الكاميرا تندفع من الفجوة
@@ -1446,22 +1468,27 @@ function rVote(fresh){
          <div class="dKey">${KEYS[i]||"?"}</div>
        </div>
        <div class="dVotes"><span class="dBar"></span>⏳ تصويت: <b>0</b></div>`;
-    // إن وُجدت صورة «شعار بارز» للفئة حوّلنا الباب لصورة مارشميلو كاملة
+    // إن وُجدت طبقتا «شعار بارز» للفئة ركّبنا الباب: مصراعان + إطار ثابت فوقهما
     // (تنسيقات inline حتى تنتقل مع استنساخ المصراعين في doorZoom)
     const img=new Image();
     img.onload=()=>{
       const p=b.querySelector(".dPanel"), a=b.querySelector(".dArch");
       a.classList.add("aiArch");
-      p.style.cssText+=";background-image:url('"+img.src+"');background-size:cover;background-position:center;inset:0;border-radius:26px;box-shadow:none";
+      a.style.aspectRatio=img.naturalWidth+"/"+img.naturalHeight;
+      p.style.cssText+=";background-image:url('"+img.src+"');background-size:cover;background-position:center;background-color:transparent;inset:0;border-radius:0;box-shadow:none;z-index:1";
       p.classList.add("hasArt");
+      const fr=document.createElement("div");
+      fr.className="dFrame";
+      fr.style.cssText="position:absolute;inset:0;z-index:2;pointer-events:none;background-image:url('"+img.src.replace(".webp","_frame.webp")+"');background-size:cover;background-position:center";
+      a.appendChild(fr);
       b.querySelector(".dIcons").style.display="none";
       b.querySelector(".dSeam").style.display="none";
       const t=b.querySelector(".dTitle");
-      t.style.cssText+=";top:4%;left:14%;right:14%;font-size:7.5cqw;color:#6d3ff0;background:rgba(255,255,255,.93);border-radius:99px;padding:1.5% 0;box-shadow:0 3px 10px -3px rgba(60,40,90,.45);text-shadow:none";
+      t.style.cssText+=";top:2%;left:14%;right:14%;font-size:7.5cqw;color:#6d3ff0;background:rgba(255,255,255,.93);border-radius:99px;padding:1.5% 0;box-shadow:0 3px 10px -3px rgba(60,40,90,.45);text-shadow:none;z-index:3";
       const k=b.querySelector(".dKey");
-      k.style.cssText+=";top:auto;bottom:3.5%";
+      k.style.cssText+=";top:auto;bottom:6%;z-index:3";
     };
-    img.src="/doors/"+encodeURIComponent(c)+".jpg";
+    img.src="/doors/"+encodeURIComponent(c)+".webp";
     b.onclick=()=>{
       document.querySelectorAll(".door").forEach(x=>x.classList.remove("on"));
       b.classList.add("on");socket.emit("vote",c);sTap();
