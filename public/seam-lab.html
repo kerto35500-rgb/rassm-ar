@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>✂️ مختبر قصّ الأبواب — قمّة الهرم</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#3d2b63;--dim:#8b7fae;--v:#8b5cf6;--vd:#6d3ff0;--gold:#e0a52d;--stroke:#d6c9f2}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;min-height:100vh;background:linear-gradient(170deg,#f3edfd,#e2d6f8);
+  font-family:"Baloo Bhaijaan 2",system-ui,sans-serif;color:var(--ink)}
+header{text-align:center;padding:14px 10px 4px}
+h1{margin:0;font-size:clamp(18px,4.5vw,26px);font-weight:800;color:var(--vd)}
+header p{margin:4px auto 0;font-size:12.5px;color:var(--dim);max-width:560px;line-height:1.7}
+#cats{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:10px}
+.cat{border:2px solid var(--stroke);background:#faf8ff;color:var(--ink);cursor:pointer;
+  border-radius:14px;padding:6px 12px;font-family:inherit;font-weight:800;font-size:13px;
+  box-shadow:0 3px 0 var(--stroke)}
+.cat.on{background:var(--v);color:#fff;border-color:var(--vd);box-shadow:0 3px 0 var(--vd)}
+.cat.done::after{content:" ✓";color:#1a9e5c}
+.cat.on.done::after{color:#c6ffe3}
+#wrap{display:flex;justify-content:center;padding:4px 12px 8px}
+#stage{position:relative;width:min(92vw,380px);touch-action:none;user-select:none;
+  filter:drop-shadow(0 18px 26px rgba(80,50,140,.3))}
+#stage img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+#imLeaves{z-index:1}#imFrame{z-index:2}
+.guide{position:absolute;top:0;bottom:0;width:34px;margin-left:-17px;z-index:5;cursor:ew-resize}
+.guide i{position:absolute;top:0;bottom:0;left:50%;width:3px;margin-left:-1.5px;border-radius:2px}
+.guide b{position:absolute;top:-11px;left:50%;transform:translateX(-50%);
+  font-size:10.5px;font-weight:800;background:#fff;border-radius:8px;padding:1px 7px;
+  box-shadow:0 2px 5px rgba(60,40,90,.3);white-space:nowrap}
+#gC i{background:#ff2f8e;box-shadow:0 0 8px rgba(255,47,142,.8)}#gC b{color:#ff2f8e}
+#gL i{background:#1a9e5c}#gL b{color:#1a9e5c}
+#gR i{background:#1a9e5c}#gR b{color:#1a9e5c}
+#vals{text-align:center;font-size:12.5px;color:var(--dim);padding:2px}
+#vals b{color:var(--vd)}
+#btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:8px 10px 6px}
+.btn{border:none;cursor:pointer;border-radius:16px;padding:11px 18px;font-family:inherit;
+  font-weight:800;font-size:14.5px;color:#fff;background:linear-gradient(135deg,#8b5cf6,#6d3ff0);
+  box-shadow:0 4px 0 #5527c9}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #5527c9}
+.btn.gh{background:#faf8ff;color:var(--ink);box-shadow:0 4px 0 var(--stroke);border:2px solid var(--stroke)}
+.btn.gold{background:linear-gradient(135deg,#ffcb2e,#e0a52d);color:#4a3005;box-shadow:0 4px 0 #b07f14}
+#exp{display:none;max-width:560px;margin:6px auto 30px;padding:0 14px}
+#exp textarea{width:100%;height:130px;border-radius:14px;border:2px solid var(--stroke);
+  padding:10px;font-size:11px;direction:ltr;background:#faf8ff;color:var(--ink)}
+#copied{color:#1a9e5c;font-weight:800;font-size:13px;display:none}
+#hintTop{position:fixed;inset:0;background:rgba(30,15,60,.55);z-index:50;display:grid;place-items:center;padding:20px}
+#hintTop>div{background:#fff;border-radius:22px;padding:22px;max-width:420px;font-size:14.5px;line-height:2}
+#hintTop b{color:var(--vd)}
+</style>
+</head>
+<body>
+
+<div id="hintTop"><div>
+  ✂️ <b>طريقة الاستخدام:</b><br>
+  ١· اسحب <b style="color:#ff2f8e">الخط الوردي</b> إلى خط منتصف الباب بالضبط (مكان الانشقاق).<br>
+  ٢· اسحب <b style="color:#1a9e5c">الخطين الأخضرين</b> إلى حافتي الباب (مفصلات الدوران).<br>
+  ٣· اضغط <b>جرّب الفتح</b> لتشاهد النتيجة، وبدّل بين الفئات من الأعلى.<br>
+  ٤· بعد ضبط الكل اضغط <b>تصدير الإعدادات</b> وأرسل النص لكلود.
+  <div style="text-align:center;margin-top:10px"><button class="btn" onclick="hintTop.style.display='none'">فهمت، ابدأ ✂️</button></div>
+</div></div>
+
+<header>
+  <h1>✂️ مختبر قصّ الأبواب</h1>
+  <p>حدّد خط الانشقاق ومفصلتي كل باب — تُحفظ القيم تلقائياً في جهازك مع كل تعديل</p>
+</header>
+
+<div id="cats"></div>
+
+<div id="wrap"><div id="stage">
+  <img id="imLeaves" alt=""><img id="imFrame" alt="">
+  <div class="guide" id="gL"><i></i><b>مفصلة</b></div>
+  <div class="guide" id="gC"><i></i><b>خط القص</b></div>
+  <div class="guide" id="gR"><i></i><b>مفصلة</b></div>
+</div></div>
+
+<div id="vals">القص: <b id="vC">50.0%</b> · مفصلة يسار: <b id="vL">8.0%</b> · مفصلة يمين: <b id="vR">92.0%</b></div>
+
+<div id="btns">
+  <button class="btn" id="prev">جرّب الفتح 🚪</button>
+  <button class="btn gh" id="reset">إرجاع للتلقائي</button>
+  <button class="btn gold" id="export">تصدير الإعدادات 📋</button>
+</div>
+
+<div id="exp">
+  <textarea id="expTxt" readonly></textarea>
+  <div style="text-align:center;margin-top:8px">
+    <button class="btn" id="copyB">نسخ النص</button>
+    <span id="copied">✓ انتُسخ — أرسله لكلود</span>
+  </div>
+</div>
+
+<script>
+"use strict";
+const CATS=["جغرافيا","تاريخ","علوم","رياضة","دين","أدب ولغة","تقنية","أفلام ومسلسلات","طعام","حيوانات","السعودية والخليج","عام"];
+const LSKEY="seamLab.v1";
+let store={};try{store=JSON.parse(localStorage.getItem(LSKEY)||"{}")}catch(e){}
+let cur=CATS[0];
+let auto={};   // القيم التلقائية (فحص الشفافية) لكل فئة
+
+const $=id=>document.getElementById(id);
+const stage=$("stage"),imL=$("imLeaves"),imF=$("imFrame");
+
+/* ── شريط الفئات ── */
+function drawCats(){
+  const c=$("cats");c.innerHTML="";
+  CATS.forEach(n=>{
+    const b=document.createElement("button");
+    b.className="cat"+(n===cur?" on":"")+(store[n]?" done":"");
+    b.textContent=n;
+    b.onclick=()=>{cur=n;load()};
+    c.appendChild(b);
+  });
+}
+
+/* ── فحص الشفافية لاقتراح قيم أولية ── */
+function detect(img){
+  try{
+    const w=140,h=Math.max(1,Math.round(w*img.naturalHeight/img.naturalWidth));
+    const cv=document.createElement("canvas");cv.width=w;cv.height=h;
+    const ctx=cv.getContext("2d");ctx.drawImage(img,0,0,w,h);
+    const d=ctx.getImageData(0,0,w,h).data;
+    let mn=w,mx=-1;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){if(d[(y*w+x)*4+3]>16){if(x<mn)mn=x;if(x>mx)mx=x;}}
+    if(mx>mn)return{cx:+(((mn+mx+1)/2)/w*100).toFixed(1),lx:+(mn/w*100).toFixed(1),rx:+((mx+1)/w*100).toFixed(1)};
+  }catch(e){}
+  return {cx:50,lx:8,rx:92};
+}
+
+/* ── تحميل باب ── */
+function load(){
+  drawCats();
+  const u="/doors/"+encodeURIComponent(cur);
+  imL.src=u+".webp";imF.src=u+"_frame.webp";
+  imL.onload=()=>{
+    stage.style.aspectRatio=imL.naturalWidth+"/"+imL.naturalHeight;
+    if(!auto[cur])auto[cur]=detect(imL);
+    apply(store[cur]||auto[cur]);
+  };
+}
+function apply(v){
+  setG("gC",v.cx);setG("gL",v.lx);setG("gR",v.rx);show(v);
+}
+function setG(id,p){$(id).style.left=p+"%";$(id).dataset.p=p;}
+function curVals(){return{cx:+(+$("gC").dataset.p).toFixed(1),lx:+(+$("gL").dataset.p).toFixed(1),rx:+(+$("gR").dataset.p).toFixed(1)}}
+function show(v){$("vC").textContent=v.cx+"%";$("vL").textContent=v.lx+"%";$("vR").textContent=v.rx+"%";}
+function save(){store[cur]=curVals();localStorage.setItem(LSKEY,JSON.stringify(store));show(store[cur]);drawCats();}
+
+/* ── سحب الخطوط (لمس + فأرة) ── */
+let drag=null;
+["gC","gL","gR"].forEach(id=>{
+  $(id).addEventListener("pointerdown",e=>{drag=id;$(id).setPointerCapture(e.pointerId);e.preventDefault();});
+});
+addEventListener("pointermove",e=>{
+  if(!drag)return;
+  const r=stage.getBoundingClientRect();
+  let p=(e.clientX-r.left)/r.width*100;
+  p=Math.max(0,Math.min(100,p));
+  setG(drag,+p.toFixed(1));show(curVals());
+});
+addEventListener("pointerup",()=>{if(drag){drag=null;save();}});
+
+/* ── معاينة الفتح بالقيم الحالية ── */
+$("prev").onclick=()=>{
+  const v=curVals();
+  document.querySelectorAll(".pv").forEach(x=>x.remove());
+  const mk=(side)=>{
+    const c=document.createElement("div");c.className="pv";
+    c.style.cssText="position:absolute;inset:0;z-index:3;background:url('"+imL.src+"') center/cover no-repeat;"+
+      "backface-visibility:hidden;transform-origin:"+(side==="L"?v.lx:v.rx)+"% center;"+
+      "clip-path:inset(0 "+(side==="L"?(100-v.cx)+"% 0 0":"0 0 0 "+v.cx+"%")+")";
+    stage.appendChild(c);return c;
+  };
+  imL.style.visibility="hidden";
+  const glow=document.createElement("div");glow.className="pv";
+  glow.style.cssText="position:absolute;inset:12% 10%;z-index:0;border-radius:26px;"+
+    "background:radial-gradient(120% 90% at 50% 20%,#fff8e8,#ffe9a8 45%,#ffd75e);"+
+    "box-shadow:0 0 50px 16px rgba(255,220,120,.6)";
+  stage.insertBefore(glow,imL);
+  const L=mk("L"),R=mk("R");
+  L.animate([{transform:"perspective(900px) rotateY(0)"},{transform:"perspective(900px) rotateY(-84deg)"}],
+    {duration:900,delay:200,easing:"cubic-bezier(.55,0,.75,.35)",fill:"forwards"});
+  R.animate([{transform:"perspective(900px) rotateY(0)"},{transform:"perspective(900px) rotateY(84deg)"}],
+    {duration:900,delay:200,easing:"cubic-bezier(.55,0,.75,.35)",fill:"forwards"});
+  setTimeout(()=>{document.querySelectorAll(".pv").forEach(x=>x.remove());imL.style.visibility="";},2400);
+};
+
+$("reset").onclick=()=>{delete store[cur];localStorage.setItem(LSKEY,JSON.stringify(store));apply(auto[cur]);drawCats();};
+
+$("export").onclick=()=>{
+  const out={};
+  CATS.forEach(n=>{out[n]=store[n]||auto[n]||{cx:50,lx:8,rx:92};});
+  $("expTxt").value="SEAMS="+JSON.stringify(out);
+  $("exp").style.display="block";
+  $("expTxt").scrollIntoView({behavior:"smooth"});
+};
+$("copyB").onclick=async()=>{
+  $("expTxt").select();
+  try{await navigator.clipboard.writeText($("expTxt").value)}catch(e){document.execCommand("copy")}
+  $("copied").style.display="inline";
+};
+
+load();
+</script>
+</body>
+</html>
