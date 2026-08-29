@@ -303,7 +303,8 @@ document.getElementById("bar").addEventListener("click",e=>{
   busy=true;
   document.querySelectorAll(".mv").forEach(x=>x.disabled=true);
   build();                       // مشهد نظيف قبل كل تجربة
-  requestAnimationFrame(()=>requestAnimationFrame(()=>RUN[b.dataset.m]()));
+  // setTimeout لا rAF — حتى تعمل الحركة حتى لو كان التبويب في الخلفية لحظة الضغط
+  setTimeout(()=>{try{RUN[b.dataset.m]();}catch(err){busy=false;document.querySelectorAll(".mv").forEach(x=>x.disabled=false);}},40);
 });
 </script>
 </body>
