@@ -163,9 +163,13 @@ addEventListener("pointermove",e=>{
 addEventListener("pointerup",()=>{if(drag){drag=null;save();}});
 
 /* ── معاينة الفتح بالقيم الحالية ── */
+let pvT=null;
 $("prev").onclick=()=>{
-  const v=curVals();
+  if(pvT){clearTimeout(pvT);pvT=null;}
   document.querySelectorAll(".pv").forEach(x=>x.remove());
+  imL.style.visibility="";
+  $("prev").disabled=true;$("prev").style.opacity=".55";
+  const v=curVals();
   const mk=(side)=>{
     const c=document.createElement("div");c.className="pv";
     c.style.cssText="position:absolute;inset:0;z-index:3;background:url('"+imL.src+"') center/cover no-repeat;"+
@@ -184,7 +188,12 @@ $("prev").onclick=()=>{
     {duration:900,delay:200,easing:"cubic-bezier(.55,0,.75,.35)",fill:"forwards"});
   R.animate([{transform:"perspective(900px) rotateY(0)"},{transform:"perspective(900px) rotateY(84deg)"}],
     {duration:900,delay:200,easing:"cubic-bezier(.55,0,.75,.35)",fill:"forwards"});
-  setTimeout(()=>{document.querySelectorAll(".pv").forEach(x=>x.remove());imL.style.visibility="";},2400);
+  pvT=setTimeout(()=>{
+    document.querySelectorAll(".pv").forEach(x=>x.remove());
+    imL.style.visibility="";
+    $("prev").disabled=false;$("prev").style.opacity="";
+    pvT=null;
+  },2400);
 };
 
 $("reset").onclick=()=>{delete store[cur];localStorage.setItem(LSKEY,JSON.stringify(store));apply(auto[cur]);drawCats();};
