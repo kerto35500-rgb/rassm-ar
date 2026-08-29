@@ -1443,6 +1443,12 @@ const DOORS={
   "السعودية والخليج": {c:["#8fdba8","#2e9e5b","#155f33"],big:"🕋",pair:["🌴","🐪"]},
   "عام":              {c:["#b9a8ff","#6d4bd6","#33207a"],big:"❓",pair:["✨","🎲"]}
 };
+/* تحميل صور الأبواب مسبقاً عند فتح الصفحة حتى تظهر فوراً بلا وميض */
+try{Object.keys(DOORS).forEach(c=>{
+  const u="/doors/"+encodeURIComponent(c);
+  new Image().src=u+".webp";
+  new Image().src=u+"_frame.webp";
+});}catch(e){}
 function doorArt(cat){
   if(DOORS[cat])return DOORS[cat];
   const h=hash(cat),a=h%360;
@@ -1477,10 +1483,22 @@ function rVote(fresh){
        <div class="dVotes"><span class="dBar"></span>⏳ تصويت: <b>0</b></div>`;
     // إن وُجدت طبقتا «شعار بارز» للفئة ركّبنا الباب: مصراعان + إطار ثابت فوقهما
     // (تنسيقات inline حتى تنتقل مع استنساخ المصراعين في doorZoom)
+    // نُخفي القوس من البداية حتى لا يلمع الباب القديم (المرسوم بالـCSS) قبل وصول الصورة
+    {
+      const a0=b.querySelector(".dArch");
+      a0.classList.add("aiArch");
+      a0.style.opacity="0";
+      a0.style.transition="opacity .25s ease";
+    }
     const img=new Image();
+    img.onerror=()=>{   // لا توجد صورة للفئة → نرجع للباب المرسوم بالأكواد
+      const a=b.querySelector(".dArch");
+      a.classList.remove("aiArch");a.style.opacity="1";
+    };
     img.onload=()=>{
       const p=b.querySelector(".dPanel"), a=b.querySelector(".dArch");
       a.classList.add("aiArch");
+      a.style.opacity="1";
       a.style.aspectRatio=img.naturalWidth+"/"+img.naturalHeight;
       p.style.cssText+=";background-image:url('"+img.src+"');background-size:cover;background-position:center;background-color:transparent;inset:0;border-radius:0;box-shadow:none;z-index:1";
       p.classList.add("hasArt");
