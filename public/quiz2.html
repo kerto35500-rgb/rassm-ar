@@ -340,6 +340,12 @@ input,select,textarea{font-family:inherit}
   border-radius:4px 4px 2px 2px;
   box-shadow:0 8px 18px -6px rgba(0,0,0,.8), inset 0 2px 0 rgba(255,255,255,.35)}
 .dArch::before{left:-5%}.dArch::after{right:-5%}
+/* باب «شعار بارز» — صورة مارشميلو كاملة تُفعَّل عند توفر صورة الفئة في /doors/ */
+.dArch.aiArch{padding:0;background:#f6efe2;border-radius:26px;aspect-ratio:1/1.1;
+  box-shadow:0 16px 34px -12px rgba(0,0,0,.55), 0 0 0 2px rgba(255,255,255,.35)}
+.dArch.aiArch::before,.dArch.aiArch::after{display:none}
+/* إخفاء الشريط العلوي أثناء اللعب لتوسيع المسرح */
+body.noTop #hud,body.noTop #roster{display:none}
 
 .dName{font-size:clamp(12px,1.9vw,17px);font-weight:900;text-align:center;line-height:1.3;
   text-shadow:0 2px 10px rgba(0,0,0,.85);z-index:1}
@@ -1017,7 +1023,8 @@ let atkT=null,atkP=null,atkSent=false,scoreShown={};
 /* ═══ أدوات ═══ */
 const esc=s=>{const d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML;};
 function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),2300);}
-function scene(id){document.querySelectorAll(".scene").forEach(s=>s.classList.toggle("on",s.id===id));}
+function scene(id){document.querySelectorAll(".scene").forEach(s=>s.classList.toggle("on",s.id===id));
+  document.body.classList.toggle("noTop",id!=="sWait");}
 
 /* ═══ أفاتار مولّدة لكل لاعب ═══ */
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return Math.abs(h);}
@@ -1439,16 +1446,22 @@ function rVote(fresh){
          <div class="dKey">${KEYS[i]||"?"}</div>
        </div>
        <div class="dVotes"><span class="dBar"></span>⏳ تصويت: <b>0</b></div>`;
-    // إن وُجدت صورة حقيقية للفئة استعملها بدل الفن المرسوم
+    // إن وُجدت صورة «شعار بارز» للفئة حوّلنا الباب لصورة مارشميلو كاملة
+    // (تنسيقات inline حتى تنتقل مع استنساخ المصراعين في doorZoom)
     const img=new Image();
     img.onload=()=>{
-      const p=b.querySelector(".dPanel");
-      p.style.backgroundImage=`url("${img.src}")`;
+      const p=b.querySelector(".dPanel"), a=b.querySelector(".dArch");
+      a.classList.add("aiArch");
+      p.style.cssText+=";background-image:url('"+img.src+"');background-size:cover;background-position:center;inset:0;border-radius:26px;box-shadow:none";
       p.classList.add("hasArt");
       b.querySelector(".dIcons").style.display="none";
       b.querySelector(".dSeam").style.display="none";
+      const t=b.querySelector(".dTitle");
+      t.style.cssText+=";top:4%;left:14%;right:14%;font-size:7.5cqw;color:#6d3ff0;background:rgba(255,255,255,.93);border-radius:99px;padding:1.5% 0;box-shadow:0 3px 10px -3px rgba(60,40,90,.45);text-shadow:none";
+      const k=b.querySelector(".dKey");
+      k.style.cssText+=";top:auto;bottom:3.5%";
     };
-    img.src="/doors/"+encodeURIComponent(c)+".webp";
+    img.src="/doors/"+encodeURIComponent(c)+".jpg";
     b.onclick=()=>{
       document.querySelectorAll(".door").forEach(x=>x.classList.remove("on"));
       b.classList.add("on");socket.emit("vote",c);sTap();
