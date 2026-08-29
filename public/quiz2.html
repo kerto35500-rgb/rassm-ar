@@ -1165,29 +1165,62 @@ socket.on("voteResult",d=>{
   }else doorZoom(d.cat);
 });
 
-/* ── الدخول عبر الباب: البقية تتلاشى والفائز يكبر حتى يغطي الشاشة ── */
+/* ── الدخول عبر الباب: مصراع ينفتح والكاميرا تعبر خلاله حتى يملأ الشاشة ──
+   ملاحظة مهمة: نستخدم Web Animations API لا CSS transitions،
+   لأن وضع «تقليل الحركة» في بعض الأجهزة يصفّر مدة كل transition/animation
+   في CSS فيتحول الزوم إلى قفزة غير مرئية — بينما WAAPI لا يتأثر بذلك. */
 function doorZoom(cat){
   const doors=[...document.querySelectorAll(".door")];
   const win=doors.find(x=>x.dataset.c===cat);
-  doors.forEach(x=>{x.classList.remove("spin");if(x!==win)x.classList.add("dimmed");});
+  // إخفاء بقية الأبواب تماماً
+  doors.forEach(x=>{
+    x.classList.remove("spin");
+    if(x!==win){
+      x.style.pointerEvents="none";
+      x.animate([{opacity:1},{opacity:0}],{duration:260,fill:"forwards",easing:"ease-out"});
+    }
+  });
   if(!win)return;
   win.classList.add("on");
   sWin();
-  if(RM){return;}                      // تقليل الحركة: بلا زوم
   const r=win.getBoundingClientRect();
   if(!r.width)return;
+  // نسخة طائرة فوق كل شيء حتى لا يقصّها إطار المشهد
   const cl=win.cloneNode(true);
   cl.classList.add("zoomClone");
   cl.style.cssText="position:fixed;left:"+r.left+"px;top:"+r.top+"px;width:"+r.width+"px;height:"+r.height+
-    "px;margin:0;z-index:80;pointer-events:none;transform-origin:center;transition:transform .5s ease-in,opacity .3s .55s";
+    "px;margin:0;z-index:80;pointer-events:none;transform-origin:center";
   document.body.appendChild(cl);
   win.style.visibility="hidden";
-  const sc=Math.max(innerWidth/r.width,innerHeight/r.height)*1.18;
+  // مصراع الباب ينفتح للداخل (3D) قبل العبور
+  const panel=cl.querySelector(".dPanel");
+  if(panel){
+    panel.style.transformOrigin="left center";
+    panel.animate(
+      [{transform:"perspective(900px) rotateY(0deg)"},
+       {transform:"perspective(900px) rotateY(-74deg)"}],
+      {duration:480,delay:100,easing:"ease-in",fill:"forwards"});
+  }
+  // الكاميرا تتقدم وتعبر: تكبير ضخم يملأ الشاشة بالكامل
+  const sc=Math.max(innerWidth/r.width,innerHeight/r.height)*1.7;
   const dx=innerWidth/2-(r.left+r.width/2), dy=innerHeight/2-(r.top+r.height/2);
-  requestAnimationFrame(()=>{cl.style.transform="translate("+dx+"px,"+dy+"px) scale("+sc+")";});
-  tone(240,.5,"sine",.05,520);
-  setTimeout(()=>{cl.style.opacity="0";},900);
-  setTimeout(()=>{cl.remove();},1300);
+  cl.animate([
+    {transform:"translate(0px,0px) scale(1)",filter:"brightness(1)"},
+    {transform:"translate("+(dx*.35)+"px,"+(dy*.35)+"px) scale("+(1+(sc-1)*.22)+")",filter:"brightness(1.05)",offset:.45},
+    {transform:"translate("+dx+"px,"+dy+"px) scale("+sc+")",filter:"brightness(1.4)"}
+  ],{duration:720,easing:"cubic-bezier(.55,0,.85,.4)",fill:"forwards"});
+  // وميض عبور يغمر الشاشة لحظة الدخول
+  const veil=document.createElement("div");
+  veil.className="zoomClone";
+  veil.style.cssText="position:fixed;inset:0;z-index:81;pointer-events:none;background:#fff;opacity:0";
+  document.body.appendChild(veil);
+  veil.animate([{opacity:0},{opacity:0,offset:.55},{opacity:.92}],{duration:720,fill:"forwards"});
+  tone(240,.55,"sine",.05,520);
+  setTimeout(()=>{
+    cl.animate([{opacity:1},{opacity:0}],{duration:240,fill:"forwards"});
+    veil.animate([{opacity:.92},{opacity:0}],{duration:340,fill:"forwards"});
+  },820);
+  setTimeout(()=>{cl.remove();veil.remove();},1250);
 }
 function killZoomClones(){document.querySelectorAll(".zoomClone").forEach(c=>c.remove());}
 
@@ -1219,20 +1252,21 @@ socket.on("pyramidReveal",d=>{
       if(el){el.classList.remove("hop");void el.offsetWidth;el.classList.add("hop");tone(700+m.to*40,.14,"sine",.045);}}
   });
 });
-// الهجوم يصل قبل أن تُبنى شاشة السؤال — نخزّنه ونطبّقه فور جاهزية الأزرار
-let pendingFx=null;
+// الهجمات تصل قبل أن تُبنى شاشة السؤال — نخزّنها كلها ونطبّقها فور جاهزية الأزرار
+let pendingFx=[];
 socket.on("attacked",d=>{
   sHit();
   $("stage").classList.remove("hit");void $("stage").offsetWidth;$("stage").classList.add("hit");
   $("hitVeil").classList.remove("on");void $("hitVeil").offsetWidth;$("hitVeil").classList.add("on");
-  pendingFx=d;
+  pendingFx.push(d);
   tryFx();
 });
 function tryFx(){
-  if(!pendingFx)return;
+  if(!pendingFx.length)return;
   if(!FX.answersBox())return;     // ننتظر ظهور شاشة السؤال
-  const d=pendingFx;pendingFx=null;
-  FX.start(d.power,d.from,d.ms||4000);
+  const list=pendingFx;pendingFx=[];
+  // كل المقالب تُنفَّذ معاً على أزرار الإجابة — بفاصل بسيط ليُقرأ كل إعلان
+  list.forEach((d,i)=>setTimeout(()=>FXM.start(d.power,d.from,d.ms||4000),i*280));
 }
 socket.on("attackAck",d=>{
   if(d.self){toast("✨ مضاعفة النقاط مفعّلة للسؤال القادم");tone(1046,.16,"triangle",.06,1568);}
@@ -1263,8 +1297,8 @@ function render(){
   if(fresh){
     phaseKey=key;picked=-1;
     // نُنهي الفخ فقط عند الانتقال لمرحلة غير التي بدأ فيها
-    if(FX.active&&FX.key&&FX.key!==key)FX.stop();
-    if(ST.phase!=="question"&&ST.phase!=="pyramid")pendingFx=null;
+    FXM.sweep(key);
+    if(ST.phase!=="question"&&ST.phase!=="pyramid")pendingFx=[];
     if(ST.phase!=="attack"){closeTg();cancelAnimationFrame(atkArcRaf);MYMENU=[];}
     if(ST.phase!=="attackReveal")AR=null;
     if(ST.phase!=="vote"&&ST.phase!=="spin")killZoomClones();
@@ -1629,8 +1663,6 @@ function rAR(fresh){
   const b=$("arBody");b.innerHTML="";
   const hits=(AR&&AR.hits)||[];
   const onMe=hits.filter(h=>h.to===ME);
-  const byMe=hits.filter(h=>h.from===ME);
-  const rest=hits.filter(h=>h.to!==ME&&h.from!==ME);
   let delay=0;
   const add=(cls,em,html)=>{
     const d=document.createElement("div");
@@ -1639,14 +1671,10 @@ function rAR(fresh){
     d.innerHTML='<span class="em">'+em+'</span><span class="tx">'+html+"</span>";
     b.appendChild(d);
   };
+  /* تُعرض حصراً الهجمات الموجّهة إليّ — قائمة مكدسة تدعم عدة مهاجمين */
   onMe.forEach(h=>add("onMe",PW_EM[h.power]||"⚡",
     "<b>"+esc(h.fromName)+"</b> ألقى عليك <b>"+(PW_NM[h.power]||h.power)+"</b>!"));
-  byMe.forEach(h=>add("byMe",PW_EM[h.power]||"⚡",
-    "أصبت <b>"+esc(h.toName)+"</b> بـ<b>"+(PW_NM[h.power]||h.power)+"</b>"));
-  rest.forEach(h=>add("small",PW_EM[h.power]||"⚡",
-    esc(h.fromName)+" ← "+(PW_NM[h.power]||h.power)+" ← "+esc(h.toName)));
-  if(!hits.length)add("safe","😮‍💨","نجوتم جميعاً هذه الجولة!");
-  else if(!onMe.length&&!byMe.length&&!rest.length)add("safe","😮‍💨","نجوت هذه الجولة!");
+  if(!onMe.length)add("safe","😮‍💨","نجوت هذه الجولة… استعدّ للسؤال!");
   if(onMe.length){sHit();}else{sTap();}
 }
 
@@ -1983,8 +2011,11 @@ const FX={
   },
 
   lockAnswers(on){
-    this.locked=on;
-    this.buttons().forEach(b=>{b.style.pointerEvents=on?"none":"";b.classList.toggle("frozenBtn",on);});
+    // عدّاد مرجعي مشترك: كل فخ يحجز قفلاً واحداً ويحرّره مرة واحدة
+    if(on){ if(!this._hold){this._hold=1;FX._locks=(FX._locks||0)+1;} }
+    else  { if(this._hold){this._hold=0;FX._locks=Math.max(0,(FX._locks||0)-1);} }
+    FX.locked=(FX._locks||0)>0;
+    this.buttons().forEach(b=>{b.style.pointerEvents=FX.locked?"none":"";b.classList.toggle("frozenBtn",FX.locked);});
   },
 
   start(power,from,ms){
@@ -2006,7 +2037,6 @@ const FX={
     // نستعيد عقدة النص نفسها (لا b.lastChild — فقد يكون المخلوق المضاف)
     if(this.origText){this.origText.forEach(([node,t])=>{try{if(node&&node.isConnected)node.textContent=t;}catch(e){}});this.origText=null;}
     if(this.el){this.el.remove();this.el=null;}
-    document.querySelectorAll(".fxLayer,.bombWrap").forEach(e=>e.remove());
   },
 
   /* ─── ١ · الثلج: ثلاث نقرات لكسره ─── */
@@ -2307,8 +2337,31 @@ const FX={
     setTimeout(()=>clearInterval(iv),ms);
   }
 };
-function runFx(power,from,ms){FX.start(power,from,ms);}
-function stopFx(){FX.stop();}
+/* ═══ مدير الفخاخ المتراكبة: عدة مقالب على نفس اللاعب في نفس السؤال ═══
+   كل مقلب يعمل في نسخة مستقلة من FX فتتكدس الطبقات فوق بعضها:
+   وحل فوق جليد؟ امسح الوحل ثم اكسر الجليد. */
+const FXM={
+  list:[],
+  start(power,from,ms){
+    const i=Object.create(FX);
+    i.active=null;i.key=null;i.timer=null;i.raf=0;i.el=null;
+    i.origText=null;i._hold=0;i.box=null;i.host=null;
+    i.start(power,from,ms);
+    this.list.push(i);
+  },
+  stop(){
+    this.list.forEach(i=>{try{i.stop();}catch(e){}});
+    this.list=[];
+    FX._locks=0;FX.locked=false;
+    document.querySelectorAll(".fxLayer,.bombWrap,.fxPenalty").forEach(e=>e.remove());
+  },
+  sweep(key){   // انتقلنا لمرحلة أخرى؟ ننهي كل فخ بدأ في مرحلة سابقة
+    this.list=this.list.filter(i=>i.active);
+    if(this.list.some(i=>i.key&&i.key!==key))this.stop();
+  }
+};
+function runFx(power,from,ms){FXM.start(power,from,ms);}
+function stopFx(){FXM.stop();}
 
 /* ═══ الدردشة ═══ */
 function addChat(m){
@@ -2334,16 +2387,17 @@ function buildPills(d){
     b.onclick=()=>b.classList.toggle("on");cp.appendChild(b);});
   const NM={freeze:"تجميد ❄️",gloop:"وحل 🟢",bombs:"قنابل 💣",nibble:"أكلة الحروف 👾",shuffle:"خلط 🔀"};
   const pp=$("pwPills");pp.innerHTML="";
-  (d.powers||[]).forEach(p=>{const b=document.createElement("button");b.className="pill on";b.textContent=NM[p]||p;b.dataset.p=p;
+  (d.powers||[]).forEach(p=>{const b=document.createElement("button");b.className="pill on";b.textContent=NM[p]||PW_NM[p]||p;b.dataset.p=p;
     b.onclick=()=>b.classList.toggle("on");pp.appendChild(b);});
   // معاينة الفخاخ — يغلق الإعدادات ويشغّل الفخ على شاشة الإجابات الحالية
   const fp=$("fxPreview");fp.innerHTML="";
   (d.powers||[]).forEach(p=>{
+    if(p==="bet"||p==="double")return;   // قوى غير بصرية — لا معاينة لها
     const b=document.createElement("button");b.className="pill";b.textContent=NM[p]||p;
     b.onclick=()=>{
       $("cfg").classList.remove("on");
       demoQuestion();   // دائماً: يجدّد المشهد ومهلته حتى لا يموت أثناء الفخ
-      setTimeout(()=>FX.start(p,"معاينة",8000),300);
+      setTimeout(()=>FXM.start(p,"معاينة",8000),300);
     };
     fp.appendChild(b);
   });
@@ -2363,7 +2417,7 @@ function demoQuestion(){
     box.appendChild(b);
   });
   clearTimeout(window.__demoT);
-  window.__demoT=setTimeout(()=>{previewMode=false;FX.stop();if(ST)render();},13000);
+  window.__demoT=setTimeout(()=>{previewMode=false;FXM.stop();if(ST)render();},13000);
 }
 $("cfgOpen").onclick=()=>{if(ST)fillCfg(ST.settings);$("cfg").classList.add("on");};
 $("cfgX").onclick=()=>$("cfg").classList.remove("on");
