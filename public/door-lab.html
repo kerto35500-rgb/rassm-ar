@@ -17,7 +17,7 @@
 html,body{height:100%}
 body{margin:0;background:linear-gradient(170deg,#f3edfd,#e9e0fa 60%,#e2d6f8);
   font-family:"Baloo Bhaijaan 2",system-ui,sans-serif;color:var(--ink);
-  display:flex;flex-direction:column;overflow:hidden}
+  display:flex;flex-direction:column;overflow-x:hidden;overflow-y:auto}
 
 /* ─── الرأس ─── */
 header{flex:0 0 auto;text-align:center;padding:14px 12px 6px}
@@ -37,7 +37,7 @@ header p{margin:4px 0 0;font-size:12.5px;color:var(--dim)}
   background:var(--v);color:#fff;font-size:12px;margin-inline-end:5px}
 
 /* ─── المسرح ─── */
-#stageWrap{flex:1;min-height:0;position:relative;padding:8px 14px 14px}
+#stageWrap{flex:1;min-height:460px;position:relative;padding:8px 14px 14px}
 #stage{position:relative;height:100%;border-radius:26px;overflow:hidden;
   background:linear-gradient(180deg,#f7f3ff,#efe7fd);border:2px solid var(--stroke);
   box-shadow:inset 0 2px 12px rgba(109,63,240,.06)}
@@ -50,7 +50,8 @@ header p{margin:4px 0 0;font-size:12.5px;color:var(--dim)}
   --p1:color-mix(in srgb,var(--c1) 58%,#fff);
   --p2:color-mix(in srgb,var(--c2) 55%,#fff);
   --pd:color-mix(in srgb,var(--c2) 70%,#42305c)}
-.arch{position:relative;width:min(86%,270px);height:92%;max-height:340px;
+.arch{position:relative;height:92%;max-height:340px;
+  width:auto;aspect-ratio:135/170;max-width:86%;
   border-radius:130px 130px 18px 18px;overflow:hidden;
   border:3px solid var(--c2);background:var(--c2);
   box-shadow:0 14px 28px -14px rgba(61,43,99,.45), inset 0 2px 0 rgba(255,255,255,.5);
