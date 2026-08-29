@@ -270,6 +270,191 @@ body.st-10 .half i::before,body.st-10 .half i::after{background:rgba(255,255,255
 body.st-10 .half .knb{background:radial-gradient(circle at 35% 35%,#fff8dd,#ffcb2e 45%,#c98f0c)}
 body.st-10 .panel .tt{background:#fff8dd;color:#8a6508;box-shadow:0 3px 0 #caa74e}
 
+/* ═══════ سبعة ستايلات ذهبية (١١–١٧) بروح صورة العرض:
+   إطار أبيض معماري + مصراعان ذهب متلألئ منقوش + كرة ذهبية بالمنتصف ═══════ */
+/* الذهب اللامع المشترك + إخفاء الألواح والمقبضين الافتراضيين + الكرة المركزية */
+body.st-11 .half i,body.st-12 .half i,body.st-13 .half i,body.st-14 .half i,
+body.st-15 .half i,body.st-16 .half i,body.st-17 .half i{
+  background:
+   radial-gradient(circle 1.6px at 12% 18%, rgba(255,255,255,.85) 90%, transparent),
+   radial-gradient(circle 1.4px at 34% 52%, rgba(255,255,255,.7) 90%, transparent),
+   radial-gradient(circle 1.6px at 58% 30%, rgba(255,255,255,.75) 90%, transparent),
+   radial-gradient(circle 1.4px at 78% 66%, rgba(255,255,255,.7) 90%, transparent),
+   radial-gradient(circle 1.6px at 90% 12%, rgba(255,255,255,.85) 90%, transparent),
+   radial-gradient(circle 1.4px at 22% 84%, rgba(255,255,255,.7) 90%, transparent),
+   radial-gradient(circle 1.6px at 66% 88%, rgba(255,255,255,.7) 90%, transparent),
+   radial-gradient(circle 1.4px at 46% 12%, rgba(255,255,255,.7) 90%, transparent),
+   linear-gradient(160deg,#ffdf7e,#eab73f 55%,#d99f27)}
+body.st-11 .half i::before,body.st-11 .half i::after,
+body.st-12 .half i::before,body.st-12 .half i::after,
+body.st-13 .half i::before,body.st-13 .half i::after,
+body.st-14 .half i::before,body.st-14 .half i::after,
+body.st-15 .half i::before,body.st-15 .half i::after,
+body.st-17 .half i::before,body.st-17 .half i::after{display:none}
+body.st-11 .half .knb,body.st-12 .half .knb,body.st-13 .half .knb,body.st-14 .half .knb,
+body.st-15 .half .knb,body.st-16 .half .knb,body.st-17 .half .knb{display:none}
+body.st-11 .panel::before,body.st-12 .panel::before,body.st-13 .panel::before,body.st-14 .panel::before,
+body.st-15 .panel::before,body.st-16 .panel::before,body.st-17 .panel::before{
+  content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:22px;height:22px;border-radius:50%;
+  background:radial-gradient(circle at 32% 28%,#fff8dd,#ffcb2e 55%,#b8860b);
+  box-shadow:0 3px 6px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.85)}
+body.st-11 .panel .tt,body.st-12 .panel .tt,body.st-13 .panel .tt,body.st-14 .panel .tt,
+body.st-15 .panel .tt,body.st-16 .panel .tt,body.st-17 .panel .tt{
+  position:absolute;top:6%;left:50%;transform:translateX(-50%);margin:0;color:#8a6508;background:#fffdf4}
+body.st-11 .panel .em,body.st-12 .panel .em,body.st-13 .panel .em,body.st-14 .panel .em,
+body.st-15 .panel .em,body.st-16 .panel .em,body.st-17 .panel .em{
+  position:absolute;top:22%;left:50%;transform:translateX(-50%);margin:0;
+  font-size:clamp(22px,5vmin,36px)}
+
+/* ست١١ · قلعة الذهب — إطار مربع بشرفات قلعة ومصراعان بنقشة معيّنات */
+body.st-11 .arch{--fp:10px;border:none;padding:0;border-radius:16px;
+  background:linear-gradient(180deg,#ffffff,#f3eef9);
+  box-shadow:0 20px 32px -18px rgba(120,100,70,.45), inset 0 3px 0 #fff}
+body.st-11 .arch::before{content:"";position:absolute;top:0;left:6%;right:6%;height:13px;z-index:4;
+  background:repeating-linear-gradient(90deg, transparent 0 14px, #f3eef9 14px 30px)}
+body.st-11 .inner{inset:10px;border-radius:10px}
+body.st-11 .half.L{border-radius:8px 0 0 8px}
+body.st-11 .half.R{border-radius:0 8px 8px 0}
+body.st-11 .half i{background:
+   repeating-linear-gradient(45deg, rgba(150,95,10,.3) 0 2px, transparent 2px 30px),
+   repeating-linear-gradient(-45deg, rgba(150,95,10,.3) 0 2px, transparent 2px 30px),
+   radial-gradient(circle 1.6px at 12% 18%, rgba(255,255,255,.85) 90%, transparent),
+   radial-gradient(circle 1.4px at 34% 52%, rgba(255,255,255,.7) 90%, transparent),
+   radial-gradient(circle 1.6px at 58% 30%, rgba(255,255,255,.75) 90%, transparent),
+   radial-gradient(circle 1.4px at 78% 66%, rgba(255,255,255,.7) 90%, transparent),
+   linear-gradient(160deg,#ffdf7e,#eab73f 55%,#d99f27)}
+
+/* ست١٢ · معبد ذهبي — جملون مثلث بثلاث كرات ومصراعان بنقشة معينات كبيرة */
+body.st-12 .arch{--fp:9px;border:none;padding:0;border-radius:14px;
+  background:linear-gradient(180deg,#ffffff,#f6f0fa);
+  box-shadow:0 20px 32px -18px rgba(120,100,70,.45), inset 0 3px 0 #fff}
+body.st-12 .arch::before{content:"";position:absolute;top:0;left:0;right:0;height:17%;z-index:4;
+  background:linear-gradient(180deg,#ffd75e,#e2a92f);
+  clip-path:polygon(50% 0, 100% 78%, 100% 100%, 0 100%, 0 78%)}
+body.st-12 .arch::after{content:"";position:absolute;top:15%;left:0;right:0;height:12px;z-index:5;
+  background:
+   radial-gradient(circle 5px at 25% 50%, #e2a92f 92%, transparent),
+   radial-gradient(circle 5px at 50% 50%, #e2a92f 92%, transparent),
+   radial-gradient(circle 5px at 75% 50%, #e2a92f 92%, transparent)}
+body.st-12 .half{top:calc(17% + 8px)}
+body.st-12 .inner{inset:9px;border-radius:10px}
+body.st-12 .half.L{border-radius:8px 0 0 8px}
+body.st-12 .half.R{border-radius:0 8px 8px 0}
+body.st-12 .half i{background:
+   repeating-linear-gradient(45deg, rgba(150,95,10,.32) 0 2.5px, transparent 2.5px 46px),
+   repeating-linear-gradient(-45deg, rgba(150,95,10,.32) 0 2.5px, transparent 2.5px 46px),
+   radial-gradient(circle 1.6px at 20% 24%, rgba(255,255,255,.8) 90%, transparent),
+   radial-gradient(circle 1.4px at 70% 60%, rgba(255,255,255,.7) 90%, transparent),
+   linear-gradient(160deg,#ffdf7e,#eab73f 55%,#d99f27)}
+
+/* ست١٣ · قوس مغربي — حافة مموجة بيضاء ومصراعان بأعمدة ذهبية رأسية */
+body.st-13 .arch{--fp:11px;border:none;padding:0;
+  border-radius:50% 50% 22px 22px / 42% 42% 22px 22px;
+  background:linear-gradient(180deg,#ffffff,#f5f0fb);
+  box-shadow:0 20px 32px -18px rgba(120,100,70,.45), inset 0 3px 0 #fff}
+body.st-13 .arch::after{content:"";position:absolute;inset:3px;z-index:4;pointer-events:none;
+  border-radius:inherit;border:6px dotted #ffffff;opacity:.95;
+  filter:drop-shadow(0 1px 2px rgba(120,100,70,.25))}
+body.st-13 .inner{inset:11px;border-radius:50% 50% 14px 14px / 42% 42% 14px 14px}
+body.st-13 .half.L{border-radius:120px 0 0 12px}
+body.st-13 .half.R{border-radius:0 120px 12px 0}
+body.st-13 .half i{background:
+   repeating-linear-gradient(90deg, #f4c44f 0 22px, #e0a52d 22px 44px),
+   linear-gradient(160deg,#ffdf7e,#eab73f)}
+
+/* ست١٤ · قبة شرقية — عقد مدبب عالٍ ومصراعان بنقشة مثلثات */
+body.st-14 .arch{--fp:10px;border:none;padding:0;
+  border-radius:50% 50% 16px 16px / 74% 74% 16px 16px;
+  background:linear-gradient(180deg,#ffffff,#f4eefa);
+  box-shadow:0 20px 32px -18px rgba(120,100,70,.45), inset 0 3px 0 #fff}
+body.st-14 .arch::after{content:"";position:absolute;top:5px;left:50%;transform:translateX(-50%);
+  width:16px;height:16px;border-radius:50%;z-index:6;
+  background:radial-gradient(circle at 32% 28%,#fff8dd,#ffcb2e 55%,#b8860b);
+  box-shadow:0 2px 4px rgba(0,0,0,.25)}
+body.st-14 .inner{inset:10px;border-radius:50% 50% 10px 10px / 72% 72% 10px 10px}
+body.st-14 .half.L{border-radius:150px 0 0 8px}
+body.st-14 .half.R{border-radius:0 150px 8px 0}
+body.st-14 .half i{background:
+   repeating-linear-gradient(45deg, rgba(150,95,10,.3) 0 2px, transparent 2px 24px),
+   repeating-linear-gradient(-45deg, rgba(150,95,10,.3) 0 2px, transparent 2px 24px),
+   linear-gradient(160deg,#ffdf7e,#eab73f 55%,#d99f27)}
+
+/* ست١٥ · ذهب متلألئ — ذهب صافٍ بلمعة قطرية عابرة */
+body.st-15 .arch{--fp:9px;border:none;padding:0;border-radius:110px 110px 22px 22px;
+  background:linear-gradient(180deg,#ffffff,#f4eefa);
+  box-shadow:0 20px 32px -18px rgba(120,100,70,.45), inset 0 3px 0 #fff}
+body.st-15 .inner{inset:9px;border-radius:100px 100px 14px 14px}
+body.st-15 .half.L{border-radius:100px 0 0 12px}
+body.st-15 .half.R{border-radius:0 100px 12px 0}
+body.st-15 .half i{background:
+   linear-gradient(115deg, transparent 30%, rgba(255,255,255,.5) 42%, transparent 54%),
+   radial-gradient(circle 1.8px at 15% 22%, rgba(255,255,255,.9) 90%, transparent),
+   radial-gradient(circle 1.5px at 38% 58%, rgba(255,255,255,.8) 90%, transparent),
+   radial-gradient(circle 1.8px at 62% 34%, rgba(255,255,255,.85) 90%, transparent),
+   radial-gradient(circle 1.5px at 84% 70%, rgba(255,255,255,.8) 90%, transparent),
+   radial-gradient(circle 1.8px at 74% 14%, rgba(255,255,255,.9) 90%, transparent),
+   radial-gradient(circle 1.5px at 28% 86%, rgba(255,255,255,.8) 90%, transparent),
+   linear-gradient(160deg,#ffe28e,#eab73f 55%,#d99f27)}
+
+/* ست١٦ · شبابيك معقودة — نافذة معقودة كريمية أعلى كل مصراع */
+body.st-16 .arch{--fp:10px;border:none;padding:0;border-radius:104px 104px 20px 20px;
+  background:linear-gradient(180deg,#ffffff,#f4eefa);
+  box-shadow:0 20px 32px -18px rgba(120,100,70,.45), inset 0 3px 0 #fff}
+body.st-16 .inner{inset:10px;border-radius:94px 94px 12px 12px}
+body.st-16 .half.L{border-radius:94px 0 0 10px}
+body.st-16 .half.R{border-radius:0 94px 10px 0}
+body.st-16 .half i::before,body.st-16 .half i::after{display:block;top:12%;bottom:auto;height:30%;
+  border-radius:70px 70px 8px 8px;background:#fffdf4;
+  border:2.5px solid #e2a92f;box-shadow:inset 0 3px 6px rgba(160,110,20,.2)}
+body.st-16 .half i::before{left:14%;right:58%}
+body.st-16 .half i::after{left:58%;right:14%}
+
+/* ست١٧ · هرم مخملي — مصراعان نصفهما ذهب ونصفهما بلون الفئة قطرياً */
+body.st-17 .arch{--fp:9px;border:none;padding:0;border-radius:120px 120px 20px 20px;
+  background:linear-gradient(180deg,#ffffff,#f4eefa);
+  box-shadow:0 20px 32px -18px rgba(120,100,70,.45), inset 0 3px 0 #fff}
+body.st-17 .inner{inset:9px;border-radius:110px 110px 12px 12px}
+body.st-17 .half.L{border-radius:110px 0 0 10px}
+body.st-17 .half.R{border-radius:0 110px 10px 0}
+body.st-17 .half i{background:
+   repeating-linear-gradient(45deg, rgba(120,80,20,.22) 0 2px, transparent 2px 28px),
+   repeating-linear-gradient(-45deg, rgba(120,80,20,.22) 0 2px, transparent 2px 28px),
+   linear-gradient(135deg,#ffdf7e 0 50%, var(--p1) 50% 100%)}
+
+/* ═══════ خمسة ستايلات بصور Gemini (١٨–٢٢): الباب صورة مولّدة تنشق نصفين ═══════ */
+body.st-18 .arch,body.st-19 .arch,body.st-20 .arch,body.st-21 .arch,body.st-22 .arch{
+  --fp:0px;border:none;padding:0;border-radius:24px;background:#f6efe2;
+  box-shadow:0 22px 36px -18px rgba(90,60,120,.5), inset 0 0 0 2px rgba(255,255,255,.6)}
+body.st-18 .inner,body.st-19 .inner,body.st-20 .inner,body.st-21 .inner,body.st-22 .inner{
+  inset:0;border-radius:24px}
+body.st-18 .half.L,body.st-19 .half.L,body.st-20 .half.L,body.st-21 .half.L,body.st-22 .half.L{
+  border-radius:24px 0 0 24px}
+body.st-18 .half.R,body.st-19 .half.R,body.st-20 .half.R,body.st-21 .half.R,body.st-22 .half.R{
+  border-radius:0 24px 24px 0}
+body.st-18 .half i::before,body.st-18 .half i::after,
+body.st-19 .half i::before,body.st-19 .half i::after,
+body.st-20 .half i::before,body.st-20 .half i::after,
+body.st-21 .half i::before,body.st-21 .half i::after,
+body.st-22 .half i::before,body.st-22 .half i::after{display:none}
+body.st-18 .half .knb,body.st-19 .half .knb,body.st-20 .half .knb,
+body.st-21 .half .knb,body.st-22 .half .knb{display:none}
+body.st-18 .half.R::before,body.st-18 .half.L::after,
+body.st-19 .half.R::before,body.st-19 .half.L::after,
+body.st-20 .half.R::before,body.st-20 .half.L::after,
+body.st-21 .half.R::before,body.st-21 .half.L::after,
+body.st-22 .half.R::before,body.st-22 .half.L::after{display:none}
+body.st-18 .panel .em,body.st-19 .panel .em,body.st-20 .panel .em,
+body.st-21 .panel .em,body.st-22 .panel .em{display:none}
+body.st-18 .panel .tt,body.st-19 .panel .tt,body.st-20 .panel .tt,
+body.st-21 .panel .tt,body.st-22 .panel .tt{
+  position:absolute;top:4.5%;left:50%;transform:translateX(-50%);margin:0}
+body.st-18 .half i{background:url("door18.jpg") center/cover no-repeat}
+body.st-19 .half i{background:url("door19.jpg") center/cover no-repeat}
+body.st-20 .half i{background:url("door20.jpg") center/cover no-repeat}
+body.st-21 .half i{background:url("door21.jpg") center/cover no-repeat}
+body.st-22 .half i{background:url("door22.jpg") center/cover no-repeat}
+
 .sv.on{outline:3px solid var(--v);outline-offset:2px}
 
 /* ─── طبقات عامة ─── */
@@ -309,6 +494,18 @@ body.st-10 .panel .tt{background:#fff8dd;color:#8a6508;box-shadow:0 3px 0 #caa74
   <button class="mv sv" data-s="8"><span class="n">٨</span>نافذة ملكية<small>زجاج مصنفر فوق ولوح ملون تحت وحزام ذهبي</small></button>
   <button class="mv sv" data-s="9"><span class="n">٩</span>جيلي لامع<small>مصراعان هلاميان بلمعة كبيرة</small></button>
   <button class="mv sv" data-s="10"><span class="n">١٠</span>بوابة الهرم<small>إطار ذهبي بحجر قمة ولوحان معقودان</small></button>
+  <button class="mv sv" data-s="11"><span class="n">١١</span>قلعة الذهب<small>شرفات قلعة ومصراعان بمعينات ذهبية</small></button>
+  <button class="mv sv" data-s="12"><span class="n">١٢</span>معبد ذهبي<small>جملون مثلث بثلاث كرات ذهبية</small></button>
+  <button class="mv sv" data-s="13"><span class="n">١٣</span>قوس مغربي<small>حافة مموجة وأعمدة ذهبية رأسية</small></button>
+  <button class="mv sv" data-s="14"><span class="n">١٤</span>قبة شرقية<small>عقد مدبب عالٍ ونقشة مثلثات</small></button>
+  <button class="mv sv" data-s="15"><span class="n">١٥</span>ذهب متلألئ<small>ذهب صافٍ بلمعة قطرية وبريق</small></button>
+  <button class="mv sv" data-s="16"><span class="n">١٦</span>شبابيك معقودة<small>نافذة كريمية أعلى كل مصراع</small></button>
+  <button class="mv sv" data-s="17"><span class="n">١٧</span>هرم مخملي<small>نصف ذهب ونصف بلون الفئة قطرياً</small></button>
+  <button class="mv sv" data-s="18"><span class="n">١٨</span>مارشميلو وردي AI<small>صورة Gemini — طين وردي بمقبضين ذهب</small></button>
+  <button class="mv sv" data-s="19"><span class="n">١٩</span>ذهب مبطّن AI<small>صورة Gemini — ذهب كابيتونيه وإطار رخام</small></button>
+  <button class="mv sv" data-s="20"><span class="n">٢٠</span>باب الغيوم AI<small>صورة Gemini — سحاب ونافذتان دائريتان</small></button>
+  <button class="mv sv" data-s="21"><span class="n">٢١</span>خشبي بقلب AI<small>صورة Gemini — خشب عسلي ونافذة قلب</small></button>
+  <button class="mv sv" data-s="22"><span class="n">٢٢</span>جليد نعناعي AI<small>صورة Gemini — بلور مثلج بجواهر</small></button>
 </div>
 
 <div id="stageWrap">
