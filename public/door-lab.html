@@ -166,6 +166,175 @@ body.st-5 .d5{display:block}
   font-weight:900;font-size:13px;color:#1a1205;
   background:linear-gradient(160deg,#ffe9a3,#ffcb2e 55%,#c98f0c);
   box-shadow:0 3px 10px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.8)}
+/* ═══════════ سبعة ستايلات مارشميلو احترافية (st-6 .. st-12) ═══════════ */
+/* أساس مشترك: باستيل مشتق من لون الفئة + خلفيات النصفين للحركة الرابعة */
+body.st-6 .door,body.st-7 .door,body.st-8 .door,body.st-9 .door,body.st-10 .door,body.st-11 .door,body.st-12 .door{
+  --p1:color-mix(in srgb,var(--c1) 60%,#fff);
+  --p2:color-mix(in srgb,var(--c2) 56%,#fff);
+  --pd:color-mix(in srgb,var(--c2) 72%,#4a3560)}
+body.st-6 .half i,body.st-7 .half i,body.st-8 .half i,body.st-9 .half i,body.st-10 .half i,body.st-11 .half i,body.st-12 .half i{
+  background:linear-gradient(160deg,var(--p1),var(--p2))}
+
+/* ست٦ · كب كيك كريمي — كريمة متموجة، رشّات سكر، كرزة */
+body.st-6 .arch{border:none;padding:10px;border-radius:46% 46% 26px 26px / 36% 36% 26px 26px;
+  background:linear-gradient(180deg,#fff9f2,#ffe9da);
+  box-shadow:0 20px 34px -18px rgba(150,90,120,.5), inset 0 4px 0 #fff, inset 0 -8px 0 rgba(214,160,190,.28)}
+body.st-6 .inner,body.st-6 .panel{inset:10px;border-radius:40% 40% 18px 18px / 30% 30% 18px 18px}
+body.st-6 .panel{background:
+  radial-gradient(circle at 18% 46%, rgba(255,255,255,.5) 0 6px, transparent 7px),
+  radial-gradient(circle at 80% 52%, rgba(255,255,255,.45) 0 5px, transparent 6px),
+  radial-gradient(circle at 42% 84%, rgba(255,255,255,.4) 0 5px, transparent 6px),
+  linear-gradient(160deg,var(--p1),var(--p2))}
+body.st-6 .panel::before{content:"";position:absolute;top:-6px;left:-4%;right:-4%;height:32%;z-index:3;pointer-events:none;
+  background:
+    radial-gradient(circle 15px at 11% 32%, #fffdf8 97%, transparent),
+    radial-gradient(circle 19px at 34% 22%, #fffdf8 97%, transparent),
+    radial-gradient(circle 16px at 58% 30%, #fffdf8 97%, transparent),
+    radial-gradient(circle 20px at 82% 20%, #fffdf8 97%, transparent),
+    radial-gradient(circle 13px at 97% 34%, #fffdf8 97%, transparent);
+  filter:drop-shadow(0 4px 4px rgba(160,110,140,.28))}
+body.st-6 .panel::after{content:"";position:absolute;top:2%;left:6%;right:6%;height:18%;z-index:4;pointer-events:none;
+  background:
+   linear-gradient(45deg,#ff8fb3 0 100%) no-repeat 10% 42%/9px 3px,
+   linear-gradient(-30deg,#7fd8ff 0 100%) no-repeat 28% 68%/9px 3px,
+   linear-gradient(70deg,#ffd75e 0 100%) no-repeat 48% 34%/9px 3px,
+   linear-gradient(-60deg,#8ce68c 0 100%) no-repeat 66% 62%/9px 3px,
+   linear-gradient(25deg,#d3a4ff 0 100%) no-repeat 86% 44%/9px 3px}
+body.st-6 .door::after{content:"";position:absolute;top:.5%;left:50%;transform:translateX(-50%);z-index:6;
+  width:20px;height:20px;border-radius:50%;
+  background:radial-gradient(circle at 32% 30%,#ffb3c1,#e02444 60%,#9c0f28);
+  box-shadow:0 3px 6px rgba(0,0,0,.25), inset 0 2px 3px rgba(255,255,255,.5)}
+body.st-6 .panel .em{font-size:clamp(26px,6vmin,46px)}
+body.st-6 .panel .tt{background:#fffdf8;color:var(--pd);padding:3px 15px;border-radius:99px;
+  text-shadow:none;box-shadow:0 3px 0 rgba(214,160,190,.45)}
+body.st-6 .panel .knob{border:none;background:radial-gradient(circle at 35% 35%,#fff,#ffd0dd 45%,#e78ba4)}
+
+/* ست٧ · سحابة حالمة — غيمة بيضاء بوجه لطيف وخدود */
+body.st-7 .arch{border:none;padding:9px;border-radius:60px;
+  background:linear-gradient(180deg,#ffffff,#eef4ff);
+  box-shadow:0 24px 38px -20px rgba(110,130,200,.5), inset 0 4px 0 #fff}
+body.st-7 .inner,body.st-7 .panel{inset:9px;border-radius:52px}
+body.st-7 .panel{background:
+  radial-gradient(circle at 82% 12%, rgba(255,255,255,.85) 0 12px, transparent 13px),
+  radial-gradient(circle at 12% 80%, rgba(255,255,255,.55) 0 9px, transparent 10px),
+  linear-gradient(180deg, color-mix(in srgb,var(--c1) 36%,#fff), color-mix(in srgb,var(--c2) 42%,#fff))}
+body.st-7 .door::before{content:"";position:absolute;top:1.2%;left:50%;transform:translateX(-50%);z-index:6;
+  width:72%;height:12%;pointer-events:none;
+  background:
+   radial-gradient(circle at 18% 100%, #fff 0 44%, transparent 46%),
+   radial-gradient(circle at 50% 72%, #fff 0 56%, transparent 58%),
+   radial-gradient(circle at 82% 100%, #fff 0 44%, transparent 46%);
+  filter:drop-shadow(0 5px 8px rgba(110,130,200,.35))}
+body.st-7 .panel::before{content:"";position:absolute;left:50%;bottom:20%;transform:translateX(-50%);
+  width:62%;height:12px;z-index:3;pointer-events:none;
+  background:
+   radial-gradient(circle at 24% 50%, #4a3b60 0 4.5px, transparent 5.5px),
+   radial-gradient(circle at 76% 50%, #4a3b60 0 4.5px, transparent 5.5px),
+   radial-gradient(ellipse 10px 5px at 4% 60%, rgba(255,120,150,.5) 0 60%, transparent 70%),
+   radial-gradient(ellipse 10px 5px at 96% 60%, rgba(255,120,150,.5) 0 60%, transparent 70%)}
+body.st-7 .panel::after{content:"‿";position:absolute;left:50%;bottom:12.5%;transform:translateX(-50%);
+  font-size:24px;font-weight:900;color:#4a3b60;line-height:.5;z-index:3}
+body.st-7 .panel .em{font-size:clamp(26px,6vmin,46px);margin-bottom:10%}
+body.st-7 .panel .tt{background:rgba(255,255,255,.88);color:#5a6bb0;padding:3px 15px;border-radius:99px;text-shadow:none;
+  box-shadow:0 3px 0 rgba(140,160,220,.35)}
+body.st-7 .panel .knob{border:none;background:#fff;box-shadow:0 0 8px rgba(255,255,255,.9)}
+
+/* ست٨ · بسكويت محشو — حواف مخبوزة بحبيبات وحشوة كريمة وخياطة */
+body.st-8 .arch{border:none;padding:12px;border-radius:38px;
+  background:
+   radial-gradient(circle at 20% 16%, rgba(120,70,30,.26) 0 4px, transparent 5px),
+   radial-gradient(circle at 72% 8%, rgba(120,70,30,.22) 0 3px, transparent 4px),
+   radial-gradient(circle at 90% 50%, rgba(120,70,30,.22) 0 4px, transparent 5px),
+   radial-gradient(circle at 10% 66%, rgba(120,70,30,.2) 0 3px, transparent 4px),
+   radial-gradient(circle at 58% 92%, rgba(120,70,30,.22) 0 4px, transparent 5px),
+   radial-gradient(circle at 30% 40%, rgba(120,70,30,.16) 0 3px, transparent 4px),
+   linear-gradient(170deg,#f2c98f,#dba362);
+  box-shadow:0 18px 30px -16px rgba(120,80,40,.55), inset 0 4px 0 rgba(255,255,255,.5), inset 0 -6px 0 rgba(120,70,30,.25)}
+body.st-8 .inner,body.st-8 .panel{inset:12px;border-radius:26px}
+body.st-8 .panel{background:linear-gradient(160deg,var(--p1),var(--p2))}
+body.st-8 .panel::before{content:"";position:absolute;inset:0;border:7px solid #fffdf6;border-radius:26px;z-index:3;pointer-events:none}
+body.st-8 .panel::after{content:"";position:absolute;inset:8px;border:2.5px dashed color-mix(in srgb,var(--c2) 65%,#fff);
+  border-radius:18px;opacity:.85;z-index:3;pointer-events:none}
+body.st-8 .panel .tt{background:#fffdf6;color:#9c6b2f;padding:3px 15px;border-radius:12px;text-shadow:none;
+  box-shadow:0 2px 0 #e0b87c}
+body.st-8 .panel .knob{border:none;background:radial-gradient(circle at 35% 35%,#fff,#f2c98f 45%,#b07a35)}
+
+/* ست٩ · حلوى مصاصة — خطوط كاندي مائلة وحبات سكرية ولمعة */
+body.st-9 .arch{border:none;padding:10px;border-radius:120px 120px 28px 28px;
+  background:linear-gradient(160deg,#ffffff,#ffeef7);
+  box-shadow:0 18px 30px -16px rgba(180,80,140,.5), inset 0 3px 0 #fff}
+body.st-9 .arch::after{content:"";position:absolute;inset:2px;border-radius:inherit;z-index:4;pointer-events:none;
+  border:8px dotted var(--p1);opacity:.9;filter:drop-shadow(0 0 3px rgba(255,255,255,.8))}
+body.st-9 .inner,body.st-9 .panel{inset:10px;border-radius:110px 110px 20px 20px}
+body.st-9 .panel{background:
+   repeating-linear-gradient(55deg, var(--p1) 0 16px, #fff 16px 32px, var(--p2) 32px 48px, #fff 48px 64px)}
+body.st-9 .panel::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:linear-gradient(105deg, transparent 30%, rgba(255,255,255,.6) 42%, transparent 55%)}
+body.st-9 .panel .em{filter:drop-shadow(0 3px 6px rgba(160,60,110,.4))}
+body.st-9 .panel .tt{background:#fff;color:var(--pd);padding:3px 16px;border-radius:99px;text-shadow:none;
+  box-shadow:0 3px 0 var(--p1)}
+body.st-9 .panel .knob{width:14px;height:14px;border:2px solid #fff;
+  background:repeating-conic-gradient(#fff 0 30deg,var(--p1) 30deg 60deg)}
+
+/* ست١٠ · دمية قطيفة — نسيج مخملي وخياطة ورقعة اسم وزر قماش */
+body.st-10 .arch{border:none;padding:11px;border-radius:70px 70px 34px 34px;
+  background:
+   repeating-linear-gradient(45deg, rgba(255,255,255,.07) 0 2px, transparent 2px 4px),
+   repeating-linear-gradient(-45deg, rgba(0,0,0,.05) 0 2px, transparent 2px 4px),
+   linear-gradient(165deg,var(--p1),var(--p2));
+  box-shadow:0 20px 32px -18px rgba(90,61,122,.5), inset 0 4px 0 rgba(255,255,255,.35), inset 0 -8px 14px rgba(0,0,0,.08)}
+body.st-10 .arch::after{content:"";position:absolute;inset:7px;border-radius:60px 60px 26px 26px;z-index:4;pointer-events:none;
+  border:2.5px dashed rgba(255,255,255,.85)}
+body.st-10 .inner,body.st-10 .panel{inset:11px;border-radius:58px 58px 24px 24px}
+body.st-10 .panel{background:
+   repeating-linear-gradient(45deg, rgba(255,255,255,.06) 0 2px, transparent 2px 4px),
+   repeating-linear-gradient(-45deg, rgba(0,0,0,.045) 0 2px, transparent 2px 4px),
+   linear-gradient(160deg, color-mix(in srgb,var(--c1) 46%,#fff), color-mix(in srgb,var(--c2) 44%,#fff))}
+body.st-10 .panel .tt{background:#fffdf6;color:var(--pd);padding:4px 16px;border-radius:10px;text-shadow:none;
+  border:2px dashed color-mix(in srgb,var(--c2) 50%,#fff);box-shadow:0 3px 0 rgba(0,0,0,.08)}
+body.st-10 .panel .knob{width:16px;height:16px;border:none;
+  background:
+   linear-gradient(45deg, transparent 43%, #8a6d4f 45% 55%, transparent 57%),
+   linear-gradient(-45deg, transparent 43%, #8a6d4f 45% 55%, transparent 57%),
+   radial-gradient(circle at 35% 35%, #fff, #e8d9c4 40%, #b59872);
+  box-shadow:0 2px 4px rgba(0,0,0,.25)}
+
+/* ست١١ · جيلي شفاف — هلام لامع بفقاعات وانعكاس ضوء كبير */
+body.st-11 .arch{border:none;padding:8px;border-radius:90px 90px 40px 40px;
+  background:color-mix(in srgb,var(--c2) 28%,#fff);
+  box-shadow:0 22px 36px -18px color-mix(in srgb,var(--c2) 55%,transparent), inset 0 3px 0 rgba(255,255,255,.75)}
+body.st-11 .inner,body.st-11 .panel{inset:8px;border-radius:82px 82px 32px 32px}
+body.st-11 .panel{background:
+   radial-gradient(circle at 26% 16%, rgba(255,255,255,.9) 0 9%, rgba(255,255,255,.25) 24%, transparent 38%),
+   radial-gradient(circle at 70% 80%, rgba(255,255,255,.35) 0 6px, transparent 8px),
+   radial-gradient(circle at 34% 64%, rgba(255,255,255,.3) 0 5px, transparent 7px),
+   radial-gradient(circle at 60% 42%, rgba(255,255,255,.28) 0 4px, transparent 6px),
+   radial-gradient(circle at 82% 30%, rgba(255,255,255,.25) 0 4px, transparent 6px),
+   linear-gradient(170deg, color-mix(in srgb,var(--c1) 70%,#fff), color-mix(in srgb,var(--c2) 82%,#fff));
+  box-shadow:inset 0 -12px 20px color-mix(in srgb,var(--c2) 45%,transparent), inset 0 6px 10px rgba(255,255,255,.55)}
+body.st-11 .panel .tt{background:rgba(255,255,255,.8);color:var(--pd);padding:3px 15px;border-radius:99px;text-shadow:none}
+body.st-11 .panel .em{filter:drop-shadow(0 4px 8px color-mix(in srgb,var(--c2) 55%,transparent))}
+body.st-11 .panel .knob{border:none;background:rgba(255,255,255,.9);box-shadow:0 0 8px rgba(255,255,255,.9)}
+
+/* ست١٢ · ماكارون ملكي — صدفتان بلونين وكريمة بيضاء وقدم منقّطة وتاج */
+body.st-12 .arch{border:none;padding:9px;border-radius:48% 48% 42% 42% / 42% 42% 36% 36%;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c1) 48%,#fff),color-mix(in srgb,var(--c2) 46%,#fff));
+  box-shadow:0 20px 34px -18px rgba(120,80,140,.5), inset 0 4px 0 rgba(255,255,255,.55)}
+body.st-12 .inner,body.st-12 .panel{inset:9px;border-radius:44% 44% 38% 38% / 38% 38% 32% 32%}
+body.st-12 .panel{background:linear-gradient(180deg, var(--p1) 0 43%, #fffdf6 43% 57%, var(--p2) 57% 100%)}
+body.st-12 .panel::before{content:"";position:absolute;left:0;right:0;top:40%;height:5%;z-index:2;pointer-events:none;
+  background:radial-gradient(circle 4px, #fffdf6 92%, transparent) left center/9% 100% repeat-x}
+body.st-12 .panel::after{content:"";position:absolute;left:0;right:0;top:55%;height:5%;z-index:2;pointer-events:none;
+  background:radial-gradient(circle 4px, #fffdf6 92%, transparent) 4.5% center/9% 100% repeat-x}
+body.st-12 .panel .em{position:absolute;top:19%;left:50%;transform:translateX(-50%);margin:0;
+  font-size:clamp(24px,5.6vmin,42px)}
+body.st-12 .panel .tt{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);margin:0;
+  color:#8a5a7a;background:none;text-shadow:none;font-size:clamp(12px,2.6vmin,16px)}
+body.st-12 .panel .knob{inset-inline-start:auto;left:50%;top:auto;bottom:16%;transform:translateX(-50%);
+  border:none;background:radial-gradient(circle at 35% 35%,#fff,#f7e3ab 45%,#caa74e)}
+body.st-12 .door::after{content:"👑";position:absolute;top:-.5%;left:50%;transform:translateX(-50%);
+  font-size:clamp(16px,3vmin,24px);z-index:6;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))}
+
 .sv.on{outline:3px solid var(--v);outline-offset:2px}
 
 /* ─── طبقات عامة ─── */
@@ -200,6 +369,13 @@ body.st-5 .d5{display:block}
   <button class="mv sv" data-s="3"><span class="n">٣</span>نيون زجاجي<small>داكن بإطار متوهج بلون الفئة</small></button>
   <button class="mv sv" data-s="4"><span class="n">٤</span>مسرح الأضواء<small>قوس ذهبي بلمبات — روح اللعبة الأصلية</small></button>
   <button class="mv sv" data-s="5"><span class="n">٥</span>أبوابنا الحالية<small>تصميم أبواب قمّة الهرم الموجود الآن</small></button>
+  <button class="mv sv" data-s="6"><span class="n">٦</span>كب كيك كريمي<small>كريمة متموجة ورشّات سكر وكرزة</small></button>
+  <button class="mv sv" data-s="7"><span class="n">٧</span>سحابة حالمة<small>غيمة بوجه لطيف وخدود وردية</small></button>
+  <button class="mv sv" data-s="8"><span class="n">٨</span>بسكويت محشو<small>حواف مخبوزة وحشوة كريمة وخياطة</small></button>
+  <button class="mv sv" data-s="9"><span class="n">٩</span>حلوى مصاصة<small>خطوط كاندي وحبات سكرية ولمعة</small></button>
+  <button class="mv sv" data-s="10"><span class="n">١٠</span>دمية قطيفة<small>مخمل مخيّط ورقعة اسم وزر قماش</small></button>
+  <button class="mv sv" data-s="11"><span class="n">١١</span>جيلي شفاف<small>هلام لامع بفقاعات وانعكاس ضوء</small></button>
+  <button class="mv sv" data-s="12"><span class="n">١٢</span>ماكارون ملكي<small>صدفتان وكريمة وقدم منقطة وتاج</small></button>
 </div>
 
 <div id="stageWrap">
