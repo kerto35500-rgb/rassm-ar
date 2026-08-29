@@ -1228,13 +1228,17 @@ function doorZoom(cat){
     const frC=frameEl.cloneNode(true);
     frC.style.zIndex="1";
     box.appendChild(frC);
+    // القصّ ومحور الدوران على حدود الباب الحقيقية داخل الصورة (من فحص الشفافية)
+    const cx=parseFloat(win.dataset.cx)||50;
+    const lx=parseFloat(win.dataset.lx)||0;
+    const rx=parseFloat(win.dataset.rx)||100;
     const mkL=(side)=>{
       const c=win.querySelector(".dPanel").cloneNode(true);
       c.style.position="absolute";c.style.inset="0";c.style.margin="0";
       c.style.zIndex="2";c.style.animation="none";
-      c.style.transformOrigin=(side==="L"?"left":"right")+" center";
+      c.style.transformOrigin=(side==="L"?lx:rx)+"% center";
       c.style.backfaceVisibility="hidden";
-      c.style.clipPath="inset(0 "+(side==="L"?"50% 0 0":"0 0 0 50%")+")";
+      c.style.clipPath="inset(0 "+(side==="L"?(100-cx)+"% 0 0":"0 0 0 "+cx+"%")+")";
       c.querySelectorAll("*").forEach(x=>{x.style.animation="none";});
       box.appendChild(c);return c;
     };
@@ -1487,6 +1491,23 @@ function rVote(fresh){
       t.style.cssText+=";top:2%;left:14%;right:14%;font-size:7.5cqw;color:#6d3ff0;background:rgba(255,255,255,.93);border-radius:99px;padding:1.5% 0;box-shadow:0 3px 10px -3px rgba(60,40,90,.45);text-shadow:none;z-index:3";
       const k=b.querySelector(".dKey");
       k.style.cssText+=";top:auto;bottom:6%;z-index:3";
+      // نحسب حدود الباب الفعلية من شفافية الصورة حتى ينشق من منتصفه الحقيقي
+      try{
+        const cv=document.createElement("canvas");
+        const w2=140,h2=Math.max(1,Math.round(w2*img.naturalHeight/img.naturalWidth));
+        cv.width=w2;cv.height=h2;
+        const ctx=cv.getContext("2d");ctx.drawImage(img,0,0,w2,h2);
+        const dd=ctx.getImageData(0,0,w2,h2).data;
+        let mn=w2,mx=-1;
+        for(let y=0;y<h2;y++)for(let x=0;x<w2;x++){
+          if(dd[(y*w2+x)*4+3]>16){if(x<mn)mn=x;if(x>mx)mx=x;}
+        }
+        if(mx>mn){
+          b.dataset.cx=(((mn+mx+1)/2)/w2*100).toFixed(2);
+          b.dataset.lx=(mn/w2*100).toFixed(2);
+          b.dataset.rx=((mx+1)/w2*100).toFixed(2);
+        }
+      }catch(e){}
     };
     img.src="/doors/"+encodeURIComponent(c)+".webp";
     b.onclick=()=>{
