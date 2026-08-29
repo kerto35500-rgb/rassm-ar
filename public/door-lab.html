@@ -218,12 +218,12 @@ body.st-7 .panel{background:
   radial-gradient(circle at 82% 12%, rgba(255,255,255,.85) 0 12px, transparent 13px),
   radial-gradient(circle at 12% 80%, rgba(255,255,255,.55) 0 9px, transparent 10px),
   linear-gradient(180deg, color-mix(in srgb,var(--c1) 36%,#fff), color-mix(in srgb,var(--c2) 42%,#fff))}
-body.st-7 .door::before{content:"";position:absolute;top:1.2%;left:50%;transform:translateX(-50%);z-index:6;
-  width:72%;height:12%;pointer-events:none;
+body.st-7 .door::before{content:"";position:absolute;top:.6%;left:50%;transform:translateX(-50%);z-index:6;
+  width:64%;height:15%;pointer-events:none;
   background:
-   radial-gradient(circle at 18% 100%, #fff 0 44%, transparent 46%),
-   radial-gradient(circle at 50% 72%, #fff 0 56%, transparent 58%),
-   radial-gradient(circle at 82% 100%, #fff 0 44%, transparent 46%);
+   radial-gradient(closest-side, #fff 97%, transparent) no-repeat 0% 100%/36% 130%,
+   radial-gradient(closest-side, #fff 97%, transparent) no-repeat 50% 30%/44% 160%,
+   radial-gradient(closest-side, #fff 97%, transparent) no-repeat 100% 100%/36% 130%;
   filter:drop-shadow(0 5px 8px rgba(110,130,200,.35))}
 body.st-7 .panel::before{content:"";position:absolute;left:50%;bottom:20%;transform:translateX(-50%);
   width:62%;height:12px;z-index:3;pointer-events:none;
@@ -326,8 +326,8 @@ body.st-12 .panel::before{content:"";position:absolute;left:0;right:0;top:40%;he
   background:radial-gradient(circle 4px, #fffdf6 92%, transparent) left center/9% 100% repeat-x}
 body.st-12 .panel::after{content:"";position:absolute;left:0;right:0;top:55%;height:5%;z-index:2;pointer-events:none;
   background:radial-gradient(circle 4px, #fffdf6 92%, transparent) 4.5% center/9% 100% repeat-x}
-body.st-12 .panel .em{position:absolute;top:19%;left:50%;transform:translateX(-50%);margin:0;
-  font-size:clamp(24px,5.6vmin,42px)}
+body.st-12 .panel .em{position:absolute;top:9%;left:50%;transform:translateX(-50%);margin:0;
+  font-size:clamp(20px,4.6vmin,34px)}
 body.st-12 .panel .tt{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);margin:0;
   color:#8a5a7a;background:none;text-shadow:none;font-size:clamp(12px,2.6vmin,16px)}
 body.st-12 .panel .knob{inset-inline-start:auto;left:50%;top:auto;bottom:16%;transform:translateX(-50%);
