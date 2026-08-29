@@ -1202,8 +1202,8 @@ function doorZoom(cat){
   // نور داخلي يظهر خلف المصراعين لحظة انفتاحهما
   const glow=document.createElement("div");
   glow.style.cssText="position:absolute;inset:3%;border-radius:"+archRad+";"+
-    "background:radial-gradient(120% 90% at 50% 20%,#fff8e8,#ffe9a8 45%,#ffd75e);"+
-    "box-shadow:0 0 60px 20px rgba(255,220,120,.55)";
+    "background:radial-gradient(120% 90% at 50% 20%,#faf6ff,#d9c6ff 42%,#8b5cf6);"+
+    "box-shadow:0 0 60px 20px rgba(139,92,246,.55)";
   box.appendChild(glow);
   // مصراعا الباب: نسختان من القوس مقصوصتان من المنتصف
   // (ننسخ متغيرات ألوان الفئة صراحةً لأن استبدال cssText يمسحها،
@@ -1226,7 +1226,8 @@ function doorZoom(cat){
   if(frameEl){
     glow.style.inset="10%";glow.style.borderRadius="26px";
     const frC=frameEl.cloneNode(true);
-    frC.style.zIndex="1";
+    // الفتح للداخل: الإطار الأبيض فوق المصراعين وهما ينزلقان خلفه
+    frC.style.zIndex="3";
     box.appendChild(frC);
     // القصّ ومحور الدوران على حدود الباب الحقيقية داخل الصورة (من فحص الشفافية)
     const cx=parseFloat(win.dataset.cx)||50;
@@ -1251,10 +1252,12 @@ function doorZoom(cat){
   // ١· طرقة استعداد  ٢· المصراعان ينفتحان  ٣· الكاميرا تندفع من الفجوة
   box.animate([{transform:"scale(1)"},{transform:"scale(1.045)"},{transform:"scale(1)"}],
     {duration:260,easing:"ease-in-out"});
-  L.animate([{transform:"perspective(900px) rotateY(0)"},{transform:"perspective(900px) rotateY(-84deg)"}],
+  // المصراعان ينفتحان إلى الداخل (يبتعدان عن الكاميرا) مع تعتيم خفيف يوحي بالعمق
+  const swing=(el,deg)=>el.animate(
+    [{transform:"perspective(900px) rotateY(0deg)",filter:"brightness(1)"},
+     {transform:"perspective(900px) rotateY("+deg+"deg)",filter:"brightness(.82)"}],
     {duration:520,delay:240,easing:"cubic-bezier(.55,0,.75,.35)",fill:"forwards"});
-  R.animate([{transform:"perspective(900px) rotateY(0)"},{transform:"perspective(900px) rotateY(84deg)"}],
-    {duration:520,delay:240,easing:"cubic-bezier(.55,0,.75,.35)",fill:"forwards"});
+  swing(L,84);swing(R,-84);
   const sc=Math.max(innerWidth/r.width,innerHeight/r.height)*2.1;
   const dx=innerWidth/2-(r.left+r.width/2), dy=innerHeight/2-(r.top+r.height/2);
   box.animate([
@@ -1265,7 +1268,7 @@ function doorZoom(cat){
   // وميض عبور يغمر الشاشة لحظة الدخول
   const veil=document.createElement("div");
   veil.className="zoomClone";
-  veil.style.cssText="position:fixed;inset:0;z-index:81;pointer-events:none;background:#fff;opacity:0";
+  veil.style.cssText="position:fixed;inset:0;z-index:81;pointer-events:none;background:radial-gradient(60% 60% at 50% 50%,#fff,#e6d9ff);opacity:0";
   document.body.appendChild(veil);
   veil.animate([{opacity:0},{opacity:0,offset:.62},{opacity:.94}],{duration:1260,fill:"forwards"});
   tone(240,.55,"sine",.05,520);

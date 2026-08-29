@@ -185,7 +185,7 @@ addEventListener("pointermove",e=>{
 addEventListener("pointerup",()=>{if(drag){drag=null;save();}});
 
 /* ── إعدادات الحركة (مشتركة لكل الأبواب) ── */
-let OPT=Object.assign({dir:"out",ang:84,per:900,dim:0},store._opts||{});
+let OPT=Object.assign({dir:"in",ang:84,per:900,dim:18},store._opts||{});
 function paintOpts(){
   [...document.querySelectorAll("#segDir button")].forEach(b=>b.classList.toggle("on",b.dataset.d===OPT.dir));
   $("rAng").value=OPT.ang;$("vAng").textContent=OPT.ang+"°";
@@ -222,8 +222,8 @@ function runPrev(){
   imL.style.visibility="hidden";
   const glow=document.createElement("div");glow.className="pv";
   glow.style.cssText="position:absolute;inset:12% 10%;z-index:0;border-radius:26px;"+
-    "background:radial-gradient(120% 90% at 50% 20%,#fff8e8,#ffe9a8 45%,#ffd75e);"+
-    "box-shadow:0 0 50px 16px rgba(255,220,120,.6)";
+    "background:radial-gradient(120% 90% at 50% 20%,#faf6ff,#d9c6ff 42%,#8b5cf6);"+
+    "box-shadow:0 0 50px 16px rgba(139,92,246,.6)";
   stage.insertBefore(glow,imL);
   const L=mk("L"),R=mk("R");
   const sgn=OPT.dir==="out"?-1:1, P="perspective("+OPT.per+"px) ", br=(1-OPT.dim/100).toFixed(2);
