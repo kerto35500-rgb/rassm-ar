@@ -1238,7 +1238,7 @@ function doorZoom(cat){
       c.style.zIndex="2";c.style.animation="none";
       c.style.transformOrigin=(side==="L"?lx:rx)+"% center";
       c.style.backfaceVisibility="hidden";
-      c.style.clipPath="inset(0 "+(side==="L"?(100-cx)+"% 0 0":"0 0 0 "+cx+"%")+")";
+      c.style.clipPath=side==="L"?"inset(0 "+(100-cx)+"% 0 0)":"inset(0 0 0 "+cx+"%)";
       c.querySelectorAll("*").forEach(x=>{x.style.animation="none";});
       box.appendChild(c);return c;
     };

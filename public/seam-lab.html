@@ -174,7 +174,7 @@ $("prev").onclick=()=>{
     const c=document.createElement("div");c.className="pv";
     c.style.cssText="position:absolute;inset:0;z-index:3;background:url('"+imL.src+"') center/cover no-repeat;"+
       "backface-visibility:hidden;transform-origin:"+(side==="L"?v.lx:v.rx)+"% center;"+
-      "clip-path:inset(0 "+(side==="L"?(100-v.cx)+"% 0 0":"0 0 0 "+v.cx+"%")+")";
+      "clip-path:"+(side==="L"?"inset(0 "+(100-v.cx)+"% 0 0)":"inset(0 0 0 "+v.cx+"%)");
     stage.appendChild(c);return c;
   };
   imL.style.visibility="hidden";
