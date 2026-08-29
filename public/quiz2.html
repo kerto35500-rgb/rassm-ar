@@ -1181,25 +1181,35 @@ function doorZoom(cat){
   if(!win)return;
   win.classList.add("on");
   sWin();
-  const r=win.getBoundingClientRect();
+  // نستنسخ قوس الباب وحده (بلا شريط التصويت) — وهو حامل الشكل الكامل
+  const archEl=win.querySelector(".dArch")||win;
+  const r=archEl.getBoundingClientRect();
   if(!r.width)return;
-  // حاوية ثابتة فوق كل شيء عند موضع الباب — لا يقصّها إطار المشهد
+  const archRad=getComputedStyle(archEl).borderRadius;
+  // حاوية ثابتة فوق كل شيء عند موضع القوس — لا يقصّها إطار المشهد
   const box=document.createElement("div");
   box.className="zoomClone";
   box.style.cssText="position:fixed;left:"+r.left+"px;top:"+r.top+"px;width:"+r.width+"px;height:"+r.height+
     "px;z-index:80;pointer-events:none;transform-origin:center";
   // نور داخلي يظهر خلف المصراعين لحظة انفتاحهما
   const glow=document.createElement("div");
-  glow.style.cssText="position:absolute;inset:6% 8%;border-radius:22px;"+
+  glow.style.cssText="position:absolute;inset:3%;border-radius:"+archRad+";"+
     "background:radial-gradient(120% 90% at 50% 20%,#fff8e8,#ffe9a8 45%,#ffd75e);"+
     "box-shadow:0 0 60px 20px rgba(255,220,120,.55)";
   box.appendChild(glow);
-  // مصراعا الباب: نسختان من الباب نفسه مقصوصتان من المنتصف
+  // مصراعا الباب: نسختان من القوس مقصوصتان من المنتصف
+  // (ننسخ متغيرات ألوان الفئة صراحةً لأن استبدال cssText يمسحها،
+  //  ونوقف أنيميشن الدخول حتى لا يعيد تشغيل نفسه على النسخة)
   const mk=(side)=>{
-    const c=win.cloneNode(true);
-    c.style.cssText="position:absolute;inset:0;margin:0;width:100%;height:100%;"+
-      "clip-path:inset(0 "+(side==="L"?"50% 0 0":"0 0 0 50%")+");"+
+    const c=archEl.cloneNode(true);
+    c.style.cssText="position:absolute;inset:0;margin:0;width:100%;height:100%;animation:none;"+
       "transform-origin:"+(side==="L"?"left":"right")+" center;backface-visibility:hidden";
+    ["--c1","--c2","--c3"].forEach(v=>{
+      const val=win.style.getPropertyValue(v);
+      if(val)c.style.setProperty(v,val);
+    });
+    c.style.clipPath="inset(0 "+(side==="L"?"50% 0 0":"0 0 0 50%")+")";
+    c.querySelectorAll("*").forEach(x=>{x.style.animation="none";});
     box.appendChild(c);return c;
   };
   const L=mk("L"), R=mk("R");
