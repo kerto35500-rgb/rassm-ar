@@ -9,10 +9,20 @@ const crypto = require("crypto");
 const qbank = require("./qbank");
 
 const API = "https://api.elevenlabs.io/v1/text-to-speech/";
-const VOICE = process.env.ELEVEN_VOICE || "tUXHogBOJVTxEBz7fSle"; // Laloosh – Warm Finance Customer Care
+const VOICE = process.env.ELEVEN_VOICE || "9UuRdBvDIzU2SZY4KiIG"; // Laloosh – Engaging & Confident E-Comm
 const MODEL = process.env.ELEVEN_MODEL || "eleven_v3";
-const FORMAT = process.env.ELEVEN_FORMAT || "mp3_22050_32";
+// 44.1kHz/192kbps: الجودة لا تُحتسب على الكريديت إطلاقًا (المحاسبة على الحروف فقط)،
+// و22kHz/32kbps كان يقصّ كل ما فوق 11kHz فيطلع الصوت مكتومًا بلا حروف صفير.
+const FORMAT = process.env.ELEVEN_FORMAT || "mp3_44100_192";
 const KEY = () => (process.env.ELEVEN_KEY || "").trim();
+
+const num = (v, d) => (v === undefined || v === "" || isNaN(Number(v)) ? d : Number(v));
+const SETTINGS = {
+  stability: num(process.env.ELEVEN_STABILITY, 0.70),
+  similarity_boost: num(process.env.ELEVEN_SIMILARITY, 0.52),
+  speed: num(process.env.ELEVEN_SPEED, 1.08),
+  use_speaker_boost: true
+};
 
 const PREFIX = "tts_";
 const MIME = "audio/mpeg";
@@ -47,7 +57,7 @@ async function synth(text) {
     body: JSON.stringify({
       text: t,
       model_id: MODEL,
-      voice_settings: { stability: 0.5, similarity_boost: 0.75, use_speaker_boost: true }
+      voice_settings: SETTINGS
     })
   });
 
@@ -96,8 +106,9 @@ function allTexts(cats) {
 }
 
 // مدّة كل مقطع بالثواني { معرّف: ثواني } — تُحفظ لنضبط طول مرحلة القراءة.
-// mp3 بمعدّل ثابت 32 kbps ⇒ الثواني = البايتات ÷ 4000
-const BITRATE_BPS = 4000;
+// mp3 بمعدّل بت ثابت ⇒ بايتات الثانية = kbps × 125، تُشتقّ من اسم الصيغة نفسها
+// حتى لا تنكسر الحسبة لو غيّرنا الجودة لاحقًا.
+const BITRATE_BPS = (Number((FORMAT.match(/_(\d+)$/) || [])[1]) || 32) * 125;
 
 function setupTts(app, deps) {
   const { store } = deps;
@@ -106,8 +117,12 @@ function setupTts(app, deps) {
   store.getKV("ttsDur").then(v => { if (v && typeof v === "object") DUR = v; }).catch(() => {});
   function noteDur(id, bytes) {
     DUR[id] = Math.round((bytes / BITRATE_BPS) * 10) / 10;
-    clearTimeout(durTimer);
-    durTimer = setTimeout(() => store.saveKV("ttsDur", DUR).catch(() => {}), 4000);
+    // حفظ دوري لا مؤجَّل: أثناء التوليد المتواصل لا تمرّ لحظة سكون فينتهي الأمر
+    // بلا حفظ إطلاقًا، فلو تعطّل الخادم ضاع فهرس المقاطع وإن بقي الصوت في القاعدة.
+    if (!durTimer) durTimer = setTimeout(() => {
+      durTimer = null;
+      store.saveKV("ttsDur", DUR).catch(() => {});
+    }, 4000);
   }
 
   // ── تقديم الصوت للاعبين ──
@@ -221,6 +236,22 @@ function setupTts(app, deps) {
         estCost: Math.round(chars * 0.555),
         storedBytes: blob.bytes, storedCount: blob.n,
         byCat, voice: VOICE, model: MODEL, format: FORMAT, hasKey: !!KEY()
+      };
+    },
+    // تصفّح المقاطع المولَّدة للاستماع إليها
+    list({ q = "", cat = "", page = 0, size = 40, mode = "ready" }) {
+      const items = allTexts(cat ? [cat] : null);
+      const s = clean(q);
+      let f = s ? items.filter(x => x.text.includes(s)) : items;
+      if (mode === "ready") f = f.filter(x => DUR[x.id]);
+      else if (mode === "missing") f = f.filter(x => !DUR[x.id]);
+      const total = f.length;
+      const p = Math.max(0, Math.min(page, Math.ceil(total / size) - 1 || 0));
+      return {
+        total, page: p, pages: Math.ceil(total / size) || 1,
+        items: f.slice(p * size, p * size + size).map(x => ({
+          id: x.id, cat: x.cat, text: x.text, secs: DUR[x.id] || 0
+        }))
       };
     },
     async previewOne(text) {

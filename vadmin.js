@@ -60,6 +60,18 @@ function setupVoiceAdmin(app, deps) {
     json(res, 200, { ok: true });
   });
 
+  app.get(ADMIN_PATH + "/v/list", (req, res) => {
+    if (!guard(req, res)) return;
+    try {
+      json(res, 200, tts.list({
+        q: String(req.query.q || ""),
+        cat: String(req.query.cat || ""),
+        page: Math.max(0, Number(req.query.p) || 0),
+        mode: ["ready", "missing", "all"].includes(req.query.m) ? req.query.m : "ready"
+      }));
+    } catch (e) { json(res, 500, { error: e.message }); }
+  });
+
   app.post(ADMIN_PATH + "/v/preview", async (req, res) => {
     if (!guard(req, res)) return;
     if (!tts.hasKey()) return json(res, 400, { error: "ELEVEN_KEY غير مضبوط" });
@@ -110,6 +122,16 @@ th{color:var(--dim);font-weight:600;font-size:12px}
 .done{color:var(--ok)}.err{color:var(--bad)}
 .mini{color:var(--dim);font-size:12px}
 label{font-size:13px;color:var(--dim)}
+.list{margin-top:12px;max-height:430px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.it{display:flex;align-items:center;gap:10px;padding:8px 11px;border-bottom:1px solid var(--line)}
+.it:last-child{border-bottom:0}
+.it:hover{background:#150f2b}
+.it.play{background:#221a44}
+.it .tx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it .no{color:var(--dim);font-size:12px;min-width:44px}
+.pbtn{width:34px;height:34px;border-radius:50%;padding:0;font-size:14px;flex:none}
+.rbtn{background:#241c44;border:1px solid var(--line);color:var(--dim);font-size:12px;padding:5px 10px;flex:none}
+.miss{opacity:.5}
 </style></head><body>
 <h1>🔊 أصوات الأسئلة</h1>
 <div class="sub">
@@ -155,6 +177,27 @@ label{font-size:13px;color:var(--dim)}
 </div>
 
 <div class="card">
+  <h3 style="margin:0 0 10px">معاينة الأصوات المولَّدة</h3>
+  <div class="row">
+    <input type="text" id="lq" placeholder="ابحث في نص السؤال…">
+    <select id="lcat"><option value="">كل الفئات</option></select>
+    <select id="lmode">
+      <option value="ready">المولَّدة فقط</option>
+      <option value="missing">غير المولَّدة</option>
+      <option value="all">الكل</option>
+    </select>
+    <button id="lgo">عرض</button>
+    <span class="mini" id="lcount"></span>
+  </div>
+  <div id="llist" class="list"></div>
+  <div class="row" style="margin-top:10px">
+    <button id="lprev" class="ghost">◀ السابق</button>
+    <span class="mini" id="lpage">—</span>
+    <button id="lnext" class="ghost">التالي ▶</button>
+  </div>
+</div>
+
+<div class="card">
   <h3 style="margin:0 0 10px">التفصيل حسب الفئة</h3>
   <table><thead><tr><th>الفئة</th><th>الأسئلة</th><th>جاهزة</th><th>حروف</th><th>كريديت متوقّع</th><th>التقدّم</th></tr></thead>
   <tbody id="tb"></tbody></table>
@@ -197,7 +240,9 @@ async function loadStats(){
 
   if(!CATS.length){
     CATS=rows.map(r=>r[0]);
-    $("bCat").innerHTML='<option value="">كل الفئات</option>'+CATS.map(c=>'<option>'+c+'</option>').join("");
+    const opts='<option value="">كل الفئات</option>'+CATS.map(c=>'<option>'+c+'</option>').join("");
+    $("bCat").innerHTML=opts; $("lcat").innerHTML=opts;
+    loadList();
   }
 }
 
@@ -237,6 +282,52 @@ $("pvGo").onclick=async()=>{
   $("pvOut").innerHTML=r.chars+' حرف · <b>'+r.cost+'</b> كريديت · '+Math.round(r.bytes/1024)+' ك.ب';
   const a=$("pvAudio"); a.src="/tts/"+r.id; a.style.display="block"; a.play().catch(()=>{});
 };
+
+/* ── معاينة الأصوات ── */
+let LP=0, LAUD=null;
+async function loadList(){
+  const u=A+"/v/list?q="+encodeURIComponent($("lq").value)+"&cat="+encodeURIComponent($("lcat").value)+"&m="+$("lmode").value+"&p="+LP;
+  const j=await (await fetch(u)).json();
+  if(j.error){ $("llist").innerHTML='<div class="it err">'+j.error+'</div>'; return; }
+  LP=j.page;
+  $("lcount").textContent=nf(j.total)+" نتيجة";
+  $("lpage").textContent="صفحة "+(j.page+1)+" من "+nf(j.pages);
+  $("lprev").disabled=j.page<=0; $("lnext").disabled=j.page>=j.pages-1;
+  $("llist").innerHTML=j.items.map(it=>
+    '<div class="it'+(it.secs?'':' miss')+'" data-id="'+it.id+'">'+
+    '<button class="pbtn" '+(it.secs?'':'disabled')+'>▶</button>'+
+    '<span class="tx" title="'+it.text.replace(/"/g,"&quot;")+'">'+it.text+'</span>'+
+    '<span class="no">'+(it.secs?it.secs+"ث":"—")+'</span>'+
+    '<span class="no">'+it.cat+'</span>'+
+    '<button class="rbtn">إعادة توليد</button></div>').join("")
+    || '<div class="it">لا نتائج.</div>';
+}
+$("llist").onclick=async e=>{
+  const row=e.target.closest(".it"); if(!row) return;
+  const id=row.dataset.id;
+  if(e.target.classList.contains("pbtn")){
+    if(LAUD){ try{LAUD.pause();}catch(x){} }
+    document.querySelectorAll(".it.play").forEach(n=>n.classList.remove("play"));
+    row.classList.add("play");
+    LAUD=new Audio("/tts/"+id);
+    LAUD.onended=()=>row.classList.remove("play");
+    LAUD.play().catch(()=>row.classList.remove("play"));
+  }
+  if(e.target.classList.contains("rbtn")){
+    const txt=row.querySelector(".tx").textContent;
+    e.target.textContent="…";
+    const r=await (await fetch(A+"/v/preview",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({text:txt})})).json();
+    e.target.textContent=r.error?"فشل":"تم ("+r.cost+")";
+    if(!r.error){ row.classList.remove("miss"); row.querySelector(".pbtn").disabled=false; row.querySelector(".no").textContent=r.secs+"ث"; }
+  }
+};
+$("lgo").onclick=()=>{ LP=0; loadList(); };
+$("lq").onkeydown=e=>{ if(e.key==="Enter"){ LP=0; loadList(); } };
+$("lmode").onchange=()=>{ LP=0; loadList(); };
+$("lcat").onchange=()=>{ LP=0; loadList(); };
+$("lprev").onclick=()=>{ if(LP>0){ LP--; loadList(); } };
+$("lnext").onclick=()=>{ LP++; loadList(); };
 
 $("clr").onclick=async()=>{
   if(!confirm("متأكد؟ سيُحذف كل الصوت المولَّد.")) return;
