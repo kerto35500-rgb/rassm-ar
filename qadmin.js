@@ -3,7 +3,7 @@
 const { ADMIN_PATH, adminEnabled, verifySession, parseCookies } = require("./admin");
 const qbank = require("./qbank");
 
-function readJson(req, limit = 4e6) {
+function readJson(req, limit = 8e6) {
   return new Promise(resolve => {
     let d = "";
     req.on("data", c => { d += c; if (d.length > limit) { req.destroy(); resolve(null); } });
@@ -21,66 +21,101 @@ function html(res, body) {
 
 function setupQuestionAdmin(app, deps) {
   const { store } = deps;
-  if (!adminEnabled) return null;
 
-  // الحالة المحفوظة: { extra: {فئة:[صفوف]}, removed: [نصوص] }
-  let bank = { extra: {}, removed: [] };
+  // الحالة المحفوظة: { extra:{فئة:[صفوف]}, removed:[نصوص], over:{نص:صف}, imgs:{id:{t,d}} }
+  let bank = { extra: {}, removed: [], over: {}, imgs: {} };
   let saveTimer = null;
 
   store.getKV("quizBank").then(v => {
     if (v) {
-      bank = { extra: v.extra || {}, removed: v.removed || [] };
+      bank = { extra: v.extra || {}, removed: v.removed || [], over: v.over || {}, imgs: v.imgs || {} };
       qbank.setExtra(bank.extra);
       qbank.setRemoved(bank.removed);
-      const n = Object.values(bank.extra).flat().length;
-      if (n) console.log(`📚 أسئلة مخصصة محمّلة: ${n}`);
+      qbank.setOverrides(bank.over);
+      const n = Object.values(bank.extra).flat().length, m = Object.keys(bank.over).length;
+      if (n || m) console.log(`📚 أسئلة مخصصة: ${n} · تعديلات: ${m}`);
     }
   }).catch(() => {});
 
   function persist() {
     qbank.setExtra(bank.extra);
     qbank.setRemoved(bank.removed);
+    qbank.setOverrides(bank.over);
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => store.saveKV("quizBank", bank).catch(e => console.error("qbank save:", e.message)), 800);
   }
+
+  // ── صور الأسئلة: تُخزَّن في قاعدة البيانات وتُقدَّم من /qimg/<id> ──
+  app.get("/qimg/:id", (req, res) => {
+    const im = bank.imgs[String(req.params.id || "")];
+    if (!im) { res.status(404).end("not found"); return; }
+    const buf = Buffer.from(im.d, "base64");
+    res.writeHead(200, {
+      "Content-Type": im.t || "image/jpeg",
+      "Content-Length": buf.length,
+      "Cache-Control": "public, max-age=604800"
+    });
+    res.end(buf);
+  });
+
+  if (!adminEnabled) return null;
 
   const guard = (req, res) => {
     if (!verifySession(parseCookies(req).adm)) { res.writeHead(403); res.end("forbidden"); return false; }
     return true;
   };
 
-  // صفحة الإدارة
   app.get(ADMIN_PATH + "/q", (req, res) => {
     if (!guard(req, res)) return;
     html(res, page());
   });
 
-  // قائمة الأسئلة
+  // إحصاءات الفئات
   app.get(ADMIN_PATH + "/q/list", (req, res) => {
     if (!guard(req, res)) return;
     const cats = qbank.categories().map(c => {
       const base = (qbank.BANK[c] || []).length;
       const extra = (bank.extra[c] || []).length;
       const active = qbank.poolOf(c).length;
-      return { cat: c, base, extra, active };
+      const imgs = qbank.poolOf(c).filter(r => r[6]).length;
+      return { cat: c, base, extra, active, imgs };
     });
     json(res, 200, {
-      total: qbank.countAll(),
-      removed: bank.removed.length,
-      cats,
-      links: qbank.LINKS.length,
-      sorts: qbank.SORTS.length
+      total: qbank.countAll(), removed: bank.removed.length,
+      edited: Object.keys(bank.over).length, cats,
+      links: qbank.LINKS.length, sorts: qbank.SORTS.length
     });
   });
 
-  // أسئلة فئة معيّنة
+  // أسئلة فئة (مع بحث وتقسيم صفحات)
   app.get(ADMIN_PATH + "/q/cat", (req, res) => {
     if (!guard(req, res)) return;
     const url = new URL(req.url, "http://x");
     const c = url.searchParams.get("c") || "";
-    const base = (qbank.BANK[c] || []).map(r => ({ q: r[0], a: r.slice(1, 5), d: r[5], src: "أساسي", off: bank.removed.includes(r[0]) }));
-    const extra = (bank.extra[c] || []).map(r => ({ q: r[0], a: r.slice(1, 5), d: r[5], src: "مخصص", off: bank.removed.includes(r[0]) }));
-    json(res, 200, { cat: c, items: [...extra, ...base] });
+    const term = (url.searchParams.get("s") || "").trim();
+    const filter = url.searchParams.get("f") || "all";
+    const page0 = Math.max(0, parseInt(url.searchParams.get("p") || "0", 10));
+    const gen = {};
+    (qbank.poolOf(c) || []).forEach(r => gen[r[0]] = true);
+    const mk = (r, src) => ({
+      q: r[0], a: r.slice(1, 5), d: r[5], img: r[6] || null, src,
+      off: bank.removed.includes(r[0]), edited: !!bank.over[r[0]]
+    });
+    let items = [
+      ...(bank.extra[c] || []).map(r => mk(r, "مخصص")),
+      ...(qbank.BANK[c] || []).map(r => mk(bank.over[r[0]] ? [r[0], ...bank.over[r[0]].slice(1)] : r, "أساسي"))
+    ];
+    // المولّدة آلياً (ليست في BANK ولا في extra)
+    const known = new Set(items.map(i => i.q));
+    (qbank.poolOf(c) || []).forEach(r => { if (!known.has(r[0])) items.push(mk(r, "مولّد")); });
+    if (term) items = items.filter(i => i.q.includes(term) || i.a.some(a => String(a).includes(term)));
+    if (filter === "custom") items = items.filter(i => i.src === "مخصص");
+    if (filter === "off") items = items.filter(i => i.off);
+    if (filter === "img") items = items.filter(i => i.img);
+    if (filter === "edited") items = items.filter(i => i.edited);
+    const per = 40, total = items.length;
+    json(res, 200, { cat: c, total, page: page0, pages: Math.ceil(total / per) || 1,
+      items: items.slice(page0 * per, page0 * per + per) });
   });
 
   // إضافة سؤال
@@ -99,7 +134,37 @@ function setupQuestionAdmin(app, deps) {
     json(res, 200, { ok: true, total: qbank.countAll() });
   });
 
-  // تعطيل/تفعيل سؤال
+  // تعديل سؤال (مخصص أو أساسي أو مولّد)
+  app.post(ADMIN_PATH + "/q/edit", async (req, res) => {
+    if (!guard(req, res)) return;
+    const b = await readJson(req);
+    if (!b) return json(res, 400, { ok: false, error: "بيانات غير صالحة" });
+    const orig = String(b.orig || "").trim();
+    const v = validateRow(b);
+    if (!v.ok) return json(res, 400, v);
+    if (!orig) return json(res, 400, { ok: false, error: "السؤال الأصلي مفقود" });
+    let inExtra = false;
+    Object.keys(bank.extra).forEach(c => {
+      bank.extra[c] = bank.extra[c].map(r => {
+        if (r[0] === orig) { inExtra = true; return v.row; }
+        return r;
+      });
+    });
+    if (!inExtra) bank.over[orig] = v.row;   // تعديل فوق سؤال أساسي/مولّد
+    persist();
+    json(res, 200, { ok: true, total: qbank.countAll() });
+  });
+
+  // إلغاء التعديل والعودة للأصل
+  app.post(ADMIN_PATH + "/q/reset", async (req, res) => {
+    if (!guard(req, res)) return;
+    const b = await readJson(req);
+    const t = b && String(b.q || "");
+    if (t && bank.over[t]) { delete bank.over[t]; persist(); return json(res, 200, { ok: true }); }
+    json(res, 200, { ok: false });
+  });
+
+  // تعطيل/تفعيل
   app.post(ADMIN_PATH + "/q/toggle", async (req, res) => {
     if (!guard(req, res)) return;
     const b = await readJson(req);
@@ -111,7 +176,7 @@ function setupQuestionAdmin(app, deps) {
     json(res, 200, { ok: true, off: bank.removed.includes(t), total: qbank.countAll() });
   });
 
-  // حذف سؤال مخصص نهائياً
+  // حذف سؤال مخصص
   app.post(ADMIN_PATH + "/q/del", async (req, res) => {
     if (!guard(req, res)) return;
     const b = await readJson(req);
@@ -125,6 +190,21 @@ function setupQuestionAdmin(app, deps) {
     });
     persist();
     json(res, 200, { ok: hit, total: qbank.countAll() });
+  });
+
+  // رفع صورة (base64) → تُحفظ وتُعاد بمسارها
+  app.post(ADMIN_PATH + "/q/img", async (req, res) => {
+    if (!guard(req, res)) return;
+    const b = await readJson(req);
+    const data = b && String(b.data || "");
+    const m = data.match(/^data:(image\/(png|jpeg|jpg|webp|gif));base64,(.+)$/);
+    if (!m) return json(res, 400, { ok: false, error: "صيغة صورة غير مدعومة" });
+    const raw = m[3];
+    if (raw.length > 1.4e6) return json(res, 400, { ok: false, error: "الصورة كبيرة (الحد ~1 ميغابايت)" });
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    bank.imgs[id] = { t: m[1], d: raw };
+    persist();
+    json(res, 200, { ok: true, url: "/qimg/" + id });
   });
 
   // استيراد جماعي
@@ -146,6 +226,16 @@ function setupQuestionAdmin(app, deps) {
     json(res, 200, { ok: true, added, dup, errors: r.errors, total: qbank.countAll() });
   });
 
+  // تصدير كل شيء
+  app.get(ADMIN_PATH + "/q/export", (req, res) => {
+    if (!guard(req, res)) return;
+    const out = {};
+    qbank.categories().forEach(c => out[c] = qbank.poolOf(c));
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8",
+      "Content-Disposition": "attachment; filename=questions.json" });
+    res.end(JSON.stringify(out, null, 1));
+  });
+
   function allTexts() {
     const s = new Set();
     qbank.categories().forEach(c => qbank.poolOf(c).forEach(r => s.add(r[0])));
@@ -162,19 +252,20 @@ function validateRow(b) {
   const q = String(b.q || "").trim();
   const opts = [b.a1, b.a2, b.a3, b.a4].map(x => String(x == null ? "" : x).trim());
   const d = Number(b.d) || 1;
+  const img = String(b.img || "").trim();
   if (q.length < 5) return { ok: false, error: "نص السؤال قصير جداً" };
   if (opts.some(o => !o)) return { ok: false, error: "كل الخيارات الأربعة مطلوبة" };
   if (new Set(opts).size !== 4) return { ok: false, error: "الخيارات مكررة" };
   if (![1, 2, 3].includes(d)) return { ok: false, error: "الصعوبة يجب أن تكون 1 أو 2 أو 3" };
-  return { ok: true, row: [q, opts[0], opts[1], opts[2], opts[3], d] };
+  const row = [q, opts[0], opts[1], opts[2], opts[3], d];
+  if (img) row.push(img);
+  return { ok: true, row };
 }
 
 /**
  * تحليل الاستيراد الجماعي.
- * يقبل سطراً لكل سؤال بصيغة:
  *   السؤال | الإجابة الصحيحة | خطأ | خطأ | خطأ | الصعوبة | الفئة
- * الصعوبة والفئة اختياريتان. الفاصل | أو ، أو تبويب.
- * ويقبل أيضاً JSON: مصفوفة كائنات {q,a1..a4,d,cat} أو مصفوفة مصفوفات.
+ * ويقبل JSON: مصفوفة كائنات {q,a1..a4,d,cat,img} أو مصفوفة مصفوفات.
  */
 function parseBulk(text, defaultCat) {
   const rows = [], errors = [];
@@ -186,11 +277,11 @@ function parseBulk(text, defaultCat) {
       j.forEach((it, i) => {
         let cat = defaultCat, row = null;
         if (Array.isArray(it)) {
-          row = validateRow({ q: it[0], a1: it[1], a2: it[2], a3: it[3], a4: it[4], d: it[5] || 1 });
-          if (it[6]) cat = String(it[6]).trim();
+          row = validateRow({ q: it[0], a1: it[1], a2: it[2], a3: it[3], a4: it[4], d: it[5] || 1, img: it[6] });
+          if (it[7]) cat = String(it[7]).trim();
         } else {
           row = validateRow({ q: it.q || it.question, a1: it.a1 || (it.a && it.a[0]), a2: it.a2 || (it.a && it.a[1]),
-            a3: it.a3 || (it.a && it.a[2]), a4: it.a4 || (it.a && it.a[3]), d: it.d || it.diff || 1 });
+            a3: it.a3 || (it.a && it.a[2]), a4: it.a4 || (it.a && it.a[3]), d: it.d || it.diff || 1, img: it.img });
           if (it.cat || it.category) cat = String(it.cat || it.category).trim();
         }
         if (!row.ok) errors.push(`عنصر ${i + 1}: ${row.error}`);
@@ -199,160 +290,205 @@ function parseBulk(text, defaultCat) {
     } catch (e) { errors.push("JSON غير صالح: " + e.message); }
     return { rows, errors };
   }
-  t.split(/\r?\n/).forEach((line, i) => {
+  text.split(/\r?\n/).forEach((line, i) => {
     const s = line.trim();
-    if (!s || s.startsWith("#")) return;
-    const parts = s.split(/\s*[|\t]\s*|\s*،\s*/).map(x => x.trim()).filter((x, idx) => idx < 7);
-    if (parts.length < 5) { errors.push(`سطر ${i + 1}: يحتاج على الأقل سؤال + ٤ خيارات`); return; }
-    const d = parts[5] ? Number(parts[5]) : 1;
-    const v = validateRow({ q: parts[0], a1: parts[1], a2: parts[2], a3: parts[3], a4: parts[4], d: [1, 2, 3].includes(d) ? d : 1 });
-    if (!v.ok) { errors.push(`سطر ${i + 1}: ${v.error}`); return; }
-    rows.push({ cat: (parts[6] || defaultCat || "عام").trim(), row: v.row });
+    if (!s) return;
+    const parts = s.split(/\s*[|\t]\s*|\s*،\s*/).map(x => x.trim()).filter(Boolean);
+    if (parts.length < 5) { errors.push(`سطر ${i + 1}: يحتاج ٥ حقول على الأقل`); return; }
+    const d = parts[5] && /^[123]$/.test(parts[5]) ? Number(parts[5]) : 1;
+    const cat = parts[6] || defaultCat;
+    const v = validateRow({ q: parts[0], a1: parts[1], a2: parts[2], a3: parts[3], a4: parts[4], d });
+    if (!v.ok) errors.push(`سطر ${i + 1}: ${v.error}`);
+    else rows.push({ cat: cat || "عام", row: v.row });
   });
   return { rows, errors };
 }
 
-// ====== الصفحة ======
 function page() {
   return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>إدارة الأسئلة</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Arial,sans-serif}
-body{background:#0f1c2e;color:#e8eef6;padding:16px}
-.wrap{max-width:1000px;margin:0 auto}
-h1{font-size:22px;margin-bottom:4px}.sub{opacity:.6;font-size:13px;margin-bottom:16px}
-a.back{color:#7fb5ff;font-size:13px;text-decoration:none}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
-.kpi{background:#16273d;border-radius:12px;padding:14px}
-.kpi b{display:block;font-size:26px}.kpi span{font-size:12px;opacity:.65}
-.card{background:#16273d;border-radius:14px;padding:16px;margin-bottom:14px}
-.card h2{font-size:16px;margin-bottom:12px}
-input,select,textarea{width:100%;padding:10px 12px;border:2px solid #27405f;background:#0f1c2e;color:#e8eef6;border-radius:9px;font-size:14px;margin-bottom:8px;font-family:inherit}
-input:focus,select:focus,textarea:focus{outline:none;border-color:#5b9bff}
-textarea{min-height:150px;resize:vertical;line-height:1.7}
-button{padding:10px 18px;border:none;border-radius:9px;background:#2f6fd0;color:#fff;font-weight:800;cursor:pointer;font-size:14px}
-button:hover{filter:brightness(1.1)}button.g{background:#2e9e5b}button.r{background:#c0392b}button.s{padding:5px 10px;font-size:12px}
+body{background:#0f1c2e;color:#e8eef6;padding:14px}
+.wrap{max-width:1100px;margin:0 auto}
+h1{font-size:20px;margin-bottom:4px}
+.sub{color:#8ea6c0;font-size:13px;margin-bottom:12px}
+.card{background:#16273d;border:1px solid #24405f;border-radius:14px;padding:12px;margin-bottom:12px}
+.cats{display:flex;flex-wrap:wrap;gap:6px}
+.cat{border:1px solid #2c4a6d;background:#1d3350;color:#cfe0f2;border-radius:10px;
+  padding:6px 10px;cursor:pointer;font-size:13px;font-weight:600}
+.cat.on{background:#2f7ad6;border-color:#57a2ff;color:#fff}
+.cat b{color:#7fd4a8;font-weight:700}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+input,select,textarea{background:#0e1b2c;border:1px solid #2c4a6d;color:#e8eef6;border-radius:9px;padding:8px 10px;font-size:14px}
+input[type=text],input[type=search]{min-width:220px}
+button{background:#2f7ad6;border:0;color:#fff;border-radius:9px;padding:8px 13px;cursor:pointer;font-size:13.5px;font-weight:600}
+button.g{background:#2b8a5b}button.r{background:#c0392b}button.s{background:#3a5a80;padding:5px 9px;font-size:12.5px}
+.item{border:1px solid #24405f;border-radius:12px;padding:10px;margin-bottom:8px;background:#122032}
+.item.off{opacity:.5}
+.qt{font-weight:700;margin-bottom:6px;line-height:1.6}
+.opts{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.opt{background:#0e1b2c;border:1px solid #24405f;border-radius:8px;padding:4px 8px;font-size:12.5px}
+.opt.ok{background:#14442c;border-color:#2b8a5b;color:#a8f0c8}
+.meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px;color:#8ea6c0}
+.tag{background:#24405f;border-radius:6px;padding:2px 7px}
+.tag.x{background:#7a4a12}.tag.e{background:#5a2f7a}.tag.i{background:#134a5a}
+.thumb{max-height:70px;border-radius:8px;margin:4px 0;display:block}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.msg{font-size:13px;margin-top:8px;min-height:18px}
-.ok{color:#5fd08a}.bad{color:#ff8a8a}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{text-align:right;padding:7px 6px;border-bottom:1px solid #22344e}
-th{opacity:.6;font-weight:600;font-size:12px}
-tr.off{opacity:.42}
-.tag{font-size:10.5px;padding:2px 7px;border-radius:99px;background:#27405f}
-.tag.x{background:#2e9e5b}
-.hint{font-size:12px;opacity:.6;line-height:1.7;margin-bottom:8px}
-code{background:#0b1524;padding:2px 6px;border-radius:5px;font-size:12px}
+.full{grid-column:1/-1}
+label{font-size:12.5px;color:#8ea6c0;display:block;margin-bottom:3px}
+.pag{display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+#msg{margin:8px 0;font-size:13px}
+.ok{color:#7fd4a8}.err{color:#ff8a80}
 </style></head><body><div class="wrap">
-<a class="back" href="ADMIN_URL">← لوحة المراقبة</a>
 <h1>📚 إدارة أسئلة قمّة الهرم</h1>
-<div class="sub">أضف أسئلة، عطّل الخاطئة، واستورد دفعات كاملة</div>
+<div class="sub" id="tot">…</div>
 
-<div class="grid" id="kpis"></div>
+<div class="card"><div class="cats" id="cats"></div></div>
 
 <div class="card">
-  <h2>➕ إضافة سؤال</h2>
-  <input id="q" placeholder="نص السؤال">
-  <div class="row">
-    <input id="a1" placeholder="✔ الإجابة الصحيحة">
-    <input id="a2" placeholder="خيار خاطئ">
+  <div class="bar">
+    <input type="search" id="q" placeholder="ابحث في السؤال أو الخيارات…">
+    <select id="f">
+      <option value="all">الكل</option>
+      <option value="custom">المخصصة</option>
+      <option value="edited">المعدَّلة</option>
+      <option value="img">المصوّرة</option>
+      <option value="off">المعطّلة</option>
+    </select>
+    <button onclick="loadCat(0)">بحث</button>
+    <button class="g" onclick="openNew()">+ سؤال جديد</button>
+    <button class="s" onclick="location.href='ADMIN_URL/q/export'">تصدير JSON</button>
+    <button class="s" onclick="document.getElementById('imp').style.display='block'">استيراد</button>
   </div>
-  <div class="row">
-    <input id="a3" placeholder="خيار خاطئ">
-    <input id="a4" placeholder="خيار خاطئ">
-  </div>
-  <div class="row">
-    <select id="cat"></select>
-    <select id="d"><option value="1">سهل</option><option value="2">متوسط</option><option value="3">صعب</option></select>
-  </div>
-  <button onclick="addQ()">إضافة</button>
-  <div class="msg" id="m1"></div>
+  <div id="msg"></div>
+  <div id="list"></div>
+  <div class="pag" id="pag"></div>
 </div>
 
-<div class="card">
-  <h2>📥 استيراد دفعة واحدة</h2>
-  <div class="hint">
-    سطر لكل سؤال، الحقول مفصولة بـ <code>|</code> :<br>
-    <code>السؤال | الصحيحة | خطأ | خطأ | خطأ | الصعوبة | الفئة</code><br>
-    الصعوبة (1-3) والفئة اختياريتان. ويُقبل أيضاً لصق JSON مباشرة.
+<div class="card" id="ed" style="display:none">
+  <h3 id="edTitle">تعديل سؤال</h3>
+  <div class="row" style="margin-top:8px">
+    <div class="full"><label>نص السؤال</label><input type="text" id="eq" style="width:100%"></div>
+    <div><label>الإجابة الصحيحة</label><input type="text" id="e1" style="width:100%"></div>
+    <div><label>خطأ ١</label><input type="text" id="e2" style="width:100%"></div>
+    <div><label>خطأ ٢</label><input type="text" id="e3" style="width:100%"></div>
+    <div><label>خطأ ٣</label><input type="text" id="e4" style="width:100%"></div>
+    <div><label>الصعوبة</label><select id="ed_d" style="width:100%"><option value="1">سهل</option><option value="2">متوسط</option><option value="3">صعب</option></select></div>
+    <div><label>الفئة</label><select id="ec" style="width:100%"></select></div>
+    <div class="full"><label>الصورة (اختياري)</label>
+      <div class="bar" style="margin:0">
+        <input type="text" id="ei" placeholder="/qimg/... أو رابط صورة" style="flex:1">
+        <input type="file" id="ef" accept="image/*" style="max-width:230px">
+        <button class="s" onclick="clearImg()">إزالة</button>
+      </div>
+      <img id="ep" class="thumb" style="display:none">
+    </div>
   </div>
-  <select id="icat"></select>
-  <textarea id="bulk" placeholder="ما عاصمة اليابان؟ | طوكيو | سيول | بكين | بانكوك | 1 | جغرافيا&#10;كم عدد أيام الأسبوع؟ | سبعة | ستة | خمسة | ثمانية | 1 | عام"></textarea>
-  <button class="g" onclick="imp()">استيراد</button>
-  <div class="msg" id="m2"></div>
+  <div class="bar">
+    <button class="g" onclick="save()">حفظ</button>
+    <button class="s" onclick="closeEd()">إلغاء</button>
+    <span id="edMsg"></span>
+  </div>
 </div>
 
-<div class="card">
-  <h2>🗂️ تصفح وتعديل</h2>
-  <select id="browse" onchange="loadCat()"></select>
-  <div id="tbl"></div>
+<div class="card" id="imp" style="display:none">
+  <h3>استيراد جماعي</h3>
+  <div class="sub">سطر لكل سؤال: السؤال | الصحيحة | خطأ | خطأ | خطأ | الصعوبة | الفئة — أو JSON</div>
+  <textarea id="impTxt" rows="7" style="width:100%"></textarea>
+  <div class="bar"><select id="impCat"></select><button class="g" onclick="doImport()">استيراد</button>
+  <button class="s" onclick="document.getElementById('imp').style.display='none'">إغلاق</button></div>
+  <div id="impMsg"></div>
 </div>
 
 <script>
 const B="ADMIN_URL/q";
-function esc(s){const d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML;}
-async function api(p,body){
-  const r=await fetch(B+p,body?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}:{});
-  return r.json();
-}
-let CATS=[];
+let CATS=[],CUR="",PAGE=0,EDIT=null;
+const $=i=>document.getElementById(i);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+async function api(p,b){const r=await fetch(B+p,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});return r.json();}
+
 async function load(){
-  const d=await api("/list");
-  CATS=d.cats.map(c=>c.cat);
-  document.getElementById("kpis").innerHTML=
-    '<div class="kpi"><b>'+d.total+'</b><span>سؤال فعّال</span></div>'+
-    '<div class="kpi"><b>'+d.cats.length+'</b><span>فئة</span></div>'+
-    '<div class="kpi"><b>'+d.removed+'</b><span>معطّل</span></div>'+
-    '<div class="kpi"><b>'+d.links+'</b><span>جولة ربط</span></div>'+
-    '<div class="kpi"><b>'+d.sorts+'</b><span>جولة تصنيف</span></div>';
-  const opts=CATS.map(c=>'<option>'+esc(c)+'</option>').join("");
-  ["cat","icat","browse"].forEach(id=>{
-    const el=document.getElementById(id),v=el.value;
-    el.innerHTML=opts+(id==="cat"||id==="icat"?'<option value="__new">➕ فئة جديدة…</option>':"");
-    if(v)el.value=v;
-  });
-  const tb=document.getElementById("tbl");
-  if(!tb.dataset.loaded){tb.dataset.loaded="1";loadCat();}
+  const d=await (await fetch(B+"/list")).json();
+  CATS=d.cats;
+  $("tot").textContent="المجموع الفعّال: "+d.total+" سؤال · معطّلة: "+d.removed+" · معدّلة: "+d.edited+" · تحديات: "+d.links+" ربط و"+d.sorts+" تصنيف";
+  $("cats").innerHTML=d.cats.map(c=>'<div class="cat'+(c.cat===CUR?" on":"")+'" onclick="pick(\''+esc(c.cat)+'\')">'+esc(c.cat)+' <b>'+c.active+'</b>'+(c.imgs?' 🖼'+c.imgs:'')+'</div>').join("");
+  const opts=d.cats.map(c=>'<option>'+esc(c.cat)+'</option>').join("");
+  $("ec").innerHTML=opts;$("impCat").innerHTML=opts;
+  if(!CUR&&d.cats.length){CUR=d.cats[0].cat;loadCat(0);load();}
 }
-["cat","icat"].forEach(id=>document.getElementById(id).addEventListener("change",e=>{
-  if(e.target.value==="__new"){
-    const n=prompt("اسم الفئة الجديدة:");
-    if(n){const o=document.createElement("option");o.textContent=n;e.target.insertBefore(o,e.target.firstChild);e.target.value=n;}
-    else e.target.value=CATS[0]||"";
-  }
-}));
-async function addQ(){
-  const b={q:val("q"),a1:val("a1"),a2:val("a2"),a3:val("a3"),a4:val("a4"),cat:document.getElementById("cat").value,d:+document.getElementById("d").value};
-  const r=await api("/add",b);
-  const m=document.getElementById("m1");
-  if(r.ok){m.className="msg ok";m.textContent="✅ أُضيف — الإجمالي "+r.total;["q","a1","a2","a3","a4"].forEach(i=>document.getElementById(i).value="");load();loadCat();}
-  else{m.className="msg bad";m.textContent="❌ "+r.error;}
+function pick(c){CUR=c;PAGE=0;loadCat(0);load();}
+
+async function loadCat(p){
+  if(p!==undefined)PAGE=p;
+  const u=B+"/cat?c="+encodeURIComponent(CUR)+"&s="+encodeURIComponent($("q").value)+"&f="+$("f").value+"&p="+PAGE;
+  const d=await (await fetch(u)).json();
+  $("list").innerHTML=d.items.map(it=>{
+    const qq=esc(it.q).replace(/'/g,"\\'");
+    const dataAttr=encodeURIComponent(JSON.stringify(it));
+    return '<div class="item'+(it.off?" off":"")+'">'+
+      '<div class="qt">'+esc(it.q)+'</div>'+
+      (it.img?'<img class="thumb" src="'+esc(it.img)+'">':'')+
+      '<div class="opts">'+it.a.map((a,i)=>'<span class="opt'+(i===0?" ok":"")+'">'+esc(a)+'</span>').join("")+'</div>'+
+      '<div class="meta"><span class="tag'+(it.src==="مخصص"?" x":"")+'">'+it.src+'</span>'+
+      '<span class="tag">صعوبة '+it.d+'</span>'+
+      (it.edited?'<span class="tag e">معدَّل</span>':'')+
+      (it.img?'<span class="tag i">صورة</span>':'')+
+      '<button class="s" data-it="'+dataAttr+'" onclick="openEd(this)">تعديل</button>'+
+      '<button class="s" onclick="tog(\''+qq+'\')">'+(it.off?"تفعيل":"تعطيل")+'</button>'+
+      (it.src==="مخصص"?'<button class="s r" onclick="del(\''+qq+'\')">حذف</button>':'')+
+      (it.edited?'<button class="s" onclick="reset(\''+qq+'\')">إلغاء التعديل</button>':'')+
+      '</div></div>';
+  }).join("")||'<div class="sub">لا نتائج</div>';
+  let pg="";
+  for(let i=0;i<d.pages&&i<40;i++)pg+='<button class="s" style="'+(i===d.page?"background:#2f7ad6":"")+'" onclick="loadCat('+i+')">'+(i+1)+'</button>';
+  $("pag").innerHTML=d.pages>1?pg:"";
+  $("msg").innerHTML='<span class="ok">'+d.total+' سؤال في «'+esc(CUR)+'»</span>';
 }
-function val(id){return document.getElementById(id).value.trim();}
-async function imp(){
-  const r=await api("/import",{text:document.getElementById("bulk").value,cat:document.getElementById("icat").value});
-  const m=document.getElementById("m2");
-  if(!r.ok){m.className="msg bad";m.textContent="❌ "+(r.error||"فشل");return;}
-  m.className="msg ok";
-  m.innerHTML="✅ أُضيف "+r.added+" سؤال · متكرر "+r.dup+" · الإجمالي "+r.total+
-    (r.errors&&r.errors.length?'<div class="bad" style="margin-top:6px">'+r.errors.slice(0,8).map(esc).join("<br>")+(r.errors.length>8?"<br>…و"+(r.errors.length-8)+" أخرى":"")+'</div>':"");
-  if(r.added){document.getElementById("bulk").value="";load();loadCat();}
+
+function openNew(){EDIT=null;$("edTitle").textContent="سؤال جديد";["eq","e1","e2","e3","e4","ei"].forEach(i=>$(i).value="");$("ed_d").value="1";$("ep").style.display="none";$("ec").value=CUR;$("ed").style.display="block";$("edMsg").textContent="";$("ed").scrollIntoView({behavior:"smooth"});}
+function openEd(btn){
+  const it=JSON.parse(decodeURIComponent(btn.dataset.it));
+  EDIT=it.q;$("edTitle").textContent="تعديل سؤال";$("eq").value=it.q;
+  $("e1").value=it.a[0];$("e2").value=it.a[1];$("e3").value=it.a[2];$("e4").value=it.a[3];
+  $("ed_d").value=it.d;$("ei").value=it.img||"";$("ec").value=CUR;
+  if(it.img){$("ep").src=it.img;$("ep").style.display="block";}else $("ep").style.display="none";
+  $("ed").style.display="block";$("edMsg").textContent="";$("ed").scrollIntoView({behavior:"smooth"});
 }
-async function loadCat(){
-  const c=document.getElementById("browse").value;
-  if(!c)return;
-  const d=await api("/cat?c="+encodeURIComponent(c));
-  document.getElementById("tbl").innerHTML='<table><tr><th>السؤال</th><th>الصحيحة</th><th>صعوبة</th><th>المصدر</th><th></th></tr>'+
-    d.items.map(it=>'<tr class="'+(it.off?"off":"")+'"><td>'+esc(it.q)+'</td><td>'+esc(it.a[0])+'</td><td>'+["","سهل","متوسط","صعب"][it.d]+
-      '</td><td><span class="tag '+(it.src==="مخصص"?"x":"")+'">'+it.src+'</span></td><td style="white-space:nowrap">'+
-      '<button class="s" onclick="tog(\\''+esc(it.q).replace(/'/g,"\\\\'")+'\\')">'+(it.off?"تفعيل":"تعطيل")+'</button> '+
-      (it.src==="مخصص"?'<button class="s r" onclick="del(\\''+esc(it.q).replace(/'/g,"\\\\'")+'\\')">حذف</button>':"")+
-      '</td></tr>').join("")+'</table>';
+function closeEd(){$("ed").style.display="none";EDIT=null;}
+function clearImg(){$("ei").value="";$("ep").style.display="none";$("ef").value="";}
+
+$("ef").onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  $("edMsg").innerHTML="جارٍ الرفع…";
+  const rd=new FileReader();
+  rd.onload=async()=>{
+    const r=await api("/img",{data:rd.result});
+    if(r.ok){$("ei").value=r.url;$("ep").src=r.url;$("ep").style.display="block";$("edMsg").innerHTML='<span class="ok">تم رفع الصورة</span>';}
+    else $("edMsg").innerHTML='<span class="err">'+esc(r.error||"فشل الرفع")+'</span>';
+  };
+  rd.readAsDataURL(f);
+};
+
+async function save(){
+  const b={q:$("eq").value,a1:$("e1").value,a2:$("e2").value,a3:$("e3").value,a4:$("e4").value,
+    d:+$("ed_d").value,cat:$("ec").value,img:$("ei").value};
+  let r;
+  if(EDIT){b.orig=EDIT;r=await api("/edit",b);}else r=await api("/add",b);
+  if(r.ok){closeEd();load();loadCat();}
+  else $("edMsg").innerHTML='<span class="err">'+esc(r.error||"خطأ")+'</span>';
 }
 async function tog(q){await api("/toggle",{q});load();loadCat();}
 async function del(q){if(!confirm("حذف نهائي؟"))return;await api("/del",{q});load();loadCat();}
+async function reset(q){await api("/reset",{q});load();loadCat();}
+async function doImport(){
+  const r=await api("/import",{text:$("impTxt").value,cat:$("impCat").value});
+  $("impMsg").innerHTML=r.ok?'<span class="ok">أُضيف '+r.added+' · مكرر '+r.dup+'</span>'+(r.errors&&r.errors.length?'<div class="err">'+r.errors.slice(0,8).map(esc).join("<br>")+'</div>':''):'<span class="err">'+esc(r.error||"خطأ")+'</span>';
+  load();loadCat();
+}
+$("q").addEventListener("keydown",e=>{if(e.key==="Enter")loadCat(0);});
 load();
-</script></div></body></html>`.replace(/ADMIN_URL/g, ADMIN_PATH);
+<\/script></div></body></html>`.replace(/ADMIN_URL/g, ADMIN_PATH);
 }
 
 module.exports = { setupQuestionAdmin, parseBulk, validateRow };

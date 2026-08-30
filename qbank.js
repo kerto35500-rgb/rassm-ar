@@ -396,11 +396,13 @@ function validate() {
 let GEN = {};
 try { GEN = require("./qgen").generate(); } catch (e) { console.error("qgen:", e.message); }
 
-let EXTRA = {};           // { فئة: [ [س, صح, خ, خ, خ, صعوبة], ... ] }
+let EXTRA = {};           // { فئة: [ [س, صح, خ, خ, خ, صعوبة, صورة؟], ... ] }
 let REMOVED = new Set();  // نصوص أسئلة محذوفة
+let OVER = {};            // تعديلات على أسئلة أساسية: { نص السؤال الأصلي: الصف الجديد }
 
 function setExtra(obj) { EXTRA = obj || {}; }
 function setRemoved(arr) { REMOVED = new Set(arr || []); }
+function setOverrides(obj) { OVER = obj || {}; }
 
 function categories() {
   return [...new Set([...Object.keys(BANK), ...Object.keys(GEN), ...Object.keys(EXTRA)])];
@@ -411,10 +413,12 @@ function poolOf(cat) {
   const gen = GEN[cat] || [];
   const extra = EXTRA[cat] || [];
   const seen = new Set();
-  return [...base, ...gen, ...extra].filter(r => {
-    if (REMOVED.has(r[0]) || seen.has(r[0])) return false;
-    seen.add(r[0]); return true;
-  });
+  return [...base, ...gen, ...extra]
+    .filter(r => {
+      if (REMOVED.has(r[0]) || seen.has(r[0])) return false;
+      seen.add(r[0]); return true;
+    })
+    .map(r => OVER[r[0]] || r);   // التعديلات اليدوية تحلّ محل الأصل
 }
 
 function countAll() {
@@ -524,7 +528,7 @@ function validateChallenges() {
 
 module.exports = {
   BANK, LINKS, SORTS,
-  validate, validateChallenges, setExtra, setRemoved,
+  validate, validateChallenges, setExtra, setRemoved, setOverrides,
   categories, poolOf, countAll, draw, pickCategories, shuffle,
   drawLink, drawSort
 };
