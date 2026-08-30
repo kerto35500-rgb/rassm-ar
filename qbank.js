@@ -392,6 +392,10 @@ function validate() {
 }
 
 // الأسئلة المضافة من لوحة الإدارة (تُحمَّل من قاعدة البيانات)
+// الأسئلة المولّدة آلياً من جداول الحقائق (qgen.js) — تُدمج مع البنك اليدوي
+let GEN = {};
+try { GEN = require("./qgen").generate(); } catch (e) { console.error("qgen:", e.message); }
+
 let EXTRA = {};           // { فئة: [ [س, صح, خ, خ, خ, صعوبة], ... ] }
 let REMOVED = new Set();  // نصوص أسئلة محذوفة
 
@@ -399,13 +403,18 @@ function setExtra(obj) { EXTRA = obj || {}; }
 function setRemoved(arr) { REMOVED = new Set(arr || []); }
 
 function categories() {
-  return [...new Set([...Object.keys(BANK), ...Object.keys(EXTRA)])];
+  return [...new Set([...Object.keys(BANK), ...Object.keys(GEN), ...Object.keys(EXTRA)])];
 }
 
 function poolOf(cat) {
   const base = BANK[cat] || [];
+  const gen = GEN[cat] || [];
   const extra = EXTRA[cat] || [];
-  return [...base, ...extra].filter(r => !REMOVED.has(r[0]));
+  const seen = new Set();
+  return [...base, ...gen, ...extra].filter(r => {
+    if (REMOVED.has(r[0]) || seen.has(r[0])) return false;
+    seen.add(r[0]); return true;
+  });
 }
 
 function countAll() {
