@@ -12,28 +12,25 @@ body{margin:0;min-height:100vh;background:linear-gradient(170deg,#f3edfd,#e2d6f8
   font-family:"Baloo Bhaijaan 2",system-ui,sans-serif;color:var(--ink)}
 header{text-align:center;padding:12px 10px 2px}
 h1{margin:0;font-size:clamp(17px,4.4vw,24px);font-weight:800;color:var(--vd)}
-header p{margin:3px auto 0;font-size:12px;color:var(--dim);max-width:560px}
-#picks{max-width:820px;margin:8px auto 0;padding:0 12px;display:flex;flex-direction:column;gap:6px}
+header p{margin:3px auto 0;font-size:12px;color:var(--dim);max-width:600px}
+#picks{max-width:860px;margin:8px auto 0;padding:0 12px;display:flex;flex-direction:column;gap:6px}
 .prow{display:flex;align-items:center;gap:8px}
-.plab{width:82px;flex:none;font-size:12.5px;font-weight:800;color:var(--dim)}
-.seg{display:flex;gap:5px;flex:1}
+.plab{width:76px;flex:none;font-size:12.5px;font-weight:800;color:var(--dim)}
+.seg{display:flex;gap:4px;flex:1}
 .seg button{flex:1;border:2px solid var(--stroke);background:#faf8ff;color:var(--ink);cursor:pointer;
-  border-radius:12px;padding:6px 2px;font-family:inherit;font-weight:800;font-size:12.5px}
+  border-radius:11px;padding:6px 1px;font-family:inherit;font-weight:800;font-size:12px}
 .seg button.on{background:var(--v);color:#fff;border-color:var(--vd)}
+#tname{text-align:center;font-size:12px;color:var(--dim);margin-top:2px}
 
 /* ── المسرح ── */
-#stage{position:relative;width:min(96vw,900px);aspect-ratio:16/9;margin:10px auto;
+#stage{position:relative;width:min(96vw,900px);aspect-ratio:16/9;margin:8px auto;
   border-radius:20px;overflow:hidden;box-shadow:0 18px 40px -18px rgba(70,40,120,.7);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2cqh;
-  container-type:inline-size;isolation:isolate}
+  display:flex;align-items:center;justify-content:center;container-type:inline-size;isolation:isolate}
 #bgArt{position:absolute;inset:0;z-index:0;overflow:hidden}
-#bgArt i,#bgArt b,#bgArt u{position:absolute;display:block}
-#fg{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:1.2cqh}
-#ringWrap{position:relative;width:12.5cqw;aspect-ratio:1;display:grid;place-items:center}
-#ringImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
-#ringArc{position:absolute;inset:4%;transform:rotate(-90deg);overflow:visible}
-#num{position:relative;font-size:5cqw;font-weight:800;color:#fff;
-  text-shadow:0 2px 10px rgba(0,0,0,.5),0 0 14px rgba(255,255,255,.45)}
+#bgArt i{position:absolute;display:block}
+#fg{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:1.4cqw}
+#tmr{position:relative;width:16cqw;height:16cqw;display:grid;place-items:center}
+#tmr.bar{width:34cqw;height:8cqw}
 #ttl{font-size:3cqw;font-weight:800;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.8)}
 #cards{display:flex;gap:2cqw;justify-content:center;perspective:900px}
 .card{width:11cqw;aspect-ratio:.75;position:relative;cursor:pointer;transform-style:preserve-3d;
@@ -52,59 +49,108 @@ header p{margin:3px auto 0;font-size:12px;color:var(--dim);max-width:560px}
 .btn.gh{background:#faf8ff;color:var(--ink);box-shadow:0 4px 0 var(--stroke);border:2px solid var(--stroke)}
 #acts{text-align:center;padding:2px 0 8px}
 
-/* ══════ خلفيات مبرمجة (بلا صور) ══════ */
-/* ① أضواء الحلوى — تدرّج بنفسجي مع كرات مارشميلو طافية */
+/* ══════════ المؤقّتات (كلها بالكود) ══════════ */
+.tnum{position:absolute;inset:0;display:grid;place-items:center;font-size:4.6cqw;font-weight:800;
+  color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.55),0 0 16px rgba(255,255,255,.4);z-index:5}
+.tsvg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+/* ① حلقة مارشميلو — قوس يتناقص مع نبض هادئ */
+@keyframes tBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+.t1{animation:tBreath 2.6s ease-in-out infinite}
+/* ② عقد الخرز — حبّات تنطفئ واحدة واحدة */
+.bead{position:absolute;width:2.1cqw;height:2.1cqw;border-radius:50%;margin:-1.05cqw 0 0 -1.05cqw;
+  background:radial-gradient(circle at 34% 30%,#fff,#ffb8e0 55%,#e0559f);
+  box-shadow:0 0 1.4cqw rgba(255,140,205,.75);transition:opacity .4s,filter .4s}
+.bead.off{opacity:.22;filter:grayscale(1) brightness(1.4);box-shadow:none}
+/* ③ الساعة الرملية — رمل ينزل من الأعلى للأسفل */
+.hg{position:absolute;inset:6%;display:flex;flex-direction:column;gap:.6cqw}
+.hgHalf{position:relative;flex:1;overflow:hidden;background:rgba(255,255,255,.16);
+  border:.45cqw solid #ffe6b8;box-shadow:inset 0 0 1.2cqw rgba(0,0,0,.25)}
+.hgTop{border-radius:1.6cqw 1.6cqw 40% 40%}
+.hgBot{border-radius:40% 40% 1.6cqw 1.6cqw}
+.hgSand{position:absolute;left:0;right:0;background:linear-gradient(180deg,#ffd479,#e8a02c);
+  transition:height .9s linear}
+.hgTop .hgSand{top:0}.hgBot .hgSand{bottom:0}
+@keyframes tTilt{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
+.t3{animation:tTilt 4s ease-in-out infinite}
+/* ④ الفقاعة — تنكمش وتترجرج */
+.bub{position:absolute;inset:0;border-radius:50%;transition:transform .9s linear,background .9s linear;
+  background:radial-gradient(circle at 33% 28%,rgba(255,255,255,.95),rgba(180,235,255,.55) 45%,rgba(90,170,255,.7));
+  box-shadow:inset 0 -1.2cqw 2cqw rgba(0,80,160,.35),0 0 2.4cqw rgba(150,220,255,.7);
+  animation:tWob 3.4s ease-in-out infinite}
+@keyframes tWob{0%,100%{border-radius:50% 50% 48% 52%/52% 48% 52% 48%}
+  50%{border-radius:52% 48% 52% 48%/48% 52% 48% 52%}}
+/* ⑤ النجوم — إكليل يدور ونجومه تنطفئ */
+@keyframes tSpin{to{transform:rotate(360deg)}}
+.starRing{position:absolute;inset:0;animation:tSpin 22s linear infinite}
+.st{position:absolute;font-size:2.6cqw;line-height:1;margin:-1.3cqw 0 0 -1.3cqw;
+  filter:drop-shadow(0 0 .8cqw rgba(255,225,120,.9));transition:opacity .4s,transform .4s}
+.st.off{opacity:.18;transform:scale(.7);filter:none}
+/* ⑥ الشريط الهلامي — يفرغ من اليمين لليسار */
+.barOut{position:absolute;inset:0;border-radius:99px;background:rgba(255,255,255,.2);
+  border:.5cqw solid rgba(255,255,255,.55);overflow:hidden;box-shadow:0 .6cqw 1.6cqw rgba(0,0,0,.3)}
+.barIn{position:absolute;inset:0;left:auto;border-radius:99px;transition:width .9s linear;
+  background:linear-gradient(90deg,#ffd166,#ff7ab8 55%,#8b5cf6)}
+@keyframes tShine{0%{transform:translateX(-120%)}100%{transform:translateX(220%)}}
+.barIn::after{content:"";position:absolute;inset:0;width:30%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
+  animation:tShine 2.2s linear infinite}
+
+/* ══════════ الخلفيات (كلها بالكود) ══════════ */
 .b1{background:radial-gradient(120% 90% at 50% 0%,#ffd9f0,#c9a4ff 42%,#6d3ff0 100%)}
-.b1 .blob{border-radius:50%;filter:blur(0.6cqw);opacity:.55;
+.b1 .blob{border-radius:50%;filter:blur(.6cqw);opacity:.55;
   background:radial-gradient(circle at 35% 30%,#fff,rgba(255,255,255,0) 70%)}
 @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.4cqw)}}
-/* ② الشفق النعناعي — موجات نيون تتنفس */
 .b2{background:linear-gradient(200deg,#05243a,#0b6b6b 55%,#12d6a3)}
 .b2 .wave{left:-20%;width:140%;height:60%;border-radius:50%;filter:blur(2.4cqw);opacity:.5;
   animation:swell 9s ease-in-out infinite}
 @keyframes swell{0%,100%{transform:translateY(0) scaleX(1)}50%{transform:translateY(-3cqw) scaleX(1.15)}}
-/* ③ الفانوس الدافئ — ضوء مركزي وحلقات ذهبية */
 .b3{background:radial-gradient(70% 70% at 50% 42%,#ffd9a1,#c4741f 45%,#3d1c07 100%)}
 .b3 .ring{border-radius:50%;border:.25cqw solid rgba(255,226,170,.35);
   left:50%;top:44%;transform:translate(-50%,-50%);animation:pulse 6s ease-in-out infinite}
 @keyframes pulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.5}
   50%{transform:translate(-50%,-50%) scale(1.14);opacity:.18}}
-/* ④ ليل النجوم — سماء غامقة ونجوم تلمع */
 .b4{background:radial-gradient(90% 80% at 50% 110%,#3b2470,#140b33 55%,#05030f)}
 .b4 .star{width:.35cqw;height:.35cqw;border-radius:50%;background:#fff;
   animation:twinkle 3.2s ease-in-out infinite}
 @keyframes twinkle{0%,100%{opacity:.15;transform:scale(.7)}50%{opacity:1;transform:scale(1.3)}}
-/* ⑤ المسرح المخملي — ستائر جانبية وبقعة ضوء */
 .b5{background:radial-gradient(60% 75% at 50% 30%,#6a2b6d,#2a0f36 60%,#120616)}
 .b5 .curtain{top:0;bottom:0;width:16%;
   background:repeating-linear-gradient(90deg,#7d1f4d 0 1.6cqw,#4d0f30 1.6cqw 3.2cqw);
   box-shadow:0 0 4cqw 1cqw rgba(0,0,0,.6)}
 .b5 .spot{left:50%;top:-30%;width:70%;height:120%;transform:translateX(-50%);
   background:radial-gradient(ellipse at 50% 0%,rgba(255,240,200,.35),rgba(255,240,200,0) 65%)}
+/* ⑥ سحاب المارشميلو — سماء وردية وغيوم طرية تعوم */
+.b6{background:linear-gradient(180deg,#ffe9f6 0%,#f5d9ff 45%,#d9c2ff 100%)}
+.b6 .cloud{border-radius:50%;background:#fff;opacity:.92;
+  box-shadow:0 1.2cqw 2.4cqw rgba(160,120,200,.18);animation:drift 26s linear infinite}
+@keyframes drift{0%{transform:translateX(-16cqw)}100%{transform:translateX(116cqw)}}
+/* ⑦ نقاط السكر — كريمي بنقاط باستيل تتنفس */
+.b7{background:radial-gradient(120% 100% at 50% 0%,#fffaf2,#ffeede 55%,#ffd9c7 100%)}
+.b7 .dot{border-radius:50%;opacity:.55;animation:breathe 5s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1);opacity:.45}50%{transform:scale(1.25);opacity:.75}}
+/* ⑧ تلال الآيس كريم — طبقات مستديرة بألوان مثلجات */
+.b8{background:linear-gradient(180deg,#dff4ff 0%,#c9ecff 40%,#bfe6ff 60%)}
+.b8 .hill{left:-10%;width:120%;border-radius:50% 50% 0 0 / 100% 100% 0 0;
+  box-shadow:0 -.6cqw 1.6cqw rgba(0,0,0,.06)}
 </style>
 </head>
 <body>
 
 <header>
   <h1>🎴 مختبر شاشة الفخاخ</h1>
-  <p>خمس خلفيات مبرمجة (بلا صور) × أربعة مؤقّتات × بطاقات القدرات الجديدة</p>
+  <p>ثماني خلفيات وستة مؤقّتات — كلها مرسومة بالكود بلا صور</p>
 </header>
 
 <div id="picks">
   <div class="prow"><span class="plab">الخلفية</span><div class="seg" id="segBg"></div></div>
-  <div class="prow"><span class="plab">المؤقّت</span><div class="seg" id="segRing"></div></div>
+  <div class="prow"><span class="plab">المؤقّت</span><div class="seg" id="segT"></div></div>
 </div>
+<div id="tname"></div>
 
 <div id="stage">
   <div id="bgArt"></div>
   <div id="fg">
-    <div id="ringWrap">
-      <img id="ringImg" alt="">
-      <svg id="ringArc" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none"
-        stroke="rgba(255,255,255,.85)" stroke-width="5" stroke-linecap="round"
-        stroke-dasharray="276.5" stroke-dashoffset="0"></circle></svg>
-      <div id="num">60</div>
-    </div>
+    <div id="tmr"></div>
     <div id="ttl">اختر قدرة... ثم ضحيّتك</div>
     <div id="cards"></div>
   </div>
@@ -124,51 +170,104 @@ const POWERS=[
   {k:"freeze",n:"تجميد"},{k:"gloop",n:"وحل"},{k:"bombs",n:"قنابل"},
   {k:"nibble",n:"أكلة الحروف"},{k:"double",n:"مضاعفة"},{k:"bet",n:"رهان"}
 ];
-const LS="fxLab.v2";
-let S={bg:1,ring:1,n:3};
+const LS="fxLab.v3";
+let S={bg:1,t:1,n:3};
 try{S=Object.assign(S,JSON.parse(localStorage.getItem(LS)||"{}"))}catch(e){}
 let deck=[0,1,2];
-
-/* ── مبدّلات ── */
-function seg(id,key,max){
-  const el=$(id);el.innerHTML="";
-  for(let i=1;i<=max;i++){
-    const b=document.createElement("button");
-    b.textContent=i;b.className=S[key]===i?"on":"";
-    b.onclick=()=>{S[key]=i;save();apply();};
-    el.appendChild(b);
-  }
-}
 function save(){localStorage.setItem(LS,JSON.stringify(S));}
 
-/* ── رسم الخلفيات المبرمجة ── */
+/* ════════ المؤقّتات ════════ */
+const R=44, C=2*Math.PI*R;
+const TIMERS=[
+ {n:"حلقة المارشميلو",
+  build(el){el.className="";el.innerHTML=
+    '<svg class="tsvg t1" viewBox="0 0 100 100">'+
+    '<circle cx="50" cy="50" r="'+R+'" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="11"/>'+
+    '<circle id="tA" cx="50" cy="50" r="'+R+'" fill="none" stroke="url(#g1)" stroke-width="11" '+
+    'stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="'+C.toFixed(1)+'"/>'+
+    '<defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">'+
+    '<stop offset="0" stop-color="#fff1a8"/><stop offset="1" stop-color="#ff8ad1"/></linearGradient></defs></svg>'+
+    '<div class="tnum"></div>';},
+  up(el,p){el.querySelector("#tA").style.strokeDashoffset=(C*(1-p)).toFixed(1);}},
+
+ {n:"عقد الخرز",
+  build(el){el.className="";let h="";
+    for(let i=0;i<20;i++){
+      const a=(i/20)*2*Math.PI-Math.PI/2;
+      h+='<i class="bead" style="left:'+(50+42*Math.cos(a))+'%;top:'+(50+42*Math.sin(a))+'%"></i>';
+    }
+    el.innerHTML=h+'<div class="tnum"></div>';},
+  up(el,p){const b=el.querySelectorAll(".bead"),k=Math.ceil(p*b.length);
+    b.forEach((x,i)=>x.classList.toggle("off",i>=k));}},
+
+ {n:"الساعة الرملية",
+  build(el){el.className="";el.innerHTML=
+    '<div class="hg t3"><div class="hgHalf hgTop"><i class="hgSand" style="height:100%"></i></div>'+
+    '<div class="hgHalf hgBot"><i class="hgSand" style="height:0%"></i></div></div>'+
+    '<div class="tnum"></div>';},
+  up(el,p){const s=el.querySelectorAll(".hgSand");
+    s[0].style.height=(p*100).toFixed(1)+"%";s[1].style.height=((1-p)*100).toFixed(1)+"%";}},
+
+ {n:"الفقاعة",
+  build(el){el.className="";el.innerHTML='<i class="bub"></i><div class="tnum"></div>';},
+  up(el,p){const b=el.querySelector(".bub");
+    b.style.transform="scale("+(0.55+0.45*p).toFixed(3)+")";
+    b.style.filter="hue-rotate("+((1-p)*-45).toFixed(0)+"deg)";}},
+
+ {n:"إكليل النجوم",
+  build(el){el.className="";let h='<div class="starRing">';
+    for(let i=0;i<12;i++){
+      const a=(i/12)*2*Math.PI-Math.PI/2;
+      h+='<i class="st" style="left:'+(50+40*Math.cos(a))+'%;top:'+(50+40*Math.sin(a))+'%">★</i>';
+    }
+    el.innerHTML=h+'</div><div class="tnum"></div>';},
+  up(el,p){const s=el.querySelectorAll(".st"),k=Math.ceil(p*s.length);
+    s.forEach((x,i)=>x.classList.toggle("off",i>=k));}},
+
+ {n:"الشريط الهلامي",
+  build(el){el.className="bar";el.innerHTML=
+    '<div class="barOut"><i class="barIn" style="width:100%"></i></div><div class="tnum"></div>';},
+  up(el,p){el.querySelector(".barIn").style.width=(p*100).toFixed(1)+"%";}}
+];
+
+/* ════════ الخلفيات ════════ */
 function paintBg(){
   const a=$("bgArt");a.className="b"+S.bg;a.innerHTML="";
   const add=(cls,css)=>{const e=document.createElement("i");e.className=cls;e.style.cssText=css;a.appendChild(e);};
+  const rnd=(x,y)=>x+Math.random()*(y-x);
   if(S.bg===1){
-    for(let i=0;i<11;i++){
-      const s=6+Math.random()*13, x=Math.random()*100, y=Math.random()*100;
-      add("blob","width:"+s+"cqw;height:"+s+"cqw;left:"+x+"%;top:"+y+"%;"+
-        "animation:floaty "+(5+Math.random()*5).toFixed(1)+"s ease-in-out infinite;"+
-        "animation-delay:-"+(Math.random()*5).toFixed(1)+"s");
-    }
+    for(let i=0;i<11;i++)add("blob","width:"+rnd(6,19)+"cqw;height:"+rnd(6,19)+"cqw;left:"+rnd(0,100)+"%;top:"+
+      rnd(0,100)+"%;animation:floaty "+rnd(5,10).toFixed(1)+"s ease-in-out infinite;animation-delay:-"+rnd(0,5).toFixed(1)+"s");
   }else if(S.bg===2){
-    const cols=["rgba(18,214,163,.55)","rgba(90,200,255,.45)","rgba(255,255,255,.25)"];
-    for(let i=0;i<3;i++)add("wave","top:"+(20+i*22)+"%;background:"+cols[i]+";animation-delay:-"+(i*2.5)+"s");
+    const c=["rgba(18,214,163,.55)","rgba(90,200,255,.45)","rgba(255,255,255,.25)"];
+    for(let i=0;i<3;i++)add("wave","top:"+(20+i*22)+"%;background:"+c[i]+";animation-delay:-"+(i*2.5)+"s");
   }else if(S.bg===3){
     for(let i=0;i<4;i++)add("ring","width:"+(26+i*16)+"cqw;height:"+(26+i*16)+"cqw;animation-delay:-"+(i*1.4)+"s");
   }else if(S.bg===4){
-    for(let i=0;i<70;i++){
-      add("star","left:"+(Math.random()*100).toFixed(1)+"%;top:"+(Math.random()*100).toFixed(1)+"%;"+
-        "animation-delay:-"+(Math.random()*3.2).toFixed(1)+"s;"+
-        "transform:scale("+(.6+Math.random()*1.2).toFixed(2)+")");
-    }
-  }else{
+    for(let i=0;i<70;i++)add("star","left:"+rnd(0,100).toFixed(1)+"%;top:"+rnd(0,100).toFixed(1)+
+      "%;animation-delay:-"+rnd(0,3.2).toFixed(1)+"s;transform:scale("+rnd(.6,1.8).toFixed(2)+")");
+  }else if(S.bg===5){
     add("curtain","left:0");add("curtain","right:0");add("spot","");
+  }else if(S.bg===6){
+    for(let i=0;i<7;i++){
+      const w=rnd(16,30),h=w*rnd(.34,.5);
+      add("cloud","width:"+w+"cqw;height:"+h+"cqw;left:0;top:"+rnd(4,74)+"%;animation-duration:"+
+        rnd(20,40).toFixed(0)+"s;animation-delay:-"+rnd(0,30).toFixed(0)+"s;opacity:"+rnd(.7,.97).toFixed(2));
+    }
+  }else if(S.bg===7){
+    const c=["#ffb3c7","#ffd79a","#b9e7ff","#c9f0d0","#e3c9ff"];
+    for(let i=0;i<26;i++){const s=rnd(1.6,4.6);
+      add("dot","width:"+s+"cqw;height:"+s+"cqw;left:"+rnd(1,96).toFixed(1)+"%;top:"+rnd(2,92).toFixed(1)+
+        "%;background:"+c[i%c.length]+";animation-delay:-"+rnd(0,5).toFixed(1)+"s");}
+  }else{
+    const hills=[["#ffd9ec",34],["#d9c2ff",24],["#c2f0e0",15]];
+    hills.forEach((h,i)=>add("hill","background:"+h[0]+";height:"+h[1]+"cqw;bottom:"+(-i*3)+"cqw;z-index:"+i));
+    for(let i=0;i<5;i++)add("cloud","width:"+rnd(14,24)+"cqw;height:"+rnd(5,9)+
+      "cqw;border-radius:50%;background:#fff;opacity:.85;left:"+rnd(2,80).toFixed(1)+"%;top:"+rnd(4,34).toFixed(1)+"%");
   }
 }
 
-/* ── إزالة الخلفية البيضاء + قصّ الهامش ── */
+/* ════════ البطاقات ════════ */
 function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
 const KEYED={};
 async function keyWhite(src){
@@ -179,8 +278,7 @@ async function keyWhite(src){
   const d=x.getImageData(0,0,c.width,c.height),p=d.data;
   for(let i=0;i<p.length;i+=4){
     const mn=Math.min(p[i],p[i+1],p[i+2]);
-    if(mn>246)p[i+3]=0;
-    else if(mn>224)p[i+3]=Math.round(255*(246-mn)/22);
+    if(mn>246)p[i+3]=0;else if(mn>224)p[i+3]=Math.round(255*(246-mn)/22);
   }
   x.putImageData(d,0,0);
   let x0=c.width,y0=c.height,x1=-1,y1=-1;
@@ -188,40 +286,47 @@ async function keyWhite(src){
     if(p[(yy*c.width+xx)*4+3]>12){if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(yy<y0)y0=yy;if(yy>y1)y1=yy;}
   }
   let out=c.toDataURL("image/png");
-  if(x1>x0&&y1>y0){
-    const w=x1-x0+1,h=y1-y0+1;
+  if(x1>x0&&y1>y0){const w=x1-x0+1,h=y1-y0+1;
     const cc=document.createElement("canvas");cc.width=w;cc.height=h;
-    cc.getContext("2d").drawImage(c,x0,y0,w,h,0,0,w,h);
-    out=cc.toDataURL("image/png");
-  }
+    cc.getContext("2d").drawImage(c,x0,y0,w,h,0,0,w,h);out=cc.toDataURL("image/png");}
   KEYED[src]=out;return out;
 }
 
-/* ── بناء المشهد ── */
+/* ════════ التركيب ════════ */
+function seg(id,key,max,labels){
+  const el=$(id);el.innerHTML="";
+  for(let i=1;i<=max;i++){
+    const b=document.createElement("button");
+    b.textContent=labels?labels[i-1]:i;b.className=S[key]===i?"on":"";
+    b.onclick=()=>{S[key]=i;save();apply();};
+    el.appendChild(b);
+  }
+}
 async function apply(){
-  seg("segBg","bg",5);seg("segRing","ring",4);
+  seg("segBg","bg",8);seg("segT","t",6);
   paintBg();
-  $("ringImg").src=await keyWhite("/fx/ring"+S.ring+".jpg");
+  const T=TIMERS[S.t-1];T.build($("tmr"));
+  $("tname").textContent="المؤقّت الحالي: "+T.n;
+  run(60);
   const box=$("cards");box.innerHTML="";
   for(const i of deck){
     const src=await keyWhite("/fx/c_"+POWERS[i].k+".jpg");
     const d=document.createElement("div");d.className="card";
-    d.innerHTML='<div class="face" style="background-image:url('+src+')"></div>'+
-                '<div class="face back">؟</div>';
+    d.innerHTML='<div class="face" style="background-image:url('+src+')"></div><div class="face back">؟</div>';
     d.onclick=()=>d.classList.toggle("flip");
     box.appendChild(d);
   }
 }
 
-/* ── العدّاد ── */
+/* ════════ العدّاد ════════ */
 let T=null;
 function run(from){
   clearInterval(T);
   const total=from;let left=from;
-  const arc=$("ringArc").querySelector("circle"),L=276.5;
+  const el=$("tmr"),up=TIMERS[S.t-1].up;
   const tick=()=>{
-    $("num").textContent=left;
-    arc.style.strokeDashoffset=(L*(1-left/total)).toFixed(1);
+    const num=el.querySelector(".tnum");if(num)num.textContent=left;
+    up(el,Math.max(0,left/total));
     if(left<=0){clearInterval(T);return;}
     left--;
   };
@@ -240,7 +345,7 @@ $("all").onclick=()=>{
   apply();
 };
 if(S.n===6){deck=POWERS.map((_,i)=>i);$("all").textContent="اعرض ثلاثاً فقط";}
-apply();run(60);
+apply();
 </script>
 </body>
 </html>
