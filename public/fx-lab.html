@@ -13,92 +13,126 @@ body{margin:0;min-height:100vh;background:linear-gradient(170deg,#f3edfd,#e2d6f8
 header{text-align:center;padding:12px 10px 2px}
 h1{margin:0;font-size:clamp(17px,4.4vw,24px);font-weight:800;color:var(--vd)}
 header p{margin:3px auto 0;font-size:12px;color:var(--dim);max-width:560px}
-
-/* ── لوحة الاختيار ── */
-#picks{max-width:760px;margin:8px auto 0;padding:0 12px;display:flex;flex-direction:column;gap:6px}
+#picks{max-width:820px;margin:8px auto 0;padding:0 12px;display:flex;flex-direction:column;gap:6px}
 .prow{display:flex;align-items:center;gap:8px}
-.plab{width:74px;flex:none;font-size:12.5px;font-weight:800;color:var(--dim)}
+.plab{width:82px;flex:none;font-size:12.5px;font-weight:800;color:var(--dim)}
 .seg{display:flex;gap:5px;flex:1}
 .seg button{flex:1;border:2px solid var(--stroke);background:#faf8ff;color:var(--ink);cursor:pointer;
-  border-radius:12px;padding:6px 2px;font-family:inherit;font-weight:800;font-size:13px}
+  border-radius:12px;padding:6px 2px;font-family:inherit;font-weight:800;font-size:12.5px}
 .seg button.on{background:var(--v);color:#fff;border-color:var(--vd)}
 
 /* ── المسرح ── */
 #stage{position:relative;width:min(96vw,900px);aspect-ratio:16/9;margin:10px auto;
-  border-radius:20px;overflow:hidden;background:#0d0a18 center/cover no-repeat;
-  box-shadow:0 18px 40px -18px rgba(70,40,120,.7);display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:1.6cqh;container-type:inline-size}
-#ringWrap{position:relative;width:13cqw;aspect-ratio:1;display:grid;place-items:center;margin-bottom:.5cqw}
+  border-radius:20px;overflow:hidden;box-shadow:0 18px 40px -18px rgba(70,40,120,.7);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2cqh;
+  container-type:inline-size;isolation:isolate}
+#bgArt{position:absolute;inset:0;z-index:0;overflow:hidden}
+#bgArt i,#bgArt b,#bgArt u{position:absolute;display:block}
+#fg{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:1.2cqh}
+#ringWrap{position:relative;width:12.5cqw;aspect-ratio:1;display:grid;place-items:center}
 #ringImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
-#ringArc{position:absolute;inset:6%;transform:rotate(-90deg);overflow:visible}
-#num{position:relative;font-size:5.2cqw;font-weight:800;color:#fff;
-  text-shadow:0 2px 10px rgba(0,0,0,.55),0 0 14px rgba(255,255,255,.4)}
-#ttl{font-size:3.1cqw;font-weight:800;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.75)}
-#cards{display:flex;gap:2.2cqw;justify-content:center;perspective:900px}
-.card{width:11.5cqw;aspect-ratio:.66;position:relative;cursor:pointer;transform-style:preserve-3d;
+#ringArc{position:absolute;inset:4%;transform:rotate(-90deg);overflow:visible}
+#num{position:relative;font-size:5cqw;font-weight:800;color:#fff;
+  text-shadow:0 2px 10px rgba(0,0,0,.5),0 0 14px rgba(255,255,255,.45)}
+#ttl{font-size:3cqw;font-weight:800;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.8)}
+#cards{display:flex;gap:2cqw;justify-content:center;perspective:900px}
+.card{width:11cqw;aspect-ratio:.75;position:relative;cursor:pointer;transform-style:preserve-3d;
   transition:transform .5s cubic-bezier(.34,1.4,.5,1)}
-.card:hover{transform:translateY(-1cqw) scale(1.04)}
+.card:hover{transform:translateY(-1cqw) scale(1.05)}
 .card.flip{transform:rotateY(180deg)}
-.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:1.6cqw;overflow:hidden;
-  background:center/contain no-repeat;filter:drop-shadow(0 1cqw 1.6cqw rgba(0,0,0,.45))}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:1.4cqw;
+  background:center/contain no-repeat;filter:drop-shadow(0 .9cqw 1.4cqw rgba(0,0,0,.5))}
 .back{transform:rotateY(180deg);background:linear-gradient(160deg,#e9dcff,#b79bff);
-  display:flex;align-items:center;justify-content:center;font-size:2.4cqw;font-weight:800;color:#4a2a9e}
-.nm{position:absolute;left:0;right:0;bottom:-2.6cqw;text-align:center;font-size:1.9cqw;
-  font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.85)}
+  display:flex;align-items:center;justify-content:center;font-size:2.4cqw;font-weight:800;color:#4a2a9e;
+  border-radius:1.4cqw}
 #hint{text-align:center;font-size:12px;color:var(--dim);padding:2px 10px 26px}
 .btn{border:none;cursor:pointer;border-radius:14px;padding:9px 16px;font-family:inherit;
   font-weight:800;font-size:14px;color:#fff;background:linear-gradient(135deg,#8b5cf6,#6d3ff0);
   box-shadow:0 4px 0 #5527c9;margin:0 4px}
 .btn.gh{background:#faf8ff;color:var(--ink);box-shadow:0 4px 0 var(--stroke);border:2px solid var(--stroke)}
 #acts{text-align:center;padding:2px 0 8px}
+
+/* ══════ خلفيات مبرمجة (بلا صور) ══════ */
+/* ① أضواء الحلوى — تدرّج بنفسجي مع كرات مارشميلو طافية */
+.b1{background:radial-gradient(120% 90% at 50% 0%,#ffd9f0,#c9a4ff 42%,#6d3ff0 100%)}
+.b1 .blob{border-radius:50%;filter:blur(0.6cqw);opacity:.55;
+  background:radial-gradient(circle at 35% 30%,#fff,rgba(255,255,255,0) 70%)}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.4cqw)}}
+/* ② الشفق النعناعي — موجات نيون تتنفس */
+.b2{background:linear-gradient(200deg,#05243a,#0b6b6b 55%,#12d6a3)}
+.b2 .wave{left:-20%;width:140%;height:60%;border-radius:50%;filter:blur(2.4cqw);opacity:.5;
+  animation:swell 9s ease-in-out infinite}
+@keyframes swell{0%,100%{transform:translateY(0) scaleX(1)}50%{transform:translateY(-3cqw) scaleX(1.15)}}
+/* ③ الفانوس الدافئ — ضوء مركزي وحلقات ذهبية */
+.b3{background:radial-gradient(70% 70% at 50% 42%,#ffd9a1,#c4741f 45%,#3d1c07 100%)}
+.b3 .ring{border-radius:50%;border:.25cqw solid rgba(255,226,170,.35);
+  left:50%;top:44%;transform:translate(-50%,-50%);animation:pulse 6s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.5}
+  50%{transform:translate(-50%,-50%) scale(1.14);opacity:.18}}
+/* ④ ليل النجوم — سماء غامقة ونجوم تلمع */
+.b4{background:radial-gradient(90% 80% at 50% 110%,#3b2470,#140b33 55%,#05030f)}
+.b4 .star{width:.35cqw;height:.35cqw;border-radius:50%;background:#fff;
+  animation:twinkle 3.2s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.15;transform:scale(.7)}50%{opacity:1;transform:scale(1.3)}}
+/* ⑤ المسرح المخملي — ستائر جانبية وبقعة ضوء */
+.b5{background:radial-gradient(60% 75% at 50% 30%,#6a2b6d,#2a0f36 60%,#120616)}
+.b5 .curtain{top:0;bottom:0;width:16%;
+  background:repeating-linear-gradient(90deg,#7d1f4d 0 1.6cqw,#4d0f30 1.6cqw 3.2cqw);
+  box-shadow:0 0 4cqw 1cqw rgba(0,0,0,.6)}
+.b5 .spot{left:50%;top:-30%;width:70%;height:120%;transform:translateX(-50%);
+  background:radial-gradient(ellipse at 50% 0%,rgba(255,240,200,.35),rgba(255,240,200,0) 65%)}
 </style>
 </head>
 <body>
 
 <header>
   <h1>🎴 مختبر شاشة الفخاخ</h1>
-  <p>بدّل بين الخلفيات والمؤقّتات والبطاقات وشوف أي تركيبة أحلى</p>
+  <p>خمس خلفيات مبرمجة (بلا صور) × أربعة مؤقّتات × بطاقات القدرات الجديدة</p>
 </header>
 
 <div id="picks">
   <div class="prow"><span class="plab">الخلفية</span><div class="seg" id="segBg"></div></div>
   <div class="prow"><span class="plab">المؤقّت</span><div class="seg" id="segRing"></div></div>
-  <div class="prow"><span class="plab">البطاقات</span><div class="seg" id="segCard"></div></div>
 </div>
 
 <div id="stage">
-  <div id="ringWrap">
-    <img id="ringImg" alt="">
-    <svg id="ringArc" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none"
-      stroke="rgba(255,255,255,.85)" stroke-width="5" stroke-linecap="round"
-      stroke-dasharray="276.5" stroke-dashoffset="0"></circle></svg>
-    <div id="num">60</div>
+  <div id="bgArt"></div>
+  <div id="fg">
+    <div id="ringWrap">
+      <img id="ringImg" alt="">
+      <svg id="ringArc" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none"
+        stroke="rgba(255,255,255,.85)" stroke-width="5" stroke-linecap="round"
+        stroke-dasharray="276.5" stroke-dashoffset="0"></circle></svg>
+      <div id="num">60</div>
+    </div>
+    <div id="ttl">اختر قدرة... ثم ضحيّتك</div>
+    <div id="cards"></div>
   </div>
-  <div id="ttl">اختر قدرة... ثم ضحيّتك</div>
-  <div id="cards"></div>
 </div>
 
 <div id="acts">
   <button class="btn" id="again">إعادة العدّ ⏱️</button>
   <button class="btn gh" id="deal">وزّع بطاقات جديدة 🎴</button>
-  <button class="btn gh" id="all">اعرض السبع كلها</button>
+  <button class="btn gh" id="all">اعرض الست كلها</button>
 </div>
-<div id="hint">اضغط أي بطاقة لتنقلب · التركيبة تُحفظ في جهازك</div>
+<div id="hint">اضغط أي بطاقة لتنقلب · الاختيار يُحفظ في جهازك</div>
 
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
-const NAMES=["تجميد","وحل","قنابل","أكلة الحروف","خلط","مضاعفة","رهان"];
-const LS="fxLab.v1";
-let S={bg:1,ring:1,card:1,n:3};
+const POWERS=[
+  {k:"freeze",n:"تجميد"},{k:"gloop",n:"وحل"},{k:"bombs",n:"قنابل"},
+  {k:"nibble",n:"أكلة الحروف"},{k:"double",n:"مضاعفة"},{k:"bet",n:"رهان"}
+];
+const LS="fxLab.v2";
+let S={bg:1,ring:1,n:3};
 try{S=Object.assign(S,JSON.parse(localStorage.getItem(LS)||"{}"))}catch(e){}
-const CARDPIX={};        // نتائج تقطيع كل لوح
 let deck=[0,1,2];
 
 /* ── مبدّلات ── */
-function seg(id,key){
+function seg(id,key,max){
   const el=$(id);el.innerHTML="";
-  for(let i=1;i<=4;i++){
+  for(let i=1;i<=max;i++){
     const b=document.createElement("button");
     b.textContent=i;b.className=S[key]===i?"on":"";
     b.onclick=()=>{S[key]=i;save();apply();};
@@ -107,9 +141,38 @@ function seg(id,key){
 }
 function save(){localStorage.setItem(LS,JSON.stringify(S));}
 
-/* ── إزالة الخلفية البيضاء من صورة (نفس الأصل ⇒ الكانفس مقروء) ── */
+/* ── رسم الخلفيات المبرمجة ── */
+function paintBg(){
+  const a=$("bgArt");a.className="b"+S.bg;a.innerHTML="";
+  const add=(cls,css)=>{const e=document.createElement("i");e.className=cls;e.style.cssText=css;a.appendChild(e);};
+  if(S.bg===1){
+    for(let i=0;i<11;i++){
+      const s=6+Math.random()*13, x=Math.random()*100, y=Math.random()*100;
+      add("blob","width:"+s+"cqw;height:"+s+"cqw;left:"+x+"%;top:"+y+"%;"+
+        "animation:floaty "+(5+Math.random()*5).toFixed(1)+"s ease-in-out infinite;"+
+        "animation-delay:-"+(Math.random()*5).toFixed(1)+"s");
+    }
+  }else if(S.bg===2){
+    const cols=["rgba(18,214,163,.55)","rgba(90,200,255,.45)","rgba(255,255,255,.25)"];
+    for(let i=0;i<3;i++)add("wave","top:"+(20+i*22)+"%;background:"+cols[i]+";animation-delay:-"+(i*2.5)+"s");
+  }else if(S.bg===3){
+    for(let i=0;i<4;i++)add("ring","width:"+(26+i*16)+"cqw;height:"+(26+i*16)+"cqw;animation-delay:-"+(i*1.4)+"s");
+  }else if(S.bg===4){
+    for(let i=0;i<70;i++){
+      add("star","left:"+(Math.random()*100).toFixed(1)+"%;top:"+(Math.random()*100).toFixed(1)+"%;"+
+        "animation-delay:-"+(Math.random()*3.2).toFixed(1)+"s;"+
+        "transform:scale("+(.6+Math.random()*1.2).toFixed(2)+")");
+    }
+  }else{
+    add("curtain","left:0");add("curtain","right:0");add("spot","");
+  }
+}
+
+/* ── إزالة الخلفية البيضاء + قصّ الهامش ── */
 function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
+const KEYED={};
 async function keyWhite(src){
+  if(KEYED[src])return KEYED[src];
   const img=await loadImg(src);
   const c=document.createElement("canvas");c.width=img.naturalWidth;c.height=img.naturalHeight;
   const x=c.getContext("2d");x.drawImage(img,0,0);
@@ -120,76 +183,34 @@ async function keyWhite(src){
     else if(mn>224)p[i+3]=Math.round(255*(246-mn)/22);
   }
   x.putImageData(d,0,0);
-  // نقصّ الهامش الشفاف حتى تملأ الحلقة إطارها
   let x0=c.width,y0=c.height,x1=-1,y1=-1;
   for(let yy=0;yy<c.height;yy+=2)for(let xx=0;xx<c.width;xx+=2){
     if(p[(yy*c.width+xx)*4+3]>12){if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(yy<y0)y0=yy;if(yy>y1)y1=yy;}
   }
+  let out=c.toDataURL("image/png");
   if(x1>x0&&y1>y0){
     const w=x1-x0+1,h=y1-y0+1;
     const cc=document.createElement("canvas");cc.width=w;cc.height=h;
     cc.getContext("2d").drawImage(c,x0,y0,w,h,0,0,w,h);
-    return cc.toDataURL("image/png");
+    out=cc.toDataURL("image/png");
   }
-  return c.toDataURL("image/png");
-}
-
-/* ── تقطيع لوح البطاقات إلى ٧ بطاقات ── */
-async function sliceCards(src){
-  if(CARDPIX[src])return CARDPIX[src];
-  const img=await loadImg(src);
-  const W=img.naturalWidth,H=img.naturalHeight;
-  const c=document.createElement("canvas");c.width=W;c.height=H;
-  const x=c.getContext("2d");x.drawImage(img,0,0);
-  const p=x.getImageData(0,0,W,H).data;
-  const ink=(px,py)=>{const i=(py*W+px)*4;return Math.min(p[i],p[i+1],p[i+2])<232;};
-  // أعمدة فيها محتوى
-  const col=new Uint8Array(W);
-  for(let i=0;i<W;i++){for(let y=0;y<H;y+=3){if(ink(i,y)){col[i]=1;break;}}}
-  // صفوف فيها محتوى (حدود عمودية موحّدة)
-  let top=0,bot=H-1;
-  outer1:for(let y=0;y<H;y++){for(let i=0;i<W;i+=3)if(ink(i,y)){top=y;break outer1;}}
-  outer2:for(let y=H-1;y>=0;y--){for(let i=0;i<W;i+=3)if(ink(i,y)){bot=y;break outer2;}}
-  // تجميع الأعمدة المتصلة
-  let runs=[],s=-1;
-  for(let i=0;i<W;i++){
-    if(col[i]&&s<0)s=i;
-    else if(!col[i]&&s>=0){if(i-s>W*0.02)runs.push([s,i]);s=-1;}
-  }
-  if(s>=0)runs.push([s,W]);
-  // لو الالتصاق دمج البطاقات نقسم المجال كله بالتساوي
-  if(runs.length!==7){
-    const a=runs.length?runs[0][0]:0, b=runs.length?runs[runs.length-1][1]:W;
-    const w=(b-a)/7;runs=[];
-    for(let i=0;i<7;i++)runs.push([Math.round(a+i*w),Math.round(a+(i+1)*w)]);
-  }
-  const padY=Math.round((bot-top)*0.06), out=[];
-  runs.forEach(([a,b])=>{
-    const pad=Math.round((b-a)*0.05);
-    const sx=Math.max(0,a-pad),sw=Math.min(W-sx,(b-a)+pad*2);
-    const sy=Math.max(0,top-padY),sh=Math.min(H-sy,(bot-top)+padY*2);
-    const cc=document.createElement("canvas");cc.width=sw;cc.height=sh;
-    cc.getContext("2d").drawImage(img,sx,sy,sw,sh,0,0,sw,sh);
-    out.push(cc.toDataURL("image/png"));
-  });
-  CARDPIX[src]=out;return out;
+  KEYED[src]=out;return out;
 }
 
 /* ── بناء المشهد ── */
 async function apply(){
-  seg("segBg","bg");seg("segRing","ring");seg("segCard","card");
-  $("stage").style.backgroundImage="url('/fx/bg"+S.bg+".jpg')";
+  seg("segBg","bg",5);seg("segRing","ring",4);
+  paintBg();
   $("ringImg").src=await keyWhite("/fx/ring"+S.ring+".jpg");
-  const pics=await sliceCards("/fx/cards"+S.card+".jpg");
   const box=$("cards");box.innerHTML="";
-  deck.forEach(i=>{
+  for(const i of deck){
+    const src=await keyWhite("/fx/c_"+POWERS[i].k+".jpg");
     const d=document.createElement("div");d.className="card";
-    d.innerHTML='<div class="face" style="background-image:url('+pics[i]+')"></div>'+
-                '<div class="face back">؟</div>'+
-                '<div class="nm">'+NAMES[i]+'</div>';
+    d.innerHTML='<div class="face" style="background-image:url('+src+')"></div>'+
+                '<div class="face back">؟</div>';
     d.onclick=()=>d.classList.toggle("flip");
     box.appendChild(d);
-  });
+  }
 }
 
 /* ── العدّاد ── */
@@ -209,16 +230,16 @@ function run(from){
 
 $("again").onclick=()=>run(60);
 $("deal").onclick=()=>{
-  const pool=[0,1,2,3,4,5,6].sort(()=>Math.random()-.5);
-  deck=pool.slice(0,S.n===7?7:3);apply();
+  const pool=POWERS.map((_,i)=>i).sort(()=>Math.random()-.5);
+  deck=pool.slice(0,S.n===6?6:3);apply();
 };
 $("all").onclick=()=>{
-  S.n=S.n===7?3:7;save();
-  deck=S.n===7?[0,1,2,3,4,5,6]:[0,1,2];
-  $("all").textContent=S.n===7?"اعرض ثلاثاً فقط":"اعرض السبع كلها";
+  S.n=S.n===6?3:6;save();
+  deck=S.n===6?POWERS.map((_,i)=>i):[0,1,2];
+  $("all").textContent=S.n===6?"اعرض ثلاثاً فقط":"اعرض الست كلها";
   apply();
 };
-if(S.n===7){deck=[0,1,2,3,4,5,6];$("all").textContent="اعرض ثلاثاً فقط";}
+if(S.n===6){deck=POWERS.map((_,i)=>i);$("all").textContent="اعرض ثلاثاً فقط";}
 apply();run(60);
 </script>
 </body>
