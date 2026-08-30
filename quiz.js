@@ -367,13 +367,14 @@ function setupQuiz(io, deps) {
     room.pubQuestion = { text: q.text, options: null, cat: q.cat, diff: q.diff, img: q.img || null, reading: true, voice: vid };
     room.answers = {};
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
-    // مدة القراءة: طول المقطع الصوتي إن وُجد، وإلا تقدير من عدد الكلمات
+    // مدة القراءة: مدّة المقطع الصوتي + ثانية واحدة فقط، بلا حدّ أدنى ثابت،
+    // فالسؤال القصير ينتقل بسرعة والطويل يأخذ حقّه. (وإن غاب الصوت: تقدير بالكلمات)
     const words = String(q.text).split(/\s+/).length;
     let secs = FAST ? 0.3 : Math.min(7, Math.max(3.5, 2 + words * 0.38));
     if (!FAST && vid) {
       const t = getTts();
       const d = t && t.durationOf ? t.durationOf(q.text) : 0;
-      if (d) secs = Math.min(11, Math.max(secs, d + 1.3)); // ثانية ونصف بعد انتهاء الصوت
+      if (d) secs = Math.min(15, d + 1); // 15 سقف أمان فقط، لا يبلغه سؤال عمليًا
     }
     setPhase(room, "read", secs, () => beginQuestion(room));
     broadcast(room);

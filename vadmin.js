@@ -60,6 +60,32 @@ function setupVoiceAdmin(app, deps) {
     json(res, 200, { ok: true });
   });
 
+  app.get(ADMIN_PATH + "/v/cfg", (req, res) => {
+    if (!guard(req, res)) return;
+    json(res, 200, tts.getCfg());
+  });
+
+  app.post(ADMIN_PATH + "/v/cfg", async (req, res) => {
+    if (!guard(req, res)) return;
+    const v = await readJson(req) || {};
+    try { json(res, 200, await tts.setCfg(v)); }
+    catch (e) { json(res, 500, { error: e.message }); }
+  });
+
+  // تجربة إعدادات على جملة واحدة دون المساس بالمقطع المعتمد للسؤال
+  app.post(ADMIN_PATH + "/v/trial", async (req, res) => {
+    if (!guard(req, res)) return;
+    if (!tts.hasKey()) return json(res, 400, { error: "ELEVEN_KEY غير مضبوط" });
+    const v = await readJson(req) || {};
+    const t = String(v.text || "").trim();
+    if (!t) return json(res, 400, { error: "أرسل نصًا" });
+    const over = {};
+    ["voice", "model", "format"].forEach(k => { if (v[k]) over[k] = String(v[k]).slice(0, 40); });
+    ["stability", "similarity", "speed"].forEach(k => { if (v[k] !== undefined && v[k] !== "") over[k] = Number(v[k]); });
+    try { json(res, 200, await tts.trial(t, over)); }
+    catch (e) { json(res, 500, { error: e.message }); }
+  });
+
   app.get(ADMIN_PATH + "/v/list", (req, res) => {
     if (!guard(req, res)) return;
     try {
@@ -152,13 +178,39 @@ label{font-size:13px;color:var(--dim)}
 </div>
 
 <div class="card">
-  <h3 style="margin:0 0 10px">تجربة سريعة</h3>
+  <h3 style="margin:0 0 10px">مختبر الإعدادات</h3>
   <div class="row">
-    <input type="text" id="pvText" value="ما هي عاصمة اليابان؟">
-    <button id="pvGo">استمع</button>
+    <input type="text" id="pvText" value="ما الحضارة التي بنت أهرامات الجيزة؟" style="min-width:320px">
+  </div>
+  <div class="row" style="margin-top:10px">
+    <label>الموديل <select id="cModel">
+      <option value="eleven_v3">eleven_v3 (تعبيري)</option>
+      <option value="eleven_multilingual_v2">multilingual_v2 (الأثبت)</option>
+      <option value="eleven_flash_v2_5">flash_v2_5 (الأرخص)</option>
+    </select></label>
+    <label>الثبات <input type="number" id="cStab" step="0.05" min="0" max="1" style="width:88px"></label>
+    <label>التشابه <input type="number" id="cSim" step="0.01" min="0" max="1" style="width:88px"></label>
+    <label>السرعة <input type="number" id="cSpd" step="0.01" min="0.5" max="1.5" style="width:88px"></label>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <label>الصوت <input type="text" id="cVoice" style="min-width:210px"></label>
+    <label>الجودة <select id="cFmt">
+      <option value="mp3_44100_192">44.1kHz / 192kbps</option>
+      <option value="mp3_44100_128">44.1kHz / 128kbps</option>
+      <option value="mp3_44100_64">44.1kHz / 64kbps</option>
+      <option value="mp3_22050_32">22kHz / 32kbps</option>
+    </select></label>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <button id="pvGo">🎧 جرّب واسمع</button>
+    <button id="cSave" class="ghost">اعتماد هذه الإعدادات</button>
+    <button id="cReset" class="ghost">استرجاع المعتمد</button>
     <span class="mini" id="pvOut"></span>
   </div>
-  <audio id="pvAudio" controls style="width:100%;margin-top:10px;display:none"></audio>
+  <div class="mini" style="margin-top:6px">
+    التجربة لا تمسّ صوت السؤال المعتمد · الاعتماد يسري فورًا على أي توليد لاحق بلا إعادة نشر.
+  </div>
+  <div id="trials" class="list" style="max-height:260px"></div>
 </div>
 
 <div class="card">
@@ -218,7 +270,8 @@ let CATS=[];
 async function loadStats(){
   const s=await (await fetch(A+"/v/stats")).json();
   if(s.error){ $("jobOut").innerHTML='<span class="err">'+s.error+'</span>'; return; }
-  $("vVoice").textContent=s.voice; $("vModel").textContent=s.model; $("vFmt").textContent=s.format;
+  const c=s.cfg||{};
+  $("vVoice").textContent=c.voice; $("vModel").textContent=c.model; $("vFmt").textContent=c.format;
   $("kTotal").textContent=nf(s.total);
   $("kReady").textContent=nf(s.ready);
   const left=s.total-s.ready;
@@ -274,14 +327,38 @@ $("bGo").onclick=async()=>{
 };
 $("bStop").onclick=()=>fetch(A+"/v/stop",{method:"POST"}).then(loadJob);
 
+/* ── مختبر الإعدادات ── */
+function cfgForm(){ return { model:$("cModel").value, voice:$("cVoice").value.trim(),
+  format:$("cFmt").value, stability:+$("cStab").value, similarity:+$("cSim").value, speed:+$("cSpd").value }; }
+function fillCfg(c){
+  $("cModel").value=c.model; $("cVoice").value=c.voice; $("cFmt").value=c.format;
+  $("cStab").value=c.stability; $("cSim").value=c.similarity; $("cSpd").value=c.speed;
+}
+async function loadCfg(){ fillCfg(await (await fetch(A+"/v/cfg")).json()); }
+
 $("pvGo").onclick=async()=>{
-  $("pvOut").textContent="…";
-  const r=await (await fetch(A+"/v/preview",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({text:$("pvText").value})})).json();
+  const c=cfgForm();
+  $("pvOut").textContent="… يولّد";
+  const r=await (await fetch(A+"/v/trial",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(Object.assign({text:$("pvText").value},c))})).json();
   if(r.error){ $("pvOut").innerHTML='<span class="err">'+r.error+'</span>'; return; }
-  $("pvOut").innerHTML=r.chars+' حرف · <b>'+r.cost+'</b> كريديت · '+Math.round(r.bytes/1024)+' ك.ب';
-  const a=$("pvAudio"); a.src="/tts/"+r.id; a.style.display="block"; a.play().catch(()=>{});
+  $("pvOut").innerHTML=r.chars+' حرف · <b>'+r.cost+'</b> كريديت · '+r.secs+'ث';
+  const lbl=c.model.replace("eleven_","")+" · ثبات "+c.stability+" · سرعة "+c.speed+" · "+c.format.replace("mp3_","");
+  const row=document.createElement("div");
+  row.className="it";
+  row.innerHTML='<button class="pbtn">▶</button><span class="tx">'+lbl+'</span><span class="no">'+r.secs+'ث</span>';
+  row.querySelector("button").onclick=()=>new Audio("/tts/"+r.id).play();
+  $("trials").prepend(row);
+  new Audio("/tts/"+r.id).play().catch(()=>{});
 };
+$("cSave").onclick=async()=>{
+  const r=await (await fetch(A+"/v/cfg",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(cfgForm())})).json();
+  if(r.error){ $("pvOut").innerHTML='<span class="err">'+r.error+'</span>'; return; }
+  fillCfg(r); $("pvOut").innerHTML='<span class="done">اعتُمدت — تسري على أي توليد لاحق.</span>';
+  loadStats();
+};
+$("cReset").onclick=loadCfg;
 
 /* ── معاينة الأصوات ── */
 let LP=0, LAUD=null;
@@ -336,7 +413,7 @@ $("clr").onclick=async()=>{
   loadStats();
 };
 
-loadStats(); loadJob(); setInterval(loadJob,1500);
+loadCfg(); loadStats(); loadJob(); setInterval(loadJob,1500);
 </script></body></html>`;
 
 module.exports = { setupVoiceAdmin };
