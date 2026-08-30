@@ -120,6 +120,17 @@ async function keyWhite(src){
     else if(mn>224)p[i+3]=Math.round(255*(246-mn)/22);
   }
   x.putImageData(d,0,0);
+  // نقصّ الهامش الشفاف حتى تملأ الحلقة إطارها
+  let x0=c.width,y0=c.height,x1=-1,y1=-1;
+  for(let yy=0;yy<c.height;yy+=2)for(let xx=0;xx<c.width;xx+=2){
+    if(p[(yy*c.width+xx)*4+3]>12){if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(yy<y0)y0=yy;if(yy>y1)y1=yy;}
+  }
+  if(x1>x0&&y1>y0){
+    const w=x1-x0+1,h=y1-y0+1;
+    const cc=document.createElement("canvas");cc.width=w;cc.height=h;
+    cc.getContext("2d").drawImage(c,x0,y0,w,h,0,0,w,h);
+    return cc.toDataURL("image/png");
+  }
   return c.toDataURL("image/png");
 }
 
