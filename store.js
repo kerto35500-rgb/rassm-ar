@@ -44,6 +44,44 @@ class JsonStore {
   async getKV(key) { return (this.db.kv && this.db.kv[key]) || null; }
   async saveKV(key, value) { this.db.kv = this.db.kv || {}; this.db.kv[key] = value; this._save(); }
   async countUsers() { return Object.keys(this.db.users).length; }
+
+  // ── ملفات ثنائية (صوت الأسئلة): مجلد blobs بجانب db.json ──
+  _blobDir() {
+    const d = path.join(path.dirname(this.file), "blobs");
+    try { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); } catch (e) {}
+    return d;
+  }
+  _blobPath(key) { return path.join(this._blobDir(), String(key).replace(/[^\w.-]/g, "_")); }
+  async initBlobs() { this._blobDir(); }
+  async getBlob(key) {
+    try {
+      const p = this._blobPath(key);
+      if (!fs.existsSync(p)) return null;
+      return { mime: "audio/mpeg", data: fs.readFileSync(p) };
+    } catch (e) { return null; }
+  }
+  async putBlob(key, mime, buf) {
+    try { fs.writeFileSync(this._blobPath(key), buf); } catch (e) { console.error("blob save:", e.message); }
+  }
+  async hasBlobs(keys) {
+    return (keys || []).filter(k => { try { return fs.existsSync(this._blobPath(k)); } catch (e) { return false; } });
+  }
+  async delBlobs(keys) {
+    let n = 0;
+    for (const k of keys || []) { try { fs.unlinkSync(this._blobPath(k)); n++; } catch (e) {} }
+    return n;
+  }
+  async blobStats(prefix = "") {
+    try {
+      const d = this._blobDir();
+      let n = 0, bytes = 0;
+      for (const f of fs.readdirSync(d)) {
+        if (prefix && !f.startsWith(prefix)) continue;
+        n++; bytes += fs.statSync(path.join(d, f)).size;
+      }
+      return { n, bytes };
+    } catch (e) { return { n: 0, bytes: 0 }; }
+  }
 }
 
 class PgStore {
@@ -121,6 +159,49 @@ class PgStore {
     const r = await this.pool.query(
       'SELECT name, wins, games, total_score AS "totalScore" FROM users ORDER BY wins DESC, total_score DESC LIMIT $1', [n]);
     return r.rows;
+  }
+
+  // ── ملفات ثنائية (صوت الأسئلة): جدول blobs ──
+  async initBlobs() {
+    if (this._blobsReady) return;
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS blobs (
+        key TEXT PRIMARY KEY,
+        mime TEXT NOT NULL,
+        data BYTEA NOT NULL,
+        created BIGINT
+      )`);
+    this._blobsReady = true;
+  }
+  async getBlob(key) {
+    await this.initBlobs();
+    const r = await this.pool.query("SELECT mime, data FROM blobs WHERE key = $1", [key]);
+    return r.rows[0] ? { mime: r.rows[0].mime, data: r.rows[0].data } : null;
+  }
+  async putBlob(key, mime, buf) {
+    await this.initBlobs();
+    await this.pool.query(
+      "INSERT INTO blobs (key, mime, data, created) VALUES ($1, $2, $3, $4) ON CONFLICT (key) DO UPDATE SET mime = $2, data = $3, created = $4",
+      [key, mime, buf, Date.now()]);
+  }
+  async hasBlobs(keys) {
+    await this.initBlobs();
+    if (!keys || !keys.length) return [];
+    const r = await this.pool.query("SELECT key FROM blobs WHERE key = ANY($1::text[])", [keys]);
+    return r.rows.map(x => x.key);
+  }
+  async delBlobs(keys) {
+    await this.initBlobs();
+    if (!keys || !keys.length) return 0;
+    const r = await this.pool.query("DELETE FROM blobs WHERE key = ANY($1::text[])", [keys]);
+    return r.rowCount || 0;
+  }
+  async blobStats(prefix = "") {
+    await this.initBlobs();
+    const r = await this.pool.query(
+      "SELECT COUNT(*)::int AS n, COALESCE(SUM(LENGTH(data)), 0)::bigint AS b FROM blobs WHERE key LIKE $1",
+      [prefix + "%"]);
+    return { n: r.rows[0].n, bytes: Number(r.rows[0].b) };
   }
 }
 

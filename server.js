@@ -85,7 +85,7 @@ app.get(["/barra", "/salfa"], (req, res) => {
 // نقطة إبقاء حيّة (تمنع السيرفر المجاني من النوم أثناء اللعب الطويل)
 app.get("/healthz", (req, res) => res.type("text").send("ok"));
 // حالة الألعاب المباشرة (تستعملها الصفحة الرئيسية)
-let bombApi = null, quizApi = null, salfaApi = null;
+let bombApi = null, quizApi = null, salfaApi = null, ttsApi = null;
 app.get("/api/status", (req, res) => {
   const draw = getLiveStats();
   const bomb = bombApi ? bombApi.liveStats() : { online: 0, rooms: [] };
@@ -1180,7 +1180,15 @@ createStore()
       const saved = await store.getKV("quizBank");
       if (saved) { qbank.setExtra(saved.extra || {}); qbank.setRemoved(saved.removed || []); }
       require("./qadmin").setupQuestionAdmin(app, { store });
-      quizApi = setupQuiz(io, { store, hashPass, publicStats, getAdmin: () => admin });
+      // 🔊 صوت قراءة الأسئلة (ElevenLabs) — يُخزَّن مرة واحدة ويُقدَّم من /tts/<id>
+      try {
+        ttsApi = require("./tts").setupTts(app, { store });
+        require("./vadmin").setupVoiceAdmin(app, { tts: ttsApi });
+        console.log("🔊 صوت الأسئلة: " + (ttsApi.hasKey() ? "المفتاح مضبوط" : "بانتظار ELEVEN_KEY"));
+      } catch (e) {
+        console.error("tts setup:", e.message);
+      }
+      quizApi = setupQuiz(io, { store, hashPass, publicStats, getAdmin: () => admin, tts: () => ttsApi });
       console.log(`🏆 قمّة الهرم جاهزة على /quiz — ${qbank.countAll()} سؤال`);
     } catch (e) {
       console.error("quiz setup:", e.message);

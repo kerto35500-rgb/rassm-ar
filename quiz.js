@@ -60,6 +60,7 @@ const DEFAULTS = {
   headStart: true,      // بداية متدرجة حسب النقاط
   cats: [],             // الفئات المفعّلة (فارغ = الكل)
   images: true,         // السماح بأسئلة الصور
+  voice: true,          // قراءة السؤال بصوت مسموع
   difficulty: 0,        // 0 تلقائي متدرج · 1 سهل · 2 متوسط · 3 صعب
   maxPlayers: 8,
   visibility: "private",
@@ -92,6 +93,7 @@ function sanitize(s = {}, old = DEFAULTS) {
   if (s.headStart !== undefined) o.headStart = !!s.headStart;
   if (Array.isArray(s.cats)) o.cats = s.cats.filter(c => qbank.categories().includes(c));
   if (s.images !== undefined) o.images = !!s.images;
+  if (s.voice !== undefined) o.voice = !!s.voice;
   if (s.difficulty !== undefined) o.difficulty = clampInt(s.difficulty, 0, 3, old.difficulty);
   if (s.maxPlayers !== undefined) o.maxPlayers = clampInt(s.maxPlayers, 2, 8, old.maxPlayers);
   if (s.visibility !== undefined) o.visibility = s.visibility === "public" ? "public" : "private";
@@ -103,6 +105,13 @@ const LENGTHS = { short: 6, normal: 9, long: 12 };
 
 function setupQuiz(io, deps) {
   const { store, hashPass, publicStats, getAdmin } = deps;
+  const getTts = deps.tts || (() => null);
+  // معرّف مقطع قراءة السؤال (null لو الصوت مطفأ أو المقطع غير مولَّد بعد)
+  function voiceOf(room, text) {
+    if (!room.settings.voice) return null;
+    const t = getTts();
+    try { return t && t.idFor ? t.idFor(text) : null; } catch (e) { return null; }
+  }
   const nsp = io.of("/quiz");
   const rooms = new Map();
 
@@ -354,12 +363,18 @@ function setupQuiz(io, deps) {
     if (!q) { sys(room, "لا توجد أسئلة في هذه الفئة", "warn"); return nextStage(room); }
     room.usedQ.add(q.id);
     room.currentQ = q;                 // فيه الإجابة الصحيحة — لا يُرسل أبداً
-    room.pubQuestion = { text: q.text, options: null, cat: q.cat, diff: q.diff, img: q.img || null, reading: true };
+    const vid = voiceOf(room, q.text);
+    room.pubQuestion = { text: q.text, options: null, cat: q.cat, diff: q.diff, img: q.img || null, reading: true, voice: vid };
     room.answers = {};
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
-    // مدة القراءة تتناسب مع طول السؤال (وتسمح لاحقاً بربط قراءة صوتية)
+    // مدة القراءة: طول المقطع الصوتي إن وُجد، وإلا تقدير من عدد الكلمات
     const words = String(q.text).split(/\s+/).length;
-    const secs = FAST ? 0.3 : Math.min(7, Math.max(3.5, 2 + words * 0.38));
+    let secs = FAST ? 0.3 : Math.min(7, Math.max(3.5, 2 + words * 0.38));
+    if (!FAST && vid) {
+      const t = getTts();
+      const d = t && t.durationOf ? t.durationOf(q.text) : 0;
+      if (d) secs = Math.min(11, Math.max(secs, d + 1.3)); // ثانية ونصف بعد انتهاء الصوت
+    }
     setPhase(room, "read", secs, () => beginQuestion(room));
     broadcast(room);
   }
@@ -378,7 +393,7 @@ function setupQuiz(io, deps) {
     // مرحلة الإجابة: الخيارات وحدها تملأ الشاشة — السؤال قُرئ في المرحلة السابقة
     const q = room.currentQ;
     if (!q) return nextStage(room);
-    room.pubQuestion = { text: q.text, options: q.options, cat: q.cat, diff: q.diff, img: q.img || null };
+    room.pubQuestion = { text: q.text, options: q.options, cat: q.cat, diff: q.diff, img: q.img || null, voice: voiceOf(room, q.text) };
 
     // تطبيق الهجمات المعلّقة
     (room.attacks || []).forEach(at => {
@@ -587,7 +602,7 @@ function setupQuiz(io, deps) {
     if (!q) return finish(room);
     room.usedQ.add(q.id);
     room.currentQ = q;
-    room.pubQuestion = { text: q.text, options: q.options, cat: q.cat, diff: q.diff, img: q.img || null };
+    room.pubQuestion = { text: q.text, options: q.options, cat: q.cat, diff: q.diff, img: q.img || null, voice: voiceOf(room, q.text) };
     room.answers = {};
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
 
