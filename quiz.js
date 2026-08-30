@@ -28,9 +28,10 @@ const PY_MAX_Q = 24;          // سقف أسئلة الهرم
 // الحدود الدنيا للمؤقتات (تُخفَّض في وضع الاختبار فقط)
 const MIN_Q = FAST ? 1 : 8, MIN_V = FAST ? 1 : 4, MIN_A = FAST ? 1 : 3, MIN_P = FAST ? 1 : 4;
 
-const POWERS = ["freeze", "gloop", "bombs", "nibble", "shuffle", "double", "bet"];
+// (أُلغيت قدرة «الخلط» من اللعبة)
+const POWERS = ["freeze", "gloop", "bombs", "nibble", "double", "bet"];
 // القوى التخريبية فقط — تُستعمل لفخاخ درجات الهرم العشوائية
-const SABOTAGE = ["freeze", "gloop", "bombs", "nibble", "shuffle"];
+const SABOTAGE = ["freeze", "gloop", "bombs", "nibble"];
 const POWER_AR = {
   freeze: "تجميد ❄️", gloop: "وحل 🟢", bombs: "قنابل 💣",
   nibble: "أكلة الحروف 👾", shuffle: "خلط 🔀", double: "مضاعفة النقاط ✨",
