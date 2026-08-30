@@ -106,6 +106,8 @@ const LENGTHS = { short: 6, normal: 9, long: 12 };
 function setupQuiz(io, deps) {
   const { store, hashPass, publicStats, getAdmin } = deps;
   const getTts = deps.tts || (() => null);
+  const VOICE_LEAD_IN = 1;  // مهلة بدء النطق: تحميل المقطع + انتقال المشهد
+  const VOICE_TAIL = 1;     // صمت بعد آخر كلمة قبل عرض الخيارات
   // معرّف مقطع قراءة السؤال (null لو الصوت مطفأ أو المقطع غير مولَّد بعد)
   function voiceOf(room, text) {
     if (!room.settings.voice) return null;
@@ -367,14 +369,15 @@ function setupQuiz(io, deps) {
     room.pubQuestion = { text: q.text, options: null, cat: q.cat, diff: q.diff, img: q.img || null, reading: true, voice: vid };
     room.answers = {};
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
-    // مدة القراءة: مدّة المقطع الصوتي + ثانية واحدة فقط، بلا حدّ أدنى ثابت،
-    // فالسؤال القصير ينتقل بسرعة والطويل يأخذ حقّه. (وإن غاب الصوت: تقدير بالكلمات)
+    // مدة القراءة: ثانية قبل بدء النطق (تحميل المقطع وانتقال المشهد) + مدّة الصوت
+    // + ثانية صمت بعد آخر كلمة قبل الانتقال للخيارات. بلا حدّ أدنى ثابت، فالسؤال
+    // القصير ينتقل بسرعة والطويل يأخذ حقّه. (وإن غاب الصوت: تقدير بالكلمات)
     const words = String(q.text).split(/\s+/).length;
     let secs = FAST ? 0.3 : Math.min(7, Math.max(3.5, 2 + words * 0.38));
     if (!FAST && vid) {
       const t = getTts();
       const d = t && t.durationOf ? t.durationOf(q.text) : 0;
-      if (d) secs = Math.min(15, d + 1); // 15 سقف أمان فقط، لا يبلغه سؤال عمليًا
+      if (d) secs = Math.min(16, VOICE_LEAD_IN + d + VOICE_TAIL);
     }
     setPhase(room, "read", secs, () => beginQuestion(room));
     broadcast(room);
