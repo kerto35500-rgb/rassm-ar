@@ -437,8 +437,12 @@ function shuffle(a) {
  * @param diff الصعوبة المطلوبة (1-3) أو 0 لأي صعوبة
  * @returns { id, text, options:[4], correct:index, cat, diff } أو null
  */
-function draw(cat, used, diff = 0) {
+// صيغة السؤال المصوّر: العنصر السابع (r[6]) مسار صورة داخل /qimg/
+function hasImage(r) { return typeof r[6] === "string" && r[6].length > 0; }
+
+function draw(cat, used, diff = 0, allowImages = true) {
   let pool = poolOf(cat).filter(r => !used || !used.has(r[0]));
+  if (!allowImages) pool = pool.filter(r => !hasImage(r));
   if (diff) {
     const byDiff = pool.filter(r => r[5] === diff);
     if (byDiff.length >= 3) pool = byDiff;
@@ -446,6 +450,7 @@ function draw(cat, used, diff = 0) {
   if (!pool.length) {
     // الفئة استُنفدت — نسمح بالتكرار بدل تعطيل اللعبة
     pool = poolOf(cat);
+    if (!allowImages) pool = pool.filter(r => !hasImage(r));
     if (!pool.length) return null;
   }
   const row = pool[Math.floor(Math.random() * pool.length)];
@@ -457,7 +462,8 @@ function draw(cat, used, diff = 0) {
     options,
     correct: options.indexOf(correctText),
     cat,
-    diff: row[5]
+    diff: row[5],
+    img: hasImage(row) ? row[6] : null
   };
 }
 

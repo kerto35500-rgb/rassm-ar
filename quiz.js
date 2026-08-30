@@ -59,6 +59,7 @@ const DEFAULTS = {
   pyramidPenalty: false,// الإجابة الخاطئة تُنزل درجة (مطفأ = لا تحرّك)
   headStart: true,      // بداية متدرجة حسب النقاط
   cats: [],             // الفئات المفعّلة (فارغ = الكل)
+  images: true,         // السماح بأسئلة الصور
   difficulty: 0,        // 0 تلقائي متدرج · 1 سهل · 2 متوسط · 3 صعب
   maxPlayers: 8,
   visibility: "private",
@@ -90,6 +91,7 @@ function sanitize(s = {}, old = DEFAULTS) {
   if (s.pyramidPenalty !== undefined) o.pyramidPenalty = !!s.pyramidPenalty;
   if (s.headStart !== undefined) o.headStart = !!s.headStart;
   if (Array.isArray(s.cats)) o.cats = s.cats.filter(c => qbank.categories().includes(c));
+  if (s.images !== undefined) o.images = !!s.images;
   if (s.difficulty !== undefined) o.difficulty = clampInt(s.difficulty, 0, 3, old.difficulty);
   if (s.maxPlayers !== undefined) o.maxPlayers = clampInt(s.maxPlayers, 2, 8, old.maxPlayers);
   if (s.visibility !== undefined) o.visibility = s.visibility === "public" ? "public" : "private";
@@ -348,11 +350,11 @@ function setupQuiz(io, deps) {
 
   // ── مرحلة قراءة السؤال: النص وحده — الخيارات لا تُرسل إطلاقاً في هذه المرحلة ──
   function beginRead(room) {
-    const q = qbank.draw(room.chosenCat, room.usedQ, autoDifficulty(room));
+    const q = qbank.draw(room.chosenCat, room.usedQ, autoDifficulty(room), room.settings.images);
     if (!q) { sys(room, "لا توجد أسئلة في هذه الفئة", "warn"); return nextStage(room); }
     room.usedQ.add(q.id);
     room.currentQ = q;                 // فيه الإجابة الصحيحة — لا يُرسل أبداً
-    room.pubQuestion = { text: q.text, options: null, cat: q.cat, diff: q.diff, reading: true };
+    room.pubQuestion = { text: q.text, options: null, cat: q.cat, diff: q.diff, img: q.img || null, reading: true };
     room.answers = {};
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
     // مدة القراءة تتناسب مع طول السؤال (وتسمح لاحقاً بربط قراءة صوتية)
@@ -376,7 +378,7 @@ function setupQuiz(io, deps) {
     // مرحلة الإجابة: الخيارات وحدها تملأ الشاشة — السؤال قُرئ في المرحلة السابقة
     const q = room.currentQ;
     if (!q) return nextStage(room);
-    room.pubQuestion = { text: q.text, options: q.options, cat: q.cat, diff: q.diff };
+    room.pubQuestion = { text: q.text, options: q.options, cat: q.cat, diff: q.diff, img: q.img || null };
 
     // تطبيق الهجمات المعلّقة
     (room.attacks || []).forEach(at => {
@@ -585,7 +587,7 @@ function setupQuiz(io, deps) {
     if (!q) return finish(room);
     room.usedQ.add(q.id);
     room.currentQ = q;
-    room.pubQuestion = { text: q.text, options: q.options, cat: q.cat, diff: q.diff };
+    room.pubQuestion = { text: q.text, options: q.options, cat: q.cat, diff: q.diff, img: q.img || null };
     room.answers = {};
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
 
