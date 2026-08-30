@@ -28,6 +28,7 @@ const PY_MAX_Q = 24;          // سقف أسئلة الهرم
 // الحدود الدنيا للمؤقتات (تُخفَّض في وضع الاختبار فقط)
 const MIN_Q = FAST ? 1 : 8, MIN_V = FAST ? 1 : 4, MIN_A = FAST ? 1 : 3, MIN_P = FAST ? 1 : 4;
 
+const RANDOM_DOOR = "عشوائي";   // باب لا فئة له: يكشف فئته الحقيقية بعد الدخول
 // (أُلغيت قدرة «الخلط» من اللعبة)
 const POWERS = ["freeze", "gloop", "bombs", "nibble", "double", "bet"];
 // القوى التخريبية فقط — تُستعمل لفخاخ درجات الهرم العشوائية
@@ -244,7 +245,10 @@ function setupQuiz(io, deps) {
     const pool = allowed.filter(c => qbank.poolOf(c).length > 0);
     const exclude = pool.length > 5 ? room.lastCats.slice(-2) : [];
     const avail = pool.filter(c => !exclude.includes(c));
-    room.catOptions = qbank.shuffle(avail.length >= 4 ? avail : pool).slice(0, 4);
+    // ثلاثة أبواب حقيقية + «الباب العشوائي» الذي يكشف فئته بعد الدخول
+    room.catOptions = qbank.shuffle(avail.length >= 3 ? avail : pool).slice(0, 3);
+    room.catOptions.push(RANDOM_DOOR);
+    room.catOptions = qbank.shuffle(room.catOptions);
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; });
     setPhase(room, "vote", room.settings.voteTime, () => resolveVote(room));
     broadcast(room);
@@ -258,8 +262,17 @@ function setupQuiz(io, deps) {
     const tied = room.catOptions.filter(c => tally[c] === max);
     // الفائز يُختار عشوائياً (RNG) من المتعادلين — والروليت البصري في الواجهة يتوقف عليه
     const best = tied[Math.floor(Math.random() * tied.length)];
-    room.chosenCat = best;
-    room.lastCats.push(best);
+    // الباب العشوائي: يفوز كباب، ثم تُسحب فئته الحقيقية سرّاً وتُكشف بعد الدخول
+    let real = best;
+    if (best === RANDOM_DOOR) {
+      const allowed = room.settings.cats.length ? room.settings.cats : qbank.categories();
+      const pool = allowed.filter(c => c !== RANDOM_DOOR && qbank.poolOf(c).length > 0);
+      const fresh = pool.filter(c => !room.lastCats.slice(-2).includes(c));
+      const src = fresh.length ? fresh : pool;
+      real = src[Math.floor(Math.random() * src.length)];
+    }
+    room.chosenCat = real;
+    room.lastCats.push(real);
     nsp.to(room.id).emit("voteResult", { cat: best, tally, tie: tied.length > 1 ? tied : null });
     // مرحلة عرض النتيجة: روليت (عند التعادل) ثم زوم الدخول عبر الباب
     const ms = tied.length > 1 ? SPIN_MS : ZOOM_MS;
