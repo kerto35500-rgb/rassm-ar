@@ -1894,7 +1894,7 @@ function vo(key,alt){
   const keys=[key].concat(alt||[]).filter(k=>VO_POOL[k]);
   if(!keys.length)return;
   const all=[];
-  keys.forEach(k=>{ for(let i=1;i<=VO_POOL[k];i++) all.push(k+"/"+i); });
+  keys.forEach(k=>{ for(let i=1;i<=VO_POOL[k];i++) all.push(k+"-"+i); });
   let pick=all[Math.floor(Math.random()*all.length)];
   if(all.length>1&&pick===voLast[key])pick=all[(all.indexOf(pick)+1)%all.length];
   voLast[key]=pick;
