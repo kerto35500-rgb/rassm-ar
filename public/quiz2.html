@@ -220,6 +220,26 @@ input,select,textarea{font-family:inherit}
 #qMeta{text-align:center;font-size:11.5px;color:var(--dim);margin-bottom:9px;font-weight:700}
 #qMeta .tag{padding:3px 10px;border-radius:99px;background:rgba(139,92,246,.18);border:1px solid rgba(139,92,246,.4);color:#c4b5fd;margin-inline-start:6px}
 /* صورة السؤال (لأسئلة الصور) */
+/* شاشة شرح اللعبة: تُعرض مرة واحدة لكل نوع، والمضيف يقدر يتخطاها */
+#inWrap{max-width:min(90vw,620px);text-align:center;display:flex;flex-direction:column;
+  align-items:center;gap:14px;animation:inUp .5s cubic-bezier(.2,.9,.3,1) both}
+@keyframes inUp{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+#inBadge{font-size:12px;letter-spacing:2px;padding:4px 14px;border-radius:99px;
+  background:rgba(139,92,246,.18);border:1px solid rgba(139,92,246,.4);color:#d7c9ff}
+#inTitle{margin:0;font-size:clamp(24px,5vw,38px);background:linear-gradient(90deg,#fff,#c4b5fd);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+#inText{margin:0;font-size:clamp(15px,2.4vw,19px);line-height:2;color:#e7e1ff;opacity:.94}
+#inBar{width:min(78vw,420px);height:5px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+#inFill{display:block;height:100%;width:100%;transform-origin:right;
+  background:linear-gradient(90deg,#8b5cf6,#22d3ee)}
+@keyframes inFill{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+#inSkip{margin-top:2px;padding:11px 26px;border-radius:12px;border:1px solid rgba(255,255,255,.22);
+  background:rgba(139,92,246,.22);color:#fff;font:inherit;font-weight:700;cursor:pointer;
+  transition:transform .15s,background .2s}
+#inSkip:hover{background:rgba(139,92,246,.42);transform:translateY(-2px)}
+#inSkip.gone{display:none}
+#inHint{font-size:13px;color:#a79dc9;min-height:18px}
+
 /* زر إعادة الاستماع لقراءة السؤال */
 #vBtn{margin-top:14px;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.18);
   background:rgba(139,92,246,.16);color:#fff;font-size:20px;line-height:1;cursor:pointer;
@@ -907,6 +927,17 @@ body.noTop #hud,body.noTop #roster{display:none}
       <div id="arBody" style="display:contents"></div>
     </div>
 
+    <div class="scene" id="sIntro">
+      <div id="inWrap">
+        <div id="inBadge">شرح اللعبة</div>
+        <h2 id="inTitle"></h2>
+        <p id="inText"></p>
+        <div id="inBar"><i id="inFill"></i></div>
+        <button id="inSkip" type="button">تخطي الشرح ⏭</button>
+        <div id="inHint"></div>
+      </div>
+    </div>
+
     <div class="scene" id="sReady"><div id="readyTxt">جاهزون للسؤال؟</div></div>
 
     <div class="scene" id="sRead">
@@ -1014,6 +1045,7 @@ body.noTop #hud,body.noTop #roster{display:none}
         <div class="tgl"><span>بداية متدرجة<small>الأعلى نقاطاً يبدأ أقرب</small></span><label class="sw"><input type="checkbox" id="sHS"><i></i></label></div>
         <div class="tgl"><span>أسئلة الصور<small>السماح بالأسئلة التي تعرض صورة</small></span><label class="sw"><input type="checkbox" id="sIM"><i></i></label></div>
         <div class="tgl"><span>قراءة صوتية<small>صوت يقرأ السؤال في مرحلة القراءة</small></span><label class="sw"><input type="checkbox" id="sVO"><i></i></label></div>
+        <div class="tgl"><span>شاشة الشرح<small>شرح كل لعبة أول مرة، مع زر تخطي للمضيف</small></span><label class="sw"><input type="checkbox" id="sIN"><i></i></label></div>
         <div class="tgl"><span>عقوبة الخطأ<small>الخطأ يُنزل درجة</small></span><label class="sw"><input type="checkbox" id="sPP"><i></i></label></div>
       </div>
       <div class="cp" data-p="r">
@@ -1422,7 +1454,8 @@ function render(){
   }else if(ST.state==="ended"){
     $("againB").style.display=host?"":"none";
   }else{
-    if(ST.phase==="vote")rVote(fresh);
+    if(ST.phase==="intro")rIntro(fresh);
+    else if(ST.phase==="vote")rVote(fresh);
     else if(ST.phase==="spin"){/* المشهد يبقى على الأبواب — الروليت والزوم يديرهما voteResult */}
     else if(ST.phase==="attack")rAtk(fresh);
     else if(ST.phase==="attackReveal")rAR(fresh);
@@ -1873,6 +1906,36 @@ function vo(key,alt){
 }
 /* يُشغَّل مرة واحدة فقط في عمر الصفحة (الشروحات وأول ظهور) */
 function voOnce(key,alt){ if(voDone[key])return; voDone[key]=1; vo(key,alt); }
+
+/* شاشة شرح اللعبة — الصوت والنص معًا، والمضيف وحده يملك زر التخطي */
+function rIntro(fresh){
+  scene("sIntro");
+  if(!fresh||!ST.intro)return;
+  killZoomClones();
+  $("inTitle").textContent=ST.intro.title;
+  $("inText").textContent=ST.intro.text;
+  const host=ST.ownerId===ME;
+  const b=$("inSkip");
+  b.classList.toggle("gone",!host);
+  b.disabled=false; b.textContent="تخطي الشرح ⏭";
+  $("inHint").textContent=host?"":"صاحب الغرفة يقدر يتخطى الشرح";
+  const f=$("inFill");
+  f.style.animation="none";void f.offsetWidth;
+  f.style.animation="inFill "+Math.max(.3,ST.phaseDur||10)+"s linear both";
+  vo(ST.intro.vo);
+}
+$("inSkip").onclick=()=>{
+  if(!ST||ST.phase!=="intro"||ST.ownerId!==ME)return;
+  $("inSkip").disabled=true;
+  $("inSkip").textContent="جارٍ التخطي…";
+  socket.emit("skipIntro");
+};
+/* التخطي يصل للجميع: تعليق قصير من المعلّق ثم تبدأ اللعبة */
+socket.on("introSkipped",d=>{
+  $("inFill").style.animation="none";
+  $("inHint").textContent="تم تخطي الشرح";
+  vo(d.kind==="pyramid"?"pyramid_skip":"minigame_skip","skip");
+});
 
 function rRead(fresh){
   scene("sRead");
@@ -2678,7 +2741,7 @@ function fillCfg(s){
   Object.entries(RG).forEach(([k,[i,o,f]])=>{$(i).value=s[k];$(o).textContent=f(s[k]);});
   $("sLen").value=s.length;$("sDif").value=String(s.difficulty);
   $("sCh").checked=s.challenges;$("sPw").checked=s.powers;$("cPyOn").checked=s.pyramid;
-  $("sHS").checked=s.headStart;$("sPP").checked=!!s.pyramidPenalty;$("sIM").checked=s.images!==false;$("sVO").checked=s.voice!==false;
+  $("sHS").checked=s.headStart;$("sPP").checked=!!s.pyramidPenalty;$("sIM").checked=s.images!==false;$("sVO").checked=s.voice!==false;$("sIN").checked=s.intros!==false;
   $("sVis").value=s.visibility;$("sPass").value=s.password||"";
   if(s.cats&&s.cats.length)document.querySelectorAll("#catPills .pill").forEach(c=>c.classList.toggle("on",s.cats.includes(c.dataset.c)));
   if(s.allowedPowers)document.querySelectorAll("#pwPills .pill").forEach(c=>c.classList.toggle("on",s.allowedPowers.includes(c.dataset.p)));
@@ -2692,7 +2755,7 @@ $("cfgSave").onclick=()=>{
     cats:cats.length===document.querySelectorAll("#catPills .pill").length?[]:cats,
     challenges:$("sCh").checked,powers:$("sPw").checked,powerUses:+$("sPU").value,powerChoices:+$("sPC").value,allowedPowers:pws,
     pyramid:$("cPyOn").checked,pyramidHeight:+$("sPH").value,pyramidTime:+$("sPT").value,
-    headStart:$("sHS").checked,pyramidPenalty:$("sPP").checked,images:$("sIM").checked,voice:$("sVO").checked,
+    headStart:$("sHS").checked,pyramidPenalty:$("sPP").checked,images:$("sIM").checked,voice:$("sVO").checked,intros:$("sIN").checked,
     maxPlayers:+$("sMP").value,visibility:$("sVis").value,password:$("sPass").value});
   $("cfg").classList.remove("on");toast("تم الحفظ ✓");
 };
