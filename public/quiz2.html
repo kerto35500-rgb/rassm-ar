@@ -220,6 +220,14 @@ input,select,textarea{font-family:inherit}
 #qMeta{text-align:center;font-size:11.5px;color:var(--dim);margin-bottom:9px;font-weight:700}
 #qMeta .tag{padding:3px 10px;border-radius:99px;background:rgba(139,92,246,.18);border:1px solid rgba(139,92,246,.4);color:#c4b5fd;margin-inline-start:6px}
 /* صورة السؤال (لأسئلة الصور) */
+/* زر إعادة الاستماع لقراءة السؤال */
+#vBtn{margin-top:14px;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.18);
+  background:rgba(139,92,246,.16);color:#fff;font-size:20px;line-height:1;cursor:pointer;
+  transition:transform .15s,background .2s;backdrop-filter:blur(4px)}
+#vBtn:hover{background:rgba(139,92,246,.34);transform:scale(1.07)}
+#vBtn.mute{opacity:.45;background:rgba(255,255,255,.06)}
+#vBtn.on{animation:vPulse 1.1s ease-in-out infinite}
+@keyframes vPulse{0%,100%{box-shadow:0 0 0 0 rgba(139,92,246,.5)}50%{box-shadow:0 0 0 12px rgba(139,92,246,0)}}
 #readImg,#qImg{max-width:min(80vw,520px);max-height:34vh;object-fit:contain;
   border-radius:18px;margin:0 auto 10px;display:block;background:rgba(255,255,255,.06);
   box-shadow:0 14px 34px -12px rgba(0,0,0,.75)}
@@ -905,6 +913,7 @@ body.noTop #hud,body.noTop #roster{display:none}
       <div id="readMeta"></div>
       <img id="readImg" alt="" hidden>
       <div id="readTxt"></div>
+      <button id="vBtn" type="button" title="إعادة الاستماع" hidden>🔊</button>
       <div id="readBar"><i id="readFill"></i></div>
     </div>
 
@@ -1004,6 +1013,7 @@ body.noTop #hud,body.noTop #roster{display:none}
         <div class="f"><label>مهلة سؤال الهرم</label><div class="vv"><input type="range" id="sPT" min="4" max="15"><output id="oPT"></output></div></div>
         <div class="tgl"><span>بداية متدرجة<small>الأعلى نقاطاً يبدأ أقرب</small></span><label class="sw"><input type="checkbox" id="sHS"><i></i></label></div>
         <div class="tgl"><span>أسئلة الصور<small>السماح بالأسئلة التي تعرض صورة</small></span><label class="sw"><input type="checkbox" id="sIM"><i></i></label></div>
+        <div class="tgl"><span>قراءة صوتية<small>صوت يقرأ السؤال في مرحلة القراءة</small></span><label class="sw"><input type="checkbox" id="sVO"><i></i></label></div>
         <div class="tgl"><span>عقوبة الخطأ<small>الخطأ يُنزل درجة</small></span><label class="sw"><input type="checkbox" id="sPP"><i></i></label></div>
       </div>
       <div class="cp" data-p="r">
@@ -1787,10 +1797,49 @@ function rReady(fresh){
   if(fresh){killZoomClones();tone(660,.12,"sine",.05,880);}
 }
 
+/* ════ قراءة السؤال بصوت مسموع ════
+   الملف يُقدَّم من /tts/<معرّف> ويُخزَّن في كاش المتصفح سنة كاملة،
+   فلا يُحمَّل إلا أول مرة. الكتم تفضيل شخصي يُحفظ في هذا الجهاز. */
+let VA=null, vLast="", vMute=false;
+try{ vMute = localStorage.getItem("qzMute")==="1"; }catch(e){}
+
+function vStop(){
+  if(VA){ try{ VA.pause(); }catch(e){} VA=null; }
+  const b=$("vBtn"); if(b) b.classList.remove("on");
+}
+function vPlay(id,force){
+  const b=$("vBtn");
+  if(!id){ vLast=""; vStop(); if(b) b.hidden=true; return; }
+  if(b){ b.hidden=false; b.classList.toggle("mute",vMute); }
+  if(!force && (vMute || id===vLast)) return;   /* لا يُعاد تشغيله مع كل تحديث حالة */
+  vLast=id; vStop();
+  const a=new Audio("/tts/"+id);
+  a.preload="auto"; a.volume=1;
+  a.onended=()=>{ if(b) b.classList.remove("on"); };
+  a.onerror=()=>{ if(b) b.classList.remove("on"); };
+  VA=a;
+  if(b) b.classList.add("on");
+  a.play().catch(()=>{ if(b) b.classList.remove("on"); }); /* لو منع المتصفح التشغيل التلقائي يبقى الزر */
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest && e.target.closest("#vBtn");
+  if(!b) return;
+  if(vMute){ vMute=false; try{localStorage.setItem("qzMute","0");}catch(x){} b.classList.remove("mute"); }
+  const id=(ST.question&&ST.question.voice)||vLast;
+  if(id) vPlay(id,true);
+});
+$("vBtn") && ($("vBtn").oncontextmenu=e=>{   /* ضغطة يمين/مطوّلة = كتم */
+  e.preventDefault();
+  vMute=!vMute; try{localStorage.setItem("qzMute",vMute?"1":"0");}catch(x){}
+  $("vBtn").classList.toggle("mute",vMute);
+  if(vMute) vStop();
+});
+
 function rRead(fresh){
   scene("sRead");
   if(!fresh||!ST.question)return;
   killZoomClones();
+  vPlay(ST.question.voice);
   const D=["","سهل","متوسط","صعب"][ST.question.diff||1];
   $("readMeta").innerHTML='<span class="tag">'+esc(ST.question.cat)+'</span><span class="tag">'+D+"</span>";
   const rim=$("readImg"), rsrc=ST.question.img;
@@ -1826,6 +1875,7 @@ function rAR(fresh){
 function rQ(fresh){
   scene("sQ");mountClock("sQ");
   if(!fresh||!ST.question||!ST.question.options)return;
+  vPlay(ST.question.voice);   /* في الهرم لا توجد مرحلة قراءة، فيُنطق هنا */
   const D=["","سهل","متوسط","صعب"][ST.question.diff||1];
   $("qMeta").innerHTML=`<span class="tag">${esc(ST.question.cat)}</span><span class="tag">${D}</span>`;
   const qim=$("qImg"), qsrc=ST.question.img;
@@ -2577,7 +2627,7 @@ function fillCfg(s){
   Object.entries(RG).forEach(([k,[i,o,f]])=>{$(i).value=s[k];$(o).textContent=f(s[k]);});
   $("sLen").value=s.length;$("sDif").value=String(s.difficulty);
   $("sCh").checked=s.challenges;$("sPw").checked=s.powers;$("cPyOn").checked=s.pyramid;
-  $("sHS").checked=s.headStart;$("sPP").checked=!!s.pyramidPenalty;$("sIM").checked=s.images!==false;
+  $("sHS").checked=s.headStart;$("sPP").checked=!!s.pyramidPenalty;$("sIM").checked=s.images!==false;$("sVO").checked=s.voice!==false;
   $("sVis").value=s.visibility;$("sPass").value=s.password||"";
   if(s.cats&&s.cats.length)document.querySelectorAll("#catPills .pill").forEach(c=>c.classList.toggle("on",s.cats.includes(c.dataset.c)));
   if(s.allowedPowers)document.querySelectorAll("#pwPills .pill").forEach(c=>c.classList.toggle("on",s.allowedPowers.includes(c.dataset.p)));
@@ -2591,7 +2641,7 @@ $("cfgSave").onclick=()=>{
     cats:cats.length===document.querySelectorAll("#catPills .pill").length?[]:cats,
     challenges:$("sCh").checked,powers:$("sPw").checked,powerUses:+$("sPU").value,powerChoices:+$("sPC").value,allowedPowers:pws,
     pyramid:$("cPyOn").checked,pyramidHeight:+$("sPH").value,pyramidTime:+$("sPT").value,
-    headStart:$("sHS").checked,pyramidPenalty:$("sPP").checked,images:$("sIM").checked,
+    headStart:$("sHS").checked,pyramidPenalty:$("sPP").checked,images:$("sIM").checked,voice:$("sVO").checked,
     maxPlayers:+$("sMP").value,visibility:$("sVis").value,password:$("sPass").value});
   $("cfg").classList.remove("on");toast("تم الحفظ ✓");
 };
