@@ -1173,6 +1173,8 @@ socket.on("chat",m=>addChat(m));
 socket.on("connect",()=>{if(ROOM&&TOKEN)socket.emit("rejoin",{roomId:ROOM,token:TOKEN},r=>{if(r&&r.ok)ME=r.you;});});
 
 socket.on("voteResult",d=>{
+  /* التعادل يستدعي الروليت فله تعليقه، وإلا فتعليق دخول الباب الفائز */
+  vo(d.tie?"tie_roulette":"door_enter");
   const doors=[...document.querySelectorAll(".door")];
   const tot=Math.max(1,Object.values(d.tally).reduce((a,b)=>a+b,0));
   doors.forEach(v=>{
@@ -1334,6 +1336,7 @@ socket.on("reveal",d=>{
     else{o.classList.add("fade");if(i===picked)o.classList.add("lose");}});
   const m=d.results.find(r=>r.id===ME);
   if(m&&m.correct){sWin();}else sLose();
+  vo("reveal");
   setTimeout(()=>showRev(d),1000);
 });
 socket.on("revealChallenge",d=>{
@@ -1399,6 +1402,10 @@ function render(){
   const key=ST.phase+"|"+ST.stage+"|"+(ST.pyramidQ||0);
   const fresh=key!==phaseKey;
   if(fresh){
+    /* انتهاء وقت الألعاب المصغّرة يُعرف بمغادرة مرحلتها */
+    if(prevPhase==="sort"&&ST.phase!=="sort")vo("sort_timeup");
+    else if(prevPhase==="link"&&ST.phase!=="link")vo("link_timeup");
+    prevPhase=ST.phase;
     phaseKey=key;picked=-1;
     // نُنهي الفخ فقط عند الانتقال لمرحلة غير التي بدأ فيها
     FXM.sweep(key);
@@ -1508,6 +1515,8 @@ const KEYS=["أ","ب","ج","د","هـ","و"];
 
 function rVote(fresh){
   scene("sVote");mountClock("sVote");
+  /* أول باب في الجولة له ترحيب خاص، وما بعده تعليق قصير متنوّع */
+  if(fresh){ if(!voDone.first_door){ voDone.first_door=1; vo("first_door"); } else vo("door"); }
   if(!fresh){paintVotes();return;}   // تحديث الأعداد لحظياً مع كل تصويت
   spawnOrbs();
   const v=$("votes");v.innerHTML="";
@@ -1674,6 +1683,8 @@ function closeTg(){$("tgModal").classList.remove("on");}
 
 function rAtk(fresh){
   scene("sAtk");mountClock("sAtk");buildSparks();
+  /* أول ظهور للقدرات يحتاج شرحًا، وما بعده مقدمة قصيرة متنوّعة */
+  if(fresh){ if(!voDone.first_powers){ voDone.first_powers=1; vo("first_powers"); } else vo("powers_intro"); }
   const me=ST.players.find(p=>p.id===ME);
   const left=me?me.powersLeft:0,tot=ST.settings.powerUses||0;
   if(fresh){atkT=null;atkP=null;atkSent=false;closeTg();}
@@ -1835,10 +1846,39 @@ $("vBtn") && ($("vBtn").oncontextmenu=e=>{   /* ضغطة يمين/مطوّلة =
   if(vMute) vStop();
 });
 
+/* ════ تعليق المعلّق ════
+   لكل حدث مجلد تحت /vo فيه مقطع أو أكثر، ويُختار واحد عشوائيًا في كل مرة
+   مع تجنّب تكرار المقطع السابق مباشرةً — فلا يصير التعليق مملًا بالإعادة. */
+const VO_POOL={first_door:1,door:3,door_enter:4,tie_roulette:4,hurry:4,reveal:6,
+  first_powers:1,powers_intro:4,trap_freeze:3,trap_gloop:3,trap_bombs:3,trap_nibble:3,
+  trap_double:2,trap_bet:2,trap_multi:7,near_top:3,winner:4,
+  sort_timeup:1,link_timeup:1,pyramid_intro:1,sort_intro:1,link_intro:1,
+  pyramid_skip:3,minigame_skip:4,skip:3};
+let VOA=null, hurryKey="", prevPhase=""; const voLast={}, voDone={};
+function voStop(){ if(VOA){ try{VOA.pause();}catch(e){} VOA=null; } }
+function vo(key,alt){
+  if(vMute)return;
+  const keys=[key].concat(alt||[]).filter(k=>VO_POOL[k]);
+  if(!keys.length)return;
+  const all=[];
+  keys.forEach(k=>{ for(let i=1;i<=VO_POOL[k];i++) all.push(k+"/"+i); });
+  let pick=all[Math.floor(Math.random()*all.length)];
+  if(all.length>1&&pick===voLast[key])pick=all[(all.indexOf(pick)+1)%all.length];
+  voLast[key]=pick;
+  vStop(); voStop();                 /* لا يتداخل التعليق مع قراءة السؤال */
+  const a=new Audio("/vo/"+pick+".mp3");
+  a.volume=.92; VOA=a;
+  a.onended=a.onerror=()=>{ if(VOA===a)VOA=null; };
+  a.play().catch(()=>{});
+}
+/* يُشغَّل مرة واحدة فقط في عمر الصفحة (الشروحات وأول ظهور) */
+function voOnce(key,alt){ if(voDone[key])return; voDone[key]=1; vo(key,alt); }
+
 function rRead(fresh){
   scene("sRead");
   if(!fresh||!ST.question)return;
   killZoomClones();
+  voStop();
   vPlay(ST.question.voice);
   const D=["","سهل","متوسط","صعب"][ST.question.diff||1];
   $("readMeta").innerHTML='<span class="tag">'+esc(ST.question.cat)+'</span><span class="tag">'+D+"</span>";
@@ -1870,6 +1910,9 @@ function rAR(fresh){
     "<b>"+esc(h.fromName)+"</b> ألقى عليك <b>"+(PW_NM[h.power]||h.power)+"</b>!"));
   if(!onMe.length)add("safe","😮‍💨","نجوت هذه الجولة… استعدّ للسؤال!");
   if(onMe.length){sHit();}else{sTap();}
+  /* تعليق مخصص لكل مقلب — ولو أصابني اثنان فأكثر فله تعليق خاص */
+  if(onMe.length>=2) vo("trap_multi");
+  else if(onMe.length===1) vo("trap_"+onMe[0].power);
 }
 
 function rQ(fresh){
@@ -1993,6 +2036,8 @@ function rPy(fresh){
   const best=Math.max(0,...alive.map(p=>p.pyPos||0));
   $("beam").style.height=(best*(sh+gp)+30)+"px";
   $("beam").style.opacity=best>H*0.6?1:.35;
+  /* لاعب صار على بُعد درجتين من القمة — لحظة تستحق تعليقًا، مرة واحدة */
+  if(best>=H-2&&best<H) voOnce("near_top");
   // ميلان الكاميرا يزيد مع الارتفاع
   W.style.setProperty("--tilt",(13+Math.min(9,best*0.7))+"deg");
 
@@ -2046,6 +2091,7 @@ function showRevCh(d){
 /* ═══ النهاية: منصة تتويج ═══ */
 function showFinale(d){
   $("finale").classList.add("on");
+  vo("winner");
   const T=d.table||[];
   $("fTitle").textContent=d.winner?d.winner.name:"انتهت المباراة";
   $("fSub").textContent=d.winner?`${d.winner.score} نقطة · بطل قمّة الهرم`:"";
@@ -2082,6 +2128,11 @@ function clockTick(){
     $("cNum").textContent=s;
     wrap.classList.toggle("hot",left<3600);
     if(s!==last&&s<=3&&s>0){last=s;sTick();}
+    /* استعجال اللاعبين: مرة واحدة لكل مرحلة إجابة، قبل النهاية بخمس ثوانٍ */
+    if(left<=5000&&left>3800&&hurryKey!==phaseKey&&
+       (ST.phase==="question"||ST.phase==="link"||ST.phase==="sort"||ST.phase==="pyramid")){
+      hurryKey=phaseKey; vo("hurry");
+    }
     raf=requestAnimationFrame(f);
   })();
 }
