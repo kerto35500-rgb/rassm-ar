@@ -345,6 +345,15 @@ input,select,textarea{font-family:inherit}
 .dArch.aiArch::before,.dArch.aiArch::after{display:none}
 .door:hover .dArch.aiArch{box-shadow:none;filter:brightness(1.05)}
 .door.on .dArch.aiArch{box-shadow:none;filter:saturate(1.15) drop-shadow(0 0 12px var(--cyan))}
+/* ── ضوء القرعة: طبقة مستقلة خفيفة الحساب تعمل بسلاسة على الجوال ──
+   (التوهج القديم كان يعتمد على filter/box-shadow مع انتقال ٣٥٠ms أطول من نبضة القرعة نفسها) */
+.dSpin{position:absolute;inset:5% 3%;border-radius:30px;pointer-events:none;z-index:4;opacity:0;
+  transition:opacity .07s linear;
+  box-shadow:0 0 0 4px #fff, 0 0 42px 12px var(--c1), inset 0 0 34px 6px rgba(255,255,255,.55)}
+.door.spin .dSpin{opacity:1}
+.door.spin{transform:translateY(-7px) scale(1.06);z-index:5}
+.door.spin .dArch{transition:none;box-shadow:none;filter:brightness(1.18) saturate(1.15)}
+.door.spin .dHalo{opacity:.9}
 /* إخفاء الشريط العلوي أثناء اللعب لتوسيع المسرح */
 body.noTop #hud,body.noTop #roster{display:none}
 
@@ -1158,18 +1167,27 @@ socket.on("voteResult",d=>{
   const tied=(d.tie&&d.tie.length>1)?d.tie:null;
   if(tied){
     /* ── روليت كسر التعادل: تحديد مضيء يتنقل بسرعة بين الأبواب المتعادلة ١.٥ث ── */
+    // نُحرّك القرعة مع نبض الرسم (rAF) لا بمؤقّت — حتى تُرسم كل قفزة فعلياً على الجوال
     const seq=doors.filter(x=>tied.includes(x.dataset.c));
-    let i=0;const t0=performance.now();
-    const iv=setInterval(()=>{
+    let i=0,last=0,done=false;const t0=performance.now();
+    const finish=()=>{
+      if(done)return;done=true;
       seq.forEach(x=>x.classList.remove("spin"));
-      if(performance.now()-t0>1500){
-        clearInterval(iv);
-        doorZoom(d.cat);
-        return;
+      doorZoom(d.cat);
+    };
+    const step=(now)=>{
+      if(done)return;
+      if(now-t0>1500){finish();return;}
+      if(now-last>=125){
+        last=now;
+        seq.forEach(x=>x.classList.remove("spin"));
+        seq[i++%seq.length].classList.add("spin");
+        sTick();
       }
-      seq[i++%seq.length].classList.add("spin");
-      sTick();
-    },110);
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+    setTimeout(finish,2200);   // أمان: لو تجمّد الرسم (تبويب في الخلفية) نكمل على أي حال
   }else doorZoom(d.cat);
 });
 
@@ -1202,7 +1220,7 @@ function doorZoom(cat){
   // نور داخلي يظهر خلف المصراعين لحظة انفتاحهما
   const glow=document.createElement("div");
   glow.style.cssText="position:absolute;inset:3%;border-radius:"+archRad+";"+
-    "background:radial-gradient(120% 90% at 50% 20%,#faf6ff,#d9c6ff 42%,#8b5cf6);"+
+    "background:radial-gradient(125% 100% at 50% 28%,#faf6ff,#d9c6ff 40%,#8b5cf6 72%,rgba(139,92,246,0) 94%);"+
     "box-shadow:0 0 60px 20px rgba(139,92,246,.55)";
   box.appendChild(glow);
   // مصراعا الباب: نسختان من القوس مقصوصتان من المنتصف
@@ -1224,7 +1242,8 @@ function doorZoom(cat){
   const frameEl=win.querySelector(".dFrame");
   let L,R;
   if(frameEl){
-    glow.style.inset="10%";glow.style.borderRadius="26px";
+    // نوسّع اللفافة البنفسجية ونذيب حوافها حتى لا تبان مقصوصة عند التكبير على الجوال
+    glow.style.inset="-8%";glow.style.borderRadius="40px";
     const frC=frameEl.cloneNode(true);
     // الفتح للداخل: الإطار الأبيض فوق المصراعين وهما ينزلقان خلفه
     frC.style.zIndex="3";
@@ -1470,6 +1489,7 @@ function rVote(fresh){
     b.style.setProperty("--c3",art.c[2]);
     b.innerHTML=
       `<div class="dHalo"></div>
+       <div class="dSpin"></div>
        <div class="dArch">
          <div class="dPanel"></div>
          <div class="dSeam"></div>
