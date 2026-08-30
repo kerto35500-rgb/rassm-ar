@@ -1217,12 +1217,7 @@ function doorZoom(cat){
   box.className="zoomClone";
   box.style.cssText="position:fixed;left:"+r.left+"px;top:"+r.top+"px;width:"+r.width+"px;height:"+r.height+
     "px;z-index:80;pointer-events:none;transform-origin:center";
-  // نور داخلي يظهر خلف المصراعين لحظة انفتاحهما
-  const glow=document.createElement("div");
-  glow.style.cssText="position:absolute;inset:3%;border-radius:"+archRad+";"+
-    "background:radial-gradient(118% 95% at 50% 32%,#faf6ff,#d9c6ff 34%,#8b5cf6 60%,rgba(139,92,246,0) 86%);"+
-    "box-shadow:0 0 40px 4px rgba(139,92,246,.32)";
-  box.appendChild(glow);
+  // (أُلغيت اللفافة البنفسجية خلف الباب — كانت تبين كبرواز عند التكبير)
   // مصراعا الباب: نسختان من القوس مقصوصتان من المنتصف
   // (ننسخ متغيرات ألوان الفئة صراحةً لأن استبدال cssText يمسحها،
   //  ونوقف أنيميشن الدخول حتى لا يعيد تشغيل نفسه على النسخة)
@@ -1242,8 +1237,6 @@ function doorZoom(cat){
   const frameEl=win.querySelector(".dFrame");
   let L,R;
   if(frameEl){
-    // الضوء يبقى داخل حدود البوابة، وحوافه تذوب للشفافية فلا يبدو برواز ولا حافة مقصوصة
-    glow.style.inset="7%";glow.style.borderRadius="30px";
     const frC=frameEl.cloneNode(true);
     // الفتح للداخل: الإطار الأبيض فوق المصراعين وهما ينزلقان خلفه
     frC.style.zIndex="3";
@@ -1293,13 +1286,10 @@ function doorZoom(cat){
   tone(240,.55,"sine",.05,520);
   setTimeout(()=>{
     box.animate([{opacity:1},{opacity:0}],{duration:220,fill:"forwards"});
-    // بدل أن ينقشع الوميض ونعود لشاشة التصويت لثانية، نحوّله إلى ستار بلون الخلفية
-    // ونُبقيه حتى تصل المرحلة التالية فعلياً من الخادم — ثم ينقشع عنها بنعومة
-    veil.style.background="radial-gradient(70% 70% at 50% 45%,#1a1030,#05070f)";
-    veil.animate([{opacity:.94},{opacity:1}],{duration:280,fill:"forwards"});
+    // نُبقي وميض العبور الفاتح (لا ستار أسود) ريثما تصل المرحلة التالية، ثم ينقشع عنها
     ZVEIL=veil;
     clearTimeout(veilSafety);
-    veilSafety=setTimeout(fadeVeil,3000);   // أمان لو تأخّر الخادم أكثر من اللازم
+    veilSafety=setTimeout(fadeVeil,900);   // أمان: لا نطيل الوقوف على الوميض
   },1300);
   setTimeout(()=>{box.remove();},1700);
 }
@@ -1307,11 +1297,16 @@ let ZVEIL=null,veilSafety=null;
 function fadeVeil(){
   if(!ZVEIL)return;
   const v=ZVEIL;ZVEIL=null;clearTimeout(veilSafety);
-  v.animate([{opacity:1},{opacity:0}],{duration:340,easing:"ease-out",fill:"forwards"});
-  setTimeout(()=>v.remove(),380);
+  v.animate([{opacity:.94},{opacity:0}],{duration:420,easing:"ease-out",fill:"forwards"});
+  setTimeout(()=>v.remove(),460);
 }
 function killZoomClones(){
-  document.querySelectorAll(".zoomClone").forEach(c=>{if(c!==ZVEIL)c.remove();});
+  // نُذيب البقايا بدل حذفها فجأة حتى لا يحدث قطع بصري
+  document.querySelectorAll(".zoomClone").forEach(c=>{
+    if(c===ZVEIL)return;
+    c.animate([{opacity:1},{opacity:0}],{duration:180,fill:"forwards"});
+    setTimeout(()=>c.remove(),200);
+  });
   fadeVeil();   // المرحلة التالية جاهزة على الشاشة → نرفع الستار
 }
 
