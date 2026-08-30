@@ -60,6 +60,7 @@ const DEFAULTS = {
   headStart: true,      // بداية متدرجة حسب النقاط
   cats: [],             // الفئات المفعّلة (فارغ = الكل)
   images: true,         // السماح بأسئلة الصور
+  intros: true,         // شاشة شرح قبل كل لعبة (مرة واحدة لكل غرفة)
   voice: true,          // قراءة السؤال بصوت مسموع
   difficulty: 0,        // 0 تلقائي متدرج · 1 سهل · 2 متوسط · 3 صعب
   maxPlayers: 8,
@@ -93,6 +94,7 @@ function sanitize(s = {}, old = DEFAULTS) {
   if (s.headStart !== undefined) o.headStart = !!s.headStart;
   if (Array.isArray(s.cats)) o.cats = s.cats.filter(c => qbank.categories().includes(c));
   if (s.images !== undefined) o.images = !!s.images;
+  if (s.intros !== undefined) o.intros = !!s.intros;
   if (s.voice !== undefined) o.voice = !!s.voice;
   if (s.difficulty !== undefined) o.difficulty = clampInt(s.difficulty, 0, 3, old.difficulty);
   if (s.maxPlayers !== undefined) o.maxPlayers = clampInt(s.maxPlayers, 2, 8, old.maxPlayers);
@@ -178,6 +180,7 @@ function setupQuiz(io, deps) {
       question: room.pubQuestion,
       link: room.pubLink,
       sort: room.pubSort,
+      intro: room.pubIntro,
       pyramidHeight: room.settings.pyramidHeight,
       pyramidQ: room.pyQIndex,
       powerMenu: room.powerMenu || [],
@@ -239,15 +242,50 @@ function setupQuiz(io, deps) {
     nextStage(room);
   }
 
-  function nextStage(room) {
-    room.stageIdx++;
-    if (room.stageIdx >= room.stages.length) return finish(room);
+  // ====== شاشة الشرح ======
+  // تُعرض مرة واحدة فقط لكل غرفة قبل كل نوع لعبة، ويقدر المضيف يتخطاها.
+  const INTRO = {
+    pyramid: { secs: 28, title: "هرم المعرفة", vo: "pyramid_intro",
+      text: "الآن يبدأ النهائي! كل إجابة صحيحة ترفعك درجة على الهرم، وأول من يبلغ القمة يفوز باللقب. لا مجال للتردد — السرعة والدقة معًا." },
+    sort: { secs: 17, title: "لعبة التصنيف", vo: "sort_intro",
+      text: "سترى مجموعة عناصر وعليك وضع كل عنصر في تصنيفه الصحيح قبل انتهاء الوقت. كل عنصر في مكانه يعني نقاطًا إضافية." },
+    link: { secs: 14, title: "لعبة التوصيل", vo: "link_intro",
+      text: "أمامك عمودان، وعليك توصيل كل طرف بما يقابله. الوقت محدود، فركّز واربط بسرعة." }
+  };
+
+  function startStage(room) {
     const kind = room.stages[room.stageIdx];
     if (kind === "q") beginVote(room);
     else if (kind === "link") beginLink(room);
     else if (kind === "sort") beginSort(room);
     else if (kind === "pyramid") beginPyramid(room);
     else finish(room);
+  }
+
+  function nextStage(room) {
+    room.stageIdx++;
+    if (room.stageIdx >= room.stages.length) return finish(room);
+    const kind = room.stages[room.stageIdx];
+    const intro = INTRO[kind];
+    if (intro && room.settings.intros && !room.introDone[kind]) {
+      room.introDone[kind] = true;
+      room.introKind = kind;
+      room.pubIntro = { kind, title: intro.title, text: intro.text, vo: intro.vo };
+      setPhase(room, "intro", FAST ? 0.3 : intro.secs, () => { room.pubIntro = null; startStage(room); });
+      broadcast(room);
+      return;
+    }
+    startStage(room);
+  }
+
+  // المضيف يتخطى الشرح: نُعلم الجميع ليشغّلوا تعليق التخطي ثم ننتقل فورًا
+  function skipIntro(room) {
+    if (room.phase !== "intro" || !room.pubIntro) return;
+    const kind = room.introKind;
+    nsp.to(room.id).emit("introSkipped", { kind });
+    room.pubIntro = null;
+    clearTimeout(room.phaseTimer);
+    setTimeout(() => { if (room.state === "playing") startStage(room); }, FAST ? 100 : 1600);
   }
 
   // ====== مرحلة التصويت على الفئة ======
@@ -837,7 +875,8 @@ function setupQuiz(io, deps) {
         catOptions: [], votes: {}, voteCount: {}, answers: {}, attacks: [],
         usedQ: new Set(), usedLink: new Set(), usedSort: new Set(), lastCats: [],
         currentQ: null, pubQuestion: null, pubLink: null, pubSort: null,
-        pyQIndex: 0, winner: null, finalTable: null, qSentAt: 0
+        pyQIndex: 0, winner: null, finalTable: null, qSentAt: 0,
+        introDone: {}, introKind: null, pubIntro: null
       };
       player = makePlayer(name);
       player.color = COLORS[0];
@@ -898,6 +937,11 @@ function setupQuiz(io, deps) {
       startGame(room);
     });
 
+    socket.on("skipIntro", () => {
+      if (!room || !player || room.ownerId !== player.id) return;
+      skipIntro(room);
+    });
+
     socket.on("backToLobby", () => {
       if (!room || !player || room.ownerId !== player.id) return;
       clearTimers(room);
@@ -905,6 +949,7 @@ function setupQuiz(io, deps) {
       room.winner = null; room.finalTable = null;
       room.pubQuestion = null; room.pubLink = null; room.pubSort = null;
       room.stageIdx = -1; room.stages = []; room.pyQIndex = 0;
+      room.introDone = {}; room.introKind = null; room.pubIntro = null;
       room.players.forEach(p => { p.spectator = false; p.score = 0; p.pyPos = 0; p.effects = []; });
       broadcast(room);
     });
