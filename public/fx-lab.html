@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>🎴 مختبر شاشة الفخاخ — قمّة الهرم</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#3d2b63;--dim:#8b7fae;--v:#8b5cf6;--vd:#6d3ff0;--stroke:#d6c9f2}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;min-height:100vh;background:linear-gradient(170deg,#f3edfd,#e2d6f8);
+  font-family:"Baloo Bhaijaan 2",system-ui,sans-serif;color:var(--ink)}
+header{text-align:center;padding:12px 10px 2px}
+h1{margin:0;font-size:clamp(17px,4.4vw,24px);font-weight:800;color:var(--vd)}
+header p{margin:3px auto 0;font-size:12px;color:var(--dim);max-width:560px}
+
+/* ── لوحة الاختيار ── */
+#picks{max-width:760px;margin:8px auto 0;padding:0 12px;display:flex;flex-direction:column;gap:6px}
+.prow{display:flex;align-items:center;gap:8px}
+.plab{width:74px;flex:none;font-size:12.5px;font-weight:800;color:var(--dim)}
+.seg{display:flex;gap:5px;flex:1}
+.seg button{flex:1;border:2px solid var(--stroke);background:#faf8ff;color:var(--ink);cursor:pointer;
+  border-radius:12px;padding:6px 2px;font-family:inherit;font-weight:800;font-size:13px}
+.seg button.on{background:var(--v);color:#fff;border-color:var(--vd)}
+
+/* ── المسرح ── */
+#stage{position:relative;width:min(96vw,900px);aspect-ratio:16/9;margin:10px auto;
+  border-radius:20px;overflow:hidden;background:#0d0a18 center/cover no-repeat;
+  box-shadow:0 18px 40px -18px rgba(70,40,120,.7);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1.6cqh;container-type:inline-size}
+#ringWrap{position:relative;width:13cqw;aspect-ratio:1;display:grid;place-items:center;margin-bottom:.5cqw}
+#ringImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+#ringArc{position:absolute;inset:6%;transform:rotate(-90deg);overflow:visible}
+#num{position:relative;font-size:5.2cqw;font-weight:800;color:#fff;
+  text-shadow:0 2px 10px rgba(0,0,0,.55),0 0 14px rgba(255,255,255,.4)}
+#ttl{font-size:3.1cqw;font-weight:800;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.75)}
+#cards{display:flex;gap:2.2cqw;justify-content:center;perspective:900px}
+.card{width:11.5cqw;aspect-ratio:.66;position:relative;cursor:pointer;transform-style:preserve-3d;
+  transition:transform .5s cubic-bezier(.34,1.4,.5,1)}
+.card:hover{transform:translateY(-1cqw) scale(1.04)}
+.card.flip{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:1.6cqw;overflow:hidden;
+  background:center/contain no-repeat;filter:drop-shadow(0 1cqw 1.6cqw rgba(0,0,0,.45))}
+.back{transform:rotateY(180deg);background:linear-gradient(160deg,#e9dcff,#b79bff);
+  display:flex;align-items:center;justify-content:center;font-size:2.4cqw;font-weight:800;color:#4a2a9e}
+.nm{position:absolute;left:0;right:0;bottom:-2.6cqw;text-align:center;font-size:1.9cqw;
+  font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.85)}
+#hint{text-align:center;font-size:12px;color:var(--dim);padding:2px 10px 26px}
+.btn{border:none;cursor:pointer;border-radius:14px;padding:9px 16px;font-family:inherit;
+  font-weight:800;font-size:14px;color:#fff;background:linear-gradient(135deg,#8b5cf6,#6d3ff0);
+  box-shadow:0 4px 0 #5527c9;margin:0 4px}
+.btn.gh{background:#faf8ff;color:var(--ink);box-shadow:0 4px 0 var(--stroke);border:2px solid var(--stroke)}
+#acts{text-align:center;padding:2px 0 8px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎴 مختبر شاشة الفخاخ</h1>
+  <p>بدّل بين الخلفيات والمؤقّتات والبطاقات وشوف أي تركيبة أحلى</p>
+</header>
+
+<div id="picks">
+  <div class="prow"><span class="plab">الخلفية</span><div class="seg" id="segBg"></div></div>
+  <div class="prow"><span class="plab">المؤقّت</span><div class="seg" id="segRing"></div></div>
+  <div class="prow"><span class="plab">البطاقات</span><div class="seg" id="segCard"></div></div>
+</div>
+
+<div id="stage">
+  <div id="ringWrap">
+    <img id="ringImg" alt="">
+    <svg id="ringArc" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none"
+      stroke="rgba(255,255,255,.85)" stroke-width="5" stroke-linecap="round"
+      stroke-dasharray="276.5" stroke-dashoffset="0"></circle></svg>
+    <div id="num">60</div>
+  </div>
+  <div id="ttl">اختر قدرة... ثم ضحيّتك</div>
+  <div id="cards"></div>
+</div>
+
+<div id="acts">
+  <button class="btn" id="again">إعادة العدّ ⏱️</button>
+  <button class="btn gh" id="deal">وزّع بطاقات جديدة 🎴</button>
+  <button class="btn gh" id="all">اعرض السبع كلها</button>
+</div>
+<div id="hint">اضغط أي بطاقة لتنقلب · التركيبة تُحفظ في جهازك</div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const NAMES=["تجميد","وحل","قنابل","أكلة الحروف","خلط","مضاعفة","رهان"];
+const LS="fxLab.v1";
+let S={bg:1,ring:1,card:1,n:3};
+try{S=Object.assign(S,JSON.parse(localStorage.getItem(LS)||"{}"))}catch(e){}
+const CARDPIX={};        // نتائج تقطيع كل لوح
+let deck=[0,1,2];
+
+/* ── مبدّلات ── */
+function seg(id,key){
+  const el=$(id);el.innerHTML="";
+  for(let i=1;i<=4;i++){
+    const b=document.createElement("button");
+    b.textContent=i;b.className=S[key]===i?"on":"";
+    b.onclick=()=>{S[key]=i;save();apply();};
+    el.appendChild(b);
+  }
+}
+function save(){localStorage.setItem(LS,JSON.stringify(S));}
+
+/* ── إزالة الخلفية البيضاء من صورة (نفس الأصل ⇒ الكانفس مقروء) ── */
+function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
+async function keyWhite(src){
+  const img=await loadImg(src);
+  const c=document.createElement("canvas");c.width=img.naturalWidth;c.height=img.naturalHeight;
+  const x=c.getContext("2d");x.drawImage(img,0,0);
+  const d=x.getImageData(0,0,c.width,c.height),p=d.data;
+  for(let i=0;i<p.length;i+=4){
+    const mn=Math.min(p[i],p[i+1],p[i+2]);
+    if(mn>246)p[i+3]=0;
+    else if(mn>224)p[i+3]=Math.round(255*(246-mn)/22);
+  }
+  x.putImageData(d,0,0);
+  return c.toDataURL("image/png");
+}
+
+/* ── تقطيع لوح البطاقات إلى ٧ بطاقات ── */
+async function sliceCards(src){
+  if(CARDPIX[src])return CARDPIX[src];
+  const img=await loadImg(src);
+  const W=img.naturalWidth,H=img.naturalHeight;
+  const c=document.createElement("canvas");c.width=W;c.height=H;
+  const x=c.getContext("2d");x.drawImage(img,0,0);
+  const p=x.getImageData(0,0,W,H).data;
+  const ink=(px,py)=>{const i=(py*W+px)*4;return Math.min(p[i],p[i+1],p[i+2])<232;};
+  // أعمدة فيها محتوى
+  const col=new Uint8Array(W);
+  for(let i=0;i<W;i++){for(let y=0;y<H;y+=3){if(ink(i,y)){col[i]=1;break;}}}
+  // صفوف فيها محتوى (حدود عمودية موحّدة)
+  let top=0,bot=H-1;
+  outer1:for(let y=0;y<H;y++){for(let i=0;i<W;i+=3)if(ink(i,y)){top=y;break outer1;}}
+  outer2:for(let y=H-1;y>=0;y--){for(let i=0;i<W;i+=3)if(ink(i,y)){bot=y;break outer2;}}
+  // تجميع الأعمدة المتصلة
+  let runs=[],s=-1;
+  for(let i=0;i<W;i++){
+    if(col[i]&&s<0)s=i;
+    else if(!col[i]&&s>=0){if(i-s>W*0.02)runs.push([s,i]);s=-1;}
+  }
+  if(s>=0)runs.push([s,W]);
+  // لو الالتصاق دمج البطاقات نقسم المجال كله بالتساوي
+  if(runs.length!==7){
+    const a=runs.length?runs[0][0]:0, b=runs.length?runs[runs.length-1][1]:W;
+    const w=(b-a)/7;runs=[];
+    for(let i=0;i<7;i++)runs.push([Math.round(a+i*w),Math.round(a+(i+1)*w)]);
+  }
+  const padY=Math.round((bot-top)*0.06), out=[];
+  runs.forEach(([a,b])=>{
+    const pad=Math.round((b-a)*0.05);
+    const sx=Math.max(0,a-pad),sw=Math.min(W-sx,(b-a)+pad*2);
+    const sy=Math.max(0,top-padY),sh=Math.min(H-sy,(bot-top)+padY*2);
+    const cc=document.createElement("canvas");cc.width=sw;cc.height=sh;
+    cc.getContext("2d").drawImage(img,sx,sy,sw,sh,0,0,sw,sh);
+    out.push(cc.toDataURL("image/png"));
+  });
+  CARDPIX[src]=out;return out;
+}
+
+/* ── بناء المشهد ── */
+async function apply(){
+  seg("segBg","bg");seg("segRing","ring");seg("segCard","card");
+  $("stage").style.backgroundImage="url('/fx/bg"+S.bg+".jpg')";
+  $("ringImg").src=await keyWhite("/fx/ring"+S.ring+".jpg");
+  const pics=await sliceCards("/fx/cards"+S.card+".jpg");
+  const box=$("cards");box.innerHTML="";
+  deck.forEach(i=>{
+    const d=document.createElement("div");d.className="card";
+    d.innerHTML='<div class="face" style="background-image:url('+pics[i]+')"></div>'+
+                '<div class="face back">؟</div>'+
+                '<div class="nm">'+NAMES[i]+'</div>';
+    d.onclick=()=>d.classList.toggle("flip");
+    box.appendChild(d);
+  });
+}
+
+/* ── العدّاد ── */
+let T=null;
+function run(from){
+  clearInterval(T);
+  const total=from;let left=from;
+  const arc=$("ringArc").querySelector("circle"),L=276.5;
+  const tick=()=>{
+    $("num").textContent=left;
+    arc.style.strokeDashoffset=(L*(1-left/total)).toFixed(1);
+    if(left<=0){clearInterval(T);return;}
+    left--;
+  };
+  tick();T=setInterval(tick,1000);
+}
+
+$("again").onclick=()=>run(60);
+$("deal").onclick=()=>{
+  const pool=[0,1,2,3,4,5,6].sort(()=>Math.random()-.5);
+  deck=pool.slice(0,S.n===7?7:3);apply();
+};
+$("all").onclick=()=>{
+  S.n=S.n===7?3:7;save();
+  deck=S.n===7?[0,1,2,3,4,5,6]:[0,1,2];
+  $("all").textContent=S.n===7?"اعرض ثلاثاً فقط":"اعرض السبع كلها";
+  apply();
+};
+if(S.n===7){deck=[0,1,2,3,4,5,6];$("all").textContent="اعرض ثلاثاً فقط";}
+apply();run(60);
+</script>
+</body>
+</html>
