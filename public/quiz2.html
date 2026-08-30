@@ -1220,8 +1220,8 @@ function doorZoom(cat){
   // نور داخلي يظهر خلف المصراعين لحظة انفتاحهما
   const glow=document.createElement("div");
   glow.style.cssText="position:absolute;inset:3%;border-radius:"+archRad+";"+
-    "background:radial-gradient(125% 100% at 50% 28%,#faf6ff,#d9c6ff 40%,#8b5cf6 72%,rgba(139,92,246,0) 94%);"+
-    "box-shadow:0 0 60px 20px rgba(139,92,246,.55)";
+    "background:radial-gradient(118% 95% at 50% 32%,#faf6ff,#d9c6ff 34%,#8b5cf6 60%,rgba(139,92,246,0) 86%);"+
+    "box-shadow:0 0 40px 4px rgba(139,92,246,.32)";
   box.appendChild(glow);
   // مصراعا الباب: نسختان من القوس مقصوصتان من المنتصف
   // (ننسخ متغيرات ألوان الفئة صراحةً لأن استبدال cssText يمسحها،
@@ -1242,8 +1242,8 @@ function doorZoom(cat){
   const frameEl=win.querySelector(".dFrame");
   let L,R;
   if(frameEl){
-    // نوسّع اللفافة البنفسجية ونذيب حوافها حتى لا تبان مقصوصة عند التكبير على الجوال
-    glow.style.inset="-8%";glow.style.borderRadius="40px";
+    // الضوء يبقى داخل حدود البوابة، وحوافه تذوب للشفافية فلا يبدو برواز ولا حافة مقصوصة
+    glow.style.inset="7%";glow.style.borderRadius="30px";
     const frC=frameEl.cloneNode(true);
     // الفتح للداخل: الإطار الأبيض فوق المصراعين وهما ينزلقان خلفه
     frC.style.zIndex="3";
@@ -1293,11 +1293,27 @@ function doorZoom(cat){
   tone(240,.55,"sine",.05,520);
   setTimeout(()=>{
     box.animate([{opacity:1},{opacity:0}],{duration:220,fill:"forwards"});
-    veil.animate([{opacity:.94},{opacity:0}],{duration:320,fill:"forwards"});
+    // بدل أن ينقشع الوميض ونعود لشاشة التصويت لثانية، نحوّله إلى ستار بلون الخلفية
+    // ونُبقيه حتى تصل المرحلة التالية فعلياً من الخادم — ثم ينقشع عنها بنعومة
+    veil.style.background="radial-gradient(70% 70% at 50% 45%,#1a1030,#05070f)";
+    veil.animate([{opacity:.94},{opacity:1}],{duration:280,fill:"forwards"});
+    ZVEIL=veil;
+    clearTimeout(veilSafety);
+    veilSafety=setTimeout(fadeVeil,3000);   // أمان لو تأخّر الخادم أكثر من اللازم
   },1300);
-  setTimeout(()=>{box.remove();veil.remove();},1700);
+  setTimeout(()=>{box.remove();},1700);
 }
-function killZoomClones(){document.querySelectorAll(".zoomClone").forEach(c=>c.remove());}
+let ZVEIL=null,veilSafety=null;
+function fadeVeil(){
+  if(!ZVEIL)return;
+  const v=ZVEIL;ZVEIL=null;clearTimeout(veilSafety);
+  v.animate([{opacity:1},{opacity:0}],{duration:340,easing:"ease-out",fill:"forwards"});
+  setTimeout(()=>v.remove(),380);
+}
+function killZoomClones(){
+  document.querySelectorAll(".zoomClone").forEach(c=>{if(c!==ZVEIL)c.remove();});
+  fadeVeil();   // المرحلة التالية جاهزة على الشاشة → نرفع الستار
+}
 
 socket.on("reveal",d=>{
   const A=[...document.querySelectorAll("#answers .ans")];
