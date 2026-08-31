@@ -10,10 +10,14 @@ const voc = require("./vo");
 // وضع الاختبار السريع (يُفعّل بمتغير بيئة فقط — لا يؤثر على اللعب الحقيقي)
 const FAST = process.env.QUIZ_TEST_FAST === "1";
 
-const BASE_POINTS = 100;      // نقاط الإجابة الصحيحة
-const SPEED_POINTS = 100;     // أقصى مكافأة سرعة
+const BASE_POINTS = 100;      // (إرث — لم يعد يُستعمل في الأسئلة)
+const SPEED_POINTS = 100;     // (إرث)
+// نقاط المراكز: النقاط = (عدد اللاعبين − المركز + 1) × 100
+// خمسة لاعبين: الأول 500 والأخير 100. تتكيف تلقائيًا مع حجم الغرفة.
+const RANK_UNIT = 100;
+function rankPoints(playersN, rank) { return Math.max(0, (playersN - rank + 1) * RANK_UNIT); }
 const CHALLENGE_POINTS = 25;  // نقاط كل عنصر صحيح في جولات التحدي
-const REVEAL_MS = FAST ? 300 : 4500;        // مدة عرض النتيجة
+const REVEAL_MS = FAST ? 300 : 7500;        // مدة الكشف: اصطفاف الأيقونات + الإنارة + النقاط + الجدول
 const PY_INTRO_MS = FAST ? 300 : 4000;      // مقدمة الهرم
 const PY_REVEAL_MS = FAST ? 300 : 3200;     // كشف حركة الهرم
 const EFFECT_MS = FAST ? 400 : 4000;        // أقصى مدة لتأثير القوة
@@ -38,7 +42,7 @@ const POWERS = ["freeze", "gloop", "bombs", "nibble", "double", "bet"];
 const SABOTAGE = ["freeze", "gloop", "bombs", "nibble"];
 const POWER_AR = {
   freeze: "تجميد ❄️", gloop: "وحل 🟢", bombs: "قنابل 💣",
-  nibble: "أكلة الحروف 👾", shuffle: "خلط 🔀", double: "مضاعفة النقاط ✨",
+  nibble: "أكلة الحروف 👾", shuffle: "خلط 🔀", double: "حفلة النقاط ✨",
   bet: "رهان 🎲"
 };
 // قوى تُستعمل على النفس لا على الخصم
@@ -246,11 +250,14 @@ function setupQuiz(io, deps) {
   }
 
   // ====== بناء جدول المباراة ======
+  // الهيكل النهائي للمسابقة: كتلة أسئلة → التصنيف → كتلة → التوصيل → كتلة → الهرم.
+  // «طول المباراة» يضبط حجم الكتلة: قصيرة ٢، عادية ٣، طويلة ٤.
   function buildStages(s) {
-    const n = LENGTHS[s.length] || 9;
-    const st = [];
-    for (let i = 0; i < n; i++) st.push("q");
-    if (s.challenges) { st.push("link"); st.push("sort"); }
+    const blk = { short: 2, normal: 3, long: 4 }[s.length] || 3;
+    const q = n => Array(n).fill("q");
+    const st = s.challenges
+      ? [...q(blk), "sort", ...q(blk), "link", ...q(blk)]
+      : q(blk * 3);
     if (s.pyramid) st.push("pyramid");
     return st;
   }
@@ -509,7 +516,9 @@ function setupQuiz(io, deps) {
     room.usedQ.add(q.id);
     room.currentQ = q;                 // فيه الإجابة الصحيحة — لا يُرسل أبداً
     const vid = voiceOf(room, q.text);
-    room.pubQuestion = { text: q.text, options: null, cat: q.cat, diff: q.diff, img: q.img || null, reading: true, voice: vid };
+    // هل هذه جولة «حفلة نقاط»؟ تُستهلك هنا وتظهر لكل اللاعبين مع السؤال
+    room.party = !!room.partyNext; room.partyNext = false;
+    room.pubQuestion = { text: q.text, options: null, cat: q.cat, diff: q.diff, img: q.img || null, reading: true, voice: vid, party: room.party };
     room.answers = {};
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
     // مدة القراءة: ثانية قبل بدء النطق (تحميل المقطع وانتقال المشهد) + مدّة الصوت
@@ -540,7 +549,7 @@ function setupQuiz(io, deps) {
     // مرحلة الإجابة: الخيارات وحدها تملأ الشاشة — السؤال قُرئ في المرحلة السابقة
     const q = room.currentQ;
     if (!q) return nextStage(room);
-    room.pubQuestion = { text: q.text, options: q.options, cat: q.cat, diff: q.diff, img: q.img || null, voice: voiceOf(room, q.text) };
+    room.pubQuestion = { text: q.text, options: q.options, cat: q.cat, diff: q.diff, img: q.img || null, voice: voiceOf(room, q.text), party: room.party };
 
     // تطبيق الهجمات المعلّقة
     (room.attacks || []).forEach(at => {
@@ -573,16 +582,8 @@ function setupQuiz(io, deps) {
     // تعويض زمن الشبكة: نخصم نصف زمن الذهاب والإياب
     const elapsed = Math.max(0, Date.now() - room.qSentAt - (p.rtt || 0) / 2);
     const correct = idx === room.currentQ.correct;
-    let gain = correct ? scoreFor(room, elapsed) : 0;
-    // مضاعفة النقاط: تُستهلك في هذا السؤال سواء أصاب أم أخطأ
-    let doubled = false;
-    if (p.doubleNext) {
-      p.doubleNext = false;
-      if (correct) { gain *= 2; doubled = true; }
-    }
-    room.answers[p.id] = { idx, correct, gain, elapsed, doubled };
-    p.score += gain;
-    p.lastGain = gain;
+    // لا نقاط الآن: المركز يتحدد عند الكشف بترتيب المصيبين حسب السرعة
+    room.answers[p.id] = { idx, correct, gain: 0, elapsed, doubled: false };
     nsp.to(p.id).emit("answerAck", { locked: true });
     broadcast(room);
     // إذا أجاب الجميع، ننهي مبكراً
@@ -595,26 +596,47 @@ function setupQuiz(io, deps) {
   function reveal(room) {
     clearTimers(room);
     // ── حسم الرهانات: من راهن على أسرع مجيب صحيح يكسب ──
+    // الرهان يبقى سرًّا في حالة الخادم طوال الجولة، ويُكشف علنًا هنا فقط —
+    // في شريط النتائج، بعد احتساب نقاط الجولة الأساسية.
+    // ── نقاط المراكز: المصيبون وحدهم يُرتَّبون بالسرعة، الأسرع ينال العلامة الكاملة ──
+    const N = alive(room).length;
+    const winners = alive(room)
+      .filter(p => room.answers[p.id] && room.answers[p.id].correct)
+      .sort((a, b) => room.answers[a.id].elapsed - room.answers[b.id].elapsed);
+    winners.forEach((p, i) => {
+      const a = room.answers[p.id];
+      a.rank = i + 1;
+      a.gain = rankPoints(N, a.rank);
+      // حفلة النقاط تضاعف ناتج المعادلة (doubleNext إرث بالسلوك نفسه)
+      if (room.party || p.doubleNext) { a.gain *= 2; a.doubled = true; }
+      p.doubleNext = false;
+      p.score += a.gain; p.lastGain = a.gain;
+    });
+    alive(room).forEach(p => {
+      const a = room.answers[p.id];
+      if (!a || !a.correct) p.lastGain = 0;
+    });
+    // ── الرهان: المراهن ينال نقاطًا مطابقة تمامًا لمركز من راهن عليه ──
+    const betsOut = [];
     if ((room.bets || []).length) {
-      const fastCorrect = alive(room)
-        .filter(p => room.answers[p.id] && room.answers[p.id].correct)
-        .sort((a, b) => room.answers[a.id].elapsed - room.answers[b.id].elapsed)[0];
-      const fastestId = fastCorrect ? fastCorrect.id : null;
       room.bets.forEach(b => {
         const by = room.players.find(p => p.id === b.by);
         if (!by || by.spectator) return;
-        const won = !!fastestId && b.on === fastestId;
-        if (won) { by.score += BET_POINTS; by.lastGain = (by.lastGain || 0) + BET_POINTS; }
-        nsp.to(b.by).emit("betResult", { on: b.onName, won, points: won ? BET_POINTS : 0 });
+        const ta = room.answers[b.on];
+        const pts = ta && ta.correct ? ta.gain : 0;
+        if (pts) { by.score += pts; by.lastGain = (by.lastGain || 0) + pts; }
+        betsOut.push({ byName: b.byName, onName: b.onName, won: pts > 0, points: pts });
+        nsp.to(b.by).emit("betResult", { on: b.onName, won: pts > 0, points: pts });
       });
       room.bets = [];
     }
     const res = alive(room).map(p => {
       const a = room.answers[p.id];
       return {
-        id: p.id, name: p.name, color: p.color,
+        id: p.id, name: p.name, color: p.color, charId: p.charId,
         idx: a ? a.idx : -1, correct: a ? a.correct : false,
-        gain: a ? a.gain : 0, ms: a ? Math.round(a.elapsed) : null, doubled: !!(a && a.doubled),
+        gain: a ? a.gain : 0, rank: a ? a.rank || 0 : 0,
+        ms: a ? Math.round(a.elapsed) : null, doubled: !!(a && a.doubled),
         score: p.score
       };
     }).sort((a, b) => (b.correct - a.correct) || ((a.ms ?? 1e9) - (b.ms ?? 1e9)));
@@ -622,8 +644,11 @@ function setupQuiz(io, deps) {
       correct: room.currentQ.correct,
       correctText: room.currentQ.options[room.currentQ.correct],
       results: res,
+      bets: betsOut,
+      party: !!room.party,
       vo: voc.pick("reveal")
     });
+    room.party = false;
     setPhase(room, "reveal", 0, null);
     room.phaseEndsAt = Date.now() + REVEAL_MS;
     room.phaseDur = REVEAL_MS / 1000;
@@ -636,14 +661,100 @@ function setupQuiz(io, deps) {
     const L = qbank.drawLink(room.usedLink);
     room.usedLink.add(L.id);
     room.currentLink = L;
-    room.pubLink = { title: L.title, left: L.left, right: L.right };
+    room.pubLink = { title: L.title, total: L.pairs.length };
     room.pubQuestion = null; room.pubSort = null;
     room.answers = {};
+    // لوحة مستقلة لكل لاعب: ٣ خانات يمين × ٣ يسار تُضخّ من الأزواج الـ١٥
+    room.linkProg = {};
+    alive(room).forEach(p => {
+      const st = { done: new Set(), hits: 0, fin: 0, r: [], l: [], tokR: {}, tokL: {} };
+      room.linkProg[p.id] = st;
+      linkFill(room, st);
+      sendBoard(room, p, st);
+    });
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
     room.qSentAt = Date.now();
-    const t = Math.round(room.settings.questionTime * 1.6);
+    const t = Math.max(45, Math.round(L.pairs.length * 4.5));
     setPhase(room, "link", t, () => revealChallenge(room, "link"));
     broadcast(room);
+  }
+
+  // ملء الخانات الفارغة عشوائيًا بشرط حتمي: توصيلة صحيحة واحدة على الأقل
+  // واثنتان كحدّ أقصى معروضتان في اللوحة الحالية (ما دام ذلك ممكنًا رياضيًا)
+  function linkFill(room, st) {
+    const total = room.currentLink.pairs.length;
+    const remain = [];
+    for (let i = 0; i < total; i++) if (!st.done.has(i)) remain.push(i);
+    const CAP = 3;
+    const draw = (side, other) => {
+      while (st[side].length < Math.min(CAP, remain.length ? CAP : 0)) {
+        const cand = remain.filter(i => !st[side].includes(i));
+        if (!cand.length) break;
+        const matches = st.r.filter(i => st.l.includes(i)).length;
+        // نفضّل مرشحًا يُبقي التطابقات بين ١ و٢
+        let pool2 = cand;
+        if (matches >= 2) pool2 = cand.filter(i => !st[other].includes(i));
+        else if (matches === 0) {
+          const mk = cand.filter(i => st[other].includes(i));
+          if (mk.length) pool2 = mk;
+        }
+        if (!pool2.length) pool2 = cand;
+        st[side].push(pool2[Math.floor(Math.random() * pool2.length)]);
+      }
+    };
+    draw("r", "l"); draw("l", "r");
+    // ضمانة أخيرة: لا لوحة بلا توصيلة صحيحة واحدة
+    const matches = st.r.filter(i => st.l.includes(i));
+    if (!matches.length && st.r.length) {
+      const pick = st.r[Math.floor(Math.random() * st.r.length)];
+      const swap = st.l.findIndex(i => !st.r.includes(i));
+      if (swap >= 0) st.l[swap] = pick; else if (st.l.length < CAP) st.l.push(pick);
+    }
+    // رموز عشوائية لكل خانة: العميل لا يرى أرقام الأزواج فلا يطابقها غشًّا
+    st.tokR = {}; st.tokL = {};
+    st.r.forEach(i => st.tokR[crypto.randomBytes(4).toString("hex")] = i);
+    st.l.forEach(i => st.tokL[crypto.randomBytes(4).toString("hex")] = i);
+  }
+
+  function sendBoard(room, p, st) {
+    const P = room.currentLink.pairs;
+    nsp.to(p.id).emit("linkBoard", {
+      title: room.currentLink.title,
+      total: P.length, hits: st.hits,
+      r: Object.entries(st.tokR).map(([k, i]) => ({ k, txt: P[i][0] })),
+      l: Object.entries(st.tokL).map(([k, i]) => ({ k, txt: P[i][1] }))
+    });
+  }
+
+  // محاولة توصيل: خطأٌ لا يُفقد شيئًا — يُعاد المحاولة بلا عقوبة
+  function linkPick(room, p, data) {
+    if (room.phase !== "link" || p.spectator) return;
+    const st = room.linkProg && room.linkProg[p.id];
+    if (!st || st.fin) return;
+    const ri = st.tokR[data && data.r], li = st.tokL[data && data.l];
+    if (ri === undefined || li === undefined) return;
+    const correct = ri === li;
+    nsp.to(p.id).emit("linkFb", { correct, r: data.r, l: data.l });
+    if (!correct) return;
+    st.done.add(ri); st.hits++;
+    st.r = st.r.filter(i => i !== ri);
+    st.l = st.l.filter(i => i !== li);
+    const total = room.currentLink.pairs.length;
+    if (st.hits >= total) {
+      st.fin = 1;
+      st.elapsed = Math.max(0, Date.now() - room.qSentAt - (p.rtt || 0) / 2);
+      p.answered = true;
+      st.tokR = {}; st.tokL = {};
+      sendBoard(room, p, st);        // لوحة فارغة = «أكملت، بانتظار البقية»
+      broadcast(room);
+      if (alive(room).every(x => x.answered)) {
+        clearTimers(room);
+        setTimeout(() => { if (room.phase === "link") revealChallenge(room, "link"); }, 400);
+      }
+      return;
+    }
+    linkFill(room, st);
+    sendBoard(room, p, st);
   }
 
   function submitLink(room, p, arr) {
@@ -671,14 +782,44 @@ function setupQuiz(io, deps) {
     const S = qbank.drawSort(room.usedSort);
     room.usedSort.add(S.id);
     room.currentSort = S;
-    room.pubSort = { a: S.a, b: S.b, items: S.items };
+    room.pubSort = { a: S.a, b: S.b, items: S.items, total: S.items.length };
     room.pubQuestion = null; room.pubLink = null;
     room.answers = {};
+    // تقدّم كل لاعب: مؤشر العنصر الحالي وعدد الإصابات — الخادم مصدر الحقيقة
+    room.sortProg = {};
+    alive(room).forEach(p => { room.sortProg[p.id] = { idx: 0, hits: 0, fin: 0 }; });
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
     room.qSentAt = Date.now();
-    const t = Math.round(room.settings.questionTime * 1.6);
+    // ١٥ عنصرًا يحتاج نَفَسًا: ٤ ثوانٍ للعنصر
+    const t = Math.max(40, S.items.length * 4);
     setPhase(room, "sort", t, () => revealChallenge(room, "sort"));
     broadcast(room);
+  }
+
+  // سحب عنصر واحد يمينًا أو يسارًا — الرد فوري: صح أو خطأ، بلا تراجع
+  function sortPick(room, p, data) {
+    if (room.phase !== "sort" || p.spectator) return;
+    const st = room.sortProg && room.sortProg[p.id];
+    if (!st || st.fin) return;
+    const i = Number(data && data.i), side = Number(data && data.side);
+    if (i !== st.idx) return;                       // ترتيب صارم — لا قفز
+    if (side !== 0 && side !== 1) return;
+    const ans = room.currentSort.answer;
+    if (i < 0 || i >= ans.length) return;
+    const correct = ans[i] === side;
+    if (correct) st.hits++;
+    st.idx++;
+    nsp.to(p.id).emit("sortFb", { i, correct, side });
+    if (st.idx >= ans.length) {
+      st.fin = 1;
+      st.elapsed = Math.max(0, Date.now() - room.qSentAt - (p.rtt || 0) / 2);
+      p.answered = true;
+      broadcast(room);
+      if (alive(room).every(x => x.answered)) {
+        clearTimers(room);
+        setTimeout(() => { if (room.phase === "sort") revealChallenge(room, "sort"); }, 400);
+      }
+    }
   }
 
   function submitSort(room, p, arr) {
@@ -704,20 +845,46 @@ function setupQuiz(io, deps) {
   function revealChallenge(room, kind) {
     clearTimers(room);
     const src = kind === "link" ? room.currentLink : room.currentSort;
-    const res = alive(room).map(p => {
-      const a = room.answers[p.id];
-      return {
-        id: p.id, name: p.name, color: p.color,
-        hits: a ? a.hits : 0, gain: a ? a.gain : 0, score: p.score,
-        picks: a ? a.picks : null
-      };
-    }).sort((a, b) => b.hits - a.hits || b.gain - a.gain);
-    nsp.to(room.id).emit("revealChallenge", { kind, answer: src.answer, results: res });
+    let res, raceMs = 0;
+    if (kind === "sort" || kind === "link") {
+      // النقاط تُمنح هنا من التقدّم المتتبَّع (من لم يُكمل يأخذ عن إصاباته فقط)
+      const dur = (Date.now() - room.qSentAt);
+      const progMap = kind === "sort" ? room.sortProg : room.linkProg;
+      res = alive(room).map(p => {
+        const st = (progMap || {})[p.id] || { idx: 0, hits: 0 };
+        return {
+          id: p.id, name: p.name, color: p.color, charId: p.charId,
+          hits: st.hits, done: kind === "sort" ? st.idx : st.hits, gain: 0, score: p.score,
+          ms: st.fin ? Math.round(st.elapsed) : null
+        };
+      // التعادل يُحسم بالسرعة: من أنهى قائمته في زمن أقل يتقدّم
+      }).sort((a, b) => b.hits - a.hits || ((a.ms ?? 1e9) - (b.ms ?? 1e9)));
+      // نقاط المراكز بعد اكتمال الترتيب — من لم يُصب شيئًا لا يُكافأ على مركزه
+      const NP = res.length;
+      res.forEach((r, i) => {
+        r.gain = r.hits > 0 ? rankPoints(NP, i + 1) : 0;
+        const pl = room.players.find(x => x.id === r.id);
+        if (pl) { pl.score += r.gain; pl.lastGain = r.gain; r.score = pl.score; }
+      });
+      const maxHits = res.length ? res[0].hits : 0;
+      raceMs = maxHits * 450 + 3500;   // مدة سباق الصعود في العميل
+    } else {
+      res = alive(room).map(p => {
+        const a = room.answers[p.id];
+        return {
+          id: p.id, name: p.name, color: p.color,
+          hits: a ? a.hits : 0, gain: a ? a.gain : 0, score: p.score,
+          picks: a ? a.picks : null
+        };
+      }).sort((a, b) => b.hits - a.hits || b.gain - a.gain);
+    }
+    nsp.to(room.id).emit("revealChallenge", { kind, results: res,
+      total: kind === "sort" ? src.answer.length : src.pairs.length });
     // تعليق «انتهى الوقت» طويل نسبيًا، فنمدّ الكشف حتى يكتمل
     room.pubVo = voc.pick(kind === "sort" ? "sort_timeup" : "link_timeup");
     if (room.pubVo) room.pubVo.at = "reveal";
     const cms = FAST ? REVEAL_MS + 1500
-      : Math.max(REVEAL_MS + 1500, (room.pubVo ? room.pubVo.dur * 1000 + 800 : 0));
+      : Math.max(REVEAL_MS + 1500, (room.pubVo ? room.pubVo.dur * 1000 + 800 : 0), raceMs);
     setPhase(room, "reveal", 0, null);
     room.phaseEndsAt = Date.now() + cms;
     room.phaseDur = cms / 1000;
@@ -1134,8 +1301,9 @@ function setupQuiz(io, deps) {
         player.pendingAttack = { to: player.id, power };
         player.powersLeft--;
         player.lastPower = power;
-        if (power === "double") player.doubleNext = true;
-        nsp.to(player.id).emit("attackAck", { to: "نفسك", power, self: true });
+        // حفلة النقاط: السؤال القادم كله بنقاط مضاعفة — لكل من يجيب صح
+        if (power === "double") room.partyNext = true;
+        nsp.to(player.id).emit("attackAck", { to: "الجميع", power, self: true });
         broadcast(room);
         maybeEndAttack(room);
         return;
@@ -1177,6 +1345,8 @@ function setupQuiz(io, deps) {
 
     socket.on("linkAnswer", (arr) => { if (room && player) submitLink(room, player, arr); });
     socket.on("sortAnswer", (arr) => { if (room && player) submitSort(room, player, arr); });
+    socket.on("sortPick", (d) => { if (room && player) sortPick(room, player, d); });
+    socket.on("linkPick", (d) => { if (room && player) linkPick(room, player, d); });
 
     socket.on("chat", (text) => {
       if (!room || !player) return;
