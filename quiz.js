@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const qbank = require("./qbank");
 const { nameFromSocket } = require("./account");
 const mod = require("./moderation");
+const voc = require("./vo");
 
 // ====== ثوابت ======
 // وضع الاختبار السريع (يُفعّل بمتغير بيئة فقط — لا يؤثر على اللعب الحقيقي)
@@ -181,6 +182,7 @@ function setupQuiz(io, deps) {
       link: room.pubLink,
       sort: room.pubSort,
       intro: room.pubIntro,
+      vo: room.pubVo,
       pyramidHeight: room.settings.pyramidHeight,
       pyramidQ: room.pyQIndex,
       powerMenu: room.powerMenu || [],
@@ -282,10 +284,12 @@ function setupQuiz(io, deps) {
   function skipIntro(room) {
     if (room.phase !== "intro" || !room.pubIntro) return;
     const kind = room.introKind;
-    nsp.to(room.id).emit("introSkipped", { kind });
+    const sv = voc.pick(kind === "pyramid" ? ["pyramid_skip", "skip"] : ["minigame_skip", "skip"]);
+    nsp.to(room.id).emit("introSkipped", { kind, vo: sv });
     room.pubIntro = null;
     clearTimeout(room.phaseTimer);
-    setTimeout(() => { if (room.state === "playing") startStage(room); }, FAST ? 100 : 1600);
+    const wait = FAST ? 100 : Math.max(1200, sv ? sv.dur * 1000 + 400 : 0);
+    setTimeout(() => { if (room.state === "playing") startStage(room); }, wait);
   }
 
   // ====== مرحلة التصويت على الفئة ======
@@ -301,7 +305,13 @@ function setupQuiz(io, deps) {
     room.catOptions.push(RANDOM_DOOR);
     room.catOptions = qbank.shuffle(room.catOptions);
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; });
-    setPhase(room, "vote", room.settings.voteTime, () => resolveVote(room));
+    // تعليق المعلّق: نختاره هنا لنعرف مدّته فنمنح المرحلة وقتًا يكفيه
+    const first = !room.voDone.door;
+    room.voDone.door = true;
+    room.pubVo = voc.pick(first ? "first_door" : "door");
+    if (room.pubVo) room.pubVo.at = "vote";
+    const vt = Math.max(room.settings.voteTime, room.pubVo ? room.pubVo.dur + 1.2 : 0);
+    setPhase(room, "vote", FAST ? room.settings.voteTime : vt, () => resolveVote(room));
     broadcast(room);
   }
 
@@ -324,9 +334,13 @@ function setupQuiz(io, deps) {
     }
     room.chosenCat = real;
     room.lastCats.push(real);
-    nsp.to(room.id).emit("voteResult", { cat: best, tally, tie: tied.length > 1 ? tied : null });
-    // مرحلة عرض النتيجة: روليت (عند التعادل) ثم زوم الدخول عبر الباب
-    const ms = tied.length > 1 ? SPIN_MS : ZOOM_MS;
+    const tie = tied.length > 1;
+    const sv = voc.pick(tie ? "tie_roulette" : "door_enter");
+    nsp.to(room.id).emit("voteResult", { cat: best, tally, tie: tie ? tied : null, vo: sv });
+    // مرحلة عرض النتيجة: روليت (عند التعادل) ثم زوم الدخول عبر الباب،
+    // ولا ننتقل قبل أن يُكمل المعلّق جملته.
+    const base = tie ? SPIN_MS : ZOOM_MS;
+    const ms = FAST ? base : Math.max(base, sv ? sv.dur * 1000 + 500 : 0);
     const canAttack = room.settings.powers && room.stageIdx >= 3 &&
       alive(room).length >= 2 && alive(room).some(p => p.powersLeft > 0);
     setPhase(room, "spin", ms / 1000, () => { canAttack ? beginAttack(room) : beginReady(room); });
@@ -377,7 +391,14 @@ function setupQuiz(io, deps) {
         nsp.to(p.id).emit("powerMenu", { menu: p.menu });
       } else p.menu = null;
     });
-    setPhase(room, "attack", room.settings.attackTime, () => beginAttackReveal(room));
+    const firstP = !room.voDone.powers;
+    room.voDone.powers = true;
+    room.pubVo = voc.pick(firstP ? "first_powers" : "powers_intro");
+    if (room.pubVo) room.pubVo.at = "attack";
+    // شرح القدرات أول مرة طويل، فلا نقفل الاختيار قبل أن يُنهي المعلّق كلامه
+    const at = FAST ? room.settings.attackTime
+      : Math.max(room.settings.attackTime, room.pubVo ? room.pubVo.dur + 1.5 : 0);
+    setPhase(room, "attack", at, () => beginAttackReveal(room));
     broadcast(room);
   }
 
@@ -387,7 +408,10 @@ function setupQuiz(io, deps) {
     nsp.to(room.id).emit("attackReveal", {
       hits: room.attacks.map(a => ({ from: a.from, fromName: a.fromName, to: a.to, toName: a.toName, power: a.power }))
     });
-    setPhase(room, "attackReveal", AR_MS / 1000, () => beginReady(room));
+    // العميل يختار التعليق حسب المقلب الذي أصاب لاعبه، فنمنح المرحلة أطول احتمال
+    const arMs = FAST ? AR_MS : Math.max(AR_MS, voc.maxOf("trap_freeze", "trap_gloop",
+      "trap_bombs", "trap_nibble", "trap_double", "trap_bet", "trap_multi") * 1000 + 500);
+    setPhase(room, "attackReveal", arMs / 1000, () => beginReady(room));
     broadcast(room);
   }
 
@@ -607,11 +631,16 @@ function setupQuiz(io, deps) {
       };
     }).sort((a, b) => b.hits - a.hits || b.gain - a.gain);
     nsp.to(room.id).emit("revealChallenge", { kind, answer: src.answer, results: res });
+    // تعليق «انتهى الوقت» طويل نسبيًا، فنمدّ الكشف حتى يكتمل
+    room.pubVo = voc.pick(kind === "sort" ? "sort_timeup" : "link_timeup");
+    if (room.pubVo) room.pubVo.at = "reveal";
+    const cms = FAST ? REVEAL_MS + 1500
+      : Math.max(REVEAL_MS + 1500, (room.pubVo ? room.pubVo.dur * 1000 + 800 : 0));
     setPhase(room, "reveal", 0, null);
-    room.phaseEndsAt = Date.now() + REVEAL_MS + 1500;
-    room.phaseDur = (REVEAL_MS + 1500) / 1000;
+    room.phaseEndsAt = Date.now() + cms;
+    room.phaseDur = cms / 1000;
     broadcast(room);
-    room.phaseTimer = setTimeout(() => nextStage(room), REVEAL_MS + 1500);
+    room.phaseTimer = setTimeout(() => nextStage(room), cms);
   }
 
   // ====== النهائي: الهرم ======
@@ -876,7 +905,7 @@ function setupQuiz(io, deps) {
         usedQ: new Set(), usedLink: new Set(), usedSort: new Set(), lastCats: [],
         currentQ: null, pubQuestion: null, pubLink: null, pubSort: null,
         pyQIndex: 0, winner: null, finalTable: null, qSentAt: 0,
-        introDone: {}, introKind: null, pubIntro: null
+        introDone: {}, introKind: null, pubIntro: null, pubVo: null, voDone: {}
       };
       player = makePlayer(name);
       player.color = COLORS[0];
@@ -949,7 +978,7 @@ function setupQuiz(io, deps) {
       room.winner = null; room.finalTable = null;
       room.pubQuestion = null; room.pubLink = null; room.pubSort = null;
       room.stageIdx = -1; room.stages = []; room.pyQIndex = 0;
-      room.introDone = {}; room.introKind = null; room.pubIntro = null;
+      room.introDone = {}; room.introKind = null; room.pubIntro = null; room.pubVo = null; room.voDone = {};
       room.players.forEach(p => { p.spectator = false; p.score = 0; p.pyPos = 0; p.effects = []; });
       broadcast(room);
     });
