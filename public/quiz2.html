@@ -228,18 +228,24 @@ input,select,textarea{font-family:inherit}
   inset-inline-end:calc(16px + env(safe-area-inset-right));
   padding:12px 22px;border-radius:99px;border:1px solid rgba(255,255,255,.45);
   background:rgba(0,0,0,.6);color:#fff;font:inherit;font-weight:700;font-size:15px;
-  cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:3;
+  cursor:pointer;z-index:3;
   touch-action:manipulation;-webkit-tap-highlight-color:transparent;
   transition:background .2s,transform .15s;animation:opFade .5s 1s both}
 #opSkip:hover{background:rgba(139,92,246,.75);transform:scale(1.05)}
 #opSkip:active{transform:scale(.96);background:rgba(139,92,246,.8)}
-#opSkip.gone,#opHint.gone{display:none}
+#opSkip.gone,#opHint.gone,#opWait.gone{display:none}
+/* الفيلم يغطي الشاشة كاملة، فالطبقات الخلفية محجوبة تمامًا — نطفئها كي لا
+   ينافس تمويهها (blur 70px المتحرك) فكَّ ترميز الفيديو على البطاقات الضعيفة. */
+body.filmOn #aurora,body.filmOn #bgFx,body.filmOn #grid{display:none!important}
+#opWait{position:absolute;bottom:16%;left:50%;transform:translateX(-50%);z-index:3;
+  padding:11px 24px;border-radius:99px;background:rgba(0,0,0,.6);
+  color:rgba(255,255,255,.85);font-weight:700;font-size:14px}
 @keyframes opFade{from{opacity:0}to{opacity:1}}
 #opHint{position:absolute;top:calc(16px + env(safe-area-inset-top));
   inset-inline-end:calc(16px + env(safe-area-inset-right));z-index:3;
   padding:9px 16px;border-radius:99px;background:rgba(0,0,0,.5);
   color:rgba(255,255,255,.72);font-size:12.5px;font-weight:600;
-  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:opFade .5s 1s both}
+  animation:opFade .5s 1s both}
 /* على الشاشات الضيقة: هدف لمس أكبر ومسافة أقرب للحافة */
 @media (max-width:560px){
   #opSkip{padding:14px 20px;font-size:16px;min-height:48px;
@@ -964,6 +970,7 @@ body.noTop #hud,body.noTop #roster{display:none}
       <video id="opVid" playsinline preload="auto"></video>
       <button id="opSkip" type="button">تخطي المقدمة ⏭</button>
       <div id="opHint" class="gone">صاحب الغرفة يقدر يتخطى المقدمة</div>
+      <div id="opWait" class="gone">جارٍ البدء…</div>
       <div id="opTap">اضغط لتشغيل الصوت 🔊</div>
     </div>
 
@@ -1415,7 +1422,7 @@ socket.on("reveal",d=>{
     else{o.classList.add("fade");if(i===picked)o.classList.add("lose");}});
   const m=d.results.find(r=>r.id===ME);
   if(m&&m.correct){sWin();}else sLose();
-  vo("reveal");
+  if(d.vo) voFile(d.vo.key,d.vo.i);
   setTimeout(()=>showRev(d),1000);
 });
 socket.on("revealChallenge",d=>{
@@ -1429,6 +1436,7 @@ socket.on("revealChallenge",d=>{
   setTimeout(()=>showRevCh(d),800);
 });
 socket.on("pyramidReveal",d=>{
+  if(d.nearVo) voFile(d.nearVo.key,d.nearVo.i);
   [...document.querySelectorAll("#pyAns .ans")].forEach((o,i)=>{
     if(i===d.correct){o.classList.add("win");burst(o,"#39e08a");}else o.classList.add("fade");});
   const mine=d.moves.find(m=>m.id===ME);
@@ -1974,20 +1982,28 @@ function voOnce(key,alt){ if(voDone[key])return; voDone[key]=1; vo(key,alt); }
    نسختان: 9:16 للجوال و16:9 للكمبيوتر، تُختار حسب أبعاد الشاشة.
    المتصفحات تمنع التشغيل التلقائي بصوت، فنبدأ صامتًا ثم نحاول فكّ الكتم؛
    ولو رفض المتصفح نعرض زرًا يضغطه اللاعب فيعود الصوت من موضعه. */
-let opStarted=false;
+let opStarted=false, opSkipped=false, opPre=null;
+function opSrc(){ return innerHeight>innerWidth ? "/intro/mobile.mp4" : "/intro/desktop.mp4"; }
+function opPrefetch(){
+  if(opPre||!ST||!ST.settings||!ST.settings.opening)return;
+  opPre=document.createElement("video");
+  opPre.preload="auto"; opPre.muted=true; opPre.src=opSrc();
+  opPre.load();                       /* يملأ مخزن المتصفح قبل الضغط على «ابدأ» */
+}
 function rOpen(fresh){
   scene("sOpen");
   $("sOpen").classList.add("on");
   /* حالة الزر تُحدَّث في كل رسم لا في أول رسم فقط: معرّف المضيف قد يصل
      بعد بدء المرحلة، وحينها كان الزر يُخفى ولا يعود أبدًا. */
   const host = ST && ST.ownerId===ME;
-  $("opSkip").classList.toggle("gone",!host);
-  $("opHint").classList.toggle("gone",host);
+  $("opSkip").classList.toggle("gone",opSkipped||!host);
+  $("opHint").classList.toggle("gone",opSkipped||host);
   if(!fresh||opStarted)return;
   opStarted=true;
+  document.body.classList.add("filmOn");   /* يوقف الطبقات الخلفية المتحركة */
   voStop(); vStop();
   const v=$("opVid");
-  v.src = innerHeight>innerWidth ? "/intro/mobile.mp4" : "/intro/desktop.mp4";
+  v.src = opSrc();
   v.muted=vMute; v.volume=1; v.currentTime=0;
   const tap=$("opTap");
   v.play().then(()=>{ tap.classList.remove("show"); }).catch(()=>{
@@ -2011,17 +2027,30 @@ function opBail(){
   opEnd();
   socket.emit("skipIntro");
 }
-function opEnd(){
+function opKill(){                       /* يوقف الفيديو ويحرّر فك الترميز */
   const v=$("opVid");
   try{ v.pause(); v.removeAttribute("src"); v.load(); }catch(e){}
-  $("sOpen").classList.remove("on");
   $("opTap").classList.remove("show");
+}
+function opEnd(){
+  opKill();
+  $("sOpen").classList.remove("on");
+  $("opWait").classList.add("gone");
+  document.body.classList.remove("filmOn");
+  if(opPre){ try{opPre.removeAttribute("src");opPre.load();}catch(e){} opPre=null; }
+}
+/* التخطي: نوقف الفيلم فورًا لكن نُبقي شاشة سوداء ريثما ينتهي تعليق المعلّق،
+   فلا يرى اللاعب فراغًا ولا يُقطع التعليق ببداية الجولة. */
+function opStop(){
+  opSkipped=true; opKill();
+  $("opSkip").classList.add("gone");
+  $("opHint").classList.add("gone");
+  $("opWait").classList.remove("gone");
 }
 $("opSkip").onclick=()=>{
   if(!ST||ST.phase!=="opening"||ST.ownerId!==ME)return;
   $("opSkip").disabled=true;
   $("opSkip").textContent="جارٍ التخطي…";
-  opEnd();
   socket.emit("skipIntro");
 };
 
@@ -2040,7 +2069,7 @@ function rIntro(fresh){
   const f=$("inFill");
   f.style.animation="none";void f.offsetWidth;
   f.style.animation="inFill "+Math.max(.3,ST.phaseDur||10)+"s linear both";
-  vo(ST.intro.vo);
+  if(ST.intro.vo) voFile(ST.intro.vo.key,ST.intro.vo.i);
 }
 $("inSkip").onclick=()=>{
   if(!ST||ST.phase!=="intro"||ST.ownerId!==ME)return;
@@ -2050,7 +2079,7 @@ $("inSkip").onclick=()=>{
 };
 /* التخطي يصل للجميع: تعليق قصير من المعلّق ثم تبدأ اللعبة */
 socket.on("introSkipped",d=>{
-  if(d.kind==="opening"){ opEnd(); return; }
+  if(d.kind==="opening"){ opStop(); if(d.vo) voFile(d.vo.key,d.vo.i); return; }
   $("inFill").style.animation="none";
   $("inHint").textContent="تم تخطي الشرح";
   if(d.vo) voFile(d.vo.key,d.vo.i);
@@ -2092,9 +2121,10 @@ function rAR(fresh){
     "<b>"+esc(h.fromName)+"</b> ألقى عليك <b>"+(PW_NM[h.power]||h.power)+"</b>!"));
   if(!onMe.length)add("safe","😮‍💨","نجوت هذه الجولة… استعدّ للسؤال!");
   if(onMe.length){sHit();}else{sTap();}
-  /* تعليق مخصص لكل مقلب — ولو أصابني اثنان فأكثر فله تعليق خاص */
-  if(onMe.length>=2) vo("trap_multi");
-  else if(onMe.length===1) vo("trap_"+onMe[0].power);
+  /* نوع التعليق يتبع المقلب الذي أصابني، ورقمه يختاره الخادم —
+     فمن أصابه المقلب نفسه يسمع التسجيل نفسه لا تسجيلاً عشوائيًا آخر. */
+  const tk = onMe.length>=2 ? "trap_multi" : onMe.length===1 ? "trap_"+onMe[0].power : null;
+  if(tk){ const n=AR&&AR.vo&&AR.vo[tk]; if(n) voFile(tk,n); else vo(tk); }
 }
 
 function rQ(fresh){
@@ -2218,8 +2248,7 @@ function rPy(fresh){
   const best=Math.max(0,...alive.map(p=>p.pyPos||0));
   $("beam").style.height=(best*(sh+gp)+30)+"px";
   $("beam").style.opacity=best>H*0.6?1:.35;
-  /* لاعب صار على بُعد درجتين من القمة — لحظة تستحق تعليقًا، مرة واحدة */
-  if(best>=H-2&&best<H) voOnce("near_top");
+  /* تعليق «الاقتراب من القمة» يقرّره الخادم (انظر pyramidReveal) */
   // ميلان الكاميرا يزيد مع الارتفاع
   W.style.setProperty("--tilt",(13+Math.min(9,best*0.7))+"deg");
 
@@ -2273,7 +2302,7 @@ function showRevCh(d){
 /* ═══ النهاية: منصة تتويج ═══ */
 function showFinale(d){
   $("finale").classList.add("on");
-  vo("winner");
+  if(d.vo) voFile(d.vo.key,d.vo.i);
   const T=d.table||[];
   $("fTitle").textContent=d.winner?d.winner.name:"انتهت المباراة";
   $("fSub").textContent=d.winner?`${d.winner.score} نقطة · بطل قمّة الهرم`:"";
@@ -2313,7 +2342,8 @@ function clockTick(){
     /* استعجال اللاعبين: مرة واحدة لكل مرحلة إجابة، قبل النهاية بخمس ثوانٍ */
     if(left<=5000&&left>3800&&hurryKey!==phaseKey&&
        (ST.phase==="question"||ST.phase==="link"||ST.phase==="sort"||ST.phase==="pyramid")){
-      hurryKey=phaseKey; vo("hurry",null,(left-400)/1000);
+      hurryKey=phaseKey;
+      if(ST.hurry) voFile(ST.hurry.key,ST.hurry.i);
     }
     raf=requestAnimationFrame(f);
   })();
