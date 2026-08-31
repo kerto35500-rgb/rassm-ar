@@ -1976,9 +1976,20 @@ function rOpen(fresh){
     if(!vMute) tap.classList.add("show");
   });
   tap.onclick=()=>{ v.muted=false; v.play().catch(()=>{}); tap.classList.remove("show"); };
+  /* لو الملف غائب أو تعذّر فكّه: لا نُجلس اللاعبين أمام شاشة سوداء 49 ثانية،
+     بل يُنهي المضيف المرحلة فورًا فتبدأ الجولة. */
+  v.onerror=()=>opBail();
+  /* ينتهي الفيلم قبل مؤقّت الخادم بثوانٍ (المدّتان مختلفتان)، فنتقدّم فور انتهائه. */
+  v.onended=()=>opBail();
   const b=$("opSkip");
   b.classList.toggle("gone",ST.ownerId!==ME);
   b.disabled=false; b.textContent="تخطي المقدمة ⏭";
+}
+function opBail(){
+  if(!ST||ST.phase!=="opening")return;
+  if(ST.ownerId!==ME)return;          /* المضيف وحده يُنهي المرحلة للجميع */
+  opEnd();
+  socket.emit("skipIntro");
 }
 function opEnd(){
   const v=$("opVid");
