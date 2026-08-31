@@ -25,6 +25,8 @@ const AR_MS = FAST ? 300 : 2600;        // شاشة الفضح «فلان ألق
 const READY_MS = FAST ? 300 : 2000;     // «جاهزون للسؤال؟»
 const BET_POINTS = 100;                 // مكسب الرهان الصائب
 const PY_MAX_Q = 24;          // سقف أسئلة الهرم
+// فيلم المقدمة: نسخة الجوال 48.79ث والكمبيوتر 46.76ث — نأخذ الأطول وهامشًا
+const OPENING_MS = FAST ? 300 : 49300;
 
 // الحدود الدنيا للمؤقتات (تُخفَّض في وضع الاختبار فقط)
 const MIN_Q = FAST ? 1 : 8, MIN_V = FAST ? 1 : 4, MIN_A = FAST ? 1 : 3, MIN_P = FAST ? 1 : 4;
@@ -62,6 +64,7 @@ const DEFAULTS = {
   cats: [],             // الفئات المفعّلة (فارغ = الكل)
   images: true,         // السماح بأسئلة الصور
   intros: true,         // شاشة شرح قبل كل لعبة (مرة واحدة لكل غرفة)
+  opening: true,        // فيلم المقدمة عند بداية المباراة
   voice: true,          // قراءة السؤال بصوت مسموع
   difficulty: 0,        // 0 تلقائي متدرج · 1 سهل · 2 متوسط · 3 صعب
   maxPlayers: 8,
@@ -96,6 +99,7 @@ function sanitize(s = {}, old = DEFAULTS) {
   if (Array.isArray(s.cats)) o.cats = s.cats.filter(c => qbank.categories().includes(c));
   if (s.images !== undefined) o.images = !!s.images;
   if (s.intros !== undefined) o.intros = !!s.intros;
+  if (s.opening !== undefined) o.opening = !!s.opening;
   if (s.voice !== undefined) o.voice = !!s.voice;
   if (s.difficulty !== undefined) o.difficulty = clampInt(s.difficulty, 0, 3, old.difficulty);
   if (s.maxPlayers !== undefined) o.maxPlayers = clampInt(s.maxPlayers, 2, 8, old.maxPlayers);
@@ -241,6 +245,14 @@ function setupQuiz(io, deps) {
     room.winner = null;
     room.pyQIndex = 0;
     sys(room, "بدأت المباراة! 🏆", "good");
+    // فيلم المقدمة يُعرض مرة واحدة في أول المباراة، ثم تبدأ الجولات
+    if (room.settings.opening && !room.openingDone) {
+      room.openingDone = true;
+      room.introKind = "opening";
+      setPhase(room, "opening", OPENING_MS / 1000, () => nextStage(room));
+      broadcast(room);
+      return;
+    }
     nextStage(room);
   }
 
@@ -282,6 +294,13 @@ function setupQuiz(io, deps) {
 
   // المضيف يتخطى الشرح: نُعلم الجميع ليشغّلوا تعليق التخطي ثم ننتقل فورًا
   function skipIntro(room) {
+    // تخطي فيلم المقدمة: ننتقل فورًا لأول جولة
+    if (room.phase === "opening") {
+      clearTimeout(room.phaseTimer);
+      nsp.to(room.id).emit("introSkipped", { kind: "opening" });
+      nextStage(room);
+      return;
+    }
     if (room.phase !== "intro" || !room.pubIntro) return;
     const kind = room.introKind;
     const sv = voc.pick(kind === "pyramid" ? ["pyramid_skip", "skip"] : ["minigame_skip", "skip"]);
@@ -907,7 +926,7 @@ function setupQuiz(io, deps) {
         usedQ: new Set(), usedLink: new Set(), usedSort: new Set(), lastCats: [],
         currentQ: null, pubQuestion: null, pubLink: null, pubSort: null,
         pyQIndex: 0, winner: null, finalTable: null, qSentAt: 0,
-        introDone: {}, introKind: null, pubIntro: null, pubVo: null, voDone: {}
+        introDone: {}, introKind: null, pubIntro: null, pubVo: null, voDone: {}, openingDone: false
       };
       player = makePlayer(name);
       player.color = COLORS[0];
@@ -981,6 +1000,7 @@ function setupQuiz(io, deps) {
       room.pubQuestion = null; room.pubLink = null; room.pubSort = null;
       room.stageIdx = -1; room.stages = []; room.pyQIndex = 0;
       room.introDone = {}; room.introKind = null; room.pubIntro = null; room.pubVo = null; room.voDone = {};
+      room.openingDone = false;
       room.players.forEach(p => { p.spectator = false; p.score = 0; p.pyPos = 0; p.effects = []; });
       broadcast(room);
     });
