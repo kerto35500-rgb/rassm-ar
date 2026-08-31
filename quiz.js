@@ -46,6 +46,19 @@ const SELF_POWERS = new Set(["double"]);
 
 const COLORS = ["#e5541e", "#1e88e5", "#2e9e5b", "#7c4dff", "#ffb300", "#e91e63", "#00acc1", "#8d6e63"];
 
+// 🎭 الشخصيات السبع — الصور في public/chars/<id>.webp
+// لا يجوز أن يختار لاعبان الشخصية نفسها، ومن لم يختر تُوزَّع له واحدة عند البدء.
+const CHARS = [
+  { id: "granny", name: "الحاجّة",     desc: "خبرة سنين وذاكرة ما تخون",  tint: "#1b2a52" },
+  { id: "prof",   name: "البروفيسور",  desc: "عبقري مجنون… أغلب الوقت",   tint: "#0d4030" },
+  { id: "beast",  name: "الوحش",       desc: "عضلات وثقة زايدة",          tint: "#5c1220" },
+  { id: "pizza",  name: "أبو بيتزا",   desc: "جوعان دائمًا وسعيد دائمًا", tint: "#7a3a08" },
+  { id: "nerd",   name: "المثقّف",     desc: "يقرأ كل شيء ويحفظه",        tint: "#0a3742" },
+  { id: "trendy", name: "العصرية",     desc: "سريعة البديهة وحاضرة",      tint: "#2e1a5e" },
+  { id: "boss",   name: "المديرة",     desc: "تخطط بهدوء وتفوز بثقة",     tint: "#3d1428" }
+];
+const CHAR_IDS = CHARS.map(c => c.id);
+
 const DEFAULTS = {
   questionTime: 15,     // ثواني السؤال (10/15/20)
   voteTime: 8,          // ثواني التصويت على الفئة
@@ -66,6 +79,9 @@ const DEFAULTS = {
   intros: true,         // شاشة شرح قبل كل لعبة (مرة واحدة لكل غرفة)
   opening: true,        // فيلم المقدمة عند بداية المباراة
   voice: true,          // قراءة السؤال بصوت مسموع
+  // لهجة المعلّق. المسجَّل حاليًا مصري فقط، فالخيار مقفل في الواجهة
+  // إلى أن تُسجَّل مقاطع الفصحى؛ المنطق جاهز ولا يحتاج غير رفع الملفات.
+  dialect: "eg",        // eg مصري · ar فصحى
   difficulty: 0,        // 0 تلقائي متدرج · 1 سهل · 2 متوسط · 3 صعب
   maxPlayers: 8,
   visibility: "private",
@@ -101,12 +117,21 @@ function sanitize(s = {}, old = DEFAULTS) {
   if (s.intros !== undefined) o.intros = !!s.intros;
   if (s.opening !== undefined) o.opening = !!s.opening;
   if (s.voice !== undefined) o.voice = !!s.voice;
+  // لا نقبل إلا لهجة متوفّرة فعلًا، حتى لا يصمت المعلّق لأن ملفاتها غير موجودة
+  if (s.dialect !== undefined) o.dialect = DIALECTS_READY.includes(s.dialect) ? s.dialect : old.dialect;
   if (s.difficulty !== undefined) o.difficulty = clampInt(s.difficulty, 0, 3, old.difficulty);
   if (s.maxPlayers !== undefined) o.maxPlayers = clampInt(s.maxPlayers, 2, 8, old.maxPlayers);
   if (s.visibility !== undefined) o.visibility = s.visibility === "public" ? "public" : "private";
   if (s.password !== undefined) o.password = String(s.password || "").slice(0, 24);
   return o;
 }
+
+// اللهجات المسجَّلة فعلًا. أضف "ar" هنا فور رفع مقاطع الفصحى إلى public/vo/ar/
+const DIALECTS = [
+  { id: "eg", name: "مصرية" },
+  { id: "ar", name: "عربية فصحى" }
+];
+const DIALECTS_READY = ["eg"];
 
 const LENGTHS = { short: 6, normal: 9, long: 12 };
 
@@ -167,7 +192,8 @@ function setupQuiz(io, deps) {
       id: p.id, name: p.name, score: p.score, color: p.color,
       connected: p.connected, spectator: p.spectator,
       powersLeft: p.powersLeft, answered: p.answered,
-      lastGain: p.lastGain, pyPos: p.pyPos, doubleNext: !!p.doubleNext, registered: !!p.userName
+      lastGain: p.lastGain, pyPos: p.pyPos, doubleNext: !!p.doubleNext, registered: !!p.userName,
+      charId: p.charId, ready: !!p.ready
     };
   }
 
@@ -188,6 +214,8 @@ function setupQuiz(io, deps) {
       intro: room.pubIntro,
       vo: room.pubVo,
       hurry: room.pubHurry,
+      chars: CHARS,
+      dialects: DIALECTS, dialectsReady: DIALECTS_READY,
       pyramidHeight: room.settings.pyramidHeight,
       pyramidQ: room.pyQIndex,
       powerMenu: room.powerMenu || [],
@@ -233,6 +261,16 @@ function setupQuiz(io, deps) {
     if (alive(room).length < 2) { sys(room, "نحتاج لاعبَين على الأقل", "warn"); return; }
     const a = getAdmin && getAdmin();
     if (a && a.trackGame) a.trackGame();
+
+    // من لم يختر شخصية يأخذ واحدة عشوائية من غير المحجوزة — فلا يبدأ أحد بلا وجه
+    {
+      const taken = new Set(room.players.map(p => p.charId).filter(Boolean));
+      const free = qbank.shuffle(CHAR_IDS.filter(id => !taken.has(id)));
+      room.players.forEach(p => {
+        if (!p.charId && free.length) { p.charId = free.pop(); taken.add(p.charId); }
+      });
+      room.players.forEach(p => { p.ready = true; });
+    }
 
     room.players.forEach((p, i) => {
       p.score = 0; p.spectator = false; p.answered = false;
@@ -877,7 +915,9 @@ function setupQuiz(io, deps) {
         score: 0, connected: true, spectator: false,
         powersLeft: 0, effects: [], answered: false, lastGain: 0,
         pyPos: 0, rtt: 0, disconnectedAt: 0, lastTarget: null, pendingAttack: null, doubleNext: false,
-        color: COLORS[0]
+        color: COLORS[0],
+        charId: null,      // الشخصية المختارة
+        ready: false       // ضغط «مستعد» فحُجزت له
       };
     }
 
@@ -1012,6 +1052,30 @@ function setupQuiz(io, deps) {
       broadcast(room);
     });
 
+    // اختيار الشخصية: مسموح في اللوبي فقط، ولا يجوز أن يأخذها اثنان
+    socket.on("pickChar", (id) => {
+      if (!room || !player || room.state !== "lobby") return;
+      if (player.ready) return;                       // حجزها بالفعل
+      if (id === null) { player.charId = null; broadcast(room); return; }
+      if (!CHAR_IDS.includes(id)) return;
+      if (room.players.some(p => p !== player && p.charId === id)) return;  // محجوزة لغيره
+      player.charId = id;
+      broadcast(room);
+    });
+
+    socket.on("readyChar", (on) => {
+      if (!room || !player || room.state !== "lobby") return;
+      if (on) {
+        if (!player.charId) return;                   // لا استعداد بلا شخصية
+        // فحص أخير قبل الحجز: قد يكون أحدهم سبقه في اللحظة نفسها
+        if (room.players.some(p => p !== player && p.ready && p.charId === player.charId)) {
+          player.charId = null; broadcast(room); return;
+        }
+        player.ready = true;
+      } else player.ready = false;
+      broadcast(room);
+    });
+
     socket.on("startGame", () => {
       if (!room || !player || room.ownerId !== player.id) return;
       startGame(room);
@@ -1031,7 +1095,8 @@ function setupQuiz(io, deps) {
       room.stageIdx = -1; room.stages = []; room.pyQIndex = 0;
       room.introDone = {}; room.introKind = null; room.pubIntro = null; room.pubVo = null; room.pubHurry = null; room.voDone = {};
       room.openingDone = false; room.openingSkipped = false;
-      room.players.forEach(p => { p.spectator = false; p.score = 0; p.pyPos = 0; p.effects = []; });
+      // نُلغي الاستعداد ونُبقي الاختيار: يعيد اللاعب تأكيده أو يبدّله للجولة الجديدة
+      room.players.forEach(p => { p.spectator = false; p.score = 0; p.pyPos = 0; p.effects = []; p.ready = false; });
       broadcast(room);
     });
 
