@@ -1205,7 +1205,8 @@ socket.on("chat",m=>addChat(m));
 socket.on("connect",()=>{if(ROOM&&TOKEN)socket.emit("rejoin",{roomId:ROOM,token:TOKEN},r=>{if(r&&r.ok)ME=r.you;});});
 
 socket.on("voteResult",d=>{
-  /* الخادم اختار التعليق ومدّ مرحلة الزوم بقدره فلا ينقطع */
+  /* التعليق أولاً وحده، ثم تبدأ الحركة بعد أن يُنهي المعلّق جملته —
+     لا يتداخلان: الخادم مدّ المرحلة لتسع الاثنين بالتتابع. */
   if(d.vo) voFile(d.vo.key,d.vo.i);
   const doors=[...document.querySelectorAll(".door")];
   const tot=Math.max(1,Object.values(d.tally).reduce((a,b)=>a+b,0));
@@ -1217,6 +1218,7 @@ socket.on("voteResult",d=>{
     v.classList.remove("on");
   });
   const tied=(d.tie&&d.tie.length>1)?d.tie:null;
+  const runDoors=()=>{
   if(tied){
     /* ── روليت كسر التعادل: تحديد مضيء يتنقل بسرعة بين الأبواب المتعادلة ١.٥ث ── */
     // نُحرّك القرعة مع نبض الرسم (rAF) لا بمؤقّت — حتى تُرسم كل قفزة فعلياً على الجوال
@@ -1241,6 +1243,10 @@ socket.on("voteResult",d=>{
     requestAnimationFrame(step);
     setTimeout(finish,2200);   // أمان: لو تجمّد الرسم (تبويب في الخلفية) نكمل على أي حال
   }else doorZoom(d.cat);
+  };
+  /* ننتظر انتهاء المقطع الصوتي ثم نبدأ القرعة أو دخول الباب */
+  const wait=(d.vo&&!vMute)?Math.round(d.vo.dur*1000)+150:0;
+  if(wait) setTimeout(runDoors,wait); else runDoors();
 });
 
 /* ── الدخول المعتمد: «المصراعان» — الباب ينشق نصفين وتعبر الكاميرا من بينهما ──
