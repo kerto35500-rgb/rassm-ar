@@ -220,6 +220,24 @@ input,select,textarea{font-family:inherit}
 #qMeta{text-align:center;font-size:11.5px;color:var(--dim);margin-bottom:9px;font-weight:700}
 #qMeta .tag{padding:3px 10px;border-radius:99px;background:rgba(139,92,246,.18);border:1px solid rgba(139,92,246,.4);color:#c4b5fd;margin-inline-start:6px}
 /* صورة السؤال (لأسئلة الصور) */
+/* فيلم المقدمة: يملأ الشاشة كاملة فوق كل شيء */
+#sOpen{padding:0}
+#sOpen.on{position:fixed;inset:0;z-index:60;background:#000;display:flex;align-items:center;justify-content:center}
+#opVid{width:100%;height:100%;object-fit:cover;background:#000}
+#opSkip{position:absolute;top:max(18px,env(safe-area-inset-top));inset-inline-end:18px;
+  padding:11px 22px;border-radius:99px;border:1px solid rgba(255,255,255,.35);
+  background:rgba(0,0,0,.55);color:#fff;font:inherit;font-weight:700;font-size:15px;
+  cursor:pointer;backdrop-filter:blur(6px);z-index:2;
+  transition:background .2s,transform .15s;animation:opFade .5s 1s both}
+#opSkip:hover{background:rgba(139,92,246,.75);transform:scale(1.05)}
+#opSkip.gone{display:none}
+@keyframes opFade{from{opacity:0}to{opacity:1}}
+#opTap{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);z-index:2;
+  padding:12px 26px;border-radius:99px;background:rgba(139,92,246,.85);color:#fff;
+  font-weight:700;cursor:pointer;display:none;animation:opPulse 1.6s ease-in-out infinite}
+#opTap.show{display:block}
+@keyframes opPulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}
+
 /* شاشة شرح اللعبة: تُعرض مرة واحدة لكل نوع، والمضيف يقدر يتخطاها */
 #inWrap{max-width:min(90vw,620px);text-align:center;display:flex;flex-direction:column;
   align-items:center;gap:14px;animation:inUp .5s cubic-bezier(.2,.9,.3,1) both}
@@ -927,6 +945,12 @@ body.noTop #hud,body.noTop #roster{display:none}
       <div id="arBody" style="display:contents"></div>
     </div>
 
+    <div class="scene" id="sOpen">
+      <video id="opVid" playsinline preload="auto"></video>
+      <button id="opSkip" type="button">تخطي المقدمة ⏭</button>
+      <div id="opTap">اضغط لتشغيل الصوت 🔊</div>
+    </div>
+
     <div class="scene" id="sIntro">
       <div id="inWrap">
         <div id="inBadge">شرح اللعبة</div>
@@ -1046,6 +1070,7 @@ body.noTop #hud,body.noTop #roster{display:none}
         <div class="tgl"><span>أسئلة الصور<small>السماح بالأسئلة التي تعرض صورة</small></span><label class="sw"><input type="checkbox" id="sIM"><i></i></label></div>
         <div class="tgl"><span>قراءة صوتية<small>صوت يقرأ السؤال في مرحلة القراءة</small></span><label class="sw"><input type="checkbox" id="sVO"><i></i></label></div>
         <div class="tgl"><span>شاشة الشرح<small>شرح كل لعبة أول مرة، مع زر تخطي للمضيف</small></span><label class="sw"><input type="checkbox" id="sIN"><i></i></label></div>
+        <div class="tgl"><span>فيلم المقدمة<small>يُعرض مرة واحدة عند بداية المباراة</small></span><label class="sw"><input type="checkbox" id="sOP"><i></i></label></div>
         <div class="tgl"><span>عقوبة الخطأ<small>الخطأ يُنزل درجة</small></span><label class="sw"><input type="checkbox" id="sPP"><i></i></label></div>
       </div>
       <div class="cp" data-p="r">
@@ -1440,6 +1465,7 @@ function render(){
   const key=ST.phase+"|"+ST.stage+"|"+(ST.pyramidQ||0);
   const fresh=key!==phaseKey;
   if(fresh){
+    if(prevPhase==="opening"&&ST.phase!=="opening")opEnd();
     phaseKey=key;picked=-1;
     // نُنهي الفخ فقط عند الانتقال لمرحلة غير التي بدأ فيها
     FXM.sweep(key);
@@ -1456,7 +1482,8 @@ function render(){
   }else if(ST.state==="ended"){
     $("againB").style.display=host?"":"none";
   }else{
-    if(ST.phase==="intro")rIntro(fresh);
+    if(ST.phase==="opening")rOpen(fresh);
+    else if(ST.phase==="intro")rIntro(fresh);
     else if(ST.phase==="vote")rVote(fresh);
     else if(ST.phase==="spin"){/* المشهد يبقى على الأبواب — الروليت والزوم يديرهما voteResult */}
     else if(ST.phase==="attack")rAtk(fresh);
@@ -1927,6 +1954,46 @@ function vo(key,alt,budget){
 /* يُشغَّل مرة واحدة فقط في عمر الصفحة */
 function voOnce(key,alt){ if(voDone[key])return; voDone[key]=1; vo(key,alt); }
 
+/* ════ فيلم المقدمة ════
+   نسختان: 9:16 للجوال و16:9 للكمبيوتر، تُختار حسب أبعاد الشاشة.
+   المتصفحات تمنع التشغيل التلقائي بصوت، فنبدأ صامتًا ثم نحاول فكّ الكتم؛
+   ولو رفض المتصفح نعرض زرًا يضغطه اللاعب فيعود الصوت من موضعه. */
+let opStarted=false;
+function rOpen(fresh){
+  scene("sOpen");
+  $("sOpen").classList.add("on");
+  if(!fresh||opStarted)return;
+  opStarted=true;
+  voStop(); vStop();
+  const v=$("opVid");
+  v.src = innerHeight>innerWidth ? "/intro/mobile.mp4" : "/intro/desktop.mp4";
+  v.muted=vMute; v.volume=1; v.currentTime=0;
+  const tap=$("opTap");
+  v.play().then(()=>{ tap.classList.remove("show"); }).catch(()=>{
+    /* مُنع التشغيل: نبدأ صامتين ونعرض زر إعادة الصوت */
+    v.muted=true;
+    v.play().catch(()=>{});
+    if(!vMute) tap.classList.add("show");
+  });
+  tap.onclick=()=>{ v.muted=false; v.play().catch(()=>{}); tap.classList.remove("show"); };
+  const b=$("opSkip");
+  b.classList.toggle("gone",ST.ownerId!==ME);
+  b.disabled=false; b.textContent="تخطي المقدمة ⏭";
+}
+function opEnd(){
+  const v=$("opVid");
+  try{ v.pause(); v.removeAttribute("src"); v.load(); }catch(e){}
+  $("sOpen").classList.remove("on");
+  $("opTap").classList.remove("show");
+}
+$("opSkip").onclick=()=>{
+  if(!ST||ST.phase!=="opening"||ST.ownerId!==ME)return;
+  $("opSkip").disabled=true;
+  $("opSkip").textContent="جارٍ التخطي…";
+  opEnd();
+  socket.emit("skipIntro");
+};
+
 /* شاشة شرح اللعبة — الصوت والنص معًا، والمضيف وحده يملك زر التخطي */
 function rIntro(fresh){
   scene("sIntro");
@@ -1952,6 +2019,7 @@ $("inSkip").onclick=()=>{
 };
 /* التخطي يصل للجميع: تعليق قصير من المعلّق ثم تبدأ اللعبة */
 socket.on("introSkipped",d=>{
+  if(d.kind==="opening"){ opEnd(); return; }
   $("inFill").style.animation="none";
   $("inHint").textContent="تم تخطي الشرح";
   if(d.vo) voFile(d.vo.key,d.vo.i);
@@ -2761,7 +2829,7 @@ function fillCfg(s){
   Object.entries(RG).forEach(([k,[i,o,f]])=>{$(i).value=s[k];$(o).textContent=f(s[k]);});
   $("sLen").value=s.length;$("sDif").value=String(s.difficulty);
   $("sCh").checked=s.challenges;$("sPw").checked=s.powers;$("cPyOn").checked=s.pyramid;
-  $("sHS").checked=s.headStart;$("sPP").checked=!!s.pyramidPenalty;$("sIM").checked=s.images!==false;$("sVO").checked=s.voice!==false;$("sIN").checked=s.intros!==false;
+  $("sHS").checked=s.headStart;$("sPP").checked=!!s.pyramidPenalty;$("sIM").checked=s.images!==false;$("sVO").checked=s.voice!==false;$("sIN").checked=s.intros!==false;$("sOP").checked=s.opening!==false;
   $("sVis").value=s.visibility;$("sPass").value=s.password||"";
   if(s.cats&&s.cats.length)document.querySelectorAll("#catPills .pill").forEach(c=>c.classList.toggle("on",s.cats.includes(c.dataset.c)));
   if(s.allowedPowers)document.querySelectorAll("#pwPills .pill").forEach(c=>c.classList.toggle("on",s.allowedPowers.includes(c.dataset.p)));
@@ -2775,7 +2843,7 @@ $("cfgSave").onclick=()=>{
     cats:cats.length===document.querySelectorAll("#catPills .pill").length?[]:cats,
     challenges:$("sCh").checked,powers:$("sPw").checked,powerUses:+$("sPU").value,powerChoices:+$("sPC").value,allowedPowers:pws,
     pyramid:$("cPyOn").checked,pyramidHeight:+$("sPH").value,pyramidTime:+$("sPT").value,
-    headStart:$("sHS").checked,pyramidPenalty:$("sPP").checked,images:$("sIM").checked,voice:$("sVO").checked,intros:$("sIN").checked,
+    headStart:$("sHS").checked,pyramidPenalty:$("sPP").checked,images:$("sIM").checked,voice:$("sVO").checked,intros:$("sIN").checked,opening:$("sOP").checked,
     maxPlayers:+$("sMP").value,visibility:$("sVis").value,password:$("sPass").value});
   $("cfg").classList.remove("on");toast("تم الحفظ ✓");
 };
