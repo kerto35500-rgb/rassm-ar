@@ -224,14 +224,29 @@ input,select,textarea{font-family:inherit}
 #sOpen{padding:0}
 #sOpen.on{position:fixed;inset:0;z-index:60;background:#000;display:flex;align-items:center;justify-content:center}
 #opVid{width:100%;height:100%;object-fit:cover;background:#000}
-#opSkip{position:absolute;top:max(18px,env(safe-area-inset-top));inset-inline-end:18px;
-  padding:11px 22px;border-radius:99px;border:1px solid rgba(255,255,255,.35);
-  background:rgba(0,0,0,.55);color:#fff;font:inherit;font-weight:700;font-size:15px;
-  cursor:pointer;backdrop-filter:blur(6px);z-index:2;
+#opSkip{position:absolute;top:calc(16px + env(safe-area-inset-top));
+  inset-inline-end:calc(16px + env(safe-area-inset-right));
+  padding:12px 22px;border-radius:99px;border:1px solid rgba(255,255,255,.45);
+  background:rgba(0,0,0,.6);color:#fff;font:inherit;font-weight:700;font-size:15px;
+  cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:3;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
   transition:background .2s,transform .15s;animation:opFade .5s 1s both}
 #opSkip:hover{background:rgba(139,92,246,.75);transform:scale(1.05)}
-#opSkip.gone{display:none}
+#opSkip:active{transform:scale(.96);background:rgba(139,92,246,.8)}
+#opSkip.gone,#opHint.gone{display:none}
 @keyframes opFade{from{opacity:0}to{opacity:1}}
+#opHint{position:absolute;top:calc(16px + env(safe-area-inset-top));
+  inset-inline-end:calc(16px + env(safe-area-inset-right));z-index:3;
+  padding:9px 16px;border-radius:99px;background:rgba(0,0,0,.5);
+  color:rgba(255,255,255,.72);font-size:12.5px;font-weight:600;
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:opFade .5s 1s both}
+/* على الشاشات الضيقة: هدف لمس أكبر ومسافة أقرب للحافة */
+@media (max-width:560px){
+  #opSkip{padding:14px 20px;font-size:16px;min-height:48px;
+    top:calc(10px + env(safe-area-inset-top));inset-inline-end:calc(10px + env(safe-area-inset-right))}
+  #opHint{top:auto;inset-inline-end:auto;font-size:12px;
+    bottom:calc(18px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%)}
+}
 #opTap{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);z-index:2;
   padding:12px 26px;border-radius:99px;background:rgba(139,92,246,.85);color:#fff;
   font-weight:700;cursor:pointer;display:none;animation:opPulse 1.6s ease-in-out infinite}
@@ -948,6 +963,7 @@ body.noTop #hud,body.noTop #roster{display:none}
     <div class="scene" id="sOpen">
       <video id="opVid" playsinline preload="auto"></video>
       <button id="opSkip" type="button">تخطي المقدمة ⏭</button>
+      <div id="opHint" class="gone">صاحب الغرفة يقدر يتخطى المقدمة</div>
       <div id="opTap">اضغط لتشغيل الصوت 🔊</div>
     </div>
 
@@ -1962,6 +1978,11 @@ let opStarted=false;
 function rOpen(fresh){
   scene("sOpen");
   $("sOpen").classList.add("on");
+  /* حالة الزر تُحدَّث في كل رسم لا في أول رسم فقط: معرّف المضيف قد يصل
+     بعد بدء المرحلة، وحينها كان الزر يُخفى ولا يعود أبدًا. */
+  const host = ST && ST.ownerId===ME;
+  $("opSkip").classList.toggle("gone",!host);
+  $("opHint").classList.toggle("gone",host);
   if(!fresh||opStarted)return;
   opStarted=true;
   voStop(); vStop();
@@ -1982,7 +2003,6 @@ function rOpen(fresh){
   /* ينتهي الفيلم قبل مؤقّت الخادم بثوانٍ (المدّتان مختلفتان)، فنتقدّم فور انتهائه. */
   v.onended=()=>opBail();
   const b=$("opSkip");
-  b.classList.toggle("gone",ST.ownerId!==ME);
   b.disabled=false; b.textContent="تخطي المقدمة ⏭";
 }
 function opBail(){
