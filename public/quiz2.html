@@ -234,6 +234,99 @@ input,select,textarea{font-family:inherit}
 #opSkip:hover{background:rgba(139,92,246,.75);transform:scale(1.05)}
 #opSkip:active{transform:scale(.96);background:rgba(139,92,246,.8)}
 #opSkip.gone,#opHint.gone,#opWait.gone{display:none}
+/* ═══ مراسم كشف السؤال: الرقاقات والنقاط ═══ */
+.chipRow{position:absolute;top:-15px;left:0;right:0;display:flex;gap:4px;
+  justify-content:center;pointer-events:none;z-index:5}
+.revChip{position:relative;width:34px;height:34px;border-radius:50%;overflow:visible;
+  animation:chipJump .55s var(--spring) both}
+.revChip img,.revChip svg{width:100%;height:100%;border-radius:50%;display:block;
+  border:2px solid rgba(255,255,255,.65);background:#0b1020;object-fit:cover;
+  box-shadow:0 4px 12px rgba(0,0,0,.55)}
+@keyframes chipJump{0%{transform:translateY(-46px) scale(.3);opacity:0}
+  70%{transform:translateY(4px) scale(1.08)}100%{transform:none;opacity:1}}
+.revChip.won img,.revChip.won svg{border-color:#39e08a}
+.revChip.lost{filter:grayscale(.8) brightness(.7)}
+.ptPop{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
+  font-weight:900;font-size:15px;color:#39e08a;white-space:nowrap;
+  text-shadow:0 1px 4px rgba(0,0,0,.9);animation:ptUp 1.6s ease-out both;pointer-events:none}
+.ptPop.x2{color:var(--gold)}
+@keyframes ptUp{0%{opacity:0;transform:translate(-50%,8px) scale(.6)}
+  18%{opacity:1;transform:translate(-50%,-4px) scale(1.15)}
+  75%{opacity:1}100%{opacity:0;transform:translate(-50%,-30px) scale(1)}}
+.rcX{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:19px;color:#ff5470;text-shadow:0 1px 4px #000;
+  animation:orbIn .3s var(--spring) both}
+
+/* ═══ التوصيل: حلقات وحالاتها ═══ */
+#lkMeta{text-align:center;font-weight:900;font-size:13px;color:var(--dim);padding:4px 0}
+#lkDone{text-align:center;font-weight:900;color:var(--lime);padding:8px}
+#lkDone.gone{display:none}
+.node.ring{border-radius:99px;touch-action:none;user-select:none;-webkit-user-select:none}
+.node.ring.popIn{animation:orbIn .34s var(--spring) both}
+.node.src{cursor:grab;border-color:rgba(34,230,255,.45)}
+.node.dst{border-color:rgba(139,92,246,.45)}
+.node.hot{border-color:#8b5cf6;background:rgba(139,92,246,.22);transform:scale(1.05)}
+.node.good{border-color:#39e08a!important;background:rgba(57,224,138,.25)!important;
+  animation:zFlash .5s;transition:opacity .35s;opacity:0}
+.node.bad{border-color:#ff5470!important;background:rgba(255,84,112,.25)!important;
+  animation:nShake .4s}
+@keyframes nShake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* ═══ لعبة التصنيف: سحب الدائرة يمينًا أو يسارًا ═══ */
+#stArena{flex:1;display:flex;align-items:stretch;gap:8px;min-height:0;direction:ltr}
+.stZone{flex:0 0 26%;display:flex;align-items:center;justify-content:center;border-radius:18px;
+  border:2px dashed rgba(255,255,255,.25);background:rgba(255,255,255,.04);
+  transition:background .18s,border-color .18s,box-shadow .18s}
+.stZone .szName{font-weight:900;font-size:clamp(14px,2.6vw,19px);text-align:center;padding:8px;
+  writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:1px}
+@media (min-width:700px){.stZone .szName{writing-mode:horizontal-tb}}
+.stZone.hot{border-color:rgba(139,92,246,.8);background:rgba(139,92,246,.14)}
+.stZone.hit{border-color:#39e08a;background:rgba(57,224,138,.22);
+  box-shadow:0 0 34px -4px rgba(57,224,138,.8);animation:zFlash .5s}
+.stZone.bad{border-color:#ff5470;background:rgba(255,84,112,.22);
+  box-shadow:0 0 34px -4px rgba(255,84,112,.8);animation:zFlash .5s}
+@keyframes zFlash{0%{filter:brightness(2)}100%{filter:none}}
+#stMid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-width:0}
+#stOrb{width:min(46vw,190px);aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.16),rgba(255,255,255,.02) 60%),
+    linear-gradient(150deg,rgba(139,92,246,.32),rgba(34,230,255,.18));
+  border:2.5px solid rgba(139,92,246,.6);box-shadow:0 10px 34px -8px rgba(139,92,246,.55);
+  cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+  transition:box-shadow .2s;will-change:transform}
+#stOrb.drag{cursor:grabbing;transition:none}
+#stOrb.snap{transition:transform .28s var(--spring)}
+#stOrb.popIn{animation:orbIn .38s var(--spring) both}
+@keyframes orbIn{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+#stWord{font-size:clamp(17px,4.6vw,26px);font-weight:900;text-align:center;padding:8px;line-height:1.3}
+#stCount{font-size:12.5px;font-weight:800;color:var(--dim)}
+#stDone{text-align:center;font-weight:900;color:var(--lime);padding:8px}
+#stDone.gone{display:none}
+/* ═══ سباق الصعود العمودي (نتيجة التصنيف) ═══ */
+#raceWrap{flex:1;display:flex;flex-direction:column;min-height:0}
+#raceTitle{text-align:center;font-weight:900;font-size:17px;padding:4px 0 10px}
+#raceTrack{flex:1;position:relative;margin:0 8px;min-height:0;
+  border-radius:16px;background:linear-gradient(180deg,rgba(255,203,46,.07),rgba(255,255,255,.02));
+  border:1px solid var(--stroke);overflow:hidden}
+.raceRung{position:absolute;left:0;right:0;height:1px;background:rgba(255,255,255,.07)}
+.racer{position:absolute;bottom:0;width:52px;margin-left:-26px;text-align:center;
+  transition:bottom .42s cubic-bezier(.3,1.3,.5,1);will-change:bottom}
+.racer .rAv{width:44px;height:44px;margin:0 auto;border-radius:50%;overflow:hidden;
+  border:2.5px solid var(--pc,#8b5cf6);background:#0b1020;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+.racer .rAv img{width:100%;height:100%;object-fit:cover;display:block}
+.racer .rAv svg{display:block;width:100%;height:100%}
+.racer .rNm{font-size:10px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  margin-top:3px;text-shadow:0 1px 3px #000}
+.racer .rHits{position:absolute;top:-17px;left:0;right:0;font-size:11px;font-weight:900;color:var(--gold)}
+.racer.stopped{filter:saturate(.75)}
+.racer.champ .rAv{border-color:var(--gold);box-shadow:0 0 24px -2px rgba(255,203,46,.85)}
+.racer.champ::after{content:"👑";position:absolute;top:-34px;left:0;right:0;font-size:16px}
+#raceFoot{padding:8px 4px 2px}
+
+/* صفوف الرهان وحفلة النقاط في شريط النتائج */
+.rrow.betRow .av,.rrow.partyRow .av{display:flex;align-items:center;justify-content:center;font-size:19px}
+.rrow.partyRow{border-color:rgba(255,203,46,.5);background:rgba(255,203,46,.08)}
+.rrow.partyRow .pt{color:var(--gold)}
+
 /* ═══ اختيار الشخصية في اللوبي ═══ */
 #sWait{justify-content:flex-start;gap:10px}
 #waitTop{text-align:center;flex:0 0 auto;padding-top:2px}
@@ -773,7 +866,7 @@ body.noTop #hud,body.noTop #roster{display:none}
 /* left/top صريحان ضروريان: في RTL يضع المتصفح العنصر المطلق بلا إزاحة
    عند الحافة اليمنى، فيخرج translate3d بالقنابل خارج الشاشة.
    الحركة على .bomb والانفجار على .bi حتى لا يمسح scale موضع translate */
-.bomb{position:absolute;left:0;top:0;width:38px;height:38px;cursor:pointer;will-change:transform}
+.bomb{position:absolute;left:0;top:0;width:54px;height:54px;cursor:pointer;will-change:transform}
 /* كرة مرسومة بالكامل — دائرية تماماً (الإيموجي كان يظهر ممطوطاً) */
 .bomb .bi{position:relative;display:block;width:100%;height:100%;border-radius:50%;
   background:
@@ -783,7 +876,7 @@ body.noTop #hud,body.noTop #roster{display:none}
              0 6px 14px rgba(0,0,0,.6);
   animation:fuseGlow .55s infinite alternate}
 /* الفتيل */
-.bomb .bi::before{content:"";position:absolute;top:-10px;left:58%;width:3px;height:12px;border-radius:2px;
+.bomb .bi::before{content:"";position:absolute;top:-13px;left:58%;width:4px;height:15px;border-radius:2px;
   background:linear-gradient(180deg,#d8b23f,#6d5312);transform:rotate(20deg);transform-origin:bottom}
 /* الشرارة */
 .bomb .bi::after{content:"";position:absolute;top:-17px;left:64%;width:10px;height:10px;border-radius:50%;
@@ -1054,14 +1147,21 @@ body.noTop #hud,body.noTop #roster{display:none}
     <div class="scene" id="sLink">
       <div id="lkTitle"></div>
       <div id="lkBoard"><svg id="lkSvg"></svg><div class="col" id="lkL"></div><div class="col" id="lkR"></div></div>
-      <button class="btn" id="lkSend" style="margin-top:10px">إرسال</button>
+      <div id="lkMeta"></div>
+      <div id="lkDone" class="gone">✓ أكملت الـ١٥ — بانتظار البقية</div>
     </div>
 
     <div class="scene" id="sSort">
       <div class="eyebrow" id="stTitle"></div>
-      <div id="stItem"></div>
-      <div id="stDots"></div>
-      <div id="stBoxes"></div>
+      <div id="stArena">
+        <div class="stZone" id="stZoneR"><span class="szName"></span></div>
+        <div id="stMid">
+          <div id="stOrb"><span id="stWord"></span></div>
+          <div id="stCount"></div>
+        </div>
+        <div class="stZone" id="stZoneL"><span class="szName"></span></div>
+      </div>
+      <div id="stDone" class="gone">✓ أنهيت القائمة — بانتظار البقية</div>
     </div>
 
     <div class="scene" id="sPy">
@@ -1177,7 +1277,7 @@ window.addEventListener("load",()=>{
 });
 let mode="login",acct=null,raf=0,picked=-1,phaseKey="";
 let previewMode=false;   // أثناء معاينة الفخاخ: لا نسمح لتحديثات الخادم بتبديل المشهد
-let lkSel=null,lkMap=[null,null,null,null],stIdx=0,stAns=[];
+
 let atkT=null,atkP=null,atkSent=false,scoreShown={};
 
 /* ═══ أدوات ═══ */
@@ -1468,14 +1568,59 @@ function killZoomClones(){
   fadeVeil();   // المرحلة التالية جاهزة على الشاشة → نرفع الستار
 }
 
+/* ═══ مراسم كشف السؤال ═══
+   ١) قفل فوري وإيقاف المقالب  ٢) أيقونات الشخصيات تقفز فوق الخيارات المختارة
+   ٣) الإنارة الخضراء/الحمراء  ٤) نقاط المراكز تنبثق فوق المصيبين وX فوق المخطئين */
 socket.on("reveal",d=>{
+  FXM.stop();                                     /* تنظيف الشاشة للحظة الحاسمة */
   const A=[...document.querySelectorAll("#answers .ans")];
-  A.forEach((o,i)=>{if(i===d.correct){o.classList.add("win");burst(o,"#39e08a");}
-    else{o.classList.add("fade");if(i===picked)o.classList.add("lose");}});
-  const m=d.results.find(r=>r.id===ME);
-  if(m&&m.correct){sWin();}else sLose();
-  if(d.vo) voFile(d.vo.key,d.vo.i);
-  setTimeout(()=>showRev(d),1000);
+  A.forEach(o=>{o.style.pointerEvents="none";});
+  /* ٢) الاصطفاف: رقاقة لكل لاعب فوق الخيار الذي اختاره */
+  A.forEach(o=>{
+    if(!o.querySelector(".chipRow")){
+      const r=document.createElement("div");r.className="chipRow";o.appendChild(r);
+    }
+  });
+  d.results.forEach((r,ri)=>{
+    if(r.idx<0||!A[r.idx])return;
+    const chip=document.createElement("div");
+    chip.className="revChip";chip.dataset.pid=r.id;
+    chip.style.animationDelay=(ri*.12)+"s";
+    chip.innerHTML=(r.charId?'<img src="'+charImg(r.charId)+'" alt="">':avatar(r.name,r.color));
+    A[r.idx].querySelector(".chipRow").appendChild(chip);
+  });
+  if(d.results.some(r=>r.idx>=0))sTap();
+  /* ٣) الكشف بعد اكتمال الاصطفاف */
+  setTimeout(()=>{
+    A.forEach((o,i)=>{if(i===d.correct){o.classList.add("win");burst(o,"#39e08a");}
+      else{o.classList.add("fade");if(i===picked)o.classList.add("lose");}});
+    const m=d.results.find(r=>r.id===ME);
+    if(m&&m.correct){sWin();}else sLose();
+    if(d.vo) voFile(d.vo.key,d.vo.i);
+  },1100);
+  /* ٤) النقاط تنبثق تصاعديًا بترتيب المراكز، وX فوق المخطئين */
+  setTimeout(()=>{
+    const winners=d.results.filter(r=>r.correct).sort((a,b)=>(a.rank||9)-(b.rank||9));
+    winners.forEach((r,i)=>{
+      setTimeout(()=>{
+        const chip=document.querySelector('.revChip[data-pid="'+r.id+'"]');
+        if(!chip)return;
+        const pop=document.createElement("div");
+        pop.className="ptPop"+(r.doubled?" x2":"");
+        pop.textContent="+"+r.gain+(r.doubled?" ✨":"");
+        chip.appendChild(pop);
+        chip.classList.add("won");
+        sTick();
+      },i*260);
+    });
+    d.results.filter(r=>!r.correct&&r.idx>=0).forEach(r=>{
+      const chip=document.querySelector('.revChip[data-pid="'+r.id+'"]');
+      if(!chip)return;
+      const x=document.createElement("div");x.className="rcX";x.textContent="✕";
+      chip.appendChild(x);chip.classList.add("lost");
+    });
+  },2000);
+  setTimeout(()=>showRev(d),4200);
 });
 socket.on("revealChallenge",d=>{
   if(d.kind==="link"){
@@ -2285,6 +2430,13 @@ function rAR(fresh){
 function rQ(fresh){
   scene("sQ");mountClock("sQ");
   if(!fresh||!ST.question||!ST.question.options)return;
+  /* حفلة النقاط: راية للجميع فور ظهور الخيارات — الجولة كلها مضاعفة */
+  if(ST.question.party){
+    const b=document.createElement("div");
+    b.className="fxBanner";b.style.setProperty("--bc","#ffcb2e");
+    b.textContent="✨ حفلة النقاط! الإجابة الصحيحة بضِعف النقاط";
+    $("sQ").appendChild(b);setTimeout(()=>b.remove(),2800);
+  }
   vPlay(ST.question.voice);   /* في الهرم لا توجد مرحلة قراءة، فيُنطق هنا */
   const D=["","سهل","متوسط","صعب"][ST.question.diff||1];
   $("qMeta").innerHTML=`<span class="tag">${esc(ST.question.cat)}</span><span class="tag">${D}</span>`;
@@ -2303,68 +2455,187 @@ function rQ(fresh){
   tryFx();   // فخ وصل قبل بناء الأزرار؟ طبّقه الآن
 }
 
+/* ═══ التوصيل: اسحب خيطًا من حلقة يمنى إلى يسرى ═══
+   الخادم يبني لوحة كل لاعب (٣×٣) برموز عشوائية لا تكشف الأزواج،
+   ويضخّ عناصر جديدة بعد كل توصيلة صحيحة. الخطأ لا يُفقد شيئًا. */
+let lkBusy=false;
 function rLink(fresh){
   scene("sLink");mountClock("sLink");
-  if(!fresh||!ST.link)return;
-  lkSel=null;lkMap=[null,null,null,null];
-  $("lkTitle").textContent=ST.link.title;
-  const L=$("lkL"),R=$("lkR");L.innerHTML="";R.innerHTML="";
-  ST.link.left.forEach((t,i)=>{
-    const b=document.createElement("button");b.className="node";b.textContent=t;b.dataset.i=i;
-    b.onclick=()=>{lkSel={s:"L",i};paintLink();sTap();};L.appendChild(b);});
-  ST.link.right.forEach((t,i)=>{
-    const b=document.createElement("button");b.className="node";b.textContent=t;b.dataset.i=i;
-    b.onclick=()=>{if(lkSel&&lkSel.s==="L"){lkMap[lkSel.i]=i;lkSel=null;tone(760,.06,"sine",.04);}paintLink();};R.appendChild(b);});
-  paintLink();
+  if(!fresh)return;
+  lkBusy=false;
+  $("lkTitle").textContent=(ST.link&&ST.link.title)||"";
+  $("lkDone").classList.add("gone");
+  $("lkL").innerHTML="";$("lkR").innerHTML="";
+  $("lkSvg").innerHTML="";$("lkMeta").textContent="";
 }
-function paintLink(){
-  document.querySelectorAll("#lkL .node").forEach((e,i)=>{
-    e.classList.toggle("sel",!!(lkSel&&lkSel.s==="L"&&lkSel.i===i));
-    e.classList.toggle("tied",lkMap[i]!==null);});
-  drawLines();
-}
-function drawLines(){
-  const svg=$("lkSvg"),w=$("lkBoard");if(!w)return;
-  const wr=w.getBoundingClientRect();
-  svg.setAttribute("viewBox",`0 0 ${wr.width} ${wr.height}`);
-  let h='<defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#22e6ff"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>';
-  lkMap.forEach((r,i)=>{
-    if(r===null)return;
-    const a=document.querySelector(`#lkL .node[data-i="${i}"]`),b=document.querySelector(`#lkR .node[data-i="${r}"]`);
-    if(!a||!b)return;
-    const ar=a.getBoundingClientRect(),br=b.getBoundingClientRect();
-    const x1=ar.left-wr.left,y1=ar.top-wr.top+ar.height/2;
-    const x2=br.right-wr.left,y2=br.top-wr.top+br.height/2;
-    h+=`<path d="M${x1},${y1} C${(x1+x2)/2},${y1} ${(x1+x2)/2},${y2} ${x2},${y2}" stroke="url(#lg)" stroke-width="3" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 4px rgba(34,230,255,.8))"/>`;
+socket.on("linkBoard",d=>{
+  if(!ST||ST.phase!=="link")return;
+  $("lkTitle").textContent=d.title;
+  $("lkMeta").textContent=d.hits+" / "+d.total;
+  /* في صفحة RTL العمود الأول (lkL) يقع بصريًا على اليمين — وهو المطلوب:
+     عناصر المصدر يمينًا تُسحب نحو أهدافها يسارًا */
+  const R=$("lkL"), L=$("lkR");
+  R.innerHTML="";L.innerHTML="";
+  d.r.forEach(o=>{
+    const b=document.createElement("button");
+    b.className="node ring src";b.textContent=o.txt;b.dataset.k=o.k;
+    R.appendChild(b);lkRingIn(b);
+    b.onpointerdown=e=>lkDragStart(e,b);
   });
-  svg.innerHTML=h;
+  d.l.forEach(o=>{
+    const b=document.createElement("button");
+    b.className="node ring dst";b.textContent=o.txt;b.dataset.k=o.k;
+    L.appendChild(b);lkRingIn(b);
+  });
+  /* اكتمال القائمة: الخادم يرسل لوحة فارغة برصيد كامل */
+  if(d.hits>=d.total)$("lkDone").classList.remove("gone");
+});
+function lkRingIn(b){b.classList.remove("popIn");void b.offsetWidth;b.classList.add("popIn");}
+function lkCenter(el){
+  const w=$("lkBoard").getBoundingClientRect(), r=el.getBoundingClientRect();
+  return {x:r.left-w.left+r.width/2, y:r.top-w.top+r.height/2};
 }
-$("lkSend").onclick=()=>{if(lkMap.some(x=>x===null)){toast("اربط كل العناصر");return;}
-  socket.emit("linkAnswer",lkMap);toast("تم الإرسال ✓");};
+function lkDraw(x1,y1,x2,y2,color){
+  const w=$("lkBoard").getBoundingClientRect();
+  $("lkSvg").setAttribute("viewBox",`0 0 ${w.width} ${w.height}`);
+  $("lkSvg").innerHTML=`<path d="M${x1},${y1} C${(x1+x2)/2},${y1} ${(x1+x2)/2},${y2} ${x2},${y2}"
+    stroke="${color||"url(#lkg)"}" stroke-width="4" fill="none" stroke-linecap="round"
+    filter="drop-shadow(0 0 5px ${color||"rgba(34,230,255,.8)"})"/>
+    <defs><linearGradient id="lkg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22e6ff"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>`;
+}
+function lkDragStart(e,src){
+  if(lkBusy)return;
+  e.preventDefault();
+  src.classList.add("sel");
+  const from=lkCenter(src);
+  const wrap=$("lkBoard").getBoundingClientRect();
+  let hovered=null;
+  const move=ev=>{
+    const x=ev.clientX-wrap.left, y=ev.clientY-wrap.top;
+    lkDraw(from.x,from.y,x,y);
+    const t=document.elementFromPoint(ev.clientX,ev.clientY);
+    const dst=t&&t.closest?t.closest(".node.dst"):null;
+    if(hovered&&hovered!==dst)hovered.classList.remove("hot");
+    hovered=dst;if(dst)dst.classList.add("hot");
+  };
+  const up=ev=>{
+    document.removeEventListener("pointermove",move);
+    document.removeEventListener("pointerup",up);
+    src.classList.remove("sel");
+    if(hovered){
+      hovered.classList.remove("hot");
+      lkBusy=true;
+      const to=lkCenter(hovered);
+      lkDraw(from.x,from.y,to.x,to.y);
+      window.__lkPend={src,dst:hovered,from,to};
+      socket.emit("linkPick",{r:src.dataset.k,l:hovered.dataset.k});
+    }else $("lkSvg").innerHTML="";
+  };
+  document.addEventListener("pointermove",move);
+  document.addEventListener("pointerup",up);
+}
+socket.on("linkFb",d=>{
+  const P=window.__lkPend;lkBusy=false;
+  if(!P)return;window.__lkPend=null;
+  if(d.correct){
+    /* أخضر: يثبت الخط لحظة ثم يختفي الثنائي وتأتي عناصر جديدة (linkBoard) */
+    lkDraw(P.from.x,P.from.y,P.to.x,P.to.y,"#39e08a");
+    P.src.classList.add("good");P.dst.classList.add("good");
+    sTap();
+    setTimeout(()=>{$("lkSvg").innerHTML="";},420);
+  }else{
+    /* أحمر: ينقطع الخط ويعود العنصر — بلا خسارة، أعد المحاولة */
+    lkDraw(P.from.x,P.from.y,P.to.x,P.to.y,"#ff5470");
+    P.src.classList.add("bad");P.dst.classList.add("bad");
+    sLose();
+    setTimeout(()=>{
+      $("lkSvg").innerHTML="";
+      P.src.classList.remove("bad");P.dst.classList.remove("bad");
+    },430);
+  }
+});
 
+
+
+/* ═══ التصنيف: اسحب الدائرة يمينًا (الفئة أ) أو يسارًا (الفئة ب) ═══
+   الخادم يحكم: نرسل sortPick وننتظر sortFb — لا نعرف الإجابة محليًا
+   فلا مجال للغش من الطرفية، والوميض الأخضر/الأحمر يأتي من رد الخادم. */
+let stIdx=0, stBusy=false;
 function rSort(fresh){
   scene("sSort");mountClock("sSort");
   if(!fresh||!ST.sort)return;
-  stIdx=0;stAns=new Array(ST.sort.items.length).fill(0);
-  $("stTitle").textContent=`${ST.sort.a}  أم  ${ST.sort.b}؟`;
-  const bx=$("stBoxes");bx.innerHTML="";
-  [ST.sort.a,ST.sort.b].forEach((n,k)=>{
-    const b=document.createElement("button");b.className="bin";b.textContent=n;
-    b.onclick=()=>{
-      if(stIdx>=ST.sort.items.length)return;
-      stAns[stIdx]=k;stIdx++;sTap();ripple(b);paintSort();
-      if(stIdx>=ST.sort.items.length){socket.emit("sortAnswer",stAns);toast("تم الإرسال ✓");}
-    };bx.appendChild(b);});
-  paintSort();
+  stIdx=0;stBusy=false;
+  $("stTitle").textContent=`صنّف: ${ST.sort.a}  أم  ${ST.sort.b}؟`;
+  /* direction:ltr في الساحة — اليمين البصري هو stZoneR دائمًا */
+  $("stZoneR").querySelector(".szName").textContent=ST.sort.a;   /* يمين = الفئة أ (side 0) */
+  $("stZoneL").querySelector(".szName").textContent=ST.sort.b;   /* يسار = الفئة ب (side 1) */
+  $("stZoneR").className="stZone";$("stZoneL").className="stZone";
+  $("stDone").classList.add("gone");
+  $("stOrb").style.display="";
+  sortShow();
+  sortDrag();
 }
-function paintSort(){
-  if(!ST.sort)return;
+function sortShow(){
   const it=ST.sort.items;
-  const el=$("stItem");
-  el.textContent=stIdx<it.length?it[stIdx]:"✓ تم";
-  el.style.animation="none";void el.offsetWidth;el.style.animation="";
-  $("stDots").innerHTML=it.map((_,i)=>`<i class="${i<stIdx?"on":""}"></i>`).join("");
+  if(stIdx>=it.length){
+    $("stOrb").style.display="none";
+    $("stCount").textContent="";
+    $("stDone").classList.remove("gone");
+    return;
+  }
+  const o=$("stOrb");
+  $("stWord").textContent=it[stIdx];
+  $("stCount").textContent=(stIdx+1)+" / "+it.length;
+  o.style.transform="";
+  o.classList.remove("popIn");void o.offsetWidth;o.classList.add("popIn");
 }
+function sortDrag(){
+  const o=$("stOrb");
+  let sx=0,sy=0,dx=0,dragging=false;
+  o.onpointerdown=e=>{
+    if(stBusy||stIdx>=ST.sort.items.length)return;
+    dragging=true;sx=e.clientX;sy=e.clientY;dx=0;
+    o.classList.add("drag");o.classList.remove("snap");
+    o.setPointerCapture(e.pointerId);
+  };
+  o.onpointermove=e=>{
+    if(!dragging)return;
+    dx=e.clientX-sx;
+    const dy=(e.clientY-sy)*.25;                    /* حركة عمودية مخمَّدة */
+    o.style.transform=`translate(${dx}px,${dy}px) rotate(${dx*.06}deg)`;
+    const TH=innerWidth*.16;
+    $("stZoneR").classList.toggle("hot",dx>TH);
+    $("stZoneL").classList.toggle("hot",dx<-TH);
+  };
+  o.onpointerup=o.onpointercancel=e=>{
+    if(!dragging)return;dragging=false;
+    o.classList.remove("drag");
+    $("stZoneR").classList.remove("hot");$("stZoneL").classList.remove("hot");
+    const TH=innerWidth*.16;
+    if(Math.abs(dx)>TH){
+      /* قذف خارج الشاشة بالاتجاه المسحوب، وإرسال الاختيار للخادم */
+      const side=dx>0?0:1;                          /* يمين=أ(0) · يسار=ب(1) */
+      stBusy=true;
+      o.style.transition="transform .22s ease-in";
+      o.style.transform=`translate(${dx>0?innerWidth:-innerWidth}px,0) rotate(${dx*.2}deg)`;
+      socket.emit("sortPick",{i:stIdx,side});
+      setTimeout(()=>{o.style.transition="";},240);
+    }else{
+      o.classList.add("snap");o.style.transform="";
+    }
+  };
+}
+socket.on("sortFb",d=>{
+  /* رد الخادم: وميض الجهة، صوت، ثم العنصر التالي */
+  const z=d.side===0?$("stZoneR"):$("stZoneL");
+  z.classList.remove("hit","bad");void z.offsetWidth;
+  z.classList.add(d.correct?"hit":"bad");
+  if(d.correct){sTap();}else{sLose();}
+  stIdx=d.i+1;stBusy=false;
+  setTimeout(()=>z.classList.remove("hit","bad"),480);
+  sortShow();
+});
 
 /* ═══ الهرم 3D ═══ */
 function rPy(fresh){
@@ -2441,17 +2712,73 @@ function showRev(d){
       <span class="av">${avatar(r.name,r.color)}</span>
       <span class="nm">${esc(r.name)}</span>
       ${r.ms!==null?`<span class="ms">${(r.ms/1000).toFixed(2)}ث</span>`:""}
-      <span class="pt">${r.correct?(r.doubled?"✨ +"+r.gain:"+"+r.gain):"—"}</span></div>`).join("");
+      <span class="pt">${r.correct?(r.doubled?"✨ +"+r.gain:"+"+r.gain):"—"}</span></div>`).join("")+
+    /* الرهانات: كانت سرًّا طوال الجولة، وتُكشف هنا فقط بعد النقاط الأساسية */
+    (d.bets&&d.bets.length?d.bets.map(b=>`<div class="rrow betRow ${b.won?"top":"miss"}">
+      <span class="av">🎲</span>
+      <span class="nm">${esc(b.byName)} راهن على ${esc(b.onName)}</span>
+      <span class="pt">${b.won?"+"+b.points:"خسر"}</span></div>`).join(""):"")+
+    (d.party?`<div class="rrow partyRow"><span class="av">✨</span>
+      <span class="nm">حفلة نقاط — الجولة كانت مضاعفة!</span><span class="pt">×2</span></div>`:"");
 }
 function showRevCh(d){
   scene("sRev");
+  if(d.kind==="sort"||d.kind==="link")return raceReveal(d);
   $("revBody").innerHTML=
-    `<div class="revHead"><div class="lbl">${d.kind==="link"?"جولة الربط":"جولة التصنيف"}</div><div class="val">النتائج</div></div>`+
+    `<div class="revHead"><div class="lbl">جولة الربط</div><div class="val">النتائج</div></div>`+
     d.results.map((r,i)=>`<div class="rrow ${r.hits?(i===0?"top":""):"miss"}">
       <span class="av">${avatar(r.name,r.color)}</span>
       <span class="nm">${esc(r.name)}</span>
       <span class="ms">${r.hits} صحيحة</span>
       <span class="pt">+${r.gain}</span></div>`).join("");
+}
+
+/* ═══ سباق الصعود العمودي: نتيجة التصنيف ═══
+   الأيقونات تنطلق من خط واحد وترتفع شريحةً كل ٤٢٠م‌ث؛ من بلغ رصيده توقّف،
+   ويواصل الأعلى حتى القمة. النتائج مرتّبة من الخادم (الإصابات ثم الزمن). */
+function raceReveal(d){
+  const R=d.results, total=d.total||15;
+  const maxH=R.length?R[0].hits:0;
+  const laneW=100/(R.length+1);
+  $("revBody").innerHTML=
+    `<div id="raceWrap">
+      <div id="raceTitle">🏁 ${d.kind==="link"?"سباق التوصيل":"سباق التصنيف"} — ${total} عنصرًا</div>
+      <div id="raceTrack">
+        ${Array.from({length:total},(_,i)=>`<div class="raceRung" style="bottom:${(i+1)/(total+1)*100}%"></div>`).join("")}
+        ${R.map((r,i)=>`<div class="racer" id="racer${i}" style="left:${laneW*(i+1)}%;--pc:${r.color}">
+          <div class="rHits">0</div>
+          <div class="rAv">${r.charId?`<img src="${charImg(r.charId)}" alt="">`:avatar(r.name,r.color)}</div>
+          <div class="rNm">${esc(r.name)}</div>
+        </div>`).join("")}
+      </div>
+      <div id="raceFoot"></div>
+    </div>`;
+  let step=0;
+  const iv=setInterval(()=>{
+    step++;
+    let anyMoved=false;
+    R.forEach((r,i)=>{
+      const el=$("racer"+i);if(!el)return;
+      if(step<=r.hits){
+        el.style.bottom=(step/(total+1)*100)+"%";
+        el.querySelector(".rHits").textContent=step;
+        anyMoved=true;
+      }else el.classList.add("stopped");
+    });
+    if(step<=maxH&&step%2===0)sTick();
+    if(!anyMoved||step>=total){
+      clearInterval(iv);
+      /* التتويج: المتصدر (حسمت الخادمُ تعادلَه بالسرعة) */
+      const c=$("racer0");if(c){c.classList.remove("stopped");c.classList.add("champ");}
+      sWin();
+      /* أسطر النقاط الختامية */
+      $("raceFoot").innerHTML=R.map((r,i)=>`<div class="rrow ${i===0?"top":""}">
+        <span class="av">${r.charId?`<img src="${charImg(r.charId)}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`:avatar(r.name,r.color)}</span>
+        <span class="nm">${esc(r.name)}</span>
+        <span class="ms">${r.hits}/${total}${r.ms!==null?" · "+(r.ms/1000).toFixed(1)+"ث":""}</span>
+        <span class="pt">+${r.gain}</span></div>`).join("");
+    }
+  },420);
 }
 
 /* ═══ النهاية: منصة تتويج ═══ */
@@ -2582,8 +2909,7 @@ const sSquish=()=>{noise(.16,.08,300);tone(190,.14,"sine",.05,90);};
 const sChomp=()=>{tone(340,.05,"square",.04,180);};
 
 const FX={
-  active:null,key:null,timer:null,raf:0,box:null,host:null,el:null,locked:false,
-  origText:null,
+  active:null,key:null,timer:null,raf:0,host:null,el:null,els:null,origText:null,_hold:0,
 
   /* منطقة الإجابات في المشهد الحالي */
   answersBox(){
@@ -2591,28 +2917,27 @@ const FX={
   },
   buttons(){ const b=this.answersBox(); return b?[...b.querySelectorAll(".ans")]:[]; },
 
-  /* قياس بالتخطيط لا بالشاشة — getBoundingClientRect يتأثر بأنميشن
-     دخول المشهد (scale) فتخرج الطبقة أضيق من الإجابات */
+  /* قياس بالتخطيط لا بالشاشة — getBoundingClientRect يتأثر بأنميشن دخول المشهد */
   geom(box,host){
     let x=0,y=0,n=box;
     while(n&&n!==host){x+=n.offsetLeft;y+=n.offsetTop;n=n.offsetParent;}
     return {x,y,w:box.offsetWidth,h:box.offsetHeight};
   },
-
-  mount(){
-    const box=this.answersBox();
-    if(!box)return null;
-    this.box=box;
+  hostEl(){
+    const box=this.answersBox(); if(!box)return null;
     const host=box.parentElement;
     if(getComputedStyle(host).position==="static")host.style.position="relative";
-    this.host=host;
-    const g=this.geom(box,host);
+    this.host=host; return host;
+  },
+  /* طبقة فوق زرّ واحد بعينه — أساس نظام «فخّ لكل خيار» */
+  overBtn(btn,z,cls){
+    const host=this.hostEl(); if(!host)return null;
+    const g=this.geom(btn,host);
     const el=document.createElement("div");
-    el.className="fxLayer";
-    el.style.cssText=`position:absolute;left:${g.x}px;top:${g.y}px;`+
-      `width:${g.w}px;height:${g.h}px;z-index:26;border-radius:18px;overflow:hidden;touch-action:none`;
+    el.className="fxBtnLayer "+(cls||"");
+    el.style.cssText=`position:absolute;left:${g.x}px;top:${g.y}px;width:${g.w}px;`+
+      `height:${g.h}px;z-index:${z};border-radius:17px;overflow:hidden;touch-action:none`;
     host.appendChild(el);
-    this.el=el;
     return el;
   },
 
@@ -2625,240 +2950,217 @@ const FX={
     setTimeout(()=>b.remove(),2600);
   },
 
-  lockAnswers(on){
-    // عدّاد مرجعي مشترك: كل فخ يحجز قفلاً واحداً ويحرّره مرة واحدة
-    if(on){ if(!this._hold){this._hold=1;FX._locks=(FX._locks||0)+1;} }
-    else  { if(this._hold){this._hold=0;FX._locks=Math.max(0,(FX._locks||0)-1);} }
-    FX.locked=(FX._locks||0)>0;
-    this.buttons().forEach(b=>{b.style.pointerEvents=FX.locked?"none":"";b.classList.toggle("frozenBtn",FX.locked);});
+  /* صعقة القنبلة: نصف ثانية يُمنع فيها كل لمس على الخيارات وطبقات الفخاخ */
+  stun(ms){
+    FX.stunUntil=Date.now()+ms;
+    const all=[...this.buttons(),...document.querySelectorAll(".fxBtnLayer")];
+    all.forEach(e=>{e.style.pointerEvents="none";e.classList.add("frozenBtn");});
+    clearTimeout(FX._stunT);
+    FX._stunT=setTimeout(()=>{
+      all.forEach(e=>{e.style.pointerEvents="";e.classList.remove("frozenBtn");});
+    },ms);
   },
 
   start(power,from,ms){
-    this.stop();
     const NM={freeze:"تجميد ❄️",gloop:"وحل 🟢",bombs:"قنابل 💣",nibble:"أكلة الحروف 👾",shuffle:"خلط 🔀"};
     const CL={freeze:"#7fd8ff",gloop:"#5fd06a",bombs:"#ff6b4d",nibble:"#c58bff",shuffle:"#ffcb2e"};
-    this.active=power;this.key=phaseKey;   // المرحلة التي بدأ فيها الفخ
+    this.active=power;this.key=phaseKey;
     this.banner((NM[power]||power)+"  من  "+from,CL[power]);
     const fn=this["fx_"+power];
     if(fn)fn.call(this,ms);
     clearTimeout(this.timer);
-    this.timer=setTimeout(()=>this.stop(),ms);
+    /* الفخاخ لا تنتهي بمؤقّت: الوحل يُمسح والجليد يُكسر والحروف تعود عند
+       الكشف — sweep() ينظّف كل شيء عند تغيّر المرحلة. المؤقّت صمّام أمان فقط. */
+    this.timer=setTimeout(()=>this.stop(),120000);
   },
 
   stop(){
     clearTimeout(this.timer);cancelAnimationFrame(this.raf);
     this.timer=null;this.active=null;this.key=null;
-    this.lockAnswers(false);
-    // نستعيد عقدة النص نفسها (لا b.lastChild — فقد يكون المخلوق المضاف)
     if(this.origText){this.origText.forEach(([node,t])=>{try{if(node&&node.isConnected)node.textContent=t;}catch(e){}});this.origText=null;}
     if(this.el){this.el.remove();this.el=null;}
+    if(this.els){this.els.forEach(e=>{try{e.remove();}catch(x){}});this.els=null;}
   },
 
-  /* ─── ١ · الثلج: ثلاث نقرات لكسره ─── */
+  /* ─── ١ · التجميد: غلاف جليدي شفاف حول كل خيار — ٣ نقرات تكسره ───
+     النص مقروء خلف الجليد، واللاعب يكسر الخيار الذي يريده فقط. */
   fx_freeze(){
-    const el=this.mount();if(!el)return;
-    this.lockAnswers(true);
-    const cv=document.createElement("canvas");
-    const w=el.clientWidth,h=el.clientHeight,DP=Math.min(2,devicePixelRatio||1);
-    cv.width=w*DP;cv.height=h*DP;cv.style.cssText="width:100%;height:100%;display:block";
-    el.appendChild(cv);
-    el.style.backdropFilter="blur(7px) saturate(1.3)";
-    el.style.webkitBackdropFilter="blur(7px) saturate(1.3)";
-    const cx=cv.getContext("2d");cx.scale(DP,DP);
-    let stage=0;const MAX=3;
-    const cracks=[];
-    const hint=document.createElement("div");
-    hint.className="fxHint";hint.textContent="انقر ٣ مرات لكسر الجليد";
-    el.appendChild(hint);
-
-    function frost(){
-      cx.clearRect(0,0,w,h);
-      // طبقة جليد أساسية
-      const g=cx.createLinearGradient(0,0,w,h);
-      g.addColorStop(0,"rgba(214,241,255,.93)");
-      g.addColorStop(.4,"rgba(150,207,240,.88)");
-      g.addColorStop(.75,"rgba(226,246,255,.93)");
-      g.addColorStop(1,"rgba(168,216,245,.9)");
-      cx.fillStyle=g;cx.fillRect(0,0,w,h);
-      // بلورات صقيع
-      cx.strokeStyle="rgba(255,255,255,.75)";
-      for(let i=0;i<26;i++){
-        const x=Math.random()*w,y=Math.random()*h,L=8+Math.random()*22;
-        cx.lineWidth=.7+Math.random();
-        for(let a=0;a<6;a++){
-          const an=a*Math.PI/3;
-          cx.beginPath();cx.moveTo(x,y);
-          cx.lineTo(x+Math.cos(an)*L,y+Math.sin(an)*L);
-          cx.stroke();
-          cx.beginPath();
-          cx.moveTo(x+Math.cos(an)*L*.55,y+Math.sin(an)*L*.55);
-          cx.lineTo(x+Math.cos(an+.5)*L*.8,y+Math.sin(an+.5)*L*.8);
-          cx.stroke();
+    const btns=this.buttons(); if(!btns.length)return;
+    this.els=[];
+    btns.forEach(btn=>{
+      const el=this.overBtn(btn,25,"fxIce"); if(!el)return;
+      this.els.push(el);
+      const w=el.clientWidth,h=el.clientHeight,DP=Math.min(2,devicePixelRatio||1);
+      const cv=document.createElement("canvas");
+      cv.width=w*DP;cv.height=h*DP;cv.style.cssText="width:100%;height:100%;display:block";
+      el.appendChild(cv);
+      const cx=cv.getContext("2d");cx.scale(DP,DP);
+      let taps=0;const cracks=[];
+      const paint=()=>{
+        cx.clearRect(0,0,w,h);
+        /* جليد شفاف: النص واضح خلفه */
+        const g=cx.createLinearGradient(0,0,w,h);
+        g.addColorStop(0,"rgba(190,230,255,.34)");
+        g.addColorStop(.5,"rgba(150,207,240,.26)");
+        g.addColorStop(1,"rgba(210,240,255,.34)");
+        cx.fillStyle=g;cx.fillRect(0,0,w,h);
+        cx.strokeStyle="rgba(255,255,255,.55)";
+        for(let i=0;i<8;i++){
+          const x=Math.random()*w,y=Math.random()*h,L=5+Math.random()*10;
+          cx.lineWidth=.6;
+          for(let a=0;a<6;a++){const an=a*Math.PI/3;
+            cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+Math.cos(an)*L,y+Math.sin(an)*L);cx.stroke();}
         }
-      }
-      // لمعة
-      cx.globalAlpha=.35;
-      const s=cx.createLinearGradient(0,0,w*.6,h);
-      s.addColorStop(0,"rgba(255,255,255,0)");s.addColorStop(.5,"rgba(255,255,255,.9)");s.addColorStop(1,"rgba(255,255,255,0)");
-      cx.fillStyle=s;cx.fillRect(0,0,w,h);cx.globalAlpha=1;
-      // الشقوق المتراكمة
-      cx.strokeStyle="rgba(255,255,255,.98)";cx.lineCap="round";
-      cracks.forEach(c=>{
-        cx.lineWidth=c.wgt;
-        c.branches.forEach(br=>{
-          cx.beginPath();cx.moveTo(c.x,c.y);
-          br.forEach(p=>cx.lineTo(p[0],p[1]));
-          cx.stroke();
+        cx.strokeStyle="rgba(255,255,255,.95)";cx.lineCap="round";
+        cracks.forEach(c=>{
+          cx.lineWidth=c.wgt;
+          c.branches.forEach(br=>{cx.beginPath();cx.moveTo(c.x,c.y);br.forEach(pt=>cx.lineTo(pt[0],pt[1]));cx.stroke();});
         });
-      });
-    }
-    function addCrack(x,y){
-      const branches=[];
-      const n=5+Math.floor(Math.random()*4);
-      for(let i=0;i<n;i++){
-        let a=Math.random()*6.283,px=x,py=y;const pts=[];
-        const segs=3+Math.floor(Math.random()*3);
-        for(let s=0;s<segs;s++){
-          a+=(Math.random()-.5)*.9;
-          const L=14+Math.random()*34;
-          px+=Math.cos(a)*L;py+=Math.sin(a)*L;
-          pts.push([px,py]);
+      };
+      paint();
+      el.style.border="1.5px solid rgba(180,225,255,.55)";
+      el.style.boxShadow="inset 0 0 18px rgba(160,215,250,.35)";
+      const self=this;
+      el.onpointerdown=e=>{
+        e.preventDefault();e.stopPropagation();
+        if(Date.now()<(FX.stunUntil||0))return;
+        const r=cv.getBoundingClientRect();
+        const x=e.clientX-r.left,y=e.clientY-r.top;
+        taps++;
+        const branches=[];
+        for(let i=0;i<4+Math.floor(Math.random()*3);i++){
+          let a=Math.random()*6.283,px=x,py=y;const pts=[];
+          for(let sg=0;sg<3;sg++){a+=(Math.random()-.5)*.9;const L=10+Math.random()*22;
+            px+=Math.cos(a)*L;py+=Math.sin(a)*L;pts.push([px,py]);}
+          branches.push(pts);
         }
-        branches.push(pts);
-      }
-      cracks.push({x,y,branches,wgt:2.4-stage*.5});
-    }
-    frost();
-
-    el.onpointerdown=e=>{
-      e.preventDefault();
-      const r=cv.getBoundingClientRect();
-      const x=e.clientX-r.left,y=e.clientY-r.top;
-      stage++;
-      addCrack(x,y);frost();
-      sGlass();
-      el.classList.remove("shakeFx");void el.offsetWidth;el.classList.add("shakeFx");
-      hint.textContent=stage<MAX?`${MAX-stage} نقرات باقية`:"";
-      if(stage>=MAX)this.shatter(el,cv,w,h);
-    };
+        cracks.push({x,y,branches,wgt:2.2-taps*.4});
+        paint();sGlass();
+        el.classList.remove("shakeFx");void el.offsetWidth;el.classList.add("shakeFx");
+        if(taps>=3){
+          /* تناثر الشظايا ثم يتحرر هذا الخيار وحده */
+          el.onpointerdown=null;
+          const shards=[];
+          for(let i=0;i<14;i++)shards.push({x:Math.random()*w,y:Math.random()*h,
+            vx:(Math.random()-.5)*6,vy:-2-Math.random()*4,r:Math.random()*6.28,
+            vr:(Math.random()-.5)*.3,s:6+Math.random()*12,a:1});
+          sGlass();
+          let t=0;
+          (function loop(){
+            t++;cx.clearRect(0,0,w,h);
+            shards.forEach(sp=>{sp.x+=sp.vx;sp.y+=sp.vy;sp.vy+=.4;sp.r+=sp.vr;sp.a-=.03;
+              if(sp.a<=0)return;
+              cx.save();cx.translate(sp.x,sp.y);cx.rotate(sp.r);cx.globalAlpha=Math.max(0,sp.a);
+              cx.fillStyle="#cdeeff";
+              cx.beginPath();cx.moveTo(0,-sp.s);cx.lineTo(sp.s*.7,sp.s*.4);cx.lineTo(-sp.s*.6,sp.s*.6);cx.closePath();cx.fill();
+              cx.restore();});
+            if(t<34)requestAnimationFrame(loop);
+            else el.remove();
+          })();
+        }
+      };
+      /* منع تسرّب النقر إلى الزر تحته */
+      el.onclick=e=>{e.preventDefault();e.stopPropagation();};
+    });
   },
 
-  shatter(el,cv,w,h){
-    const self=this;
-    el.onpointerdown=null;
-    el.style.backdropFilter="none";el.style.webkitBackdropFilter="none";
-    const cx=cv.getContext("2d");
-    const shards=[];
-    for(let i=0;i<24;i++){
-      const x=Math.random()*w,y=Math.random()*h;
-      shards.push({x,y,vx:(Math.random()-.5)*7,vy:-2-Math.random()*5,
-        r:Math.random()*6.28,vr:(Math.random()-.5)*.32,s:9+Math.random()*20,a:1});
-    }
-    sGlass();noise(.4,.1,1400);
-    let t=0;
-    (function loop(){
-      t++;cx.clearRect(0,0,w,h);
-      shards.forEach(s=>{
-        s.x+=s.vx;s.y+=s.vy;s.vy+=.42;s.r+=s.vr;s.a-=.019;
-        if(s.a<=0)return;
-        cx.save();cx.translate(s.x,s.y);cx.rotate(s.r);cx.globalAlpha=Math.max(0,s.a);
-        const g=cx.createLinearGradient(-s.s,-s.s,s.s,s.s);
-        g.addColorStop(0,"#eaf8ff");g.addColorStop(1,"#9fd4f2");
-        cx.fillStyle=g;
-        cx.beginPath();cx.moveTo(0,-s.s);cx.lineTo(s.s*.7,s.s*.4);cx.lineTo(-s.s*.6,s.s*.6);cx.closePath();
-        cx.fill();
-        cx.strokeStyle="rgba(255,255,255,.9)";cx.lineWidth=1;cx.stroke();
-        cx.restore();
-      });
-      if(t<58)self.raf=requestAnimationFrame(loop);
-      else self.stop();
-    })();
-  },
-
-  /* ─── ٢ · الوحل: امسح ٧٠٪ لتنظيفه ─── */
+  /* ─── ٢ · الوحل: طبقة لزجة فوق كل خيار — مسحٌ ناعم حتى ٨٠٪ ───
+     المسار بمنحنيات وسيطة (quadraticCurveTo على منتصفات النقاط) لا دوائر
+     متقطّعة، والنسبة تُحسب بعدّ البكسلات الشفافة فعليًا من قناع الألفا. */
   fx_gloop(){
-    const el=this.mount();if(!el)return;
-    this.lockAnswers(true);
-    const w=el.clientWidth,h=el.clientHeight,DP=Math.min(2,devicePixelRatio||1);
-    const cv=document.createElement("canvas");
-    cv.width=w*DP;cv.height=h*DP;cv.style.cssText="width:100%;height:100%;display:block";
-    el.appendChild(cv);
-    const cx=cv.getContext("2d");cx.scale(DP,DP);
-    const hint=document.createElement("div");
-    hint.className="fxHint";hint.textContent="امسح الوحل بإصبعك";
-    el.appendChild(hint);
-
-    // طبقة وحل متكتلة
-    const base=cx.createLinearGradient(0,0,0,h);
-    base.addColorStop(0,"#4e9c3f");base.addColorStop(.5,"#3d8a34");base.addColorStop(1,"#2f7a2c");
-    cx.fillStyle=base;cx.fillRect(0,0,w,h);
-    for(let i=0;i<70;i++){
-      const x=Math.random()*w,y=Math.random()*h,r=12+Math.random()*46;
-      const g=cx.createRadialGradient(x-r*.3,y-r*.3,2,x,y,r);
-      g.addColorStop(0,"rgba(150,220,120,.85)");g.addColorStop(1,"rgba(45,120,40,.5)");
-      cx.fillStyle=g;cx.beginPath();cx.arc(x,y,r,0,6.283);cx.fill();
-    }
-    // نقاط لمعان
-    for(let i=0;i<26;i++){
-      cx.fillStyle="rgba(200,255,170,.5)";
-      cx.beginPath();cx.arc(Math.random()*w,Math.random()*h,1.5+Math.random()*4,0,6.283);cx.fill();
-    }
-    // قطرات متدلية من الأعلى
-    for(let i=0;i<10;i++){
-      const x=Math.random()*w,L=10+Math.random()*40;
-      cx.fillStyle="#3d8a34";
-      cx.beginPath();cx.moveTo(x-7,0);cx.quadraticCurveTo(x,L*1.5,x+7,0);cx.fill();
-      cx.beginPath();cx.arc(x,L,7,0,6.283);cx.fill();
-    }
-
-    const total=w*h;let cleared=0;const grid=new Uint8Array(Math.ceil(w/10)*Math.ceil(h/10));
-    const gw=Math.ceil(w/10);
-    const self=this;
-    function wipe(e){
-      e.preventDefault();
-      const r=cv.getBoundingClientRect();
-      const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
-      const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
-      cx.globalCompositeOperation="destination-out";
-      cx.beginPath();cx.arc(x,y,34,0,6.283);cx.fill();
-      cx.globalCompositeOperation="source-over";
-      // تتبع النسبة الممسوحة عبر شبكة خشنة
-      for(let gy=Math.max(0,((y-34)/10)|0);gy<Math.min(Math.ceil(h/10),((y+34)/10)|0+1);gy++)
-        for(let gx=Math.max(0,((x-34)/10)|0);gx<Math.min(gw,((x+34)/10)|0+1);gx++){
-          const i=gy*gw+gx;
-          if(!grid[i]){grid[i]=1;cleared++;}
-        }
-      const pct=cleared/grid.length;
-      hint.textContent=Math.round(pct*100)+"٪";
-      if(Math.random()<.25)sSquish();
-      if(pct>=.70){
-        hint.textContent="";
-        el.style.transition="opacity .45s";el.style.opacity="0";
-        setTimeout(()=>self.stop(),460);
+    const btns=this.buttons(); if(!btns.length)return;
+    this.els=[];
+    btns.forEach(btn=>{
+      const el=this.overBtn(btn,26,"fxGoo"); if(!el)return;
+      this.els.push(el);
+      const w=el.clientWidth,h=el.clientHeight,DP=Math.min(2,devicePixelRatio||1);
+      const cv=document.createElement("canvas");
+      cv.width=w*DP;cv.height=h*DP;cv.style.cssText="width:100%;height:100%;display:block";
+      el.appendChild(cv);
+      const cx=cv.getContext("2d",{willReadFrequently:true});cx.scale(DP,DP);
+      /* طبقة الوحل */
+      const base=cx.createLinearGradient(0,0,0,h);
+      base.addColorStop(0,"#4e9c3f");base.addColorStop(.5,"#3d8a34");base.addColorStop(1,"#2f7a2c");
+      cx.fillStyle=base;cx.fillRect(0,0,w,h);
+      for(let i=0;i<24;i++){
+        const x=Math.random()*w,y=Math.random()*h,r=8+Math.random()*22;
+        const g=cx.createRadialGradient(x-r*.3,y-r*.3,2,x,y,r);
+        g.addColorStop(0,"rgba(150,220,120,.85)");g.addColorStop(1,"rgba(45,120,40,.5)");
+        cx.fillStyle=g;cx.beginPath();cx.arc(x,y,r,0,6.283);cx.fill();
       }
-    }
-    el.onpointerdown=wipe;
-    el.onpointermove=e=>{if(e.buttons)wipe(e);};
+      for(let i=0;i<10;i++){
+        cx.fillStyle="rgba(200,255,170,.5)";
+        cx.beginPath();cx.arc(Math.random()*w,Math.random()*h,1+Math.random()*3,0,6.283);cx.fill();
+      }
+      const self=this;
+      let last=null,moves=0,done=false;
+      const BRUSH=Math.max(30,Math.min(46,h*.55));
+      /* عدّ البكسلات الشفافة من قناع الألفا — «كشف البكسلات» حرفيًا */
+      function pct(){
+        const d=cx.getImageData(0,0,cv.width,cv.height).data;
+        let clear=0;const n=d.length/4;
+        for(let i=3;i<d.length;i+=4) if(d[i]<25)clear++;
+        return clear/n;
+      }
+      function finish(){
+        if(done)return; done=true;
+        el.style.transition="opacity .4s";el.style.opacity="0";
+        setTimeout(()=>el.remove(),420);
+      }
+      function stroke(x,y){
+        cx.globalCompositeOperation="destination-out";
+        cx.lineCap="round";cx.lineJoin="round";cx.lineWidth=BRUSH;
+        cx.strokeStyle="rgba(0,0,0,1)";
+        if(last){
+          /* منحنى وسيط ناعم بين النقطتين */
+          const mx=(last.x+x)/2,my=(last.y+y)/2;
+          cx.beginPath();cx.moveTo(last.mx??last.x,last.my??last.y);
+          cx.quadraticCurveTo(last.x,last.y,mx,my);cx.stroke();
+          last={x,y,mx,my};
+        }else{
+          cx.beginPath();cx.arc(x,y,BRUSH/2,0,6.283);cx.fill();
+          last={x,y};
+        }
+        cx.globalCompositeOperation="source-over";
+      }
+      function onMove(e){
+        if(done)return;
+        if(Date.now()<(FX.stunUntil||0))return;
+        e.preventDefault();
+        /* أصبع يمرّ فوق قنبلة عائمة أثناء المسح؟ تنفجر (اللمس يأسر الأحداث
+           للكانفس، فنفحص العنصر الأعلى عند النقطة يدويًا) */
+        const top=document.elementFromPoint(e.clientX,e.clientY);
+        const bomb=top&&top.closest&&top.closest(".bomb");
+        if(bomb&&bomb.__blow){bomb.__blow();last=null;return;}
+        const r=cv.getBoundingClientRect();
+        stroke(e.clientX-r.left,e.clientY-r.top);
+        if(Math.random()<.2)sSquish();
+        if(++moves%7===0&&pct()>=.8)finish();
+      }
+      el.onpointerdown=e=>{e.stopPropagation();last=null;onMove(e);};
+      el.onpointermove=e=>{if(e.buttons)onMove(e);};
+      el.onpointerup=()=>{last=null;if(!done&&pct()>=.8)finish();};
+      el.onclick=e=>{e.preventDefault();e.stopPropagation();};
+    });
   },
 
-  /* ─── ٣ · القنابل النطاطة ─── */
-  fx_bombs(ms){
+  /* ─── ٣ · القنابل: تحوم كبيرةً فوق منطقة الأسئلة كلها (أعلى طبقة) ───
+     لمسها أو مرور الإصبع عليها أثناء المسح يفجّرها: صعقة نصف ثانية. */
+  fx_bombs(){
     const box=this.answersBox();if(!box)return;
-    const host=box.parentElement;
-    if(getComputedStyle(host).position==="static")host.style.position="relative";
-    this.host=host;
+    const host=this.hostEl();if(!host)return;
     const g=this.geom(box,host);
     const wrap=document.createElement("div");
     wrap.className="bombWrap";
-    // direction:ltr يمنع أي التباس في مواضع الأبناء المطلقة داخل صفحة RTL
     wrap.style.cssText=`position:absolute;left:${g.x}px;top:${g.y}px;direction:ltr;`+
-      `width:${g.w}px;height:${g.h}px;z-index:27;pointer-events:none;overflow:hidden;border-radius:18px`;
+      `width:${g.w}px;height:${g.h}px;z-index:30;pointer-events:none;overflow:hidden;border-radius:18px`;
     host.appendChild(wrap);
     this.el=wrap;
-    const W=g.w,H=g.h,SZ=38;
+    const W=g.w,H=g.h,SZ=54;
     const MX=Math.max(0,W-SZ),MY=Math.max(0,H-SZ);
-    const N=Math.max(5,Math.min(11,Math.round(W/115)));
+    const N=Math.max(4,Math.min(9,Math.round(W/150)));
     const bombs=[];
+    const self=this;
     for(let i=0;i<N;i++){
       const d=document.createElement("div");
       d.className="bomb";d.innerHTML='<i class="bi"></i>';
@@ -2871,9 +3173,11 @@ const FX={
         r:Math.random()*360, vr:(Math.random()-.5)*4, dead:false};
       b.el.style.transform=`translate3d(${b.x}px,${b.y}px,0)`;
       bombs.push(b);
-      d.onpointerdown=ev=>{ev.preventDefault();ev.stopPropagation();this.blowUp(b,wrap);};
+      d.__blow=()=>self.blowUp(b);
+      d.onpointerdown=ev=>{ev.preventDefault();ev.stopPropagation();d.__blow();};
+      /* سحبٌ بالفأرة يمرّ فوقها (بلا أسر أحداث) */
+      d.onpointerenter=ev=>{if(ev.buttons)d.__blow();};
     }
-    const self=this;
     (function loop(){
       bombs.forEach(b=>{
         if(b.dead)return;
@@ -2888,47 +3192,42 @@ const FX={
     })();
   },
 
-  blowUp(b,wrap){
+  blowUp(b){
     if(b.dead)return;
     b.dead=true;b.el.classList.add("boom");
     sBoom();
     setTimeout(()=>b.el.remove(),420);
-    // وميض أحمر + تجميد اللمس ١.٥ث
     const veil=$("hitVeil");
     veil.classList.remove("on");void veil.offsetWidth;veil.classList.add("on");
     $("stage").classList.remove("hit");void $("stage").offsetWidth;$("stage").classList.add("hit");
-    this.lockAnswers(true);
+    /* صعقة نصف ثانية فقط — سريعة لكنها كافية لإرباك اللاعب المتسرّع */
+    this.stun(500);
     const pen=document.createElement("div");
-    pen.className="fxPenalty";pen.textContent="💥 انفجرت! ١.٥ث";
+    pen.className="fxPenalty";pen.textContent="💥 صعقة!";
     (this.host||$("stage")).appendChild(pen);
-    clearTimeout(this._pen);
-    this._pen=setTimeout(()=>{
-      pen.remove();
-      if(this.active==="bombs")this.lockAnswers(false);
-    },1500);
+    setTimeout(()=>pen.remove(),700);
   },
 
-  /* ─── ٤ · أكلة الحروف ─── */
-  fx_nibble(ms){
+  /* ─── ٤ · آكلات الحروف: تقضم ٢–٣ أحرف من نصّ كل خيار ───
+     تعمل على السلسلة النصية نفسها فلا يهم ما فوقها من طبقات، وتبقى
+     الأحرف مأكولة حتى لحظة كشف الإجابة (sweep يعيد النص الأصلي). */
+  fx_nibble(){
     const btns=this.buttons();if(!btns.length)return;
-    const box=this.answersBox(),host=box.parentElement;
-    if(getComputedStyle(host).position==="static")host.style.position="relative";
-    this.host=host;
+    this.hostEl();
     this.origText=[];
     btns.forEach(b=>{
-      const node=b.lastChild;               // العقدة النصية للإجابة
+      const node=b.lastChild;
       const t=node.textContent;
       this.origText.push([node,t]);
       const chars=[...t];
       const idx=chars.map((c,i)=>i).filter(i=>chars[i].trim());
-      // 30٪ من الحروف تُستبدل
-      const take=Math.max(1,Math.round(idx.length*0.3));
+      /* ٢ للقصير و٣ لما يزيد على ٨ أحرف فعلية */
+      const take=Math.min(idx.length-1, idx.length>8?3:2);
       for(let k=0;k<take;k++){
         const pick=idx.splice(Math.floor(Math.random()*idx.length),1)[0];
         if(pick!==undefined)chars[pick]="ـ";
       }
       node.textContent=chars.join("");
-      // مخلوق يزحف داخل الزر نفسه (لا يتأثر بقياسات المشهد)
       const m=document.createElement("div");
       m.className="nib";m.textContent="👾";
       m.style.top="calc(50% - 13px)";
@@ -2949,7 +3248,7 @@ const FX={
       const kids=[...b.children];
       b.appendChild(kids[(Math.random()*kids.length)|0]);
     },320);
-    setTimeout(()=>clearInterval(iv),ms);
+    setTimeout(()=>clearInterval(iv),ms||4000);
   }
 };
 /* ═══ مدير الفخاخ المتراكبة: عدة مقالب على نفس اللاعب في نفس السؤال ═══
@@ -2968,7 +3267,8 @@ const FXM={
     this.list.forEach(i=>{try{i.stop();}catch(e){}});
     this.list=[];
     FX._locks=0;FX.locked=false;
-    document.querySelectorAll(".fxLayer,.bombWrap,.fxPenalty").forEach(e=>e.remove());
+    document.querySelectorAll(".fxLayer,.fxBtnLayer,.bombWrap,.fxPenalty").forEach(e=>e.remove());
+    FX.stunUntil=0;clearTimeout(FX._stunT);
   },
   sweep(key){   // انتقلنا لمرحلة أخرى؟ ننهي كل فخ بدأ في مرحلة سابقة
     this.list=this.list.filter(i=>i.active);
@@ -3069,7 +3369,7 @@ $("cfgSave").onclick=()=>{
 function fit(){
   const h=(window.visualViewport?window.visualViewport.height:innerHeight);
   $("game").style.height=h+"px";$("lobby").style.height=h+"px";
-  if(ST&&ST.phase==="link")drawLines();
+  if(ST&&ST.phase==="link")$("lkSvg").innerHTML="";  /* تغيّر القياس يُبطل إحداثيات الخط */
   if(ST&&(ST.phase==="pyramid"||ST.phase==="pyramidIntro"))fitPy(ST.pyramidHeight||12);
 }
 addEventListener("resize",fit);
