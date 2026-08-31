@@ -234,6 +234,42 @@ input,select,textarea{font-family:inherit}
 #opSkip:hover{background:rgba(139,92,246,.75);transform:scale(1.05)}
 #opSkip:active{transform:scale(.96);background:rgba(139,92,246,.8)}
 #opSkip.gone,#opHint.gone,#opWait.gone{display:none}
+/* ═══ اختيار الشخصية في اللوبي ═══ */
+#sWait{justify-content:flex-start;gap:10px}
+#waitTop{text-align:center;flex:0 0 auto;padding-top:2px}
+#waitTrophy{font-size:34px;filter:drop-shadow(0 0 22px rgba(255,203,46,.55));animation:bob 2.6s ease-in-out infinite}
+#waitTitle{font-size:19px;font-weight:900;margin-top:4px}
+#charGrid{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;width:100%;
+  display:grid;gap:10px;padding:4px 2px 6px;align-content:start;
+  grid-template-columns:repeat(auto-fill,minmax(118px,1fr))}
+.ch{position:relative;border-radius:16px;overflow:hidden;cursor:pointer;
+  border:2px solid rgba(255,255,255,.12);background:#0b1020;
+  transition:transform .16s var(--ease),border-color .16s,box-shadow .16s}
+.ch:hover{transform:translateY(-3px);border-color:rgba(139,92,246,.6)}
+.ch img{display:block;width:100%;aspect-ratio:1;object-fit:cover;background:#0b1020}
+.ch .chNm{padding:6px 6px 7px;text-align:center;font-weight:800;font-size:13px;line-height:1.25}
+.ch .chDs{display:block;font-weight:600;font-size:10.5px;color:var(--dim);margin-top:2px}
+/* المختارة لي */
+.ch.mine{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.28),0 8px 22px -6px rgba(139,92,246,.5)}
+/* محجوزة للاعب آخر */
+.ch.taken{cursor:not-allowed;filter:grayscale(.75) brightness(.5)}
+.ch.taken:hover{transform:none;border-color:rgba(255,255,255,.12)}
+/* شارة صاحب الشخصية */
+.chWho{position:absolute;top:6px;inset-inline-start:6px;z-index:2;max-width:calc(100% - 12px);
+  padding:3px 8px;border-radius:99px;font-size:10.5px;font-weight:800;color:#fff;
+  background:rgba(0,0,0,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chLock{position:absolute;top:6px;inset-inline-end:6px;z-index:2;font-size:13px}
+#charBar{flex:0 0 auto;display:flex;gap:9px;justify-content:center;flex-wrap:wrap;padding-bottom:2px}
+#readyB{background:linear-gradient(135deg,#2e9e5b,#22c55e)}
+#readyB.on{background:linear-gradient(135deg,#475569,#334155)}
+#readyB.gone,#startB.gone{display:none}
+@media (max-width:560px){
+  #charGrid{grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:8px}
+  #waitTrophy{font-size:28px} #waitTitle{font-size:17px}
+  .ch .chNm{font-size:12px} .ch .chDs{display:none}
+}
+/* وجه الشخصية داخل بطاقة اللاعب — يحلّ محلّ الأفاتار المولّد */
+.pl .av img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
 /* الفيلم يغطي الشاشة كاملة، فالطبقات الخلفية محجوبة تمامًا — نطفئها كي لا
    ينافس تمويهها (blur 70px المتحرك) فكَّ ترميز الفيديو على البطاقات الضعيفة. */
 body.filmOn #aurora,body.filmOn #bgFx,body.filmOn #grid{display:none!important}
@@ -923,12 +959,16 @@ body.noTop #hud,body.noTop #roster{display:none}
   <div id="stage" class="glass">
 
     <div class="scene on" id="sWait">
-      <div style="margin:auto;text-align:center">
-        <div style="font-size:60px;filter:drop-shadow(0 0 28px rgba(255,203,46,.6));animation:bob 2.6s ease-in-out infinite">🏆</div>
-        <div style="font-size:21px;font-weight:900;margin-top:12px">بانتظار بدء المباراة</div>
-        <div class="dim" id="waitI" style="margin-top:7px"></div>
+      <div id="waitTop">
+        <div id="waitTrophy">🏆</div>
+        <div id="waitTitle">اختر شخصيتك</div>
+        <div class="dim" id="waitI"></div>
       </div>
-      <button class="btn" id="startB">ابدأ المباراة</button>
+      <div id="charGrid"></div>
+      <div id="charBar">
+        <button class="btn" id="readyB" type="button">مستعد ✓</button>
+        <button class="btn" id="startB">ابدأ المباراة</button>
+      </div>
     </div>
 
     <div class="scene" id="sVote">
@@ -1094,6 +1134,9 @@ body.noTop #hud,body.noTop #roster{display:none}
         <div class="tgl"><span>قراءة صوتية<small>صوت يقرأ السؤال في مرحلة القراءة</small></span><label class="sw"><input type="checkbox" id="sVO"><i></i></label></div>
         <div class="tgl"><span>شاشة الشرح<small>شرح كل لعبة أول مرة، مع زر تخطي للمضيف</small></span><label class="sw"><input type="checkbox" id="sIN"><i></i></label></div>
         <div class="tgl"><span>فيلم المقدمة<small>يُعرض مرة واحدة عند بداية المباراة</small></span><label class="sw"><input type="checkbox" id="sOP"><i></i></label></div>
+        <div class="f"><label>لهجة المعلّق</label>
+          <select id="sDia"></select>
+          <small class="dim" id="diaNote"></small></div>
         <div class="tgl"><span>عقوبة الخطأ<small>الخطأ يُنزل درجة</small></span><label class="sw"><input type="checkbox" id="sPP"><i></i></label></div>
       </div>
       <div class="cp" data-p="r">
@@ -1500,8 +1543,10 @@ function render(){
   }
 
   if(ST.state==="lobby"){
-    scene("sWait");$("startB").style.display=host?"":"none";
-    $("waitI").textContent=`${ST.players.length} لاعب · ${Number(ST.bankSize).toLocaleString("en")} سؤال`;
+    scene("sWait");
+    $("startB").classList.toggle("gone",!host);
+    renderChars();
+    opPrefetch();                      /* نُحمّل فيلم المقدمة مسبقًا ونحن ننتظر */
     $("finale").classList.remove("on");
   }else if(ST.state==="ended"){
     $("againB").style.display=host?"":"none";
@@ -1536,7 +1581,7 @@ function renderRoster(){
     ST.players.forEach(p=>{
       const d=document.createElement("div");d.className="pl";d.dataset.id=p.id;
       if(p.id!==ME){d.style.cursor="pointer";d.title="خيارات اللاعب";d.onclick=()=>window.RassmMod&&RassmMod.open(p.id);}
-      d.innerHTML=`<div class="crown hide">👑</div><div class="av">${avatar(p.name,p.color)}</div>
+      d.innerHTML=`<div class="crown hide">👑</div><div class="av"></div>
         <div class="sc">0</div><div class="nm"></div><div class="x2 hide">×2</div>`;
       r.appendChild(d);
     });
@@ -1550,6 +1595,12 @@ function renderRoster(){
     d.classList.toggle("lead",p.score===top&&top>0);
     d.querySelector(".x2").classList.toggle("hide",!p.doubleNext);
     d.querySelector(".crown").classList.toggle("hide",!(p.score===top&&top>0));
+    /* وجه الشخصية المختارة، وإلا الأفاتار المولّد من الاسم */
+    const av=d.querySelector(".av");
+    if(av.dataset.c!==(p.charId||"")){
+      av.dataset.c=p.charId||"";
+      av.innerHTML = p.charId ? '<img src="'+charImg(p.charId)+'" alt="">' : avatar(p.name,p.color);
+    }
     d.querySelector(".nm").textContent=p.name+(p.id===ME?" (أنت)":"");
     const sc=d.querySelector(".sc");
     const prev=scoreShown[p.id]||0;
@@ -1977,6 +2028,84 @@ function vo(key,alt,budget){
 }
 /* يُشغَّل مرة واحدة فقط في عمر الصفحة */
 function voOnce(key,alt){ if(voDone[key])return; voDone[key]=1; vo(key,alt); }
+
+/* لهجة المعلّق: تُعرض كل اللهجات، وتُعطَّل التي لم تُسجَّل مقاطعها بعد.
+   فور رفع مقاطع الفصحى إلى public/vo/ يكفي إضافة "ar" إلى DIALECTS_READY في الخادم. */
+function fillDialects(cur){
+  const sel=$("sDia"); if(!sel||!ST) return;
+  const list=ST.dialects||[{id:"eg",name:"مصرية"}];
+  const ready=ST.dialectsReady||["eg"];
+  const key=list.map(d=>d.id).join(",")+"|"+ready.join(",");
+  if(sel.dataset.k!==key){
+    sel.dataset.k=key;
+    sel.innerHTML=list.map(d=>'<option value="'+d.id+'"'+
+      (ready.includes(d.id)?"":" disabled")+'>'+esc(d.name)+
+      (ready.includes(d.id)?"":" — غير متوفّرة بعد")+'</option>').join("");
+  }
+  sel.value=cur;
+  sel.disabled = ready.length<2;      /* لا معنى لقائمة بخيار واحد */
+  $("diaNote").textContent = ready.length<2
+    ? "المسجَّل حاليًا مصري فقط" : "";
+}
+
+/* ═══ اختيار الشخصية ═══
+   الخادم هو مصدر الحقيقة: يرفض التكرار ويوزّع عشوائيًا على من لم يختر.
+   الواجهة تعكس حالته فقط ولا تفترض شيئًا. */
+function charOf(id){ return (ST&&ST.chars||[]).find(c=>c.id===id)||null; }
+function charImg(id){ return "/chars/"+id+".webp"; }
+
+function renderChars(){
+  const g=$("charGrid"); if(!g||!ST||!ST.chars) return;
+  const me=ST.players.find(p=>p.id===ME);
+  const byChar={}; ST.players.forEach(p=>{ if(p.charId) byChar[p.charId]=p; });
+
+  /* نبني الشبكة مرة واحدة ثم نحدّث الحالة فقط — إعادة البناء تُومض الصور */
+  const key=ST.chars.map(c=>c.id).join(",");
+  if(g.dataset.k!==key){
+    g.dataset.k=key;
+    g.innerHTML=ST.chars.map(c=>
+      '<div class="ch" data-c="'+c.id+'" style="background:'+c.tint+'">'+
+        '<div class="chWho hide"></div><div class="chLock hide">\u{1F512}</div>'+
+        '<img src="'+charImg(c.id)+'" alt="'+esc(c.name)+'" loading="lazy">'+
+        '<div class="chNm">'+esc(c.name)+'<span class="chDs">'+esc(c.desc)+'</span></div>'+
+      '</div>').join("");
+    g.querySelectorAll(".ch").forEach(el=>{
+      el.onclick=()=>{
+        const id=el.dataset.c, owner=ST.players.find(p=>p.charId===id);
+        if(owner&&owner.id!==ME) return;                 /* محجوزة لغيري */
+        const m=ST.players.find(p=>p.id===ME);
+        if(m&&m.ready) return toast("ألغِ «مستعد» أولًا لتبدّل شخصيتك");
+        socket.emit("pickChar", (m&&m.charId===id)?null:id);
+      };
+    });
+  }
+  g.querySelectorAll(".ch").forEach(el=>{
+    const id=el.dataset.c, owner=byChar[id];
+    const mine=owner&&owner.id===ME;
+    el.classList.toggle("mine",!!mine);
+    el.classList.toggle("taken",!!owner&&!mine);
+    const who=el.querySelector(".chWho");
+    who.classList.toggle("hide",!owner);
+    if(owner) who.textContent=mine?"أنت":owner.name;
+    el.querySelector(".chLock").classList.toggle("hide",!(owner&&owner.ready));
+  });
+
+  const b=$("readyB");
+  b.classList.toggle("on",!!(me&&me.ready));
+  b.textContent=(me&&me.ready)?"إلغاء الاستعداد":"مستعد ✓";
+  b.disabled=!(me&&me.charId);
+  b.style.opacity=(me&&me.charId)?"":"0.5";
+
+  /* عدّاد الجاهزين — المضيف يعرف متى يبدأ */
+  const n=ST.players.length, r=ST.players.filter(p=>p.ready).length;
+  $("waitI").textContent=r+" من "+n+" جاهزون · "+
+    Number(ST.bankSize).toLocaleString("en")+" سؤال";
+}
+$("readyB").onclick=()=>{
+  const me=ST&&ST.players.find(p=>p.id===ME);
+  if(!me||!me.charId) return;
+  socket.emit("readyChar", !me.ready);
+};
 
 /* ════ فيلم المقدمة ════
    نسختان: 9:16 للجوال و16:9 للكمبيوتر، تُختار حسب أبعاد الشاشة.
@@ -2908,6 +3037,7 @@ function fillCfg(s){
   $("sLen").value=s.length;$("sDif").value=String(s.difficulty);
   $("sCh").checked=s.challenges;$("sPw").checked=s.powers;$("cPyOn").checked=s.pyramid;
   $("sHS").checked=s.headStart;$("sPP").checked=!!s.pyramidPenalty;$("sIM").checked=s.images!==false;$("sVO").checked=s.voice!==false;$("sIN").checked=s.intros!==false;$("sOP").checked=s.opening!==false;
+  fillDialects(s.dialect||"eg");
   $("sVis").value=s.visibility;$("sPass").value=s.password||"";
   if(s.cats&&s.cats.length)document.querySelectorAll("#catPills .pill").forEach(c=>c.classList.toggle("on",s.cats.includes(c.dataset.c)));
   if(s.allowedPowers)document.querySelectorAll("#pwPills .pill").forEach(c=>c.classList.toggle("on",s.allowedPowers.includes(c.dataset.p)));
@@ -2921,7 +3051,7 @@ $("cfgSave").onclick=()=>{
     cats:cats.length===document.querySelectorAll("#catPills .pill").length?[]:cats,
     challenges:$("sCh").checked,powers:$("sPw").checked,powerUses:+$("sPU").value,powerChoices:+$("sPC").value,allowedPowers:pws,
     pyramid:$("cPyOn").checked,pyramidHeight:+$("sPH").value,pyramidTime:+$("sPT").value,
-    headStart:$("sHS").checked,pyramidPenalty:$("sPP").checked,images:$("sIM").checked,voice:$("sVO").checked,intros:$("sIN").checked,opening:$("sOP").checked,
+    headStart:$("sHS").checked,pyramidPenalty:$("sPP").checked,images:$("sIM").checked,voice:$("sVO").checked,intros:$("sIN").checked,opening:$("sOP").checked,dialect:$("sDia").value,
     maxPlayers:+$("sMP").value,visibility:$("sVis").value,password:$("sPass").value});
   $("cfg").classList.remove("on");toast("تم الحفظ ✓");
 };
