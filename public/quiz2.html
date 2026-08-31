@@ -239,16 +239,24 @@ input,select,textarea{font-family:inherit}
 #waitTop{text-align:center;flex:0 0 auto;padding-top:2px}
 #waitTrophy{font-size:34px;filter:drop-shadow(0 0 22px rgba(255,203,46,.55));animation:bob 2.6s ease-in-out infinite}
 #waitTitle{font-size:19px;font-weight:900;margin-top:4px}
+/* flex لا grid: الـ auto-fill كان يُنشئ أعمدة فارغة تدفع البطاقات إلى حافة
+   اليمين في الاتجاه العربي. الـ flex مع justify-content يوسّطها فعلًا. */
 #charGrid{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;width:100%;
-  display:grid;gap:10px;padding:4px 2px 6px;align-content:start;
-  grid-template-columns:repeat(auto-fill,minmax(118px,1fr))}
-.ch{position:relative;border-radius:16px;overflow:hidden;cursor:pointer;
+  display:flex;flex-wrap:wrap;gap:12px;padding:6px 2px;
+  justify-content:center;align-content:center}
+.ch{position:relative;flex:0 0 auto;width:138px;
+  border-radius:16px;overflow:hidden;cursor:pointer;
   border:2px solid rgba(255,255,255,.12);background:#0b1020;
   transition:transform .16s var(--ease),border-color .16s,box-shadow .16s}
 .ch:hover{transform:translateY(-3px);border-color:rgba(139,92,246,.6)}
 .ch img{display:block;width:100%;aspect-ratio:1;object-fit:cover;background:#0b1020}
-.ch .chNm{padding:6px 6px 7px;text-align:center;font-weight:800;font-size:13px;line-height:1.25}
-.ch .chDs{display:block;font-weight:600;font-size:10.5px;color:var(--dim);margin-top:2px}
+/* الاسم أبيض فوق حجاب أسود: ألوان الخلفيات السبع داكنة ومتباينة،
+   فأي لون موروث يذوب في بعضها. */
+.ch .chNm{padding:7px 6px 9px;text-align:center;font-weight:900;font-size:13.5px;
+  line-height:1.3;color:#fff;background:rgba(0,0,0,.45);
+  text-shadow:0 1px 3px rgba(0,0,0,.85)}
+.ch .chDs{display:block;font-weight:600;font-size:10.5px;margin-top:3px;
+  color:rgba(255,255,255,.75);text-shadow:0 1px 2px rgba(0,0,0,.8)}
 /* المختارة لي */
 .ch.mine{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.28),0 8px 22px -6px rgba(139,92,246,.5)}
 /* محجوزة للاعب آخر */
@@ -264,9 +272,10 @@ input,select,textarea{font-family:inherit}
 #readyB.on{background:linear-gradient(135deg,#475569,#334155)}
 #readyB.gone,#startB.gone{display:none}
 @media (max-width:560px){
-  #charGrid{grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:8px}
+  #charGrid{gap:9px}
+  .ch{width:106px}
   #waitTrophy{font-size:28px} #waitTitle{font-size:17px}
-  .ch .chNm{font-size:12px} .ch .chDs{display:none}
+  .ch .chNm{font-size:12px;padding:6px 4px 7px} .ch .chDs{display:none}
 }
 /* وجه الشخصية داخل بطاقة اللاعب — يحلّ محلّ الأفاتار المولّد */
 .pl .av img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
