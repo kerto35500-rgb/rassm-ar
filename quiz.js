@@ -339,8 +339,10 @@ function setupQuiz(io, deps) {
     nsp.to(room.id).emit("voteResult", { cat: best, tally, tie: tie ? tied : null, vo: sv });
     // مرحلة عرض النتيجة: روليت (عند التعادل) ثم زوم الدخول عبر الباب،
     // ولا ننتقل قبل أن يُكمل المعلّق جملته.
+    // التعليق يُنطق كاملاً أولاً ثم تبدأ حركة القرعة/الدخول — لا تداخل بينهما،
+    // فمدّة المرحلة = مدّة الصوت + مدّة الحركة + هامش.
     const base = tie ? SPIN_MS : ZOOM_MS;
-    const ms = FAST ? base : Math.max(base, sv ? sv.dur * 1000 + 500 : 0);
+    const ms = FAST ? base : (sv ? sv.dur * 1000 + 150 : 0) + base + 350;
     const canAttack = room.settings.powers && room.stageIdx >= 3 &&
       alive(room).length >= 2 && alive(room).some(p => p.powersLeft > 0);
     setPhase(room, "spin", ms / 1000, () => { canAttack ? beginAttack(room) : beginReady(room); });
