@@ -254,7 +254,7 @@ function setupQuiz(io, deps) {
     sys(room, "بدأت المباراة! 🏆", "good");
     // فيلم المقدمة يُعرض مرة واحدة في أول المباراة، ثم تبدأ الجولات
     if (room.settings.opening && !room.openingDone) {
-      room.openingDone = true;
+      room.openingDone = true; room.openingSkipped = false;
       room.introKind = "opening";
       setPhase(room, "opening", OPENING_MS / 1000, () => nextStage(room));
       broadcast(room);
@@ -303,6 +303,8 @@ function setupQuiz(io, deps) {
   function skipIntro(room) {
     // تخطي فيلم المقدمة: ننتقل فورًا لأول جولة
     if (room.phase === "opening") {
+      if (room.openingSkipped) return;   // نقرة مزدوجة لا تجدول انتقالين
+      room.openingSkipped = true;
       clearTimeout(room.phaseTimer);
       const ov = voc.pick("skip");
       nsp.to(room.id).emit("introSkipped", { kind: "opening", vo: ov });
@@ -952,7 +954,7 @@ function setupQuiz(io, deps) {
         usedQ: new Set(), usedLink: new Set(), usedSort: new Set(), lastCats: [],
         currentQ: null, pubQuestion: null, pubLink: null, pubSort: null,
         pyQIndex: 0, winner: null, finalTable: null, qSentAt: 0,
-        introDone: {}, introKind: null, pubIntro: null, pubVo: null, pubHurry: null, voDone: {}, openingDone: false
+        introDone: {}, introKind: null, pubIntro: null, pubVo: null, pubHurry: null, voDone: {}, openingDone: false, openingSkipped: false
       };
       player = makePlayer(name);
       player.color = COLORS[0];
@@ -1026,7 +1028,7 @@ function setupQuiz(io, deps) {
       room.pubQuestion = null; room.pubLink = null; room.pubSort = null;
       room.stageIdx = -1; room.stages = []; room.pyQIndex = 0;
       room.introDone = {}; room.introKind = null; room.pubIntro = null; room.pubVo = null; room.pubHurry = null; room.voDone = {};
-      room.openingDone = false;
+      room.openingDone = false; room.openingSkipped = false;
       room.players.forEach(p => { p.spectator = false; p.score = 0; p.pyPos = 0; p.effects = []; });
       broadcast(room);
     });
