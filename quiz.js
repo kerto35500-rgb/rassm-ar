@@ -308,8 +308,10 @@ function setupQuiz(io, deps) {
       clearTimeout(room.phaseTimer);
       const ov = voc.pick("skip");
       nsp.to(room.id).emit("introSkipped", { kind: "opening", vo: ov });
-      // ننتظر انتهاء تعليق التخطي قبل الجولة الأولى، وإلا قطعه تعليق الأبواب
-      const w = FAST ? 100 : Math.max(1200, ov ? ov.dur * 1000 + 400 : 0);
+      // ننتظر خاتمة الفيلم والتعليق معًا (OP_TAIL في العميل = 7.8ث)، فتبدأ
+      // الجولة لحظة الوميض الأبيض تمامًا على كل الأجهزة مهما اختلف طول نسختها.
+      const tail = Math.max(7.8, ov ? ov.dur + 0.4 : 0);
+      const w = FAST ? 100 : Math.round(tail * 1000 + 150);
       setTimeout(() => { if (room.state === "playing") nextStage(room); }, w);
       return;
     }
