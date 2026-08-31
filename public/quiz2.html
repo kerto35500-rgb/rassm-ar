@@ -2022,6 +2022,9 @@ function rOpen(fresh){
   b.disabled=false; b.textContent="تخطي المقدمة ⏭";
 }
 function opBail(){
+  /* بعد التخطي ينتهي الفيلم طبيعيًا وهو صامت: لا نُرسل تخطيًا ثانيًا،
+     بل نعرض شاشة الانتظار لما تبقّى من تعليق المعلّق. */
+  if(opSkipped){ $("opWait").classList.remove("gone"); return; }
   if(!ST||ST.phase!=="opening")return;
   if(ST.ownerId!==ME)return;          /* المضيف وحده يُنهي المرحلة للجميع */
   opEnd();
@@ -2039,13 +2042,25 @@ function opEnd(){
   document.body.classList.remove("filmOn");
   if(opPre){ try{opPre.removeAttribute("src");opPre.load();}catch(e){} opPre=null; }
 }
-/* التخطي: نوقف الفيلم فورًا لكن نُبقي شاشة سوداء ريثما ينتهي تعليق المعلّق،
-   فلا يرى اللاعب فراغًا ولا يُقطع التعليق ببداية الجولة. */
-function opStop(){
-  opSkipped=true; opKill();
+/* التخطي: بدل إيقاف الفيلم نقفز به إلى خاتمته ونكتم صوته، فتُعرض النهاية
+   صامتة بينما يتكلّم المعلّق — أفضل من شاشة سوداء. */
+const OP_SKIP_AT = 39;              // ثانية البداية بعد التخطي
+function opStop(voDur){
+  opSkipped=true;
+  const v=$("opVid");
+  try{
+    v.muted=true;                   /* صوت الفيلم يسكت فورًا ليخلو الجوّ للمعلّق */
+    const d=v.duration, need=(voDur||0)+0.6;
+    let at=OP_SKIP_AT;
+    /* نسخة الكمبيوتر أقصر بثانيتين: لو بقي بعد الثانية 39 أقل من مدة التعليق
+       تراجعنا قليلًا، فلا تنطفئ الصورة والمعلّق ما زال يتكلّم. */
+    if(d && isFinite(d) && d-at < need) at=Math.max(0,d-need);
+    v.currentTime=at;
+    v.play().catch(()=>{});
+  }catch(e){ $("opWait").classList.remove("gone"); }
+  $("opTap").classList.remove("show");
   $("opSkip").classList.add("gone");
   $("opHint").classList.add("gone");
-  $("opWait").classList.remove("gone");
 }
 $("opSkip").onclick=()=>{
   if(!ST||ST.phase!=="opening"||ST.ownerId!==ME)return;
@@ -2079,7 +2094,7 @@ $("inSkip").onclick=()=>{
 };
 /* التخطي يصل للجميع: تعليق قصير من المعلّق ثم تبدأ اللعبة */
 socket.on("introSkipped",d=>{
-  if(d.kind==="opening"){ opStop(); if(d.vo) voFile(d.vo.key,d.vo.i); return; }
+  if(d.kind==="opening"){ opStop(d.vo&&d.vo.dur); if(d.vo) voFile(d.vo.key,d.vo.i); return; }
   $("inFill").style.animation="none";
   $("inHint").textContent="تم تخطي الشرح";
   if(d.vo) voFile(d.vo.key,d.vo.i);
