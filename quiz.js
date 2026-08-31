@@ -187,6 +187,7 @@ function setupQuiz(io, deps) {
       sort: room.pubSort,
       intro: room.pubIntro,
       vo: room.pubVo,
+      hurry: room.pubHurry,
       pyramidHeight: room.settings.pyramidHeight,
       pyramidQ: room.pyQIndex,
       powerMenu: room.powerMenu || [],
@@ -202,9 +203,15 @@ function setupQuiz(io, deps) {
     clearTimeout(room.phaseTimer); room.phaseTimer = null;
   }
 
+  // مراحل الإجابة التي يُستعجَل فيها اللاعبون قبل انتهاء العدّاد بخمس ثوانٍ.
+  // الميزانية 4.6ث = ما يتبقى فعليًا من العدّاد لحظة التشغيل، فلا يُقطع التعليق.
+  const HURRY_AT = { question: 1, link: 1, sort: 1, pyramid: 1 };
+
   function setPhase(room, phase, seconds, next) {
     clearTimers(room);
     room.phase = phase;
+    // الخادم يختار تعليق الاستعجال مرة واحدة للمرحلة، فيسمع اللاعبون كلهم التسجيل نفسه
+    if (HURRY_AT[phase]) room.pubHurry = voc.pick("hurry", 4.6);
     room.phaseDur = seconds;
     room.phaseEndsAt = seconds ? Date.now() + seconds * 1000 : 0;
     if (seconds && next) room.phaseTimer = setTimeout(() => { try { next(); } catch (e) { console.error("quiz phase:", e); } }, seconds * 1000 + 250);
@@ -284,7 +291,7 @@ function setupQuiz(io, deps) {
     if (intro && room.settings.intros && !room.introDone[kind]) {
       room.introDone[kind] = true;
       room.introKind = kind;
-      room.pubIntro = { kind, title: intro.title, text: intro.text, vo: intro.vo };
+      room.pubIntro = { kind, title: intro.title, text: intro.text, vo: voc.pick(intro.vo) };
       setPhase(room, "intro", FAST ? 0.3 : intro.secs, () => { room.pubIntro = null; startStage(room); });
       broadcast(room);
       return;
@@ -297,8 +304,11 @@ function setupQuiz(io, deps) {
     // تخطي فيلم المقدمة: ننتقل فورًا لأول جولة
     if (room.phase === "opening") {
       clearTimeout(room.phaseTimer);
-      nsp.to(room.id).emit("introSkipped", { kind: "opening" });
-      nextStage(room);
+      const ov = voc.pick("skip");
+      nsp.to(room.id).emit("introSkipped", { kind: "opening", vo: ov });
+      // ننتظر انتهاء تعليق التخطي قبل الجولة الأولى، وإلا قطعه تعليق الأبواب
+      const w = FAST ? 100 : Math.max(1200, ov ? ov.dur * 1000 + 400 : 0);
+      setTimeout(() => { if (room.state === "playing") nextStage(room); }, w);
       return;
     }
     if (room.phase !== "intro" || !room.pubIntro) return;
@@ -426,8 +436,16 @@ function setupQuiz(io, deps) {
   // ── شاشة الفضح: خطوة إجبارية قبل السؤال — يعرف كل لاعب من استهدفه وبأي مقلب ──
   function beginAttackReveal(room) {
     if (!(room.attacks || []).length) return beginReady(room);
+    // نوع التعليق يتبع المقلب الذي أصاب اللاعب (يختلف بحسب حالته)، أما رقم
+    // التسجيل داخل النوع فيختاره الخادم — فمن أصابه المقلب نفسه يسمع التسجيل نفسه.
+    const tvo = {};
+    ["trap_freeze", "trap_gloop", "trap_bombs", "trap_nibble",
+     "trap_double", "trap_bet", "trap_multi"].forEach(k => {
+      const p = voc.pick(k); if (p) tvo[k] = p.i;
+    });
     nsp.to(room.id).emit("attackReveal", {
-      hits: room.attacks.map(a => ({ from: a.from, fromName: a.fromName, to: a.to, toName: a.toName, power: a.power }))
+      hits: room.attacks.map(a => ({ from: a.from, fromName: a.fromName, to: a.to, toName: a.toName, power: a.power })),
+      vo: tvo
     });
     // العميل يختار التعليق حسب المقلب الذي أصاب لاعبه، فنمنح المرحلة أطول احتمال
     const arMs = FAST ? AR_MS : Math.max(AR_MS, voc.maxOf("trap_freeze", "trap_gloop",
@@ -561,7 +579,8 @@ function setupQuiz(io, deps) {
     nsp.to(room.id).emit("reveal", {
       correct: room.currentQ.correct,
       correctText: room.currentQ.options[room.currentQ.correct],
-      results: res
+      results: res,
+      vo: voc.pick("reveal")
     });
     setPhase(room, "reveal", 0, null);
     room.phaseEndsAt = Date.now() + REVEAL_MS;
@@ -750,10 +769,17 @@ function setupQuiz(io, deps) {
       moves.push({ id: p.id, name: p.name, color: p.color, from: before, to: p.pyPos, d, correct: !!(a && a.correct) });
     });
 
+    // «اقتراب لاعب من القمة»: يقرّره الخادم مرة واحدة لكل مباراة، فيسمعه الجميع معًا
+    let nearVo = null;
+    const top = Math.max(0, ...alive(room).map(p => p.pyPos || 0));
+    if (!room.voDone.near_top && top >= H - 2 && top < H) {
+      room.voDone.near_top = true;
+      nearVo = voc.pick("near_top");
+    }
     nsp.to(room.id).emit("pyramidReveal", {
       correct: room.currentQ.correct,
       correctText: room.currentQ.options[room.currentQ.correct],
-      fastest, moves
+      fastest, moves, nearVo
     });
 
     const reached = alive(room).filter(p => p.pyPos >= H);
@@ -793,7 +819,7 @@ function setupQuiz(io, deps) {
       .sort((a, b) => (b.pyPos - a.pyPos) || (b.score - a.score))
       .map((p, i) => ({ rank: i + 1, id: p.id, name: p.name, color: p.color, score: p.score, pyPos: p.pyPos }));
     if (win) sys(room, `🏆 الفائز: ${win.name}`, "good");
-    nsp.to(room.id).emit("finish", { winner: room.winner, table: room.finalTable });
+    nsp.to(room.id).emit("finish", { winner: room.winner, table: room.finalTable, vo: voc.pick("winner") });
     saveStats(room, win);
     broadcast(room);
   }
@@ -926,7 +952,7 @@ function setupQuiz(io, deps) {
         usedQ: new Set(), usedLink: new Set(), usedSort: new Set(), lastCats: [],
         currentQ: null, pubQuestion: null, pubLink: null, pubSort: null,
         pyQIndex: 0, winner: null, finalTable: null, qSentAt: 0,
-        introDone: {}, introKind: null, pubIntro: null, pubVo: null, voDone: {}, openingDone: false
+        introDone: {}, introKind: null, pubIntro: null, pubVo: null, pubHurry: null, voDone: {}, openingDone: false
       };
       player = makePlayer(name);
       player.color = COLORS[0];
@@ -999,7 +1025,7 @@ function setupQuiz(io, deps) {
       room.winner = null; room.finalTable = null;
       room.pubQuestion = null; room.pubLink = null; room.pubSort = null;
       room.stageIdx = -1; room.stages = []; room.pyQIndex = 0;
-      room.introDone = {}; room.introKind = null; room.pubIntro = null; room.pubVo = null; room.voDone = {};
+      room.introDone = {}; room.introKind = null; room.pubIntro = null; room.pubVo = null; room.pubHurry = null; room.voDone = {};
       room.openingDone = false;
       room.players.forEach(p => { p.spectator = false; p.score = 0; p.pyPos = 0; p.effects = []; });
       broadcast(room);
