@@ -67,7 +67,7 @@ const CHAR_IDS = CHARS.map(c => c.id);
 const DEFAULTS = {
   questionTime: 15,     // ثواني السؤال (10/15/20)
   voteTime: 8,          // ثواني التصويت على الفئة
-  attackTime: 60,       // ثواني اختيار بطاقة الفخ (دقيقة كاملة افتراضياً)
+  attackTime: 30,       // ثواني اختيار بطاقة الفخ
   length: "normal",     // short(6 أسئلة) | normal(9) | long(12)
   challenges: true,     // تفعيل جولتي الربط والتصنيف
   powers: true,         // تفعيل القوى الهجومية
@@ -792,8 +792,8 @@ function setupQuiz(io, deps) {
     alive(room).forEach(p => { room.sortProg[p.id] = { idx: 0, hits: 0, fin: 0 }; });
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
     room.qSentAt = Date.now();
-    // ١٥ عنصرًا يحتاج نَفَسًا: ٤ ثوانٍ للعنصر
-    const t = Math.max(40, S.items.length * 4);
+    // ثانيتان للعنصر — إيقاع سريع كما طلب اللاعبون
+    const t = Math.max(20, S.items.length * 2);
     setPhase(room, "sort", t, () => revealChallenge(room, "sort"));
     broadcast(room);
   }
@@ -1301,7 +1301,6 @@ function setupQuiz(io, deps) {
       // ── قوة تُستعمل على النفس (مضاعفة النقاط) ──
       if (SELF_POWERS.has(power)) {
         player.pendingAttack = { to: player.id, power };
-        player.powersLeft--;
         player.lastPower = power;
         // حفلة النقاط: السؤال القادم كله بنقاط مضاعفة — لكل من يجيب صح
         if (power === "double") room.partyNext = true;
@@ -1317,7 +1316,6 @@ function setupQuiz(io, deps) {
       // ── الرهان: لا يضر الهدف — تراهن أنه سيجيب صح أولاً ──
       if (power === "bet") {
         player.pendingAttack = { to, power };
-        player.powersLeft--;
         player.lastPower = power;
         (room.bets = room.bets || []).push({ by: player.id, byName: player.name, on: to, onName: target.name });
         nsp.to(player.id).emit("attackAck", { to: target.name, power, bet: true });
@@ -1325,14 +1323,9 @@ function setupQuiz(io, deps) {
         maybeEndAttack(room);
         return;
       }
-      // لا تضرب نفس الشخص مرتين متتاليتين — إلا إذا لم يكن هناك خصم آخر أصلاً
-      // (في مباراة لاعبَين تعطّل هذه القاعدة القوى نهائياً بعد أول استخدام)
-      const others = alive(room).filter(p => p.id !== player.id).length;
-      if (others > 1 && player.lastTarget === to) return;
       player.pendingAttack = { to, power };
       player.lastTarget = to;
       player.lastPower = power;
-      player.powersLeft--;
       room.attacks.push({ from: player.id, fromName: player.name, to, toName: target.name, power });
       nsp.to(player.id).emit("attackAck", { to: target.name, power });
       broadcast(room);
