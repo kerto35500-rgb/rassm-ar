@@ -179,7 +179,7 @@ input,select,textarea{font-family:inherit}
 /* ── مرحلة الإجابة: الخيارات وحدها تملأ الشاشة ── */
 #sQ.ansOnly #qText,#sQ.ansOnly #qMeta{display:none}
 #sQ.ansOnly #answers{flex:1;margin:0;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:12px}
-#sQ.ansOnly .ans{display:flex;align-items:center;justify-content:center;min-height:0;
+#sQ.ansOnly .ans{display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-height:0;
   font-size:clamp(17px,3.4vw,26px);padding:12px;border-radius:22px}
 @media(max-width:520px){#sQ.ansOnly #answers{grid-template-columns:1fr 1fr;gap:9px}
   #sQ.ansOnly .ans{font-size:15.5px;border-radius:16px}}
@@ -245,14 +245,17 @@ input,select,textarea{font-family:inherit}
 .tally.rolling{color:var(--gold);text-shadow:0 0 12px rgba(255,203,46,.6)}
 .tally.done{animation:tallyPop .35s var(--spring)}
 @keyframes tallyPop{0%{transform:scale(1.25)}100%{transform:none}}
-/* أقراص السباق: ركام عملات يعلو تحت كل لاعب */
-.rStack{position:absolute;top:100%;left:50%;transform:translateX(-50%);
-  margin-top:16px;display:flex;flex-direction:column-reverse;align-items:center;pointer-events:none}
-.rStack .coin{display:block;width:26px;height:7px;border-radius:50%;margin-top:-2px;
+/* أقراص السباق: برج عملات يقوم على الأرضية وينمو صاعدًا،
+   واللاعب يقف على قمّته — فلا يطير أحد في الهواء.
+   الصندوق مثبّت من أسفل وارتفاعه تلقائي، فحافّته العليا وحدها هي التي ترتفع. */
+.rStack{position:absolute;bottom:76px;width:0;z-index:1;
+  display:flex;flex-direction:column-reverse;align-items:center;pointer-events:none}
+.rStack .coin{display:block;width:30px;flex:0 0 auto;border-radius:50%;
+  height:calc(var(--pitch,7px) + 4px);margin-top:-4px;
   background:linear-gradient(180deg,#ffe28a,#e0a814 55%,#a97806);
   box-shadow:0 1px 2px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.6);
   animation:coinDrop .3s var(--spring) both}
-@keyframes coinDrop{from{transform:translateY(-14px) scaleX(.5);opacity:0}to{transform:none;opacity:1}}
+@keyframes coinDrop{from{transform:translateY(-16px) scaleX(.5);opacity:0}to{transform:none;opacity:1}}
 
 /* ═══ صور بطاقات الفخاخ ═══
    الصور مرسومة بإطارها واسمها العربي وخلفيتها شفافة، فنرفع عن الوجه
@@ -266,7 +269,7 @@ input,select,textarea{font-family:inherit}
 /* ═══ مراسم كشف السؤال: الرقاقات والنقاط ═══ */
 /* داخل بطاقة الخيار وأسفل نصّها — المساحة متوفّرة، ولا حاجة لحشرها على الحافة */
 .chipRow{display:flex;gap:7px;justify-content:center;align-items:center;
-  flex-wrap:wrap;pointer-events:none;margin-top:10px;min-height:46px}
+  flex-wrap:wrap;pointer-events:none;margin-top:6px;min-height:46px}
 .revChip{position:relative;width:46px;height:46px;border-radius:50%;overflow:visible;
   animation:chipJump .55s var(--spring) both}
 .revChip img,.revChip svg{width:100%;height:100%;border-radius:50%;display:block;
@@ -338,10 +341,28 @@ input,select,textarea{font-family:inherit}
   border:2.5px solid rgba(139,92,246,.6);box-shadow:0 10px 34px -8px rgba(139,92,246,.55);
   cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
   transition:box-shadow .2s;will-change:transform}
-#stOrb.drag{cursor:grabbing;transition:none}
+/* هالة نابضة خلف الكرة تجعلها تبدو خارجةً من مركز الشاشة */
+#stOrb::before{content:"";position:absolute;inset:-14%;border-radius:50%;
+  background:radial-gradient(circle,rgba(139,92,246,.42),rgba(34,230,255,.16) 55%,transparent 72%);
+  filter:blur(6px);pointer-events:none;z-index:-1;
+  animation:orbAura 2.6s ease-in-out infinite}
+#stOrb::after{content:"";position:absolute;inset:-4%;border-radius:50%;
+  border:2px solid rgba(34,230,255,.5);pointer-events:none;z-index:-1;
+  animation:orbRing 2.6s ease-out infinite}
+@keyframes orbAura{0%,100%{transform:scale(.94);opacity:.75}50%{transform:scale(1.08);opacity:1}}
+@keyframes orbRing{0%{transform:scale(.9);opacity:.85}100%{transform:scale(1.35);opacity:0}}
+
+#stOrb.drag{cursor:grabbing;transition:none;
+  border-color:rgba(34,230,255,.95);
+  box-shadow:0 0 0 4px rgba(34,230,255,.16),0 18px 60px -8px rgba(139,92,246,.95),
+             0 0 70px -6px rgba(34,230,255,.85)}
+#stOrb.drag::before{animation:none;transform:scale(1.16);opacity:1}
+#stOrb.drag::after{animation:none;opacity:0}
 #stOrb.snap{transition:transform .28s var(--spring)}
 #stOrb.popIn{animation:orbIn .38s var(--spring) both}
-@keyframes orbIn{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+/* تخرج من مركز الشاشة صغيرةً باهتة ثم تكبر */
+@keyframes orbIn{from{transform:scale(.4);opacity:0;filter:brightness(2)}
+  to{transform:scale(1);opacity:1;filter:none}}
 #stWord{font-size:clamp(17px,4.6vw,26px);font-weight:900;text-align:center;padding:8px;line-height:1.3}
 #stCount{font-size:12.5px;font-weight:800;color:var(--dim)}
 #stDone{text-align:center;font-weight:900;color:var(--lime);padding:8px}
@@ -367,6 +388,10 @@ input,select,textarea{font-family:inherit}
   margin-top:3px;text-shadow:0 1px 3px #000}
 .racer .rHits{position:absolute;top:-17px;left:0;right:0;font-size:11px;font-weight:900;color:var(--gold)}
 .racer.stopped{filter:saturate(.75)}
+/* ارتدادة الوقوف على القطعة الجديدة */
+.racer.land .rAv{animation:landSquash .3s var(--ease)}
+@keyframes landSquash{0%{transform:scaleY(.86) scaleX(1.1)}60%{transform:scaleY(1.05) scaleX(.97)}
+  100%{transform:none}}
 .racer.champ .rAv{border-color:var(--gold);box-shadow:0 0 24px -2px rgba(255,203,46,.85)}
 .racer.champ::after{content:"👑";position:absolute;top:-34px;left:0;right:0;font-size:16px}
 #raceFoot{padding:8px 4px 2px}
@@ -494,7 +519,8 @@ body.filmOn #aurora,body.filmOn #bgFx,body.filmOn #grid{display:none!important}
 
 #answers{display:grid;gap:10px;margin-top:auto}
 @media(min-width:620px){#answers{grid-template-columns:1fr 1fr}}
-.ans{position:relative;overflow:hidden;padding:17px 16px;border-radius:17px;font-size:16px;font-weight:800;text-align:center;
+/* الحشو متساوٍ على الجانبين ليبقى النصّ في المنتصف ولا يمرّ تحت حرف الخيار */
+.ans{position:relative;overflow:hidden;padding:17px 46px;border-radius:17px;font-size:16px;font-weight:800;text-align:center;
   background:rgba(255,255,255,.05);border:1.5px solid var(--stroke);
   transition:transform .2s var(--spring),border-color .25s,background .25s,box-shadow .25s;
   animation:ansIn .5s var(--spring) both}
@@ -666,12 +692,14 @@ body.noTop #hud,body.noTop #roster{display:none}
   #sAtk.tv{--ckS:145px;--ckX:50%;--ckY:29%;
            --ttS:25px;--ttX:50%;--ttY:44%;
            /* لا تفيض البطاقات على الشاشات الضيّقة */
-           --cdS:min(108px,calc((84vw - 28px)/3));--cdG:14px;--cdW:84%;--cdX:50%;--cdY:63%}
+           /* ثلاث بطاقات وفجوتان داخل ٨٤٪ من العرض، مع هامش يمنع الالتفاف */
+           --cdS:min(108px,calc((84vw - 3*14px)/3));--cdG:14px;--cdW:84%;--cdX:50%;--cdY:63%}
 }
 #sAtk.tv #clock{position:absolute;z-index:5;margin:0;
   width:var(--ckS);height:var(--ckS);
   left:var(--ckX);top:var(--ckY);transform:translate(-50%,-50%)}
-#sAtk.tv #cNum{font-size:calc(var(--ckS)*.33)}
+#sAtk.tv #cNum{font-size:calc(var(--ckS)*.33);color:#fff;
+  text-shadow:0 2px 10px rgba(0,0,0,.85)}
 #sAtk.tv #atkTitle{position:absolute;z-index:5;margin:0;white-space:nowrap;
   font-size:var(--ttS);left:var(--ttX);top:var(--ttY);transform:translate(-50%,-50%);
   background:linear-gradient(90deg,var(--cyan),#fff 45%,var(--magenta));
@@ -680,7 +708,8 @@ body.noTop #hud,body.noTop #roster{display:none}
 #sAtk.tv #cardRow{position:absolute;z-index:5;
   width:var(--cdW);gap:var(--cdG);
   left:var(--cdX);top:var(--cdY);transform:translate(-50%,-50%)}
-#sAtk.tv #cardRow .card{width:var(--cdS)}
+#sAtk.tv #cardRow{flex-wrap:nowrap}          /* صفٌّ واحد دائمًا */
+#sAtk.tv #cardRow .card{width:var(--cdS);flex:0 0 auto}
 #sAtk.tv #atkNote{position:absolute;z-index:5;left:50%;bottom:3.5%;
   transform:translateX(-50%);margin:0;white-space:nowrap}
 
@@ -766,7 +795,9 @@ body.noTop #hud,body.noTop #roster{display:none}
   100%{opacity:1;transform:scaleY(1) scaleX(1) rotate(var(--tilt))}}
 @keyframes cardFloat{0%,100%{transform:translateY(0) rotate(var(--tilt))}
   50%{transform:translateY(-11px) rotate(calc(var(--tilt)*.55))}}
-.card:hover,.card.flip{filter:brightness(1.12);animation:none;
+/* البطاقات تُنشأ مكشوفة بصنف flip، فلا يجوز أن يُلغي حركتها —
+   قلبُ الوجه شأن .cIn وحده، والرفع للمرور بالمؤشّر أو للاختيار. */
+.card:hover{filter:brightness(1.12);animation:none;
   transform:translateY(-14px) rotate(0deg) scale(1.08)}
 .card.spent{pointer-events:none;filter:grayscale(1) brightness(.45);animation:none;transform:rotate(var(--tilt)) scale(.92)}
 .card.picked{filter:brightness(1.25);animation:none;transform:translateY(-10px) scale(1.07);
@@ -2785,12 +2816,12 @@ function sortDrag(){
     dx=e.clientX-sx; dyR=e.clientY-sy;
     if(vert()){
       /* الجوال: المناطق فوق وتحت، فالمحور الحاسم رأسي */
-      o.style.transform=`translate(${dx*.25}px,${dyR}px) rotate(${dx*.03}deg)`;
+      o.style.transform=`translate(${dx*.25}px,${dyR}px) rotate(${dx*.03}deg) scale(1.06)`;
       const TH=innerHeight*.09;
       $("stZoneR").classList.toggle("hot",dyR<-TH);   /* أعلى = الفئة أ */
       $("stZoneL").classList.toggle("hot",dyR>TH);
     }else{
-      o.style.transform=`translate(${dx}px,${dyR*.25}px) rotate(${dx*.06}deg)`;
+      o.style.transform=`translate(${dx}px,${dyR*.25}px) rotate(${dx*.06}deg) scale(1.06)`;
       const TH=innerWidth*.16;
       $("stZoneR").classList.toggle("hot",dx>TH);
       $("stZoneL").classList.toggle("hot",dx<-TH);
@@ -2808,8 +2839,8 @@ function sortDrag(){
       stBusy=true;
       o.style.transition="transform .22s ease-in";
       o.style.transform=V
-        ? `translate(0,${move<0?-innerHeight:innerHeight}px)`
-        : `translate(${move>0?innerWidth:-innerWidth}px,0) rotate(${dx*.2}deg)`;
+        ? `translate(0,${move<0?-innerHeight:innerHeight}px) scale(.7)`
+        : `translate(${move>0?innerWidth:-innerWidth}px,0) rotate(${dx*.2}deg) scale(.7)`;
       socket.emit("sortPick",{i:stIdx,side});
       setTimeout(()=>{o.style.transition="";},240);
     }else{
@@ -2956,16 +2987,22 @@ function raceReveal(d){
     `<div id="raceWrap">
       <div id="raceTitle">🏁 ${d.kind==="link"?"سباق التوصيل":"سباق التصنيف"} — ${total} عنصرًا</div>
       <div id="raceTrack">
-        ${Array.from({length:total},(_,i)=>`<div class="raceRung" style="bottom:calc(76px + ${(i+1)/(total+1)*72}%)"></div>`).join("")}
+        ${Array.from({length:total},(_,i)=>`<div class="raceRung" style="bottom:calc(76px + ${i+1} * var(--pitch,7px))"></div>`).join("")}
+        ${R.map((r,i)=>`<div class="rStack" id="stack${i}" style="left:${laneW*(i+1)}%"></div>`).join("")}
         ${R.map((r,i)=>`<div class="racer" id="racer${i}" style="left:${laneW*(i+1)}%;--pc:${r.color}">
           <div class="rHits">0</div>
           <div class="rAv">${r.charId?`<img src="${charImg(r.charId)}" alt="">`:avatar(r.name,r.color)}</div>
           <div class="rNm">${esc(r.name)}</div>
-          <div class="rStack" id="stack${i}"></div>
         </div>`).join("")}
       </div>
       <div id="raceFoot"></div>
     </div>`;
+  /* سُمك القطعة يُشتقّ من طول المضمار: برج مكتمل يقارب قمّته دون أن يتجاوزها */
+  const trk=$("raceTrack");
+  const avail=Math.max(60,trk.clientHeight-76-96);
+  const pitch=Math.max(6,Math.min(18,Math.floor(avail/total)));
+  trk.style.setProperty("--pitch",pitch+"px");
+
   let step=0;
   const iv=setInterval(()=>{
     step++;
@@ -2973,12 +3010,14 @@ function raceReveal(d){
     R.forEach((r,i)=>{
       const el=$("racer"+i);if(!el)return;
       if(step<=r.hits){
-        el.style.bottom="calc(76px + "+(step/(total+1)*72)+"%)";
-        el.querySelector(".rHits").textContent=step;
-        /* قرص جديد يُرصّ تحته مع كل إجابة صحيحة — كركام عملات يرفعه */
+        /* قطعة ذهبية تُرصّ فوق البرج، واللاعب يعلو بسُمكها بالضبط فيبقى واقفًا عليه */
         const c=document.createElement("i");
-        c.className="coin";c.style.setProperty("--n",step);
-        el.querySelector(".rStack").appendChild(c);
+        c.className="coin";
+        $("stack"+i).appendChild(c);
+        /* +4 هو فرق الهامش السالب بين القطع، فتلامس قدمُه قمّةَ البرج تمامًا */
+        el.style.bottom=(76+step*pitch+4)+"px";
+        el.querySelector(".rHits").textContent=step;
+        el.classList.remove("land");void el.offsetWidth;el.classList.add("land");
         anyMoved=true;
       }else el.classList.add("stopped");
     });
