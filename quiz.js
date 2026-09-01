@@ -15,6 +15,7 @@ const SPEED_POINTS = 100;     // (إرث)
 // نقاط المراكز: النقاط = (عدد اللاعبين − المركز + 1) × 100
 // خمسة لاعبين: الأول 500 والأخير 100. تتكيف تلقائيًا مع حجم الغرفة.
 const RANK_UNIT = 100;
+const TRAP_INTRO_S = 7.8;   // أطول نسختي فيلم الفخاخ (الجوال 7.64ث) مع هامش
 function rankPoints(playersN, rank) { return Math.max(0, (playersN - rank + 1) * RANK_UNIT); }
 const CHALLENGE_POINTS = 25;  // نقاط كل عنصر صحيح في جولات التحدي
 const REVEAL_MS = FAST ? 300 : 7500;        // مدة الكشف: اصطفاف الأيقونات + الإنارة + النقاط + الجدول
@@ -476,8 +477,9 @@ function setupQuiz(io, deps) {
     room.pubVo = voc.pick(firstP ? "first_powers" : "powers_intro");
     if (room.pubVo) room.pubVo.at = "attack";
     // شرح القدرات أول مرة طويل، فلا نقفل الاختيار قبل أن يُنهي المعلّق كلامه
+    // فيلم التلفزيون يسبق ظهور البطاقات، فنزيده على الطور ليبقى للاعب وقت اختياره كاملًا
     const at = FAST ? room.settings.attackTime
-      : Math.max(room.settings.attackTime, room.pubVo ? room.pubVo.dur + 1.5 : 0);
+      : Math.max(room.settings.attackTime, room.pubVo ? room.pubVo.dur + 1.5 : 0) + TRAP_INTRO_S;
     setPhase(room, "attack", at, () => beginAttackReveal(room));
     broadcast(room);
   }
