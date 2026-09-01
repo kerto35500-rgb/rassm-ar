@@ -536,13 +536,11 @@ function setupQuiz(io, deps) {
   }
 
   // ====== السؤال ======
+  // صعوبة عشوائية تمامًا لكل سؤال — لا تدرّج من السهل للصعب،
+  // فلا يستطيع اللاعب توقّع مستوى السؤال من موقعه في المباراة.
   function autoDifficulty(room) {
     if (room.settings.difficulty) return room.settings.difficulty;
-    const t = room.stages.filter(s => s === "q").length;
-    const i = room.stageIdx;
-    if (i < t * 0.4) return 1;
-    if (i < t * 0.8) return 2;
-    return 3;
+    return 1 + Math.floor(Math.random() * 3);
   }
 
   function beginQuestion(room) {
@@ -670,13 +668,14 @@ function setupQuiz(io, deps) {
       const st = { done: new Set(), hits: 0, fin: 0, r: [], l: [], tokR: {}, tokL: {} };
       room.linkProg[p.id] = st;
       linkFill(room, st);
-      sendBoard(room, p, st);
     });
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
     room.qSentAt = Date.now();
     const t = Math.max(45, Math.round(L.pairs.length * 4.5));
     setPhase(room, "link", t, () => revealChallenge(room, "link"));
     broadcast(room);
+    // اللوحات تُرسل بعد البثّ: العميل يرفض أي لوحة تصله قبل أن تصير مرحلته "link"
+    alive(room).forEach(p => sendBoard(room, p, room.linkProg[p.id]));
   }
 
   // ملء الخانات الفارغة عشوائيًا بشرط حتمي: توصيلة صحيحة واحدة على الأقل
