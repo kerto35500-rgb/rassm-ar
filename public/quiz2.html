@@ -278,6 +278,14 @@ input,select,textarea{font-family:inherit}
   font-weight:900;font-size:24px;color:#ff5470;text-shadow:0 1px 4px #000;
   animation:orbIn .3s var(--spring) both}
 
+/* شبح السحب: دائرة صغيرة تحمل الكلمة وتتبع الإصبع */
+.dragGhost{position:absolute;z-index:9;pointer-events:none;
+  transform:translate(-50%,-50%);min-width:62px;max-width:118px;padding:9px 12px;
+  border-radius:99px;text-align:center;font-weight:900;font-size:12.5px;line-height:1.2;
+  color:#fff;background:linear-gradient(150deg,rgba(139,92,246,.95),rgba(34,230,255,.85));
+  border:2px solid rgba(255,255,255,.75);box-shadow:0 8px 22px -4px rgba(0,0,0,.6);
+  animation:orbIn .18s var(--spring) both}
+
 /* ═══ التوصيل: حلقات وحالاتها ═══ */
 #lkMeta{text-align:center;font-weight:900;font-size:13px;color:var(--dim);padding:4px 0}
 #lkDone{text-align:center;font-weight:900;color:var(--lime);padding:8px}
@@ -295,12 +303,19 @@ input,select,textarea{font-family:inherit}
 
 /* ═══ لعبة التصنيف: سحب الدائرة يمينًا أو يسارًا ═══ */
 #stArena{flex:1;display:flex;align-items:stretch;gap:8px;min-height:0;direction:ltr}
+/* الترتيب في الوضع العمودي: الفئة أ فوق (stZoneR) والفئة ب تحت (stZoneL) */
+@media (max-width:699px){#stZoneR{order:1}#stMid{order:2}#stZoneL{order:3}}
 .stZone{flex:0 0 26%;display:flex;align-items:center;justify-content:center;border-radius:18px;
   border:2px dashed rgba(255,255,255,.25);background:rgba(255,255,255,.04);
   transition:background .18s,border-color .18s,box-shadow .18s}
-.stZone .szName{font-weight:900;font-size:clamp(14px,2.6vw,19px);text-align:center;padding:8px;
-  writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:1px}
-@media (min-width:700px){.stZone .szName{writing-mode:horizontal-tb}}
+.stZone .szName{font-weight:900;font-size:clamp(15px,2.6vw,19px);text-align:center;padding:8px;
+  letter-spacing:.5px}
+/* على الجوال: منطقة فوق وأخرى تحت — الكتابة الرأسية كانت تقلب النص */
+@media (max-width:699px){
+  #stArena{flex-direction:column;direction:rtl;gap:10px}
+  .stZone{flex:0 0 19%}
+  #stMid{flex:1 1 auto}
+}
 .stZone.hot{border-color:rgba(139,92,246,.8);background:rgba(139,92,246,.14)}
 .stZone.hit{border-color:#39e08a;background:rgba(57,224,138,.22);
   box-shadow:0 0 34px -4px rgba(57,224,138,.8);animation:zFlash .5s}
@@ -327,9 +342,13 @@ input,select,textarea{font-family:inherit}
 #raceTitle{text-align:center;font-weight:900;font-size:17px;padding:4px 0 10px}
 #raceTrack{flex:1;position:relative;margin:0 8px;min-height:0;
   border-radius:16px;background:linear-gradient(180deg,rgba(255,203,46,.07),rgba(255,255,255,.02));
-  border:1px solid var(--stroke);overflow:hidden}
+  border:1px solid var(--stroke);overflow:hidden;
+  padding-bottom:78px}                       /* موطئ الأرضية */
+/* أرضية مرئية ينطلق منها الجميع بدل الصعود من خارج الكادر */
+#raceTrack::after{content:"";position:absolute;left:0;right:0;bottom:74px;height:3px;
+  background:linear-gradient(90deg,transparent,rgba(255,203,46,.75),transparent)}
 .raceRung{position:absolute;left:0;right:0;height:1px;background:rgba(255,255,255,.07)}
-.racer{position:absolute;bottom:0;width:52px;margin-left:-26px;text-align:center;
+.racer{position:absolute;bottom:76px;width:52px;margin-left:-26px;text-align:center;
   transition:bottom .42s cubic-bezier(.3,1.3,.5,1);will-change:bottom}
 .racer .rAv{width:44px;height:44px;margin:0 auto;border-radius:50%;overflow:hidden;
   border:2.5px solid var(--pc,#8b5cf6);background:#0b1020;box-shadow:0 4px 14px rgba(0,0,0,.5)}
@@ -357,7 +376,7 @@ input,select,textarea{font-family:inherit}
    اليمين في الاتجاه العربي. الـ flex مع justify-content يوسّطها فعلًا. */
 #charGrid{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;width:100%;
   display:flex;flex-wrap:wrap;gap:12px;padding:6px 2px;
-  justify-content:center;align-content:center}
+  justify-content:center;align-content:center;align-items:center}
 .ch{position:relative;flex:0 0 auto;width:138px;
   border-radius:16px;overflow:hidden;cursor:pointer;
   border:2px solid rgba(255,255,255,.12);background:#0b1020;
@@ -387,12 +406,14 @@ input,select,textarea{font-family:inherit}
 #readyB.gone,#startB.gone{display:none}
 @media (max-width:560px){
   /* صفّ واحد أفقي: التمرير يمين↔يسار بدل فوق↔تحت — فلا تختفي بطاقة */
+  /* align-items:center ضروري: بدونه يمدّ الفلكس البطاقة لكامل ارتفاع الصفّ
+     فيظهر مستطيل لوني طويل تحت الصورة. */
   #charGrid{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:9px;
-    justify-content:flex-start;align-content:center;
+    justify-content:flex-start;align-items:center;align-content:center;
     scroll-snap-type:x mandatory;padding:6px 4px;
     -webkit-overflow-scrolling:touch}
   #charGrid::-webkit-scrollbar{height:0}
-  .ch{width:124px;scroll-snap-align:center}
+  .ch{width:124px;scroll-snap-align:center;align-self:center}
   #waitTrophy{font-size:28px} #waitTitle{font-size:17px}
   .ch .chNm{font-size:12px;padding:6px 4px 7px} .ch .chDs{display:none}
 }
@@ -424,7 +445,9 @@ body.filmOn #aurora,body.filmOn #bgFx,body.filmOn #grid{display:none!important}
 @keyframes opPulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}
 
 /* شاشة شرح اللعبة: تُعرض مرة واحدة لكل نوع، والمضيف يقدر يتخطاها */
-#inWrap{max-width:min(90vw,620px);text-align:center;display:flex;flex-direction:column;
+/* margin:auto يوسّط اللوحة رأسيًا وأفقيًا داخل المشهد — كانت تلتصق بالأعلى
+   فيبدو زر التخطي في طرف الشاشة على الشاشات العريضة. */
+#inWrap{max-width:min(90vw,620px);margin:auto;text-align:center;display:flex;flex-direction:column;
   align-items:center;gap:14px;animation:inUp .5s cubic-bezier(.2,.9,.3,1) both}
 @keyframes inUp{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
 #inBadge{font-size:12px;letter-spacing:2px;padding:4px 14px;border-radius:99px;
@@ -2540,8 +2563,15 @@ function lkDragStart(e,src){
   const from=lkCenter(src);
   const wrap=$("lkBoard").getBoundingClientRect();
   let hovered=null;
+  /* شبح مصغّر يتبع الإصبع: بدونه يبدو كأنك تسحب الفراغ */
+  const gh=document.createElement("div");
+  gh.className="dragGhost";gh.textContent=src.textContent;
+  $("lkBoard").appendChild(gh);
+  const put=(x,y)=>{gh.style.left=x+"px";gh.style.top=y+"px";};
+  put(from.x,from.y);
   const move=ev=>{
     const x=ev.clientX-wrap.left, y=ev.clientY-wrap.top;
+    put(x,y);
     lkDraw(from.x,from.y,x,y);
     const t=document.elementFromPoint(ev.clientX,ev.clientY);
     const dst=t&&t.closest?t.closest(".node.dst"):null;
@@ -2551,6 +2581,7 @@ function lkDragStart(e,src){
   const up=ev=>{
     document.removeEventListener("pointermove",move);
     document.removeEventListener("pointerup",up);
+    gh.remove();
     src.classList.remove("sel");
     if(hovered){
       hovered.classList.remove("hot");
@@ -2619,36 +2650,48 @@ function sortShow(){
   o.style.transform="";
   o.classList.remove("popIn");void o.offsetWidth;o.classList.add("popIn");
 }
+/* المناطق فوق/تحت على الجوال (نفس عتبة الـCSS: 699px) */
+function vert(){ return innerWidth<=699; }
 function sortDrag(){
   const o=$("stOrb");
-  let sx=0,sy=0,dx=0,dragging=false;
+  let sx=0,sy=0,dx=0,dyR=0,dragging=false;
   o.onpointerdown=e=>{
     if(stBusy||stIdx>=ST.sort.items.length)return;
     e.preventDefault();
-    dragging=true;sx=e.clientX;sy=e.clientY;dx=0;
+    dragging=true;sx=e.clientX;sy=e.clientY;dx=0;dyR=0;
     o.classList.add("drag");o.classList.remove("snap");
     try{o.setPointerCapture(e.pointerId);}catch(x){}   /* وإلا توقفت الحركة عند مغادرة الدائرة */
   };
   o.onpointermove=e=>{
     if(!dragging)return;
-    dx=e.clientX-sx;
-    const dy=(e.clientY-sy)*.25;                    /* حركة عمودية مخمَّدة */
-    o.style.transform=`translate(${dx}px,${dy}px) rotate(${dx*.06}deg)`;
-    const TH=innerWidth*.16;
-    $("stZoneR").classList.toggle("hot",dx>TH);
-    $("stZoneL").classList.toggle("hot",dx<-TH);
+    dx=e.clientX-sx; dyR=e.clientY-sy;
+    if(vert()){
+      /* الجوال: المناطق فوق وتحت، فالمحور الحاسم رأسي */
+      o.style.transform=`translate(${dx*.25}px,${dyR}px) rotate(${dx*.03}deg)`;
+      const TH=innerHeight*.09;
+      $("stZoneR").classList.toggle("hot",dyR<-TH);   /* أعلى = الفئة أ */
+      $("stZoneL").classList.toggle("hot",dyR>TH);
+    }else{
+      o.style.transform=`translate(${dx}px,${dyR*.25}px) rotate(${dx*.06}deg)`;
+      const TH=innerWidth*.16;
+      $("stZoneR").classList.toggle("hot",dx>TH);
+      $("stZoneL").classList.toggle("hot",dx<-TH);
+    }
   };
   o.onpointerup=o.onpointercancel=e=>{
     if(!dragging)return;dragging=false;
     o.classList.remove("drag");
     $("stZoneR").classList.remove("hot");$("stZoneL").classList.remove("hot");
-    const TH=innerWidth*.16;
-    if(Math.abs(dx)>TH){
-      /* قذف خارج الشاشة بالاتجاه المسحوب، وإرسال الاختيار للخادم */
-      const side=dx>0?0:1;                          /* يمين=أ(0) · يسار=ب(1) */
+    const V=vert();
+    const move=V?dyR:dx, TH=V?innerHeight*.09:innerWidth*.16;
+    if(Math.abs(move)>TH){
+      /* أعلى/يمين = الفئة أ (0) · أسفل/يسار = الفئة ب (1) */
+      const side=(V? move<0 : move>0)?0:1;
       stBusy=true;
       o.style.transition="transform .22s ease-in";
-      o.style.transform=`translate(${dx>0?innerWidth:-innerWidth}px,0) rotate(${dx*.2}deg)`;
+      o.style.transform=V
+        ? `translate(0,${move<0?-innerHeight:innerHeight}px)`
+        : `translate(${move>0?innerWidth:-innerWidth}px,0) rotate(${dx*.2}deg)`;
       socket.emit("sortPick",{i:stIdx,side});
       setTimeout(()=>{o.style.transition="";},240);
     }else{
@@ -2795,7 +2838,7 @@ function raceReveal(d){
     `<div id="raceWrap">
       <div id="raceTitle">🏁 ${d.kind==="link"?"سباق التوصيل":"سباق التصنيف"} — ${total} عنصرًا</div>
       <div id="raceTrack">
-        ${Array.from({length:total},(_,i)=>`<div class="raceRung" style="bottom:${(i+1)/(total+1)*100}%"></div>`).join("")}
+        ${Array.from({length:total},(_,i)=>`<div class="raceRung" style="bottom:calc(76px + ${(i+1)/(total+1)*72}%)"></div>`).join("")}
         ${R.map((r,i)=>`<div class="racer" id="racer${i}" style="left:${laneW*(i+1)}%;--pc:${r.color}">
           <div class="rHits">0</div>
           <div class="rAv">${r.charId?`<img src="${charImg(r.charId)}" alt="">`:avatar(r.name,r.color)}</div>
@@ -2812,7 +2855,7 @@ function raceReveal(d){
     R.forEach((r,i)=>{
       const el=$("racer"+i);if(!el)return;
       if(step<=r.hits){
-        el.style.bottom=(step/(total+1)*100)+"%";
+        el.style.bottom="calc(76px + "+(step/(total+1)*72)+"%)";
         el.querySelector(".rHits").textContent=step;
         /* قرص جديد يُرصّ تحته مع كل إجابة صحيحة — كركام عملات يرفعه */
         const c=document.createElement("i");
