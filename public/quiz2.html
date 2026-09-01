@@ -254,6 +254,15 @@ input,select,textarea{font-family:inherit}
   animation:coinDrop .3s var(--spring) both}
 @keyframes coinDrop{from{transform:translateY(-14px) scaleX(.5);opacity:0}to{transform:none;opacity:1}}
 
+/* ═══ صور بطاقات الفخاخ ═══
+   الصور مرسومة بإطارها واسمها العربي وخلفيتها شفافة، فنرفع عن الوجه
+   تدرّجه وحدوده ونصّه ونتركها هي وحدها. */
+.card .cFront img{position:absolute;inset:0;width:100%;height:100%;
+  object-fit:contain;display:block;border-radius:inherit}
+.card.hasImg .cFront{background:none!important;border:0!important;box-shadow:none!important}
+.card.hasImg .cFront .em,.card.hasImg .cFront .lb{display:none}
+.card.hasImg .cFront .self{z-index:2;position:absolute;top:4%}
+
 /* ═══ مراسم كشف السؤال: الرقاقات والنقاط ═══ */
 /* داخل بطاقة الخيار وأسفل نصّها — المساحة متوفّرة، ولا حاجة لحشرها على الحافة */
 .chipRow{display:flex;gap:7px;justify-content:center;align-items:center;
@@ -688,8 +697,10 @@ body.noTop #hud,body.noTop #roster{display:none}
 .card:nth-child(5){animation-delay:.49s,2.6s}
 .card:nth-child(1){--tilt:-11deg}.card:nth-child(2){--tilt:7deg}
 .card:nth-child(3){--tilt:-6deg}.card:nth-child(4){--tilt:12deg}.card:nth-child(5){--tilt:-9deg}
-@keyframes cardIn{from{opacity:0;transform:translateY(70px) rotate(calc(var(--tilt)*3)) scale(.6)}
-  to{opacity:1;transform:translateY(0) rotate(var(--tilt)) scale(1)}}
+/* دخول البطاقة: نبضة CRT — تتمدّد من خط أفقي كأن شاشة التلفزيون أشعلتها */
+@keyframes cardIn{0%{opacity:0;transform:scaleY(.02) scaleX(1.35) rotate(0)}
+  55%{opacity:1;transform:scaleY(1.1) scaleX(.94) rotate(calc(var(--tilt)*.4))}
+  100%{opacity:1;transform:scaleY(1) scaleX(1) rotate(var(--tilt))}}
 @keyframes cardFloat{0%,100%{transform:translateY(0) rotate(var(--tilt))}
   50%{transform:translateY(-11px) rotate(calc(var(--tilt)*.55))}}
 .card:hover,.card.flip{filter:brightness(1.12);animation:none;
@@ -2063,6 +2074,10 @@ function rAtk(fresh){
           '<span class="lb">'+(PW_NM[p]||p)+'</span>'+
         '</div>'+
       '</div>';
+    /* الصورة المرسومة تحلّ محلّ الوجه البرمجي متى وُجدت في /cards/ */
+    const cim=new Image();
+    cim.onload=()=>{ const f=card.querySelector(".cFront"); if(f){f.appendChild(cim);card.classList.add("hasImg");} };
+    cim.src="/cards/"+p+".webp";
     card.onclick=()=>flipCard(card,p,cl,foes);
     row.appendChild(card);
   });

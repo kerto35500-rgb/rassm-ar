@@ -16,8 +16,12 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
 /* ═══ المسرح: الفيديو ثم الإطار الثابت ═══ */
 #stage{position:relative;width:100%;height:100%;overflow:hidden;background:#000}
 #vid,#still{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-#still{opacity:0;transition:opacity .35s}
-#still.on{opacity:1}
+/* الصورة أرضية دائمة تحت الفيديو: لو تأخّر التحميل أو فشل، يرى اللاعب
+   الإطار الأخير بدل شاشة سوداء. والفيديو فوقها يتلاشى عند انتهائه فينكشف
+   الإطار نفسه تحته — انتقال غير محسوس لأن الصورتين متطابقتان. */
+#still{z-index:0}
+#vid{z-index:1;opacity:1;transition:opacity .3s}
+#vid.done{opacity:0}
 
 /* ═══ العدّاد — أربعة أشكال ═══ */
 #clockWrap{position:absolute;z-index:5;cursor:grab;user-select:none;touch-action:none;
@@ -76,22 +80,72 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
 .ck4 .ring circle{fill:none;stroke-width:4;stroke-linecap:round;stroke:var(--cyan);
   filter:drop-shadow(0 0 6px rgba(34,230,255,.9))}
 
+/* شكل ٥: عدّاد اللعبة الأساسي (منقول كما هو من quiz2.html) */
+.ck5{position:relative;width:100%;height:100%}
+.ck5 svg.dial{position:absolute;inset:0;transform:rotate(-90deg);overflow:visible}
+.ck5 .trk{fill:none;stroke:rgba(255,255,255,.09);stroke-width:6}
+.ck5 .arc{fill:none;stroke:url(#cg5);stroke-width:6;stroke-linecap:round;
+  filter:drop-shadow(0 0 8px rgba(34,230,255,.9))}
+.ck5 .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:33%;font-weight:900;letter-spacing:-1.5px;color:#fff}
+.ck5 .halo{position:absolute;inset:-14px;border-radius:50%;
+  border:1px solid rgba(34,230,255,.22);animation:halo 2.4s ease-out infinite}
+@keyframes halo{0%{transform:scale(.85);opacity:.8}100%{transform:scale(1.28);opacity:0}}
+
+/* ═══ ظهور العدّاد والبطاقات بعد انتهاء الفيديو ═══
+   الاثنان مخفيّان تمامًا أثناء المشهد ثم يدخلان بأنيميشن — فلا يشوّشان
+   على الزوم ولا يظهران فوق شاشة لم تُفتح بعد. */
+#clockWrap,#cards{opacity:0;pointer-events:none}
+#clockWrap.reveal,#cards.reveal{opacity:1;pointer-events:auto}
+/* أ · نبضة CRT: يتمدّد من خط أفقي كأن الشاشة أشعلته */
+.rv-crt #clockWrap.reveal{animation:crtIn .5s var(--spring) both}
+.rv-crt #cards.reveal .card{animation:crtIn2 .5s var(--spring) both,
+  cardFloat 4.2s ease-in-out infinite calc(var(--d) + .6s)}
+@keyframes crtIn{0%{opacity:0;transform:translate(-50%,-50%) scaleY(.02) scaleX(1.3)}
+  55%{opacity:1;transform:translate(-50%,-50%) scaleY(1.08) scaleX(.96)}
+  100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes crtIn2{0%{opacity:0;transform:scaleY(.02) scaleX(1.3)}
+  55%{opacity:1;transform:scaleY(1.08) scaleX(.96)}
+  100%{opacity:1;transform:rotate(var(--tilt))}}
+/* ب · صعود ناعم من الأسفل */
+.rv-rise #clockWrap.reveal{animation:riseIn .55s var(--spring) both}
+.rv-rise #cards.reveal .card{animation:riseCard .6s var(--spring) both,
+  cardFloat 4.2s ease-in-out infinite calc(var(--d) + .7s)}
+@keyframes riseIn{from{opacity:0;transform:translate(-50%,-30%) scale(.8)}
+  to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes riseCard{from{opacity:0;transform:translateY(60px) rotate(calc(var(--tilt)*2)) scale(.7)}
+  to{opacity:1;transform:translateY(0) rotate(var(--tilt)) scale(1)}}
+/* ج · قلب ثلاثي الأبعاد */
+.rv-flip #clockWrap.reveal{animation:riseIn .5s var(--spring) both}
+.rv-flip #cards.reveal .card{animation:flipIn .65s var(--ease) both,
+  cardFloat 4.2s ease-in-out infinite calc(var(--d) + .75s)}
+@keyframes flipIn{from{opacity:0;transform:perspective(700px) rotateY(90deg) scale(.85)}
+  to{opacity:1;transform:perspective(700px) rotateY(0) rotate(var(--tilt)) scale(1)}}
+/* د · بلا أنيميشن — للمقارنة */
+.rv-none #cards.reveal .card{animation:cardFloat 4.2s ease-in-out infinite var(--d)}
+
 /* ═══ البطاقات ═══ */
 #cards{position:absolute;z-index:4;display:flex;flex-wrap:wrap;
   align-items:center;justify-content:center;cursor:grab;user-select:none;touch-action:none}
 #cards.drag{cursor:grabbing}
 #cards.lock{cursor:default}
-.card{position:relative;aspect-ratio:1/1.5;border-radius:14px;flex:0 0 auto;
+.card{position:relative;aspect-ratio:823/1178;border-radius:14px;flex:0 0 auto;overflow:visible;
   background:linear-gradient(160deg,var(--pc1),var(--pc2));
   box-shadow:0 10px 26px -6px rgba(0,0,0,.75),inset 0 0 0 2px rgba(255,255,255,.22);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4%;
   animation:cardFloat 4.2s ease-in-out infinite;transition:transform .2s var(--spring)}
-.card:nth-child(1){--tilt:-11deg;animation-delay:.0s}
-.card:nth-child(2){--tilt:7deg;animation-delay:.5s}
-.card:nth-child(3){--tilt:-6deg;animation-delay:1s}
-.card:nth-child(4){--tilt:12deg;animation-delay:1.5s}
-.card:nth-child(5){--tilt:-9deg;animation-delay:2s}
-.card:nth-child(6){--tilt:5deg;animation-delay:2.5s}
+/* صورة البطاقة من /cards/<id>.webp — وإلا يبقى الرسم البرمجي بديلًا */
+.card img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;
+  filter:drop-shadow(0 10px 22px rgba(0,0,0,.7))}
+/* الصورة تحمل إطارها وشفافيتها، فنرفع عنها خلفية العنصر وحدوده وظلّه */
+.card.hasImg{background:none;box-shadow:none;border-radius:0}
+.card.hasImg .em,.card.hasImg .lb,.card.hasImg .self{display:none}
+.card:nth-child(1){--tilt:-11deg;--d:0s;animation-delay:var(--d)}
+.card:nth-child(2){--tilt:7deg;--d:.09s;animation-delay:var(--d)}
+.card:nth-child(3){--tilt:-6deg;--d:.18s;animation-delay:var(--d)}
+.card:nth-child(4){--tilt:12deg;--d:.27s;animation-delay:var(--d)}
+.card:nth-child(5){--tilt:-9deg;--d:.36s;animation-delay:var(--d)}
+.card:nth-child(6){--tilt:5deg;--d:.45s;animation-delay:var(--d)}
 @keyframes cardFloat{0%,100%{transform:translateY(0) rotate(var(--tilt))}
   50%{transform:translateY(-11px) rotate(calc(var(--tilt)*.55))}}
 .card .em{font-size:190%;line-height:1;filter:drop-shadow(0 2px 5px rgba(0,0,0,.5))}
@@ -165,25 +219,32 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
       <button data-ck="2">أنبوب</button>
       <button data-ck="3">شريط</button>
       <button data-ck="4">نيون</button>
+      <button data-ck="5">اللعبة</button>
+    </div>
+    <div class="seg" id="rvSeg">
+      <button data-rv="crt" class="on">نبضة CRT</button>
+      <button data-rv="rise">صعود</button>
+      <button data-rv="flip">قلب</button>
+      <button data-rv="none">بلا</button>
     </div>
 
     <div class="row"><label>حجم العدّاد</label>
-      <input type="range" id="ckS" min="50" max="260" value="110"><output id="ckSo"></output></div>
+      <input type="range" id="ckS" min="50" max="260" value="163"><output id="ckSo"></output></div>
     <div class="row"><label>أفقي</label>
-      <input type="range" id="ckX" min="0" max="100" value="50"><output id="ckXo"></output></div>
+      <input type="range" id="ckX" min="0" max="100" value="44"><output id="ckXo"></output></div>
     <div class="row"><label>رأسي</label>
-      <input type="range" id="ckY" min="0" max="100" value="14"><output id="ckYo"></output></div>
+      <input type="range" id="ckY" min="0" max="100" value="23"><output id="ckYo"></output></div>
 
     <div class="row" style="margin-top:12px"><label>حجم البطاقة</label>
-      <input type="range" id="cdS" min="50" max="220" value="108"><output id="cdSo"></output></div>
+      <input type="range" id="cdS" min="50" max="220" value="138"><output id="cdSo"></output></div>
     <div class="row"><label>تباعد</label>
-      <input type="range" id="cdG" min="0" max="60" value="18"><output id="cdGo"></output></div>
+      <input type="range" id="cdG" min="0" max="60" value="40"><output id="cdGo"></output></div>
     <div class="row"><label>عرض المنطقة</label>
-      <input type="range" id="cdW" min="30" max="100" value="62"><output id="cdWo"></output></div>
+      <input type="range" id="cdW" min="30" max="100" value="41"><output id="cdWo"></output></div>
     <div class="row"><label>أفقي</label>
-      <input type="range" id="cdX" min="0" max="100" value="50"><output id="cdXo"></output></div>
+      <input type="range" id="cdX" min="0" max="100" value="44"><output id="cdXo"></output></div>
     <div class="row"><label>رأسي</label>
-      <input type="range" id="cdY" min="0" max="100" value="58"><output id="cdYo"></output></div>
+      <input type="range" id="cdY" min="0" max="100" value="66"><output id="cdYo"></output></div>
     <div class="row"><label>عدد</label>
       <input type="range" id="cdN" min="1" max="6" value="3"><output id="cdNo"></output></div>
 
@@ -207,23 +268,38 @@ const SELF=new Set(["double"]);
 const ORDER=["freeze","gloop","bombs","nibble","double","bet"];
 
 /* ═══ الحالة ═══ */
-const S={ck:1,ckS:110,ckX:50,ckY:14,cdS:108,cdG:18,cdW:62,cdX:50,cdY:58,cdN:3};
+const S={ck:1,ckS:163,ckX:44,ckY:23,cdS:138,cdG:40,cdW:41,cdX:44,cdY:66,cdN:3,rv:'crt'};
 const LS="trapLab";
 try{Object.assign(S,JSON.parse(localStorage.getItem(LS)||"{}"));}catch(e){}
 
 /* ═══ المشهد: الفيديو ثم تجميد الإطار الأخير ═══ */
 const vid=$("vid"), still=$("still");
 still.src="/traps/end.webp";
+/* العدّاد والبطاقات لا يظهران إلا بعد أن تُفتح الشاشة — أي عند انتهاء الفيديو */
+function hideUI(){ $("clockWrap").classList.remove("reveal"); $("cards").classList.remove("reveal"); }
+function showUI(){
+  /* إعادة تشغيل الأنيميشن: نزيل الصنف ونجبر إعادة التخطيط ثم نعيده */
+  hideUI(); void $("cards").offsetWidth;
+  $("clockWrap").classList.add("reveal"); $("cards").classList.add("reveal");
+  t0=Date.now();                    /* العدّاد يبدأ من ٦٠ لحظة الظهور */
+}
+let sceneT=null;
 function playScene(){
-  still.classList.remove("on");
-  vid.style.opacity="1";
+  clearTimeout(sceneT); hideUI();
+  vid.classList.remove("done");
   vid.src="/traps/intro.mp4";
   vid.currentTime=0;
-  vid.play().catch(()=>{});
+  vid.play().catch(()=>finishScene());
+  /* صمّام أمان: لو تعذّر التشغيل خلال ٣ ثوانٍ نُظهر الواجهة على الإطار الثابت */
+  sceneT=setTimeout(()=>{ if(vid.readyState<2)finishScene(); },3000);
 }
-/* عند انتهاء الفيديو نُظهر الإطار الأخير الثابت — فلا وميض ولا عودة للبداية */
-vid.addEventListener("ended",()=>{ still.classList.add("on"); });
-vid.addEventListener("error",()=>{ still.classList.add("on"); });
+function finishScene(){
+  clearTimeout(sceneT);
+  vid.classList.add("done");
+  showUI();
+}
+vid.addEventListener("ended",finishScene);
+vid.addEventListener("error",finishScene);
 playScene();
 $("playB").onclick=playScene;
 
@@ -238,6 +314,14 @@ function clockHTML(k,n){
       '<stop offset="0" stop-color="#ffcb2e"/><stop offset="1" stop-color="#ff2f8e"/></linearGradient></defs></svg>'+
       '<span class="num">'+n+'</span></div>';
   }
+  if(k===5) return '<div class="ck5"><div class="halo"></div>'+
+      '<svg class="dial" viewBox="0 0 100 100">'+
+      '<defs><linearGradient id="cg5" x1="0" y1="0" x2="1" y2="1">'+
+      '<stop offset="0" stop-color="#22e6ff"/><stop offset=".5" stop-color="#8b5cf6"/>'+
+      '<stop offset="1" stop-color="#ff2f8e"/></linearGradient></defs>'+
+      '<circle class="trk" cx="50" cy="50" r="44"/>'+
+      '<circle id="ckArc" class="arc" cx="50" cy="50" r="44"/></svg>'+
+      '<span class="num">'+n+'</span></div>';
   if(k===2) return '<div class="ck2"><div class="scan"></div><span class="num">'+n+'</span></div>';
   if(k===3) return '<div class="ck3"><span class="num">'+n+'</span>'+
       '<span class="bar"><i id="ckBar"></i></span></div>';
@@ -254,7 +338,8 @@ function tick(){
   const num=$("clockBox").querySelector(".num");
   if(num)num.textContent=secs;
   const arc=document.getElementById("ckArc");
-  if(arc){const C=2*Math.PI*47;arc.style.strokeDasharray=C;arc.style.strokeDashoffset=C*(1-frac);}
+  if(arc){const R=S.ck===5?44:47, C=2*Math.PI*R;
+    arc.style.strokeDasharray=C;arc.style.strokeDashoffset=C*(1-frac);}
   const bar=document.getElementById("ckBar");
   if(bar)bar.style.width=(frac*100)+"%";
   if(secs<=0)t0=Date.now();
@@ -272,6 +357,10 @@ function drawCards(){
     d.style.setProperty("--pc1",cl[0]);d.style.setProperty("--pc2",cl[1]);
     d.innerHTML=(SELF.has(p)?'<span class="self">لنفسك</span>':(p==="bet"?'<span class="self">مراهنة</span>':''))+
       '<span class="em">'+PW_EM[p]+'</span><span class="lb">'+PW_NM[p]+'</span>';
+    /* نجرّب الصورة: تنجح فتحلّ محلّ الرسم، وتفشل فيبقى الرسم كما هو */
+    const im=new Image();
+    im.onload=()=>{ d.insertBefore(im,d.firstChild); d.classList.add("hasImg"); };
+    im.src="/cards/"+p+".webp";
     box.appendChild(d);
   });
 }
@@ -297,6 +386,8 @@ function apply(){
     const o=$(k+"o"); if(o)o.textContent=S[k]+(k==="ckS"||k==="cdS"||k==="cdG"?"px":(k==="cdN"?"":"%"));
   });
   [...$("ckSeg").children].forEach(b=>b.classList.toggle("on",+b.dataset.ck===S.ck));
+  [...$("rvSeg").children].forEach(b=>b.classList.toggle("on",b.dataset.rv===S.rv));
+  document.body.className=document.body.className.replace(/\brv-\w+/g,"").trim()+" rv-"+S.rv;
   try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}
   if($("out").classList.contains("on"))showOut();
 }
@@ -307,6 +398,9 @@ function apply(){
 });
 [...$("ckSeg").children].forEach(b=>{
   b.onclick=()=>{ S.ck=+b.dataset.ck; drawClock(); apply(); };
+});
+[...$("rvSeg").children].forEach(b=>{
+  b.onclick=()=>{ S.rv=b.dataset.rv; apply(); showUI(); };
 });
 
 /* ═══ السحب المباشر ═══ */
@@ -357,6 +451,7 @@ function showOut(){
 "/* قياسات مشهد الفخاخ */\n"+
 "clock: shape "+S.ck+" · size "+S.ckS+"px · x "+S.ckX+"% · y "+S.ckY+"%\n"+
 "cards: size "+S.cdS+"px · gap "+S.cdG+"px · area "+S.cdW+"%\n"+
+"reveal: "+S.rv+"\n"+
 "       x "+S.cdX+"% · y "+S.cdY+"% · count "+S.cdN;
 }
 $("copyB").onclick=()=>{
