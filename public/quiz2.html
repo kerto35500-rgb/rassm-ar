@@ -347,29 +347,36 @@ input,select,textarea{font-family:inherit}
   #stMid{flex:1 1 auto}
 }
 .stZone.hot{border-color:rgba(139,92,246,.8);background:rgba(139,92,246,.14)}
-/* ═══ قوس الاستقبال: نصف قرص متوهّج فتحته نحو مركز الساحة —
-   كمرمى يستقبل القرص المرمي. الحاوية تُظهر نصف الدائرة فقط،
-   والاتجاه يتبع موقع المنطقة. ═══ */
-.szSlot{position:relative;display:block;width:46px;height:92px;overflow:hidden;flex:0 0 auto;
-  transition:transform .2s var(--spring)}
-.szSlot::before{content:"";position:absolute;width:92px;height:92px;border-radius:50%;
-  border:4px solid rgba(139,92,246,.65);
-  background:radial-gradient(circle,rgba(139,92,246,.16),transparent 66%);
-  box-shadow:0 0 18px rgba(139,92,246,.4),inset 0 0 18px rgba(139,92,246,.3)}
-/* حاسوب: المنطقتان يمين ويسار — النصف الظاهر يبتعد عن المركز والفتحة نحوه */
-#stZoneR .szSlot::before{left:-46px;top:0}
-#stZoneL .szSlot::before{left:0;top:0}
-.stZone.hot .szSlot{transform:scale(1.2)}
-.stZone.hot .szSlot::before{border-color:var(--cyan);
-  box-shadow:0 0 30px rgba(34,230,255,.85),inset 0 0 22px rgba(34,230,255,.5)}
+/* ═══ قوس الاستقبال: نصف قرص مرسوم بالكود — حوافّ نظيفة بلا قصّ.
+   الشكل نفسه هو العنصر: زوايا مدوّرة من جهة القبّة وحدٌّ مفتوح من جهة
+   الفم، فيُقرأ مرمى يستقبل القرص. يتنفّس توهّجًا، ويستيقظ مع كل
+   عنصر جديد، ويشتعل حين يقترب القرص. ═══ */
+.szSlot{position:relative;display:block;flex:0 0 auto;
+  border:4px solid rgba(139,92,246,.7);
+  background:radial-gradient(circle at 50% 50%,rgba(139,92,246,.22),rgba(139,92,246,.05) 72%);
+  transition:transform .2s var(--spring);
+  animation:slotBreath 2.4s ease-in-out infinite}
+/* حاسوب: يمين ويسار — القبّة للخارج والفم نحو المركز */
+#stZoneR .szSlot{width:66px;height:132px;border-radius:0 132px 132px 0;border-left:0}
+#stZoneL .szSlot{width:66px;height:132px;border-radius:132px 0 0 132px;border-right:0}
+/* جوال: فوق وتحت */
+@media(max-width:699px){
+  #stZoneR .szSlot{width:132px;height:66px;border-radius:132px 132px 0 0;border-bottom:0}
+  #stZoneL .szSlot{width:132px;height:66px;border-radius:0 0 132px 132px;border-top:0}
+}
+@keyframes slotBreath{
+  0%,100%{box-shadow:0 0 12px rgba(139,92,246,.35),inset 0 0 14px rgba(139,92,246,.25)}
+  50%{box-shadow:0 0 30px rgba(139,92,246,.75),inset 0 0 26px rgba(139,92,246,.5)}}
+/* استيقاظ مع وصول عنصر جديد */
+.szSlot.wake{animation:slotWake .55s var(--spring),slotBreath 2.4s ease-in-out .55s infinite}
+@keyframes slotWake{0%{transform:scale(.78);filter:brightness(1.8)}
+  60%{transform:scale(1.12)}100%{transform:scale(1);filter:none}}
+/* القرص يقترب: اشتعال سماوي */
+.stZone.hot .szSlot{transform:scale(1.15);border-color:var(--cyan);animation:none;
+  background:radial-gradient(circle at 50% 50%,rgba(34,230,255,.3),rgba(34,230,255,.06) 72%);
+  box-shadow:0 0 36px rgba(34,230,255,.95),inset 0 0 28px rgba(34,230,255,.55)}
 .szSlot.gulp{animation:gulp .45s var(--spring)}
 @keyframes gulp{0%{transform:scale(1.35)}45%{transform:scale(.88)}100%{transform:scale(1)}}
-/* جوال: فوق وتحت — قوس العليا فتحته لأسفل والسفلى لأعلى */
-@media(max-width:699px){
-  .szSlot{width:92px;height:46px}
-  #stZoneR .szSlot::before{left:0;top:0}
-  #stZoneL .szSlot::before{left:0;top:-46px}
-}
 .stZone.hit{border-color:#39e08a;background:rgba(57,224,138,.22);
   box-shadow:0 0 34px -4px rgba(57,224,138,.8);animation:zFlash .5s}
 .stZone.bad{border-color:#ff5470;background:rgba(255,84,112,.22);
@@ -690,7 +697,32 @@ body.filmOn #aurora,body.filmOn #bgFx,body.filmOn #grid{display:none!important}
 .door.spin .dArch{transition:none;box-shadow:none;filter:brightness(1.18) saturate(1.15)}
 .door.spin .dHalo{opacity:.9}
 /* إخفاء الشريط العلوي أثناء اللعب لتوسيع المسرح */
-body.noTop #hud,body.noTop #roster{display:none}
+/* أثناء اللعب يُطوى الشريط العلوي، وسهمٌ صغير أعلى الشاشة يفتحه ويطويه */
+body.noTop:not(.topOpen) #hud,body.noTop:not(.topOpen) #roster{display:none}
+#topTab{display:none;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:95;
+  width:56px;height:20px;border:1px solid var(--stroke);border-top:0;
+  border-radius:0 0 12px 12px;background:rgba(20,26,44,.85);color:var(--dim);
+  font-size:11px;line-height:1;cursor:pointer;backdrop-filter:blur(8px);
+  transition:background .2s,color .2s}
+#topTab:hover{color:#fff;background:rgba(139,92,246,.4)}
+body.noTop #topTab{display:block}
+body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
+#topTab i{display:inline-block;font-style:normal;transition:transform .25s}
+
+/* ═══ نافذة التبليغ عن سؤال ═══ */
+#rpModal{position:fixed;inset:0;z-index:96;display:none;align-items:center;
+  justify-content:center;background:rgba(4,6,14,.6);backdrop-filter:blur(4px);padding:16px}
+#rpModal.on{display:flex}
+#rpBox{width:100%;max-width:420px;border-radius:18px;padding:16px}
+#rpBox h3{margin:0 0 8px;font-size:15px}
+#rpQ{font-size:12.5px;color:var(--dim);background:rgba(255,255,255,.05);
+  border:1px solid var(--stroke);border-radius:10px;padding:8px 10px;margin-bottom:10px;
+  max-height:70px;overflow:hidden}
+#rpTxt{width:100%;min-height:74px;resize:vertical;border-radius:10px;padding:9px 11px;
+  background:rgba(255,255,255,.06);border:1px solid var(--stroke);color:var(--ink);
+  font-family:inherit;font-size:13.5px}
+#rpBox .bar{display:flex;gap:8px;margin-top:10px}
+#rpBox .bar .btn{flex:1;padding:10px}
 
 .dName{font-size:clamp(12px,1.9vw,17px);font-weight:900;text-align:center;line-height:1.3;
   text-shadow:0 2px 10px rgba(0,0,0,.85);z-index:1}
@@ -1249,6 +1281,7 @@ body.noTop #hud,body.noTop #roster{display:none}
     <a class="ic" href="/" title="رجوع لكل الألعاب" style="text-decoration:none">
       <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.8V20h14V9.8"/><path d="M9.5 20v-6h5v6"/></svg>
     </a>
+    <button class="ic" id="rpB" title="التبليغ عن السؤال">🚩</button>
     <button class="ic" id="cpB" title="نسخ الرابط">🔗</button>
     <button class="ic" id="chB" title="الدردشة">💬</button>
     <button class="ic" id="cfgOpen" title="الإعدادات">⚙</button>
@@ -1256,6 +1289,17 @@ body.noTop #hud,body.noTop #roster{display:none}
   </div>
 
   <div id="roster"></div>
+  <button id="topTab" type="button" title="إظهار الشريط"><i>▾</i></button>
+
+  <div id="rpModal"><div id="rpBox" class="glass">
+    <h3>🚩 التبليغ عن خطأ</h3>
+    <div id="rpQ"></div>
+    <textarea id="rpTxt" placeholder="ما المشكلة؟ (إجابة خاطئة، سؤال غير واضح، خطأ إملائي…)"></textarea>
+    <div class="bar">
+      <button class="btn" id="rpSend" type="button">إرسال البلاغ</button>
+      <button class="btn alt" id="rpX" type="button">إلغاء</button>
+    </div>
+  </div></div>
 
   <div id="stage" class="glass">
 
@@ -1482,6 +1526,31 @@ let atkT=null,atkP=null,atkSent=false,scoreShown={};
 
 /* ═══ أدوات ═══ */
 const esc=s=>{const d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML;};
+$("topTab").onclick=()=>document.body.classList.toggle("topOpen");
+/* التبليغ: يلتقط السؤال المعروض حاليًا إن وُجد، ويُرسل لصفحة بلاغات الأدمن */
+$("rpB").onclick=()=>{
+  const q=ST&&ST.question&&ST.question.text;
+  $("rpQ").textContent=q?("السؤال: "+q):"لا يوجد سؤال معروض الآن — سيُرسل بلاغ عام";
+  $("rpTxt").value="";
+  $("rpModal").classList.add("on");
+};
+$("rpX").onclick=()=>$("rpModal").classList.remove("on");
+$("rpModal").onclick=e=>{if(e.target.id==="rpModal")$("rpModal").classList.remove("on");};
+$("rpSend").onclick=async()=>{
+  const q=(ST&&ST.question&&ST.question.text)||"";
+  const reason=$("rpTxt").value.trim();
+  if(!q&&!reason){toast("اكتب وصف المشكلة أولًا");return;}
+  $("rpSend").disabled=true;
+  try{
+    const r=await fetch("/api/qreport",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({q,reason,cat:(ST&&ST.question&&ST.question.cat)||"",
+        room:($("rid")&&$("rid").textContent)||""})});
+    if((await r.json()).ok){toast("وصل البلاغ — شكرًا ✓");$("rpModal").classList.remove("on");}
+    else toast("تعذّر الإرسال");
+  }catch(e){toast("تعذّر الإرسال");}
+  $("rpSend").disabled=false;
+};
 function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),2300);}
 function scene(id){document.querySelectorAll(".scene").forEach(s=>s.classList.toggle("on",s.id===id));
   document.body.classList.toggle("noTop",id!=="sWait");}
@@ -2889,6 +2958,8 @@ function sortShow(){
   $("stCount").textContent=(stIdx+1)+" / "+it.length;
   o.style.transform="";o.style.opacity="";o.style.transition="";
   o.classList.remove("popIn");void o.offsetWidth;o.classList.add("popIn");
+  document.querySelectorAll(".szSlot").forEach(z=>{
+    z.classList.remove("wake");void z.offsetWidth;z.classList.add("wake");});
 }
 /* المناطق فوق/تحت على الجوال (نفس عتبة الـCSS: 699px) */
 function vert(){ return innerWidth<=699; }
@@ -2917,8 +2988,10 @@ function sortDrag(){
     dx=e.clientX-sx; dyR=e.clientY-sy;
     trail.push({t:performance.now(),x:e.clientX,y:e.clientY});
     if(trail.length>6)trail.shift();
-    /* يتبع اليد واحدًا لواحد — لا مقاومة ولا كبح */
-    o.style.transform=`translate(${dx}px,${dyR}px) rotate(${dx*.04}deg)`;
+    /* محور واحد فقط: أفقي على الحاسوب ورأسي على الجوال — لا شرود حرّ */
+    o.style.transform=vert()
+      ? `translate(0,${dyR}px)`
+      : `translate(${dx}px,0) rotate(${dx*.04}deg)`;
     const V=vert(),TH=V?innerHeight*.09:innerWidth*.16,mv=V?dyR:dx;
     zoneOf(0).classList.toggle("hot",V?mv<-TH:mv>TH);
     zoneOf(1).classList.toggle("hot",V?mv>TH:mv<-TH);
@@ -3355,6 +3428,7 @@ const FX={
      النص مقروء خلف الجليد، واللاعب يكسر الخيار الذي يريده فقط. */
   fx_freeze(){
     const btns=this.buttons(); if(!btns.length)return;
+    const deep=document.querySelectorAll(".fxIce").length>0;
     this.els=[];
     btns.forEach(btn=>{
       const el=this.overBtn(btn,25,"fxIce"); if(!el)return;
@@ -3369,9 +3443,15 @@ const FX={
         cx.clearRect(0,0,w,h);
         /* جليد شفاف: النص واضح خلفه */
         const g=cx.createLinearGradient(0,0,w,h);
-        g.addColorStop(0,"rgba(190,230,255,.34)");
-        g.addColorStop(.5,"rgba(150,207,240,.26)");
-        g.addColorStop(1,"rgba(210,240,255,.34)");
+        if(deep){
+          g.addColorStop(0,"rgba(120,175,220,.52)");
+          g.addColorStop(.5,"rgba(90,150,200,.44)");
+          g.addColorStop(1,"rgba(140,190,230,.52)");
+        }else{
+          g.addColorStop(0,"rgba(190,230,255,.34)");
+          g.addColorStop(.5,"rgba(150,207,240,.26)");
+          g.addColorStop(1,"rgba(210,240,255,.34)");
+        }
         cx.fillStyle=g;cx.fillRect(0,0,w,h);
         cx.strokeStyle="rgba(255,255,255,.55)";
         for(let i=0;i<8;i++){
@@ -3438,6 +3518,8 @@ const FX={
      متقطّعة، والنسبة تُحسب بعدّ البكسلات الشفافة فعليًا من قناع الألفا. */
   fx_gloop(){
     const btns=this.buttons(); if(!btns.length)return;
+    /* فخّ متكرر؟ الطبقة الجديدة (الأعلى) أغمق فيميّزها اللاعب */
+    const deep=document.querySelectorAll(".fxGoo").length>0;
     this.els=[];
     btns.forEach(btn=>{
       const el=this.overBtn(btn,26,"fxGoo"); if(!el)return;
@@ -3449,7 +3531,8 @@ const FX={
       const cx=cv.getContext("2d",{willReadFrequently:true});cx.scale(DP,DP);
       /* طبقة الوحل */
       const base=cx.createLinearGradient(0,0,0,h);
-      base.addColorStop(0,"#4e9c3f");base.addColorStop(.5,"#3d8a34");base.addColorStop(1,"#2f7a2c");
+      if(deep){base.addColorStop(0,"#376f2b");base.addColorStop(.5,"#2a5c21");base.addColorStop(1,"#1f4d1a");}
+      else{base.addColorStop(0,"#4e9c3f");base.addColorStop(.5,"#3d8a34");base.addColorStop(1,"#2f7a2c");}
       cx.fillStyle=base;cx.fillRect(0,0,w,h);
       for(let i=0;i<24;i++){
         const x=Math.random()*w,y=Math.random()*h,r=8+Math.random()*22;
@@ -3514,46 +3597,49 @@ const FX={
     });
   },
 
-  /* ─── ٣ · القنابل: داخل كل خيار على حدة كالجليد والوحل ───
-     لكل خيار قنابله المحبوسة في حدوده، فيُعالج اللاعب خيارًا خيارًا بدل
-     سحابة واحدة تغطّي الشاشة. لمسها أو مرور الإصبع عليها يفجّرها. */
+  /* ─── ٣ · القنابل: خمسٌ تدور على شاشة الأجوبة كلّها ───
+     كل فخّ يضيف طبقته الخاصة، فالتكرار يضاعف: فخّان = ١٠ قنابل.
+     الحاسوب بقنابل ضِعف الحجم، والسرعة واحدة على كل الأجهزة. */
   fx_bombs(){
-    const btns=this.buttons(); if(!btns.length)return;
-    this.els=[]; const self=this; const all=[];
-    btns.forEach(btn=>{
-      const el=this.overBtn(btn,30,"bombWrap"); if(!el)return;
-      el.style.pointerEvents="none"; el.style.direction="ltr";
-      this.els.push(el);
-      const W=el.clientWidth,H=el.clientHeight;
-      const SZ=Math.max(26,Math.min(44,Math.round(Math.min(W,H)*.42)));
-      const MX=Math.max(0,W-SZ),MY=Math.max(0,H-SZ);
-      /* عدد يتناسب مع مساحة الخيار: صغيرٌ لا يُغرق، وكبيرٌ لا يبدو خاويًا */
-      const N=Math.max(2,Math.min(5,Math.round(W*H/9000)));
-      for(let i=0;i<N;i++){
-        const d=document.createElement("div");
-        d.className="bomb";d.innerHTML='<i class="bi"></i>';
-        d.style.cssText="pointer-events:auto;width:"+SZ+"px;height:"+SZ+"px";
-        el.appendChild(d);
-        const b={el:d,
-          x:Math.random()*MX, y:Math.random()*MY, MX, MY,
-          vx:(Math.random()<.5?-1:1)*(1.1+Math.random()*1.5),
-          vy:(Math.random()<.5?-1:1)*(0.9+Math.random()*1.3),
-          r:Math.random()*360, vr:(Math.random()-.5)*4, dead:false};
-        d.style.transform=`translate3d(${b.x}px,${b.y}px,0)`;
-        all.push(b);
-        d.__blow=()=>self.blowUp(b);
-        d.onpointerdown=ev=>{ev.preventDefault();ev.stopPropagation();d.__blow();};
-        d.onpointerenter=ev=>{if(ev.buttons)d.__blow();};
-      }
-    });
+    const box=this.answersBox();if(!box)return;
+    const host=this.hostEl();if(!host)return;
+    const g=this.geom(box,host);
+    const wrap=document.createElement("div");
+    wrap.className="bombWrap";
+    wrap.style.cssText=`position:absolute;left:${g.x}px;top:${g.y}px;direction:ltr;`+
+      `width:${g.w}px;height:${g.h}px;z-index:30;pointer-events:none;overflow:hidden;border-radius:18px`;
+    host.appendChild(wrap);
+    this.el=wrap;
+    const MOB=innerWidth<820||innerWidth<innerHeight;
+    const SZ=MOB?54:108;
+    const W=g.w,H=g.h,MX=Math.max(0,W-SZ),MY=Math.max(0,H-SZ);
+    const N=5;
+    const bombs=[];
+    const self=this;
+    for(let i=0;i<N;i++){
+      const d=document.createElement("div");
+      d.className="bomb";d.innerHTML='<i class="bi"></i>';
+      d.style.cssText="pointer-events:auto;width:"+SZ+"px;height:"+SZ+"px";
+      wrap.appendChild(d);
+      const b={el:d,
+        x:Math.random()*MX, y:Math.random()*MY,
+        vx:(Math.random()<.5?-1:1)*(1.6+Math.random()*1.9),
+        vy:(Math.random()<.5?-1:1)*(1.4+Math.random()*1.7),
+        r:Math.random()*360, vr:(Math.random()-.5)*4, dead:false};
+      b.el.style.transform=`translate3d(${b.x}px,${b.y}px,0)`;
+      bombs.push(b);
+      d.__blow=()=>self.blowUp(b);
+      d.onpointerdown=ev=>{ev.preventDefault();ev.stopPropagation();d.__blow();};
+      d.onpointerenter=ev=>{if(ev.buttons)d.__blow();};
+    }
     (function loop(){
-      all.forEach(b=>{
+      bombs.forEach(b=>{
         if(b.dead)return;
         b.x+=b.vx;b.y+=b.vy;b.r+=b.vr;
         if(b.x<=0){b.x=0;b.vx=Math.abs(b.vx);}
-        else if(b.x>=b.MX){b.x=b.MX;b.vx=-Math.abs(b.vx);}
+        else if(b.x>=MX){b.x=MX;b.vx=-Math.abs(b.vx);}
         if(b.y<=0){b.y=0;b.vy=Math.abs(b.vy);}
-        else if(b.y>=b.MY){b.y=b.MY;b.vy=-Math.abs(b.vy);}
+        else if(b.y>=MY){b.y=MY;b.vy=-Math.abs(b.vy);}
         b.el.style.transform=`translate3d(${b.x}px,${b.y}px,0) rotate(${b.r}deg)`;
       });
       self.raf=requestAnimationFrame(loop);
