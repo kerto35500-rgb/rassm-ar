@@ -234,27 +234,48 @@ input,select,textarea{font-family:inherit}
 #opSkip:hover{background:rgba(139,92,246,.75);transform:scale(1.05)}
 #opSkip:active{transform:scale(.96);background:rgba(139,92,246,.8)}
 #opSkip.gone,#opHint.gone,#opWait.gone{display:none}
+/* رتبة اللاعب · النقاط المكتسبة · عدّاد الرصيد المتدحرج */
+.rkB{font-size:10.5px;font-weight:900;color:var(--gold);opacity:.9}
+.rrow .pt{display:flex;flex-direction:column;align-items:flex-end;gap:1px;line-height:1.15}
+.gainB{font-size:14px;font-weight:900;color:var(--lime)}
+.gainB.x2{color:var(--gold)}
+.gainB.zero{color:var(--dim)}
+.tally{font-size:16px;font-weight:900;letter-spacing:-.5px;
+  font-variant-numeric:tabular-nums;transition:color .25s}
+.tally.rolling{color:var(--gold);text-shadow:0 0 12px rgba(255,203,46,.6)}
+.tally.done{animation:tallyPop .35s var(--spring)}
+@keyframes tallyPop{0%{transform:scale(1.25)}100%{transform:none}}
+/* أقراص السباق: ركام عملات يعلو تحت كل لاعب */
+.rStack{position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  margin-top:16px;display:flex;flex-direction:column-reverse;align-items:center;pointer-events:none}
+.rStack .coin{display:block;width:26px;height:7px;border-radius:50%;margin-top:-2px;
+  background:linear-gradient(180deg,#ffe28a,#e0a814 55%,#a97806);
+  box-shadow:0 1px 2px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.6);
+  animation:coinDrop .3s var(--spring) both}
+@keyframes coinDrop{from{transform:translateY(-14px) scaleX(.5);opacity:0}to{transform:none;opacity:1}}
+
 /* ═══ مراسم كشف السؤال: الرقاقات والنقاط ═══ */
-.chipRow{position:absolute;top:-15px;left:0;right:0;display:flex;gap:4px;
-  justify-content:center;pointer-events:none;z-index:5}
-.revChip{position:relative;width:34px;height:34px;border-radius:50%;overflow:visible;
+/* داخل بطاقة الخيار وأسفل نصّها — المساحة متوفّرة، ولا حاجة لحشرها على الحافة */
+.chipRow{display:flex;gap:7px;justify-content:center;align-items:center;
+  flex-wrap:wrap;pointer-events:none;margin-top:10px;min-height:46px}
+.revChip{position:relative;width:46px;height:46px;border-radius:50%;overflow:visible;
   animation:chipJump .55s var(--spring) both}
 .revChip img,.revChip svg{width:100%;height:100%;border-radius:50%;display:block;
-  border:2px solid rgba(255,255,255,.65);background:#0b1020;object-fit:cover;
-  box-shadow:0 4px 12px rgba(0,0,0,.55)}
-@keyframes chipJump{0%{transform:translateY(-46px) scale(.3);opacity:0}
-  70%{transform:translateY(4px) scale(1.08)}100%{transform:none;opacity:1}}
+  border:2.5px solid rgba(255,255,255,.7);background:#0b1020;object-fit:cover;
+  box-shadow:0 4px 14px rgba(0,0,0,.55)}
+@keyframes chipJump{0%{transform:translateY(-60px) scale(.3);opacity:0}
+  70%{transform:translateY(5px) scale(1.1)}100%{transform:none;opacity:1}}
 .revChip.won img,.revChip.won svg{border-color:#39e08a}
 .revChip.lost{filter:grayscale(.8) brightness(.7)}
 .ptPop{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
-  font-weight:900;font-size:15px;color:#39e08a;white-space:nowrap;
+  font-weight:900;font-size:17px;color:#39e08a;white-space:nowrap;
   text-shadow:0 1px 4px rgba(0,0,0,.9);animation:ptUp 1.6s ease-out both;pointer-events:none}
 .ptPop.x2{color:var(--gold)}
 @keyframes ptUp{0%{opacity:0;transform:translate(-50%,8px) scale(.6)}
   18%{opacity:1;transform:translate(-50%,-4px) scale(1.15)}
   75%{opacity:1}100%{opacity:0;transform:translate(-50%,-30px) scale(1)}}
 .rcX{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-weight:900;font-size:19px;color:#ff5470;text-shadow:0 1px 4px #000;
+  font-weight:900;font-size:24px;color:#ff5470;text-shadow:0 1px 4px #000;
   animation:orbIn .3s var(--spring) both}
 
 /* ═══ التوصيل: حلقات وحالاتها ═══ */
@@ -365,8 +386,13 @@ input,select,textarea{font-family:inherit}
 #readyB.on{background:linear-gradient(135deg,#475569,#334155)}
 #readyB.gone,#startB.gone{display:none}
 @media (max-width:560px){
-  #charGrid{gap:9px}
-  .ch{width:106px}
+  /* صفّ واحد أفقي: التمرير يمين↔يسار بدل فوق↔تحت — فلا تختفي بطاقة */
+  #charGrid{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:9px;
+    justify-content:flex-start;align-content:center;
+    scroll-snap-type:x mandatory;padding:6px 4px;
+    -webkit-overflow-scrolling:touch}
+  #charGrid::-webkit-scrollbar{height:0}
+  .ch{width:124px;scroll-snap-align:center}
   #waitTrophy{font-size:28px} #waitTitle{font-size:17px}
   .ch .chNm{font-size:12px;padding:6px 4px 7px} .ch .chDs{display:none}
 }
@@ -1154,12 +1180,12 @@ body.noTop #hud,body.noTop #roster{display:none}
     <div class="scene" id="sSort">
       <div class="eyebrow" id="stTitle"></div>
       <div id="stArena">
-        <div class="stZone" id="stZoneR"><span class="szName"></span></div>
+        <div class="stZone" id="stZoneL"><span class="szName"></span></div>
         <div id="stMid">
           <div id="stOrb"><span id="stWord"></span></div>
           <div id="stCount"></div>
         </div>
-        <div class="stZone" id="stZoneL"><span class="szName"></span></div>
+        <div class="stZone" id="stZoneR"><span class="szName"></span></div>
       </div>
       <div id="stDone" class="gone">✓ أنهيت القائمة — بانتظار البقية</div>
     </div>
@@ -1693,6 +1719,7 @@ function render(){
     if(ST.phase!=="question"&&ST.phase!=="pyramid")pendingFx=[];
     if(ST.phase!=="attack"){closeTg();cancelAnimationFrame(atkArcRaf);MYMENU=[];}
     if(ST.phase!=="attackReveal")AR=null;
+    if(ST.phase!=="link")lkLast=null;
     if(ST.phase!=="vote"&&ST.phase!=="spin")killZoomClones();
   }
 
@@ -2458,18 +2485,20 @@ function rQ(fresh){
 /* ═══ التوصيل: اسحب خيطًا من حلقة يمنى إلى يسرى ═══
    الخادم يبني لوحة كل لاعب (٣×٣) برموز عشوائية لا تكشف الأزواج،
    ويضخّ عناصر جديدة بعد كل توصيلة صحيحة. الخطأ لا يُفقد شيئًا. */
-let lkBusy=false;
+let lkBusy=false, lkLast=null;
 function rLink(fresh){
   scene("sLink");mountClock("sLink");
-  if(!fresh)return;
-  lkBusy=false;
-  $("lkTitle").textContent=(ST.link&&ST.link.title)||"";
-  $("lkDone").classList.add("gone");
-  $("lkL").innerHTML="";$("lkR").innerHTML="";
-  $("lkSvg").innerHTML="";$("lkMeta").textContent="";
+  if(fresh){
+    lkBusy=false;
+    $("lkTitle").textContent=(ST.link&&ST.link.title)||"";
+    $("lkDone").classList.add("gone");
+    $("lkSvg").innerHTML="";
+  }
+  /* اللوحة قد تصل قبل أن تتحوّل المرحلة، فنرسمها هنا متى توفّرت */
+  if(lkLast)lkPaint(lkLast);
 }
-socket.on("linkBoard",d=>{
-  if(!ST||ST.phase!=="link")return;
+socket.on("linkBoard",d=>{ lkLast=d; if(ST&&ST.phase==="link")lkPaint(d); });
+function lkPaint(d){
   $("lkTitle").textContent=d.title;
   $("lkMeta").textContent=d.hits+" / "+d.total;
   /* في صفحة RTL العمود الأول (lkL) يقع بصريًا على اليمين — وهو المطلوب:
@@ -2488,8 +2517,8 @@ socket.on("linkBoard",d=>{
     L.appendChild(b);lkRingIn(b);
   });
   /* اكتمال القائمة: الخادم يرسل لوحة فارغة برصيد كامل */
-  if(d.hits>=d.total)$("lkDone").classList.remove("gone");
-});
+  $("lkDone").classList.toggle("gone",!(d.hits>=d.total));
+}
 function lkRingIn(b){b.classList.remove("popIn");void b.offsetWidth;b.classList.add("popIn");}
 function lkCenter(el){
   const w=$("lkBoard").getBoundingClientRect(), r=el.getBoundingClientRect();
@@ -2595,9 +2624,10 @@ function sortDrag(){
   let sx=0,sy=0,dx=0,dragging=false;
   o.onpointerdown=e=>{
     if(stBusy||stIdx>=ST.sort.items.length)return;
+    e.preventDefault();
     dragging=true;sx=e.clientX;sy=e.clientY;dx=0;
     o.classList.add("drag");o.classList.remove("snap");
-    o.setPointerCapture(e.pointerId);
+    try{o.setPointerCapture(e.pointerId);}catch(x){}   /* وإلا توقفت الحركة عند مغادرة الدائرة */
   };
   o.onpointermove=e=>{
     if(!dragging)return;
@@ -2706,13 +2736,16 @@ function fitPy(H){
 /* ═══ الكشف ═══ */
 function showRev(d){
   scene("sRev");
+  setTimeout(rollTallies,420);
   $("revBody").innerHTML=
     `<div class="revHead"><div class="lbl">الإجابة الصحيحة</div><div class="val">${esc(d.correctText)}</div></div>`+
     d.results.map((r,i)=>`<div class="rrow ${r.correct?(i===0?"top":""):"miss"}">
-      <span class="av">${avatar(r.name,r.color)}</span>
-      <span class="nm">${esc(r.name)}</span>
+      <span class="av">${r.charId?`<img src="${charImg(r.charId)}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`:avatar(r.name,r.color)}</span>
+      <span class="nm">${esc(r.name)}${r.rank?` <b class="rkB">#${r.rank}</b>`:""}</span>
       ${r.ms!==null?`<span class="ms">${(r.ms/1000).toFixed(2)}ث</span>`:""}
-      <span class="pt">${r.correct?(r.doubled?"✨ +"+r.gain:"+"+r.gain):"—"}</span></div>`).join("")+
+      <span class="pt">${r.correct?`<b class="gainB${r.doubled?" x2":""}">+${r.gain}${r.doubled?" ✨":""}</b>
+        <b class="tally" data-from="${r.score-r.gain}" data-to="${r.score}">${r.score-r.gain}</b>`
+        :`<b class="gainB zero">—</b><b class="tally">${r.score}</b>`}</span></div>`).join("")+
     /* الرهانات: كانت سرًّا طوال الجولة، وتُكشف هنا فقط بعد النقاط الأساسية */
     (d.bets&&d.bets.length?d.bets.map(b=>`<div class="rrow betRow ${b.won?"top":"miss"}">
       <span class="av">🎲</span>
@@ -2733,6 +2766,24 @@ function showRevCh(d){
       <span class="pt">+${r.gain}</span></div>`).join("");
 }
 
+/* عدّاد الرصيد: يبدأ من الرصيد القديم ويتدحرج إلى الجديد أمام عين اللاعب،
+   فيرى كم كان وكم صار بدل رقم نهائي يظهر فجأة. */
+function rollTallies(){
+  document.querySelectorAll(".tally[data-to]").forEach(el=>{
+    const a=+el.dataset.from, b=+el.dataset.to;
+    if(a===b)return;
+    el.removeAttribute("data-to");
+    const t0=performance.now(), D=900;
+    el.classList.add("rolling");
+    (function f(t){
+      const k=Math.min(1,(t-t0)/D), e=1-Math.pow(1-k,3);
+      el.textContent=Math.round(a+(b-a)*e);
+      if(k<1)requestAnimationFrame(f);
+      else{el.textContent=b;el.classList.remove("rolling");el.classList.add("done");sTick();}
+    })(t0);
+  });
+}
+
 /* ═══ سباق الصعود العمودي: نتيجة التصنيف ═══
    الأيقونات تنطلق من خط واحد وترتفع شريحةً كل ٤٢٠م‌ث؛ من بلغ رصيده توقّف،
    ويواصل الأعلى حتى القمة. النتائج مرتّبة من الخادم (الإصابات ثم الزمن). */
@@ -2749,6 +2800,7 @@ function raceReveal(d){
           <div class="rHits">0</div>
           <div class="rAv">${r.charId?`<img src="${charImg(r.charId)}" alt="">`:avatar(r.name,r.color)}</div>
           <div class="rNm">${esc(r.name)}</div>
+          <div class="rStack" id="stack${i}"></div>
         </div>`).join("")}
       </div>
       <div id="raceFoot"></div>
@@ -2762,6 +2814,10 @@ function raceReveal(d){
       if(step<=r.hits){
         el.style.bottom=(step/(total+1)*100)+"%";
         el.querySelector(".rHits").textContent=step;
+        /* قرص جديد يُرصّ تحته مع كل إجابة صحيحة — كركام عملات يرفعه */
+        const c=document.createElement("i");
+        c.className="coin";c.style.setProperty("--n",step);
+        el.querySelector(".rStack").appendChild(c);
         anyMoved=true;
       }else el.classList.add("stopped");
     });
@@ -2774,9 +2830,11 @@ function raceReveal(d){
       /* أسطر النقاط الختامية */
       $("raceFoot").innerHTML=R.map((r,i)=>`<div class="rrow ${i===0?"top":""}">
         <span class="av">${r.charId?`<img src="${charImg(r.charId)}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`:avatar(r.name,r.color)}</span>
-        <span class="nm">${esc(r.name)}</span>
+        <span class="nm">${esc(r.name)} <b class="rkB">#${i+1}</b></span>
         <span class="ms">${r.hits}/${total}${r.ms!==null?" · "+(r.ms/1000).toFixed(1)+"ث":""}</span>
-        <span class="pt">+${r.gain}</span></div>`).join("");
+        <span class="pt"><b class="gainB">+${r.gain}</b>
+          <b class="tally" data-from="${r.score-r.gain}" data-to="${r.score}">${r.score-r.gain}</b></span></div>`).join("");
+      setTimeout(rollTallies,300);
     }
   },420);
 }
