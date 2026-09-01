@@ -706,6 +706,12 @@ body.noTop:not(.topOpen) #hud,body.noTop:not(.topOpen) #roster{display:none}
   transition:background .2s,color .2s}
 #topTab:hover{color:#fff;background:rgba(139,92,246,.4)}
 body.noTop #topTab{display:block}
+/* سطر مراجعة السؤال داخل الشريط المنسدل */
+#hudQ{font-size:13px;font-weight:800;line-height:1.6;color:var(--ink);
+  background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);
+  border-radius:12px;padding:8px 12px;margin-bottom:9px}
+#hudQ:empty{display:none}
+body.noTop:not(.topOpen) #hudQ{display:none}
 body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
 #topTab i{display:inline-block;font-style:normal;transition:transform .25s}
 
@@ -1289,6 +1295,7 @@ body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
   </div>
 
   <div id="roster"></div>
+  <div id="hudQ"></div>
   <button id="topTab" type="button" title="إظهار الشريط"><i>▾</i></button>
 
   <div id="rpModal"><div id="rpBox" class="glass">
@@ -1553,7 +1560,10 @@ $("rpSend").onclick=async()=>{
 };
 function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),2300);}
 function scene(id){document.querySelectorAll(".scene").forEach(s=>s.classList.toggle("on",s.id===id));
-  document.body.classList.toggle("noTop",id!=="sWait");}
+  document.body.classList.toggle("noTop",id!=="sWait");
+  /* السؤال الحالي للمراجعة في الشريط المنسدل — لمن نسيه */
+  const hq=document.getElementById("hudQ");
+  if(hq)hq.textContent=(ST&&ST.question&&ST.question.text)?("📝 "+ST.question.text):"";}
 
 /* ═══ أفاتار مولّدة لكل لاعب ═══ */
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return Math.abs(h);}
@@ -2312,11 +2322,11 @@ function rAtk(fresh){
   const row=$("cardRow");
   const foes=ST.players.filter(p=>p.id!==ME&&!p.spectator&&p.connected!==false);
 
-  /* لا استخدامات؟ لا بطاقات — نشاهد فقط */
-  if(left<=0||atkSent){
-    row.innerHTML="";
-    $("atkTitle").textContent=atkSent?"⚡ أُلقيت البطاقة… انتظر البقيّة":"⏳ استعدّ للسؤال";
-    $("atkNote").innerHTML=atkSent?"":"نفدت بطاقاتك — تابع اللعب بالنقاط";
+  /* رمى بطاقته؟ ينتظر البقيّة — والبطاقات لا تنفد بين الجولات */
+  if(atkSent){
+    row.innerHTML="";row.dataset.key="";
+    $("atkTitle").textContent="⚡ أُلقيت البطاقة… انتظر البقيّة";
+    $("atkNote").innerHTML="";
     return;
   }
 
@@ -2326,13 +2336,8 @@ function rAtk(fresh){
   /* كل بثّ من الخادم أثناء الطور (لاعب آخر ضرب، تغيّر نقاط…) كان يعيد بناء
      الصفّ فتضيع البطاقة المقلوبة ويُضطر اللاعب للنقر مرّتين. نبني الصفّ مرّة
      واحدة لكل قائمة، ولا نمسّه ما دامت القائمة نفسها. */
-  const key=menu.join(",")+"|"+left;
-  if(row.dataset.key===key && row.children.length) {
-    let ammo0='<span class="ammo">';
-    for(let i=0;i<tot;i++)ammo0+='<i class="'+(i<left?"":"spent")+'"></i>';
-    $("atkNote").innerHTML="اقلب بطاقة لتكشف قوّتها"+ammo0+"</span>";
-    return;
-  }
+  const key=menu.join(",");
+  if(row.dataset.key===key && row.children.length) return;
   row.dataset.key=key;
   row.innerHTML="";
   menu.forEach(p=>{
@@ -2357,10 +2362,7 @@ function rAtk(fresh){
     row.appendChild(card);
   });
 
-  let ammo='<span class="ammo">';
-  for(let i=0;i<tot;i++)ammo+='<i class="'+(i<left?"":"spent")+'"></i>';
-  ammo+="</span>";
-  $("atkNote").innerHTML="اقلب بطاقة لتكشف قوّتها"+ammo;
+  $("atkNote").innerHTML="اقلب بطاقة لتكشف قوّتها";
 }
 
 function flipCard(card,power,cl,foes){
