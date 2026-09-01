@@ -335,7 +335,7 @@ input,select,textarea{font-family:inherit}
 #stArena{flex:1;display:flex;align-items:stretch;gap:8px;min-height:0;direction:ltr}
 /* الترتيب في الوضع العمودي: الفئة أ فوق (stZoneR) والفئة ب تحت (stZoneL) */
 @media (max-width:699px){#stZoneR{order:1}#stMid{order:2}#stZoneL{order:3}}
-.stZone{flex:0 0 26%;display:flex;align-items:center;justify-content:center;border-radius:18px;
+.stZone{flex:0 0 26%;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;border-radius:18px;
   border:2px dashed rgba(255,255,255,.25);background:rgba(255,255,255,.04);
   transition:background .18s,border-color .18s,box-shadow .18s}
 .stZone .szName{font-weight:900;font-size:clamp(15px,2.6vw,19px);text-align:center;padding:8px;
@@ -347,6 +347,21 @@ input,select,textarea{font-family:inherit}
   #stMid{flex:1 1 auto}
 }
 .stZone.hot{border-color:rgba(139,92,246,.8);background:rgba(139,92,246,.14)}
+/* ═══ فتحة الاستلام: جيب داكن يبتلع القرص كمرمى الهوكي ═══ */
+.szSlot{position:relative;display:block;width:64px;height:64px;border-radius:50%;flex:0 0 auto;
+  background:radial-gradient(circle at 50% 40%,#1a2140 0%,#0a0e1f 65%);
+  border:2.5px dashed rgba(139,92,246,.55);
+  box-shadow:inset 0 4px 14px rgba(0,0,0,.85),0 0 0 4px rgba(139,92,246,.08);
+  transition:transform .2s var(--spring),border-color .2s,box-shadow .2s}
+.szSlot::after{content:"";position:absolute;inset:18%;border-radius:50%;
+  background:radial-gradient(circle,rgba(139,92,246,.3),transparent 70%)}
+/* الفم يتّسع ويضيء حين يقترب القرص */
+.stZone.hot .szSlot{transform:scale(1.25);border-style:solid;border-color:var(--cyan);
+  box-shadow:inset 0 4px 16px rgba(0,0,0,.9),0 0 28px rgba(34,230,255,.7)}
+/* بلعة الاستلام */
+.szSlot.gulp{animation:gulp .45s var(--spring)}
+@keyframes gulp{0%{transform:scale(1.4)}45%{transform:scale(.85)}100%{transform:scale(1)}}
+@media(max-width:699px){.szSlot{width:52px;height:52px}}
 .stZone.hit{border-color:#39e08a;background:rgba(57,224,138,.22);
   box-shadow:0 0 34px -4px rgba(57,224,138,.8);animation:zFlash .5s}
 .stZone.bad{border-color:#ff5470;background:rgba(255,84,112,.22);
@@ -369,34 +384,6 @@ input,select,textarea{font-family:inherit}
   animation:orbRing 2.6s ease-out infinite}
 @keyframes orbAura{0%,100%{transform:scale(.94);opacity:.75}50%{transform:scale(1.08);opacity:1}}
 @keyframes orbRing{0%{transform:scale(.9);opacity:.85}100%{transform:scale(1.35);opacity:0}}
-
-/* ═══ القُرص المسحوب: نسخة صغيرة متوهّجة تخرج من قلب الدائرة وتتبع الإصبع ═══
-   الدائرة الكبيرة تبقى في مكانها كمَصدر، وهذا ما يُرمى. */
-#stTok{position:fixed;z-index:60;pointer-events:none;
-  width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;text-align:center;
-  padding:8px;font-weight:900;font-size:13px;line-height:1.2;color:#fff;
-  text-shadow:0 1px 4px rgba(0,0,0,.8);
-  background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.5),rgba(255,255,255,.06) 55%),
-    linear-gradient(150deg,rgba(139,92,246,.95),rgba(34,230,255,.85));
-  border:2px solid rgba(255,255,255,.85);
-  box-shadow:0 0 0 5px rgba(34,230,255,.16),0 14px 44px -6px rgba(0,0,0,.8),
-             0 0 56px -4px rgba(34,230,255,.95);
-  opacity:0;transform:scale(.2);transition:opacity .12s,transform .12s var(--spring)}
-#stTok.on{opacity:1;transform:scale(1)}
-#stTok.up{background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.5),rgba(255,255,255,.06) 55%),
-    linear-gradient(150deg,#39e08a,#0f9c5a);box-shadow:0 0 0 5px rgba(57,224,138,.2),
-    0 14px 44px -6px rgba(0,0,0,.8),0 0 60px -4px rgba(57,224,138,.95)}
-#stTok.dn{background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.5),rgba(255,255,255,.06) 55%),
-    linear-gradient(150deg,#ffcb2e,#e0700d);box-shadow:0 0 0 5px rgba(255,203,46,.2),
-    0 14px 44px -6px rgba(0,0,0,.8),0 0 60px -4px rgba(255,203,46,.95)}
-#stTok.fly{transition:transform .26s ease-in,opacity .26s ease-in}
-/* ذيل خفيف يتبع القرص فيُقرأ الرمي حركةً لا قفزة */
-#stTok::after{content:"";position:absolute;inset:-18%;border-radius:50%;
-  border:2px solid rgba(255,255,255,.3);animation:tokRing 1.1s ease-out infinite}
-@keyframes tokRing{0%{transform:scale(.85);opacity:.9}100%{transform:scale(1.35);opacity:0}}
-/* الدائرة الكبيرة تخفت وتنكمش قليلاً وهي «تُفرغ» قرصها */
-#stOrb.src{transform:scale(.94)!important;opacity:.45;transition:transform .18s,opacity .18s}
 
 #stOrb.drag{cursor:grabbing;transition:none;
   border-color:rgba(34,230,255,.95);
@@ -935,7 +922,11 @@ body.noTop #hud,body.noTop #roster{display:none}
 /* الربط */
 #lkTitle{text-align:center;font-size:15px;font-weight:800;margin-bottom:10px}
 #lkBoard{position:relative;flex:1;min-height:0;display:flex;gap:clamp(28px,9vw,90px);padding:2px 4px}
-#lkBoard .col{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-evenly;gap:clamp(6px,1.4vh,14px);z-index:2}
+/* العمودان متمايزان: المستطيل لا يمتدّ على نصف اللوحة بل يقف عند حدّ،
+   فيتّضح أن هذه ٣ أسئلة يمينًا و٣ أجوبة يسارًا لا كومة واحدة */
+#lkBoard .col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:space-evenly;gap:clamp(6px,1.4vh,14px);z-index:2}
+#lkBoard .col .node{width:100%;max-width:clamp(130px,26vw,210px)}
 .node{padding:clamp(7px,1.3vh,12px) 8px;border-radius:12px;background:rgba(255,255,255,.055);
   border:1.5px solid var(--stroke);font-size:clamp(11.5px,1.5vw,14px);font-weight:800;text-align:center;
   line-height:1.3;overflow:hidden;text-overflow:ellipsis;transition:.22s var(--spring)}
@@ -1356,13 +1347,12 @@ body.noTop #hud,body.noTop #roster{display:none}
     <div class="scene" id="sSort">
       <div class="eyebrow" id="stTitle"></div>
       <div id="stArena">
-        <div class="stZone" id="stZoneL"><span class="szName"></span></div>
+        <div class="stZone" id="stZoneL"><span class="szName"></span><i class="szSlot"></i></div>
         <div id="stMid">
           <div id="stOrb"><span id="stWord"></span></div>
-          <div id="stTok"></div>
           <div id="stCount"></div>
         </div>
-        <div class="stZone" id="stZoneR"><span class="szName"></span></div>
+        <div class="stZone" id="stZoneR"><span class="szName"></span><i class="szSlot"></i></div>
       </div>
       <div id="stDone" class="gone">✓ أنهيت القائمة — بانتظار البقية</div>
     </div>
@@ -1421,7 +1411,6 @@ body.noTop #hud,body.noTop #roster{display:none}
       </div>
       <div class="cp" data-p="q">
         <div class="f"><label>طول المباراة</label><select id="sLen"><option value="short">قصيرة — ٦ أسئلة</option><option value="normal">عادية — ٩ أسئلة</option><option value="long">طويلة — ١٢ سؤالاً</option></select></div>
-        <div class="f"><label>الصعوبة</label><select id="sDif"><option value="0">تلقائي متدرّج</option><option value="1">سهل</option><option value="2">متوسط</option><option value="3">صعب</option></select></div>
         <div class="f"><label>الفئات</label><div class="pills" id="catPills"></div></div>
         <div class="tgl"><span>جولتا التحدي<small>الربط والتصنيف</small></span><label class="sw"><input type="checkbox" id="sCh"><i></i></label></div>
       </div>
@@ -2212,6 +2201,14 @@ function atkPlay(){
   im.src=M.i;
   v.classList.remove("done");
   v.src=M.v; try{v.currentTime=0;}catch(e){}
+  /* سرعة الفيلم تُضبط على مدّة تعليق المعلّق فينتهيان معًا:
+     تعليق أقصر من الفيلم يسرّعه، وأطول يبطّئه — والفيلم صامت فلا
+     تتأثّر نبرة. الإطار المتجمّد بعده لا يُمسّ. */
+  v.playbackRate=1;
+  const voDur=(ST&&ST.vo&&ST.vo.at==="attack"&&ST.vo.dur>1)?ST.vo.dur:0;
+  const fit=()=>{ if(!voDur||!isFinite(v.duration)||!v.duration)return;
+    v.playbackRate=Math.max(.5,Math.min(2.5,v.duration/voDur)); };
+  v.onloadedmetadata=fit; fit();
   v.play().catch(atkOpen);
   /* صمّام أمان: لو تعذّر التشغيل نفتح الواجهة على الإطار الثابت */
   atkSceneT=setTimeout(()=>{ if(v.readyState<2)atkOpen(); },2500);
@@ -2669,8 +2666,7 @@ function rRead(fresh){
   killZoomClones();
   voStop();
   vPlay(ST.question.voice);
-  const D=["","سهل","متوسط","صعب"][ST.question.diff||1];
-  $("readMeta").innerHTML='<span class="tag">'+esc(ST.question.cat)+'</span><span class="tag">'+D+"</span>";
+  $("readMeta").innerHTML='<span class="tag">'+esc(ST.question.cat)+'</span>';
   const rim=$("readImg"), rsrc=ST.question.img;
   if(rsrc){rim.src=rsrc;rim.hidden=false;}else{rim.hidden=true;rim.removeAttribute("src");}
   $("readTxt").textContent=ST.question.text;
@@ -2716,8 +2712,7 @@ function rQ(fresh){
     $("sQ").appendChild(b);setTimeout(()=>b.remove(),2800);
   }
   vPlay(ST.question.voice);   /* في الهرم لا توجد مرحلة قراءة، فيُنطق هنا */
-  const D=["","سهل","متوسط","صعب"][ST.question.diff||1];
-  $("qMeta").innerHTML=`<span class="tag">${esc(ST.question.cat)}</span><span class="tag">${D}</span>`;
+  $("qMeta").innerHTML=`<span class="tag">${esc(ST.question.cat)}</span>`;
   const qim=$("qImg"), qsrc=ST.question.img;
   if(qsrc){qim.src=qsrc;qim.hidden=false;}else{qim.hidden=true;qim.removeAttribute("src");}
   $("qText").textContent=ST.question.text;
@@ -2875,80 +2870,72 @@ function sortShow(){
   const o=$("stOrb");
   $("stWord").textContent=it[stIdx];
   $("stCount").textContent=(stIdx+1)+" / "+it.length;
-  o.style.transform="";
+  o.style.transform="";o.style.opacity="";o.style.transition="";
   o.classList.remove("popIn");void o.offsetWidth;o.classList.add("popIn");
 }
 /* المناطق فوق/تحت على الجوال (نفس عتبة الـCSS: 699px) */
 function vert(){ return innerWidth<=699; }
-/* السحب: يخرج قرصٌ صغير متوهّج من قلب الدائرة الكبيرة ويتبع الإصبع،
-   والدائرة تبقى مكانها كمصدر. الرمي نحو المنطقة يُرسل الاختيار. */
+/* السحب: القرص نفسه في يدك — يتبعها بلا مقاومة، وتقذفه نحو الفتحة
+   كقرص هوكي: نفضة سريعة تكفي ولو كانت قصيرة، فالسرعة تُقاس لا المسافة،
+   ثم يطير إلى فمّ المنطقة ويُبتلَع فيه. */
 function sortDrag(){
-  const o=$("stOrb"), tok=$("stTok");
-  let sx=0,sy=0,dx=0,dyR=0,dragging=false;
-
-  function place(x,y){ tok.style.left=x+"px"; tok.style.top=y+"px"; }
-  function reset(){
-    tok.className=""; tok.style.transition="";
-    o.classList.remove("src");
-    $("stZoneR").classList.remove("hot");$("stZoneL").classList.remove("hot");
-  }
+  const o=$("stOrb");
+  let sx=0,sy=0,dx=0,dyR=0,dragging=false,trail=[];
+  const zoneOf=side=>side===0?$("stZoneR"):$("stZoneL");
 
   o.onpointerdown=e=>{
     if(stBusy||stIdx>=ST.sort.items.length)return;
     e.preventDefault();
     dragging=true;sx=e.clientX;sy=e.clientY;dx=0;dyR=0;
-    /* القرص يولد من مركز الدائرة ثم ينتقل مع الإصبع */
-    const r=o.getBoundingClientRect();
-    tok.textContent=ST.sort.items[stIdx]||"";
-    tok.style.transition="";
-    place(r.left+r.width/2, r.top+r.height/2);
-    void tok.offsetWidth;
-    tok.className="on";
-    o.classList.add("src");
-    requestAnimationFrame(()=>place(e.clientX,e.clientY));
+    trail=[{t:performance.now(),x:sx,y:sy}];
+    o.classList.add("drag");o.classList.remove("snap");
     try{o.setPointerCapture(e.pointerId);}catch(x){}
   };
 
   o.onpointermove=e=>{
     if(!dragging)return;
     dx=e.clientX-sx; dyR=e.clientY-sy;
-    place(e.clientX,e.clientY);
-    const V=vert();
-    const move=V?dyR:dx, TH=V?innerHeight*.09:innerWidth*.16;
-    /* أعلى/يمين = الفئة أ · أسفل/يسار = الفئة ب */
-    const toA=V? move<-TH : move>TH;
-    const toB=V? move> TH : move<-TH;
-    $("stZoneR").classList.toggle("hot",toA);
-    $("stZoneL").classList.toggle("hot",toB);
-    tok.classList.toggle("up",toA);
-    tok.classList.toggle("dn",toB);
+    trail.push({t:performance.now(),x:e.clientX,y:e.clientY});
+    if(trail.length>6)trail.shift();
+    /* يتبع اليد واحدًا لواحد — لا مقاومة ولا كبح */
+    o.style.transform=`translate(${dx}px,${dyR}px) rotate(${dx*.04}deg)`;
+    const V=vert(),TH=V?innerHeight*.09:innerWidth*.16,mv=V?dyR:dx;
+    zoneOf(0).classList.toggle("hot",V?mv<-TH:mv>TH);
+    zoneOf(1).classList.toggle("hot",V?mv>TH:mv<-TH);
   };
 
   o.onpointerup=o.onpointercancel=e=>{
     if(!dragging)return;dragging=false;
-    const V=vert();
-    const move=V?dyR:dx, TH=V?innerHeight*.09:innerWidth*.16;
-    if(Math.abs(move)>TH){
-      const side=(V? move<0 : move>0)?0:1;
+    o.classList.remove("drag");
+    /* سرعة الدفعة من آخر عيّنات المسار (بكسل/مللي ثانية) */
+    let v=0;
+    if(trail.length>1){
+      const a=trail[0],b=trail[trail.length-1],dt=Math.max(1,b.t-a.t);
+      v=(vert()?(b.y-a.y):(b.x-a.x))/dt;
+    }
+    const V=vert(),mv=V?dyR:dx,TH=V?innerHeight*.09:innerWidth*.16;
+    const flick=Math.abs(v)>0.5;              /* نفضة خاطفة تكفي */
+    zoneOf(0).classList.remove("hot");zoneOf(1).classList.remove("hot");
+    if(Math.abs(mv)>TH||flick){
+      const dir=flick?v:mv;
+      const side=(V?dir<0:dir>0)?0:1;
       stBusy=true;
-      /* يطير نحو المنطقة ويتلاشى */
-      const z=(side===0?$("stZoneR"):$("stZoneL")).getBoundingClientRect();
-      tok.classList.add("fly");
-      requestAnimationFrame(()=>{
-        place(z.left+z.width/2, z.top+z.height/2);
-        tok.style.transform="scale(.35)"; tok.style.opacity="0";
-      });
+      const z=zoneOf(side),slot=z.querySelector(".szSlot")||z;
+      const sr=slot.getBoundingClientRect(),or0=o.getBoundingClientRect();
+      /* مركز الراحة = مركزه الآن ناقص إزاحة السحب */
+      const rx=or0.left+or0.width/2-dx, ry=or0.top+or0.height/2-dyR;
+      const tx=sr.left+sr.width/2-rx, ty=sr.top+sr.height/2-ry;
+      z.classList.add("hot");
+      o.style.transition="transform .3s cubic-bezier(.2,.7,.3,1),opacity .18s .14s";
+      o.style.transform=`translate(${tx}px,${ty}px) scale(.16) rotate(${dx*.15}deg)`;
+      o.style.opacity="0";
+      setTimeout(()=>{
+        slot.classList.remove("gulp");void slot.offsetWidth;slot.classList.add("gulp");
+        z.classList.remove("hot");
+      },250);
       socket.emit("sortPick",{i:stIdx,side});
-      setTimeout(reset,300);
     }else{
-      /* دون العتبة: يعود إلى قلب الدائرة ويختفي */
-      const r=o.getBoundingClientRect();
-      tok.classList.add("fly");
-      requestAnimationFrame(()=>{
-        place(r.left+r.width/2, r.top+r.height/2);
-        tok.style.transform="scale(.2)"; tok.style.opacity="0";
-      });
-      setTimeout(reset,300);
+      o.classList.add("snap");o.style.transform="";
     }
   };
 }
@@ -3704,7 +3691,7 @@ document.querySelectorAll("#cfgT button").forEach(b=>b.onclick=()=>{
 function fillCfg(s){
   if(!s||$("cfg").classList.contains("on"))return;
   Object.entries(RG).forEach(([k,[i,o,f]])=>{$(i).value=s[k];$(o).textContent=f(s[k]);});
-  $("sLen").value=s.length;$("sDif").value=String(s.difficulty);
+  $("sLen").value=s.length;
   $("sCh").checked=s.challenges;$("sPw").checked=s.powers;$("cPyOn").checked=s.pyramid;
   $("sHS").checked=s.headStart;$("sPP").checked=!!s.pyramidPenalty;$("sIM").checked=s.images!==false;$("sVO").checked=s.voice!==false;$("sIN").checked=s.intros!==false;$("sOP").checked=s.opening!==false;
   fillDialects(s.dialect||"eg");
@@ -3717,7 +3704,7 @@ $("cfgSave").onclick=()=>{
   const pws=[...document.querySelectorAll("#pwPills .pill.on")].map(c=>c.dataset.p);
   socket.emit("updateSettings",{
     questionTime:+$("sQT").value,voteTime:+$("sVT").value,attackTime:+$("sAT").value,
-    length:$("sLen").value,difficulty:+$("sDif").value,
+    length:$("sLen").value,
     cats:cats.length===document.querySelectorAll("#catPills .pill").length?[]:cats,
     challenges:$("sCh").checked,powers:$("sPw").checked,powerUses:+$("sPU").value,powerChoices:+$("sPC").value,allowedPowers:pws,
     pyramid:$("cPyOn").checked,pyramidHeight:+$("sPH").value,pyramidTime:+$("sPT").value,
