@@ -707,9 +707,12 @@ body.noTop:not(.topOpen) #hud,body.noTop:not(.topOpen) #roster{display:none}
 #topTab:hover{color:#fff;background:rgba(139,92,246,.4)}
 body.noTop #topTab{display:block}
 /* سطر مراجعة السؤال داخل الشريط المنسدل */
-#hudQ{font-size:13px;font-weight:800;line-height:1.6;color:var(--ink);
-  background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);
-  border-radius:12px;padding:8px 12px;margin-bottom:9px}
+#hudQ{font-size:14px;font-weight:900;line-height:1.7;color:#fff;
+  background:linear-gradient(135deg,#4c1d95,#6d28d9);
+  border:1px solid rgba(196,181,253,.5);
+  box-shadow:0 6px 18px -6px rgba(76,29,149,.7);
+  border-radius:12px;padding:10px 14px;margin-bottom:9px;
+  text-shadow:0 1px 3px rgba(0,0,0,.5)}
 #hudQ:empty{display:none}
 body.noTop:not(.topOpen) #hudQ{display:none}
 body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
@@ -738,6 +741,45 @@ body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
 .door.on .dVotes{background:rgba(34,230,255,.16);border-color:rgba(34,230,255,.5);color:var(--cyan)}
 .dVotes b{color:#fff;font-variant-numeric:tabular-nums}
 .dVotes.bump{animation:votePop .45s var(--spring)}
+/* ═══ لافتات مراسم الكشف ═══ */
+#revStage{min-height:0}
+#revStage:empty{display:none}
+.partyBanner,.betBanner{margin:10px 0;padding:11px 16px;border-radius:14px;
+  font-weight:900;font-size:15px;text-align:center;transform:scale(0)}
+.partyBanner{background:linear-gradient(135deg,rgba(255,203,46,.28),rgba(255,47,142,.22));
+  border:1.5px solid rgba(255,203,46,.65);color:#ffd97a;
+  box-shadow:0 0 34px -6px rgba(255,203,46,.75)}
+.betBanner{background:linear-gradient(135deg,rgba(34,230,255,.22),rgba(139,92,246,.22));
+  border:1.5px solid rgba(34,230,255,.6);color:#8ceaff;transform:scale(1);
+  box-shadow:0 0 30px -8px rgba(34,230,255,.7);animation:bannerPop .5s var(--spring)}
+.partyBanner.pop{animation:bannerPop .55s var(--spring) forwards}
+@keyframes bannerPop{0%{transform:scale(0) rotate(-6deg);opacity:0}
+  60%{transform:scale(1.09) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+.gainB.pulse{animation:gainPulse .55s var(--spring)}
+@keyframes gainPulse{0%{transform:scale(1)}45%{transform:scale(1.35);filter:brightness(1.4)}
+  100%{transform:scale(1)}}
+.betTag{color:var(--cyan);font-weight:900;margin-inline-end:6px;
+  animation:gainPulse .5s var(--spring)}
+/* ومضة إعلان الحفلة على أي شاشة */
+.partyFlash{position:fixed;left:50%;top:16%;transform:translateX(-50%);z-index:97;
+  background:linear-gradient(135deg,#ffcb2e,#ff2f8e);color:#20102a;
+  font-weight:900;font-size:16px;padding:12px 22px;border-radius:99px;
+  box-shadow:0 0 44px -6px rgba(255,203,46,.9);
+  animation:flashIn .45s var(--spring),flashOut .5s ease 1.9s forwards}
+@keyframes flashIn{from{transform:translateX(-50%) scale(.4);opacity:0}
+  to{transform:translateX(-50%) scale(1);opacity:1}}
+@keyframes flashOut{to{transform:translateX(-50%) translateY(-24px);opacity:0}}
+/* وجوه من صوّتوا لهذا الباب — تحت شريط العدّ */
+.dWho{position:relative;z-index:3;display:flex;justify-content:center;align-items:center;
+  gap:-6px;margin-top:5px;min-height:26px;pointer-events:none}
+.dWho .vf{width:26px;height:26px;border-radius:50%;overflow:hidden;margin-inline-start:-7px;
+  border:2px solid #fff;background:#0b1020;box-shadow:0 2px 7px rgba(0,0,0,.45);
+  animation:vfPop .4s var(--spring) both}
+.dWho .vf:first-child{margin-inline-start:0}
+.dWho .vf img,.dWho .vf svg{width:100%;height:100%;object-fit:cover;display:block}
+@keyframes vfPop{0%{transform:scale(0) translateY(-10px);opacity:0}
+  60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+@media(max-width:560px){.dWho .vf{width:21px;height:21px}}
 @keyframes votePop{0%{transform:scale(1)}45%{transform:scale(1.22)}100%{transform:scale(1)}}
 /* شريط تعبئة الأصوات */
 .dBar{position:absolute;inset:0;border-radius:99px;background:linear-gradient(90deg,var(--c1),var(--cyan));
@@ -1239,6 +1281,14 @@ body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
 #lobby .row2{display:grid; grid-template-columns:1fr 1fr; gap:8px}
 #lobby .row2>*{min-width:0; width:auto}
 #lobby .err{margin-top:0}
+/* وضع الدعوة: يُخفى إنشاء الغرفة ورقمها — اسم وانضمام فقط */
+#invHint{display:none;text-align:center;font-weight:800;font-size:13.5px;color:#6d3ff0;
+  background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);
+  border-radius:12px;padding:9px 14px;margin-bottom:10px}
+#roomP.invited #invHint{display:block}
+#roomP.invited #crB,#roomP.invited .divider,#roomP.invited #jId{display:none}
+#roomP.invited .row2{display:block}
+#roomP.invited #jB{width:100%}
 </style>
 <link rel="stylesheet" href="/kawaii.css">
 <script src="/mod.js" defer></script>
@@ -1260,6 +1310,7 @@ body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
   <div class="panel glass" id="roomP">
     <div class="fi"><input id="aName" placeholder="اكتب اسمك هنا" maxlength="20" autocomplete="off"></div>
     <div id="whoLine"></div>
+    <div id="invHint"></div>
     <button class="btn" id="crB">إنشاء غرفة جديدة ➕</button>
     <div class="divider">— أو انضم لغرفة موجودة —</div>
     <div class="row row2">
@@ -1676,7 +1727,15 @@ $("chB").onclick=()=>$("chat").classList.toggle("on");
 socket.on("hello",d=>{HELLO=d;buildPills(d);
   try{const s=JSON.parse(sessionStorage.getItem("q2")||"null");
     if(s&&s.room&&s.token)socket.emit("rejoin",{roomId:s.room,token:s.token},r=>{if(r&&r.ok)enter(r);else sessionStorage.removeItem("q2");});}catch(e){}
-  const q=new URLSearchParams(location.search).get("r");if(q)$("jId").value=q;});
+  const q=new URLSearchParams(location.search).get("r");
+  if(q){
+    /* دعوة: لا معنى لإنشاء غرفة جديدة — يكتب اسمه وينضم مباشرة */
+    $("jId").value=q;
+    document.getElementById("roomP").classList.add("invited");
+    $("aName").placeholder="اكتب اسمك للانضمام";
+    const h=document.getElementById("invHint");
+    if(h)h.textContent="🚪 دعوة للغرفة "+q;
+  }});
 socket.on("ping2",t=>socket.emit("pong2",t));
 socket.on("state",s=>{OFF=s.serverNow-Date.now();ST=s;render();});
 socket.on("kicked",()=>{toast("تم طردك");setTimeout(()=>location.href="/quiz2",1200);});
@@ -1835,12 +1894,16 @@ function doorZoom(cat){
     // نُبقي وميض العبور الفاتح (لا ستار أسود) ريثما تصل المرحلة التالية، ثم ينقشع عنها
     ZVEIL=veil;
     clearTimeout(veilSafety);
-    veilSafety=setTimeout(fadeVeil,900);   // أمان: لا نطيل الوقوف على الوميض
+    /* المرحلة التالية تصل عادةً قبل هذا؛ والأمان قصير كي لا نقف
+       على شاشة شبه شفافة يظهر خلفها عدّاد المرحلة السابقة */
+    veilSafety=setTimeout(fadeVeil,320);
   },1300);
   setTimeout(()=>{box.remove();},1700);
 }
 let ZVEIL=null,veilSafety=null;
 function fadeVeil(){
+  /* العدّاد وبقايا مشهد التصويت تختفي مع الستار */
+  document.querySelectorAll(".door").forEach(d=>{d.style.visibility="hidden";});
   if(!ZVEIL)return;
   const v=ZVEIL;ZVEIL=null;clearTimeout(veilSafety);
   v.animate([{opacity:.94},{opacity:0}],{duration:420,easing:"ease-out",fill:"forwards"});
@@ -1947,6 +2010,16 @@ function tryFx(){
   // كل المقالب تُنفَّذ معاً على أزرار الإجابة — بفاصل بسيط ليُقرأ كل إعلان
   list.forEach((d,i)=>setTimeout(()=>FXM.start(d.power,d.from,d.ms||4000),i*280));
 }
+/* حفلة نقاط أُقيمت: يعلمها الجميع فورًا — بلا كشف صاحبها */
+socket.on("partyOn",d=>{
+  toast(d.n>1 ? "✨ حفلة نقاط أخرى! ("+d.n+") الجولة القادمة مضاعفة" 
+              : "✨ أحدهم أقام حفلة نقاط — الجولة القادمة مضاعفة!");
+  tone(1046,.18,"triangle",.06,1568);
+  const b=document.createElement("div");
+  b.className="partyFlash"; b.textContent="✨ حفلة نقاط"+(d.n>1?" ×"+d.n:"");
+  document.body.appendChild(b);
+  setTimeout(()=>b.remove(),2400);
+});
 socket.on("attackAck",d=>{
   if(d.self){toast("✨ مضاعفة النقاط مفعّلة للسؤال القادم");tone(1046,.16,"triangle",.06,1568);}
   else if(d.bet){toast("🎲 راهنت أن "+d.to+" سيجيب صح أولاً");tone(880,.14,"triangle",.05,1175);}
@@ -2124,7 +2197,8 @@ function rVote(fresh){
          <div class="dTitle">${esc(c)}</div>
          <div class="dKey">${KEYS[i]||"?"}</div>
        </div>
-       <div class="dVotes"><span class="dBar"></span>⏳ تصويت: <b>0</b></div>`;
+       <div class="dVotes"><span class="dBar"></span>⏳ تصويت: <b>0</b></div>
+       <div class="dWho"></div>`;
     // إن وُجدت طبقتا «شعار بارز» للفئة ركّبنا الباب: مصراعان + إطار ثابت فوقهما
     // (تنسيقات inline حتى تنتقل مع استنساخ المصراعين في doorZoom)
     // نُخفي القوس من البداية حتى لا يلمع الباب القديم (المرسوم بالـCSS) قبل وصول الصورة
@@ -2198,6 +2272,18 @@ function paintVotes(){
       d.querySelector(".dVotes").classList.add("bump");
     }
     if(bar)bar.style.transform="scaleX("+(n/tot)+")";
+    /* وجوه المصوّتين لهذا الباب */
+    const who=d.querySelector(".dWho");
+    if(who){
+      const mine=(ST.voters||[]).filter(v=>v.cat===d.dataset.c);
+      const sig=mine.map(v=>v.id).join(",");
+      if(who.dataset.sig!==sig){
+        who.dataset.sig=sig;
+        who.innerHTML=mine.map(v=>'<span class="vf">'+
+          (v.charId?'<img src="'+charImg(v.charId)+'" alt="">':avatar(v.name,v.color))+
+          '</span>').join("");
+      }
+    }
   });
 }
 function spawnOrbs(){
@@ -3112,26 +3198,91 @@ function fitPy(H){
 }
 
 /* ═══ الكشف ═══ */
+/* ═══ مراسم الكشف على ثلاثة فصول ═══
+   ١) النقاط الأساسية تتدحرج   ٢) لكل حفلة نقاط: إعلانٌ ثم إضافة مثلِ الأساس
+   ٣) كشف الرهان أخيرًا — ويأخذ الأساس وحده لا ما ضاعفته الحفلة. */
 function showRev(d){
   scene("sRev");
-  setTimeout(rollTallies,420);
-  $("revBody").innerHTML=
+  const PN = d.partyN || 0;
+  /* الرصيد قبل كل شيء: نطرح ما كسبه اللاعب في هذه الجولة */
+  const rows = d.results.map(r => {
+    const betGain = (d.bets||[]).filter(b=>b.byName===r.name&&b.won)
+                                .reduce((a,b)=>a+b.points,0);
+    const before = r.score - r.gain - betGain;
+    return {...r, betGain, before, base: r.base!=null?r.base:r.gain};
+  });
+  $("revBody").innerHTML =
     `<div class="revHead"><div class="lbl">الإجابة الصحيحة</div><div class="val">${esc(d.correctText)}</div></div>`+
-    d.results.map((r,i)=>`<div class="rrow ${r.correct?(i===0?"top":""):"miss"}">
+    `<div id="revStage"></div>`+
+    rows.map((r,i)=>`<div class="rrow ${r.correct?(i===0?"top":""):"miss"}" data-nm="${esc(r.name)}">
       <span class="av">${r.charId?`<img src="${charImg(r.charId)}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`:avatar(r.name,r.color)}</span>
       <span class="nm">${esc(r.name)}${r.rank?` <b class="rkB">#${r.rank}</b>`:""}</span>
       ${r.ms!==null?`<span class="ms">${(r.ms/1000).toFixed(2)}ث</span>`:""}
-      <span class="pt">${r.correct?`<b class="gainB${r.doubled?" x2":""}">+${r.gain}${r.doubled?" ✨":""}</b>
-        <b class="tally" data-from="${r.score-r.gain}" data-to="${r.score}">${r.score-r.gain}</b>`
-        :`<b class="gainB zero">—</b><b class="tally">${r.score}</b>`}</span></div>`).join("")+
-    /* الرهانات: كانت سرًّا طوال الجولة، وتُكشف هنا فقط بعد النقاط الأساسية */
-    (d.bets&&d.bets.length?d.bets.map(b=>`<div class="rrow betRow ${b.won?"top":"miss"}">
-      <span class="av">🎲</span>
-      <span class="nm">${esc(b.byName)} راهن على ${esc(b.onName)}</span>
-      <span class="pt">${b.won?"+"+b.points:"خسر"}</span></div>`).join(""):"")+
-    (d.party?`<div class="rrow partyRow"><span class="av">✨</span>
-      <span class="nm">حفلة نقاط — الجولة كانت مضاعفة!</span><span class="pt">×2</span></div>`:"");
+      <span class="pt">${r.correct?`<b class="gainB">+${r.base}</b>`:`<b class="gainB zero">—</b>`}
+        <b class="tally" data-from="${r.before}" data-to="${r.before + (r.correct?r.base:0)}">${r.before}</b></span></div>`).join("");
+  setTimeout(rollTallies, 380);
+
+  /* ─── الفصل الثاني: حفلات النقاط، واحدة بعد أخرى ─── */
+  let t = 1250;
+  for(let k=1; k<=PN; k++){
+    setTimeout(()=>{
+      partyBanner(k, PN);
+      rows.forEach(r=>{
+        if(!r.correct) return;
+        const row = document.querySelector('.rrow[data-nm="'+cssEsc(r.name)+'"]');
+        if(!row) return;
+        const g = row.querySelector(".gainB"), tl = row.querySelector(".tally");
+        g.classList.add("x2"); g.textContent = "+"+r.base+" ✨";
+        g.classList.remove("pulse"); void g.offsetWidth; g.classList.add("pulse");
+        const from = +tl.textContent.replace(/[^\d-]/g,"") || r.before;
+        tl.dataset.from = from; tl.dataset.to = from + r.base;
+        rollTallies();
+        burst(row, "#ffcb2e");
+      });
+      sWin();
+    }, t);
+    t += 1500;
+  }
+
+  /* ─── الفصل الثالث: كشف الرهان ─── */
+  if(d.bets && d.bets.length){
+    setTimeout(()=>{
+      const st = $("revStage");
+      if(st) st.innerHTML = '<div class="betBanner">🎲 كشف الرهانات</div>';
+      d.bets.forEach((b,i)=>setTimeout(()=>{
+        const row = document.querySelector('.rrow[data-nm="'+cssEsc(b.byName)+'"]');
+        if(row && b.won){
+          const tl = row.querySelector(".tally");
+          const from = +tl.textContent.replace(/[^\d-]/g,"") || 0;
+          tl.dataset.from = from; tl.dataset.to = from + b.points;
+          rollTallies();
+          const tag = document.createElement("b");
+          tag.className = "betTag"; tag.textContent = "🎲 +"+b.points;
+          row.querySelector(".pt").prepend(tag);
+          burst(row, "#22e6ff");
+        }
+        const line = document.createElement("div");
+        line.className = "rrow betRow "+(b.won?"top":"miss");
+        line.innerHTML = '<span class="av">🎲</span><span class="nm">'+
+          esc(b.byName)+' راهن على '+esc(b.onName)+'</span>'+
+          '<span class="pt">'+(b.won?"+"+b.points:"خسر")+'</span>';
+        $("revBody").appendChild(line);
+        b.won ? sWin() : sLose();
+      }, i*450));
+    }, t + 200);
+  }
 }
+/* لافتة حفلة النقاط — واحدة لكل حفلة، مرقّمة إن تعدّدت */
+function partyBanner(k, total){
+  const st = $("revStage"); if(!st) return;
+  st.innerHTML = '<div class="partyBanner">✨ حفلة نقاط'+
+    (total>1 ? " ("+k+"/"+total+")" : "")+
+    ' — نقاط الجولة تتضاعف!</div>';
+  const b = st.firstChild;
+  b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop");
+}
+function cssEsc(v){ return String(v).replace(/["\\]/g, "\\$&"); }
+
 function showRevCh(d){
   scene("sRev");
   if(d.kind==="sort"||d.kind==="link")return raceReveal(d);
@@ -3745,7 +3896,35 @@ function addChat(m){
 }
 $("chatF").onsubmit=e=>{e.preventDefault();const v=$("chatI").value.trim();if(!v)return;socket.emit("chat",v);$("chatI").value="";};
 $("startB").onclick=()=>socket.emit("startGame");
-$("againB").onclick=()=>{$("finale").classList.remove("on");socket.emit("backToLobby");};
+$("againB").onclick=()=>{$("finale").classList.remove("on");resetClient();socket.emit("backToLobby");};
+
+/* ═══ تنظيف شامل قبل مباراة جديدة ═══
+   المباراة السابقة تخلّف طبقات مقالب ونُسخ زوم وستائر وحالات محليّة،
+   وبقاؤها كان يُفسد شكل الصفحة في الجولة الثانية. */
+function resetClient(){
+  try{ FXM.stop(); }catch(e){}
+  try{ voStop(); vStop(); }catch(e){}
+  killZoomClones();
+  document.querySelectorAll(".fxLayer,.fxBtnLayer,.bombWrap,.fxPenalty,.zoomClone,.partyFlash")
+    .forEach(e=>e.remove());
+  ZVEIL=null; clearTimeout(veilSafety);
+  document.body.classList.remove("filmOn","topOpen");
+  ["hitVeil","rpModal","chat","cfg"].forEach(id=>{
+    const e=$(id); if(e)e.classList.remove("on");
+  });
+  /* حالات الجولة المحليّة */
+  atkT=null; atkP=null; atkSent=false; atkPlayed=false; MYMENU=[]; AR=null;
+  picked=-1; lkLast=null; stIdx=0; stBusy=false;
+  pendingFx=[];
+  const row=$("cardRow"); if(row){ row.innerHTML=""; row.dataset.key=""; }
+  const sa=$("sAtk"); if(sa){ sa.classList.remove("tv","open"); }
+  const hq=$("hudQ"); if(hq) hq.textContent="";
+  ["revBody","votes","charGrid","roster"].forEach(id=>{
+    const e=$(id); if(e)e.innerHTML="";
+  });
+  document.querySelectorAll(".door").forEach(d=>{d.style.visibility="";});
+  scene("sWait");
+}
 
 /* ═══ الإعدادات ═══ */
 const RG={questionTime:["sQT","oQT",v=>v+"ث"],voteTime:["sVT","oVT",v=>v+"ث"],attackTime:["sAT","oAT",v=>v+"ث"],
