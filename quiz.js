@@ -87,7 +87,6 @@ const DEFAULTS = {
   // لهجة المعلّق. المسجَّل حاليًا مصري فقط، فالخيار مقفل في الواجهة
   // إلى أن تُسجَّل مقاطع الفصحى؛ المنطق جاهز ولا يحتاج غير رفع الملفات.
   dialect: "eg",        // eg مصري · ar فصحى
-  difficulty: 0,        // 0 تلقائي متدرج · 1 سهل · 2 متوسط · 3 صعب
   maxPlayers: 8,
   visibility: "private",
   password: ""
@@ -124,7 +123,6 @@ function sanitize(s = {}, old = DEFAULTS) {
   if (s.voice !== undefined) o.voice = !!s.voice;
   // لا نقبل إلا لهجة متوفّرة فعلًا، حتى لا يصمت المعلّق لأن ملفاتها غير موجودة
   if (s.dialect !== undefined) o.dialect = DIALECTS_READY.includes(s.dialect) ? s.dialect : old.dialect;
-  if (s.difficulty !== undefined) o.difficulty = clampInt(s.difficulty, 0, 3, old.difficulty);
   if (s.maxPlayers !== undefined) o.maxPlayers = clampInt(s.maxPlayers, 2, 8, old.maxPlayers);
   if (s.visibility !== undefined) o.visibility = s.visibility === "public" ? "public" : "private";
   if (s.password !== undefined) o.password = String(s.password || "").slice(0, 24);
@@ -389,7 +387,9 @@ function setupQuiz(io, deps) {
     room.voDone.door = true;
     room.pubVo = voc.pick(first ? "first_door" : "door");
     if (room.pubVo) room.pubVo.at = "vote";
-    const vt = Math.max(room.settings.voteTime, room.pubVo ? room.pubVo.dur + 1.2 : 0);
+    // أول تصويت في المباراة أطول: اللاعبون يستوعبون الشاشة لأول مرة
+    const baseVt = first ? Math.max(30, room.settings.voteTime) : room.settings.voteTime;
+    const vt = Math.max(baseVt, room.pubVo ? room.pubVo.dur + 1.2 : 0);
     setPhase(room, "vote", FAST ? room.settings.voteTime : vt, () => resolveVote(room));
     broadcast(room);
   }
@@ -422,7 +422,8 @@ function setupQuiz(io, deps) {
     // فمدّة المرحلة = مدّة الصوت + مدّة الحركة + هامش.
     const base = tie ? SPIN_MS : ZOOM_MS;
     const ms = FAST ? base : (sv ? sv.dur * 1000 + 150 : 0) + base + 350;
-    const canAttack = room.settings.powers && room.stageIdx >= 3 &&
+    // الفخاخ تُفتح من السؤال الثالث — أي قبل أول تحدٍّ بسؤال واحد
+    const canAttack = room.settings.powers && room.stageIdx >= 2 &&
       alive(room).length >= 2 && alive(room).some(p => p.powersLeft > 0);
     setPhase(room, "spin", ms / 1000, () => { canAttack ? beginAttack(room) : beginReady(room); });
     broadcast(room);
@@ -513,7 +514,7 @@ function setupQuiz(io, deps) {
 
   // ── مرحلة قراءة السؤال: النص وحده — الخيارات لا تُرسل إطلاقاً في هذه المرحلة ──
   function beginRead(room) {
-    const q = qbank.draw(room.chosenCat, room.usedQ, autoDifficulty(room), room.settings.images);
+    const q = qbank.draw(room.chosenCat, room.usedQ, 0, room.settings.images);
     if (!q) { sys(room, "لا توجد أسئلة في هذه الفئة", "warn"); return nextStage(room); }
     room.usedQ.add(q.id);
     room.currentQ = q;                 // فيه الإجابة الصحيحة — لا يُرسل أبداً
@@ -538,13 +539,6 @@ function setupQuiz(io, deps) {
   }
 
   // ====== السؤال ======
-  // صعوبة عشوائية تمامًا لكل سؤال — لا تدرّج من السهل للصعب،
-  // فلا يستطيع اللاعب توقّع مستوى السؤال من موقعه في المباراة.
-  function autoDifficulty(room) {
-    if (room.settings.difficulty) return room.settings.difficulty;
-    return 1 + Math.floor(Math.random() * 3);
-  }
-
   function beginQuestion(room) {
     // مرحلة الإجابة: الخيارات وحدها تملأ الشاشة — السؤال قُرئ في المرحلة السابقة
     const q = room.currentQ;
@@ -686,8 +680,15 @@ function setupQuiz(io, deps) {
     const total = room.currentLink.pairs.length;
     const remain = [];
     for (let i = 0; i < total; i++) if (!st.done.has(i)) remain.push(i);
-    const CAP = 3;
-    const draw = (side, other) => {
+    // نمط عشوائي لكل لوحة: ١–٣ أسئلة × ١–٣ أجوبة، والقاعدة الوحيدة
+    // ألّا يتجاوز جانبٌ ثلاثًا. ١×١ مستثناة لأنها توصيلة جاهزة بلا تفكير.
+    let capR, capL;
+    do { capR = 1 + Math.floor(Math.random() * 3); capL = 1 + Math.floor(Math.random() * 3); }
+    while (capR === 1 && capL === 1);
+    // ما زاد عن نمط اللوحة الجديدة يُشذَّب عشوائيًا
+    const trim = (side, cap) => { while (st[side].length > cap) st[side].splice(Math.floor(Math.random() * st[side].length), 1); };
+    trim("r", capR); trim("l", capL);
+    const draw = (side, other, CAP) => {
       while (st[side].length < Math.min(CAP, remain.length ? CAP : 0)) {
         const cand = remain.filter(i => !st[side].includes(i));
         if (!cand.length) break;
@@ -703,13 +704,13 @@ function setupQuiz(io, deps) {
         st[side].push(pool2[Math.floor(Math.random() * pool2.length)]);
       }
     };
-    draw("r", "l"); draw("l", "r");
+    draw("r", "l", capR); draw("l", "r", capL);
     // ضمانة أخيرة: لا لوحة بلا توصيلة صحيحة واحدة
     const matches = st.r.filter(i => st.l.includes(i));
     if (!matches.length && st.r.length) {
       const pick = st.r[Math.floor(Math.random() * st.r.length)];
       const swap = st.l.findIndex(i => !st.r.includes(i));
-      if (swap >= 0) st.l[swap] = pick; else if (st.l.length < CAP) st.l.push(pick);
+      if (swap >= 0) st.l[swap] = pick; else if (st.l.length < capL) st.l.push(pick);
     }
     // رموز عشوائية لكل خانة: العميل لا يرى أرقام الأزواج فلا يطابقها غشًّا
     st.tokR = {}; st.tokL = {};
