@@ -30,6 +30,8 @@ const AR_MS = FAST ? 300 : 2600;        // شاشة الفضح «فلان ألق
 const READY_MS = FAST ? 300 : 2000;     // «جاهزون للسؤال؟»
 const BET_POINTS = 100;                 // مكسب الرهان الصائب
 const PY_MAX_Q = 24;          // سقف أسئلة الهرم
+const PARTY_MS = 1600;        // مراسم كل حفلة نقاط
+const BET_MS   = 1900;        // كشف الرهان بعدها
 // فيلم المقدمة: نسخة الجوال 48.79ث والكمبيوتر 46.76ث — نأخذ الأطول وهامشًا
 const OPENING_MS = FAST ? 300 : 49300;
 
@@ -211,6 +213,13 @@ function setupQuiz(io, deps) {
       phaseDur: room.phaseDur,
       catOptions: room.catOptions,
       votes: room.voteCount,
+      // من صوّت لأي باب — لعرض أيقونات المصوّتين على البوابة
+      voters: room.phase === "vote"
+        ? Object.entries(room.votes || {}).map(([id, cat]) => {
+            const p = room.players.find(x => x.id === id);
+            return p ? { id, cat, name: p.name, color: p.color, charId: p.charId } : null;
+          }).filter(Boolean)
+        : [],
       question: room.pubQuestion,
       link: room.pubLink,
       sort: room.pubSort,
@@ -292,7 +301,7 @@ function setupQuiz(io, deps) {
     room.usedLink = new Set();
     room.usedSort = new Set();
     room.lastCats = [];
-    room.bets = [];
+    room.bets = []; room.partyCount = 0; room.partyN = 0;
     room.winner = null;
     room.pyQIndex = 0;
     sys(room, "بدأت المباراة! 🏆", "good");
@@ -521,6 +530,8 @@ function setupQuiz(io, deps) {
     const vid = voiceOf(room, q.text);
     // هل هذه جولة «حفلة نقاط»؟ تُستهلك هنا وتظهر لكل اللاعبين مع السؤال
     room.party = !!room.partyNext; room.partyNext = false;
+    room.partyN = room.party ? (room.partyCount || 1) : 0;
+    room.partyCount = 0;
     room.pubQuestion = { text: q.text, options: null, cat: q.cat, diff: q.diff, img: q.img || null, reading: true, voice: vid, party: room.party };
     room.answers = {};
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
@@ -601,8 +612,11 @@ function setupQuiz(io, deps) {
       const a = room.answers[p.id];
       a.rank = i + 1;
       a.gain = rankPoints(N, a.rank);
-      // حفلة النقاط تضاعف ناتج المعادلة (doubleNext إرث بالسلوك نفسه)
-      if (room.party || p.doubleNext) { a.gain *= 2; a.doubled = true; }
+      // النقاط الأساسية تُحفظ قبل المضاعفة — الرهان يأخذها وحدها
+      a.base = a.gain;
+      // كل حفلة تضيف مثلَ الأساس: حفلة = ×٢ · حفلتان = ×٣
+      const parties = room.partyN || (p.doubleNext ? 1 : 0);
+      if (parties > 0) { a.gain = a.base * (1 + parties); a.doubled = true; a.parties = parties; }
       p.doubleNext = false;
       p.score += a.gain; p.lastGain = a.gain;
     });
@@ -617,7 +631,8 @@ function setupQuiz(io, deps) {
         const by = room.players.find(p => p.id === b.by);
         if (!by || by.spectator) return;
         const ta = room.answers[b.on];
-        const pts = ta && ta.correct ? ta.gain : 0;
+        // نقاط المركز الأساسية فقط — بلا ما أضافته حفلة النقاط
+        const pts = ta && ta.correct ? (ta.base != null ? ta.base : ta.gain) : 0;
         if (pts) { by.score += pts; by.lastGain = (by.lastGain || 0) + pts; }
         betsOut.push({ byName: b.byName, onName: b.onName, won: pts > 0, points: pts });
         nsp.to(b.by).emit("betResult", { on: b.onName, won: pts > 0, points: pts });
@@ -629,7 +644,8 @@ function setupQuiz(io, deps) {
       return {
         id: p.id, name: p.name, color: p.color, charId: p.charId,
         idx: a ? a.idx : -1, correct: a ? a.correct : false,
-        gain: a ? a.gain : 0, rank: a ? a.rank || 0 : 0,
+        gain: a ? a.gain : 0, base: a ? (a.base != null ? a.base : a.gain) : 0,
+        rank: a ? a.rank || 0 : 0,
         ms: a ? Math.round(a.elapsed) : null, doubled: !!(a && a.doubled),
         score: p.score
       };
@@ -640,14 +656,17 @@ function setupQuiz(io, deps) {
       results: res,
       bets: betsOut,
       party: !!room.party,
+      partyN: room.partyN || 0,
       vo: voc.pick("reveal")
     });
-    room.party = false;
+    room.party = false; room.partyN = 0;
     setPhase(room, "reveal", 0, null);
-    room.phaseEndsAt = Date.now() + REVEAL_MS;
-    room.phaseDur = REVEAL_MS / 1000;
+    // الكشف يطول بقدر مراسمه: حفلات ثم رهانات
+    const ms = REVEAL_MS + (room.partyN || 0) * PARTY_MS + (betsOut.length ? BET_MS : 0);
+    room.phaseEndsAt = Date.now() + ms;
+    room.phaseDur = ms / 1000;
     broadcast(room);
-    room.phaseTimer = setTimeout(() => nextStage(room), REVEAL_MS);
+    room.phaseTimer = setTimeout(() => nextStage(room), ms);
   }
 
   // ====== جولة الربط ======
@@ -1264,8 +1283,22 @@ function setupQuiz(io, deps) {
       room.stageIdx = -1; room.stages = []; room.pyQIndex = 0;
       room.introDone = {}; room.introKind = null; room.pubIntro = null; room.pubVo = null; room.pubHurry = null; room.voDone = {};
       room.openingDone = false; room.openingSkipped = false;
+      // بقايا الجولة السابقة: فخاخ ورهانات وحفلات وأسئلة مستهلكة
+      room.attacks = []; room.bets = [];
+      room.party = false; room.partyNext = false; room.partyN = 0; room.partyCount = 0;
+      room.votes = {}; room.voteCount = {}; room.catOptions = []; room.answers = {};
+      room.sortProg = {}; room.linkProg = {}; room.currentQ = null;
+      room.currentLink = null; room.currentSort = null;
+      room.usedQ = new Set(); room.usedLink = new Set(); room.usedSort = new Set();
+      room.lastCats = []; room.chosenCat = null;
       // نُلغي الاستعداد ونُبقي الاختيار: يعيد اللاعب تأكيده أو يبدّله للجولة الجديدة
-      room.players.forEach(p => { p.spectator = false; p.score = 0; p.pyPos = 0; p.effects = []; p.ready = false; });
+      room.players.forEach(p => {
+        p.spectator = false; p.score = 0; p.pyPos = 0; p.effects = []; p.ready = false;
+        p.answered = false; p.lastGain = 0; p.pendingAttack = null;
+        p.menu = null; p.lastTarget = null; p.lastPower = null;
+        p.powersLeft = room.settings.powers ? room.settings.powerUses : 0;
+        p.doubleNext = false;
+      });
       broadcast(room);
     });
 
@@ -1303,7 +1336,13 @@ function setupQuiz(io, deps) {
         player.pendingAttack = { to: player.id, power };
         player.lastPower = power;
         // حفلة النقاط: السؤال القادم كله بنقاط مضاعفة — لكل من يجيب صح
-        if (power === "double") room.partyNext = true;
+        if (power === "double") {
+          room.partyNext = true;
+          // كل حفلة تضيف مضاعفة إضافية
+          room.partyCount = (room.partyCount || 0) + 1;
+          // الجميع يعلم أن حفلةً أُقيمت — بلا كشف صاحبها
+          nsp.to(room.id).emit("partyOn", { n: room.partyCount });
+        }
         nsp.to(player.id).emit("attackAck", { to: "الجميع", power, self: true });
         broadcast(room);
         maybeEndAttack(room);
