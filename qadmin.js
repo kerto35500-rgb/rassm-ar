@@ -243,6 +243,63 @@ function setupQuestionAdmin(app, deps) {
     return s;
   }
 
+  // ═══ 🚩 بلاغات اللاعبين عن الأسئلة ═══
+  let reports = [];
+  let rSaveT = null;
+  store.getKV("qReports").then(v => { if (Array.isArray(v)) reports = v; }).catch(() => {});
+  function persistR() {
+    clearTimeout(rSaveT);
+    rSaveT = setTimeout(() => store.saveKV("qReports", reports).catch(() => {}), 600);
+  }
+
+  // نقطة عامة (بلا جلسة أدمن): زر 🚩 داخل اللعبة يرسل إليها.
+  // بلاغ مكرر على نفس السؤال يرفع عدّاده بدل أن يغرق القائمة.
+  app.post("/api/qreport", async (req, res) => {
+    const b = await readJson(req, 4e4);
+    if (!b) return json(res, 400, { ok: false });
+    const q = String(b.q || "").trim().slice(0, 400);
+    const reason = String(b.reason || "").trim().slice(0, 400);
+    const cat = String(b.cat || "").trim().slice(0, 60);
+    const room = String(b.room || "").trim().slice(0, 12);
+    if (!q && !reason) return json(res, 400, { ok: false, error: "بلاغ فارغ" });
+    const same = q && reports.find(r => r.q === q);
+    if (same) {
+      same.n = (same.n || 1) + 1;
+      same.at = Date.now();
+      if (reason && !(same.reasons || []).includes(reason)) (same.reasons = same.reasons || []).push(reason);
+    } else {
+      reports.unshift({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        q, cat, room, reasons: reason ? [reason] : [], n: 1, at: Date.now() });
+      if (reports.length > 300) reports.length = 300;
+    }
+    persistR();
+    json(res, 200, { ok: true });
+  });
+
+  // قائمة البلاغات للأدمن — تُثرى بصفّ السؤال الحالي من البنك للتحرير المباشر
+  app.get(ADMIN_PATH + "/q/reports", (req, res) => {
+    if (!guard(req, res)) return;
+    const out = reports.map(r => {
+      let row = null, rcat = r.cat || null;
+      for (const c of qbank.categories()) {
+        const hit = qbank.poolOf(c).find(x => x[0] === r.q);
+        if (hit) { row = hit; rcat = c; break; }
+      }
+      return { ...r, cat: rcat, row: row ? { a: row.slice(1, 5), d: row[5] || 1, img: row[6] || "" } : null };
+    });
+    json(res, 200, { reports: out });
+  });
+
+  app.post(ADMIN_PATH + "/q/report-del", async (req, res) => {
+    if (!guard(req, res)) return;
+    const b = await readJson(req);
+    if (!b) return json(res, 400, { ok: false });
+    if (b.id === "*") reports = [];
+    else reports = reports.filter(r => r.id !== b.id);
+    persistR();
+    json(res, 200, { ok: true, left: reports.length });
+  });
+
   console.log("📚 إدارة الأسئلة مفعّلة على " + ADMIN_PATH + "/q");
   return { bank, persist };
 }
@@ -337,12 +394,21 @@ button.g{background:#2b8a5b}button.r{background:#c0392b}button.s{background:#3a5
 .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .full{grid-column:1/-1}
 label{font-size:12.5px;color:#8ea6c0;display:block;margin-bottom:3px}
-.pag{display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+.pag{display:flex;gap:6px;justify-content:center;margin-top:10px}
 #msg{margin:8px 0;font-size:13px}
 .ok{color:#7fd4a8}.err{color:#ff8a80}
 </style></head><body><div class="wrap">
 <h1>📚 إدارة أسئلة قمّة الهرم</h1>
 <div class="sub" id="tot">…</div>
+
+<div class="card" id="rpCard" style="display:none">
+  <div class="bar" style="margin:0 0 8px">
+    <h3 style="font-size:15px">🚩 بلاغات اللاعبين <span class="tag" id="rpN">0</span></h3>
+    <span style="flex:1"></span>
+    <button class="s r" onclick="rpClear()">مسح الكل</button>
+  </div>
+  <div id="rpList"></div>
+</div>
 
 <div class="card"><div class="cats" id="cats"></div></div>
 
@@ -412,12 +478,13 @@ async function load(){
   const d=await (await fetch(B+"/list")).json();
   CATS=d.cats;
   $("tot").textContent="المجموع الفعّال: "+d.total+" سؤال · معطّلة: "+d.removed+" · معدّلة: "+d.edited+" · تحديات: "+d.links+" ربط و"+d.sorts+" تصنيف";
-  $("cats").innerHTML=d.cats.map(c=>'<div class="cat'+(c.cat===CUR?" on":"")+'" onclick="pick(\''+esc(c.cat)+'\')">'+esc(c.cat)+' <b>'+c.active+'</b>'+(c.imgs?' 🖼'+c.imgs:'')+'</div>').join("");
+  $("cats").innerHTML=d.cats.map(c=>'<div class="cat'+(c.cat===CUR?" on":"")+'" onclick="pick(\\''+esc(c.cat)+'\\')">'+esc(c.cat)+' <b>'+c.active+'</b>'+(c.imgs?' 🖼'+c.imgs:'')+'</div>').join("");
   const opts=d.cats.map(c=>'<option>'+esc(c.cat)+'</option>').join("");
   $("ec").innerHTML=opts;$("impCat").innerHTML=opts;
-  if(!CUR&&d.cats.length){CUR=d.cats[0].cat;loadCat(0);load();}
+  if(!CUR&&d.cats.length){CUR=d.cats[0].cat;loadCat(0);load2();}
 }
-function pick(c){CUR=c;PAGE=0;loadCat(0);load();}
+function load2(){$("cats").querySelectorAll(".cat").forEach(e=>e.classList.toggle("on",e.textContent.trim().startsWith(CUR)));}
+function pick(c){CUR=c;PAGE=0;load2();loadCat(0);}
 
 async function loadCat(p){
   if(p!==undefined)PAGE=p;
@@ -434,27 +501,24 @@ async function loadCat(p){
       '<span class="tag">صعوبة '+it.d+'</span>'+
       (it.edited?'<span class="tag e">معدَّل</span>':'')+
       (it.img?'<span class="tag i">صورة</span>':'')+
-      '<button class="s" data-it="'+dataAttr+'" onclick="openEd(this)">تعديل</button>'+
-      '<button class="s" onclick="tog(\''+qq+'\')">'+(it.off?"تفعيل":"تعطيل")+'</button>'+
-      (it.src==="مخصص"?'<button class="s r" onclick="del(\''+qq+'\')">حذف</button>':'')+
-      (it.edited?'<button class="s" onclick="reset(\''+qq+'\')">إلغاء التعديل</button>':'')+
+      '<button class="s" onclick=\\'openEd('+JSON.stringify(it).replace(/'/g,"&#39;")+')\\'>تعديل</button>'+
+      '<button class="s" onclick="tog(\\''+qq+'\\')">'+(it.off?"تفعيل":"تعطيل")+'</button>'+
+      (it.src==="مخصص"?'<button class="s r" onclick="del(\\''+qq+'\\')">حذف</button>':'')+
+      (it.edited?'<button class="s" onclick="reset(\\''+qq+'\\')">إلغاء التعديل</button>':'')+
       '</div></div>';
   }).join("")||'<div class="sub">لا نتائج</div>';
   let pg="";
-  for(let i=0;i<d.pages&&i<40;i++)pg+='<button class="s" style="'+(i===d.page?"background:#2f7ad6":"")+'" onclick="loadCat('+i+')">'+(i+1)+'</button>';
+  for(let i=0;i<d.pages&&i<30;i++)pg+='<button class="s" style="'+(i===d.page?"background:#2f7ad6":"")+'" onclick="loadCat('+i+')">'+(i+1)+'</button>';
   $("pag").innerHTML=d.pages>1?pg:"";
   $("msg").innerHTML='<span class="ok">'+d.total+' سؤال في «'+esc(CUR)+'»</span>';
 }
 
-function openNew(){EDIT=null;$("edTitle").textContent="سؤال جديد";["eq","e1","e2","e3","e4","ei"].forEach(i=>$(i).value="");$("ed_d").value="1";$("ep").style.display="none";$("ec").value=CUR;$("ed").style.display="block";$("edMsg").textContent="";$("ed").scrollIntoView({behavior:"smooth"});}
+function openNew(){EDIT=null;$("edTitle").textContent="سؤال جديد";$("eq").value="";$("e1").value="";$("e2").value="";$("e3").value="";$("e4").value="";$("ed_d").value="1";$("ei").value="";$("ep").style.display="none";$("ec").value=CUR;$("ed").style.display="block";$("edMsg").textContent="";window.scrollTo(0,document.body.scrollHeight);}
 function openEd(btn){
   const it=JSON.parse(decodeURIComponent(btn.dataset.it));
-  EDIT=it.q;$("edTitle").textContent="تعديل سؤال";$("eq").value=it.q;
-  $("e1").value=it.a[0];$("e2").value=it.a[1];$("e3").value=it.a[2];$("e4").value=it.a[3];
-  $("ed_d").value=it.d;$("ei").value=it.img||"";$("ec").value=CUR;
+  EDIT=it.q;$("edTitle").textContent="تعديل سؤال";$("eq").value=it.q;$("e1").value=it.a[0];$("e2").value=it.a[1];$("e3").value=it.a[2];$("e4").value=it.a[3];$("ed_d").value=it.d;$("ei").value=it.img||"";$("ec").value=CUR;
   if(it.img){$("ep").src=it.img;$("ep").style.display="block";}else $("ep").style.display="none";
-  $("ed").style.display="block";$("edMsg").textContent="";$("ed").scrollIntoView({behavior:"smooth"});
-}
+  $("ed").style.display="block";$("edMsg").textContent="";$("ed").scrollIntoView({behavior:"smooth"});}
 function closeEd(){$("ed").style.display="none";EDIT=null;}
 function clearImg(){$("ei").value="";$("ep").style.display="none";$("ef").value="";}
 
@@ -475,7 +539,7 @@ async function save(){
     d:+$("ed_d").value,cat:$("ec").value,img:$("ei").value};
   let r;
   if(EDIT){b.orig=EDIT;r=await api("/edit",b);}else r=await api("/add",b);
-  if(r.ok){closeEd();load();loadCat();}
+  if(r.ok){$("edMsg").innerHTML='<span class="ok">تم الحفظ</span>';closeEd();load();loadCat();}
   else $("edMsg").innerHTML='<span class="err">'+esc(r.error||"خطأ")+'</span>';
 }
 async function tog(q){await api("/toggle",{q});load();loadCat();}
@@ -487,8 +551,52 @@ async function doImport(){
   load();loadCat();
 }
 $("q").addEventListener("keydown",e=>{if(e.key==="Enter")loadCat(0);});
+
+/* ═══ 🚩 البلاغات ═══ */
+let RP=[];
+async function loadReports(){
+  const d=await (await fetch(B+"/reports")).json();
+  RP=d.reports||[];
+  $("rpCard").style.display=RP.length?"block":"none";
+  $("rpN").textContent=RP.length;
+  $("rpList").innerHTML=RP.map(r=>{
+    const dt=new Date(r.at).toLocaleString("ar",{dateStyle:"short",timeStyle:"short"});
+    return '<div class="item"><div class="qt">'+esc(r.q||"(بلاغ عام بلا سؤال)")+'</div>'+
+      (r.row?'<div class="opts">'+r.row.a.map((a,i)=>'<span class="opt'+(i===0?" ok":"")+'">'+esc(a)+'</span>').join("")+'</div>':
+        (r.q?'<div class="sub">⚠ السؤال غير موجود في البنك حاليًا (رُبّما حُذف أو عُدّل نصّه)</div>':""))+
+      ((r.reasons&&r.reasons.length)?'<div class="sub">💬 '+r.reasons.map(esc).join(" · ")+'</div>':'')+
+      '<div class="meta"><span class="tag">'+dt+'</span>'+
+      (r.n>1?'<span class="tag x">بلّغ عنه '+r.n+'</span>':'')+
+      (r.cat?'<span class="tag">'+esc(r.cat)+'</span>':'')+
+      (r.room?'<span class="tag">غرفة '+esc(r.room)+'</span>':'')+
+      (r.row?'<button class="s" onclick="rpEdit(\''+r.id+'\')">✏ فتح في المحرّر</button>'+
+             '<button class="s" onclick="rpOff(\''+r.id+'\')">⛔ تعطيل السؤال</button>':'')+
+      '<button class="s r" onclick="rpDel(\''+r.id+'\')">تمّت المعالجة ✓</button>'+
+      '</div></div>';
+  }).join("");
+}
+function rpFind(id){return RP.find(r=>r.id===id);}
+function rpEdit(id){
+  const r=rpFind(id);if(!r||!r.row)return;
+  EDIT=r.q;$("edTitle").textContent="تعديل سؤال (من بلاغ)";
+  $("eq").value=r.q;$("e1").value=r.row.a[0];$("e2").value=r.row.a[1];
+  $("e3").value=r.row.a[2];$("e4").value=r.row.a[3];$("ed_d").value=r.row.d;
+  $("ei").value=r.row.img||"";$("ec").value=r.cat||CUR;
+  if(r.row.img){$("ep").src=r.row.img;$("ep").style.display="block";}else $("ep").style.display="none";
+  $("ed").style.display="block";$("edMsg").textContent="";
+  $("ed").scrollIntoView({behavior:"smooth"});
+}
+async function rpOff(id){
+  const r=rpFind(id);if(!r)return;
+  await api("/toggle",{q:r.q});
+  await api("/report-del",{id});
+  loadReports();load();loadCat();
+}
+async function rpDel(id){await api("/report-del",{id});loadReports();}
+async function rpClear(){if(!confirm("مسح كل البلاغات؟"))return;await api("/report-del",{id:"*"});loadReports();}
+loadReports();
 load();
-<\/script></div></body></html>`.replace(/ADMIN_URL/g, ADMIN_PATH);
+</script></div></body></html>`.replace(/ADMIN_URL/g, ADMIN_PATH);
 }
 
 module.exports = { setupQuestionAdmin, parseBulk, validateRow };
