@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>مختبر مشهد الفخاخ — قمّة الهرم</title>
+<style>
+:root{
+  --bg:#070b16; --ink:#f4f6ff; --dim:#9aa6c4; --stroke:rgba(255,255,255,.14);
+  --gold:#ffcb2e; --cyan:#22e6ff; --violet:#8b5cf6; --magenta:#ff2f8e;
+  --spring:cubic-bezier(.2,1.35,.35,1); --ease:cubic-bezier(.2,.9,.3,1);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:"Tajawal","Segoe UI",system-ui,sans-serif;overflow:hidden}
+
+/* ═══ المسرح: الفيديو ثم الإطار الثابت ═══ */
+#stage{position:relative;width:100%;height:100%;overflow:hidden;background:#000}
+#vid,#still{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+#still{opacity:0;transition:opacity .35s}
+#still.on{opacity:1}
+
+/* ═══ العدّاد — أربعة أشكال ═══ */
+#clockWrap{position:absolute;z-index:5;cursor:grab;user-select:none;touch-action:none;
+  display:flex;align-items:center;justify-content:center}
+#clockWrap.drag{cursor:grabbing}
+#clockWrap.lock{cursor:default}
+
+/* شكل ١: قرص التلفزيون */
+.ck1{position:relative;width:100%;height:100%;border-radius:50%;
+  background:radial-gradient(circle at 34% 28%,#8a9099 0%,#4a5058 32%,#23272d 70%,#14171c 100%);
+  box-shadow:inset -5px -6px 14px rgba(0,0,0,.85),inset 4px 4px 10px rgba(255,255,255,.18),
+    0 10px 26px rgba(0,0,0,.65);
+  display:flex;align-items:center;justify-content:center;border:3px solid rgba(255,255,255,.16)}
+.ck1 .num{font-size:38%;font-weight:900;color:#fff;text-shadow:0 2px 6px #000;
+  font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.ck1 .ticks{position:absolute;inset:6%}
+.ck1 .ticks i{position:absolute;left:50%;top:0;width:2px;height:9%;
+  background:rgba(255,255,255,.5);transform-origin:50% 560%;border-radius:2px}
+.ck1 .ring{position:absolute;inset:-7%}
+.ck1 .ring circle{fill:none;stroke-width:5;stroke-linecap:round}
+
+/* شكل ٢: أنبوب CRT — خط مسح يهبط */
+.ck2{position:relative;width:100%;height:100%;border-radius:14%/20%;overflow:hidden;
+  background:linear-gradient(180deg,#0d2b24,#071913);
+  border:3px solid rgba(140,180,160,.35);
+  box-shadow:inset 0 0 34px rgba(0,255,180,.16),0 8px 24px rgba(0,0,0,.6)}
+.ck2::before{content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.34) 0 2px,transparent 2px 4px)}
+.ck2 .scan{position:absolute;left:0;right:0;height:16%;
+  background:linear-gradient(180deg,transparent,rgba(120,255,200,.28),transparent);
+  animation:scanDrop 2.6s linear infinite}
+@keyframes scanDrop{from{top:-16%}to{top:100%}}
+.ck2 .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:44%;font-weight:900;color:#b8ffe0;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 12px rgba(90,255,190,.9),0 0 3px #000}
+
+/* شكل ٣: شريط تحت الشاشة */
+.ck3{position:relative;width:100%;height:100%;display:flex;align-items:center;
+  justify-content:center;gap:10px;border-radius:99px;padding:0 6%;
+  background:linear-gradient(180deg,rgba(20,26,40,.92),rgba(8,11,20,.92));
+  border:2px solid rgba(255,255,255,.16);box-shadow:0 8px 22px rgba(0,0,0,.55)}
+.ck3 .bar{flex:1;height:26%;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+.ck3 .bar i{display:block;height:100%;width:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--cyan),var(--violet))}
+.ck3 .num{font-size:42%;font-weight:900;font-variant-numeric:tabular-nums;color:#fff}
+
+/* شكل ٤: أنبوب نيون */
+.ck4{position:relative;width:100%;height:100%;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle,rgba(10,14,26,.9),rgba(6,9,18,.95));
+  border:3px solid rgba(34,230,255,.55);
+  box-shadow:0 0 26px rgba(34,230,255,.45),inset 0 0 26px rgba(34,230,255,.22)}
+.ck4 .num{font-size:40%;font-weight:900;color:#dff8ff;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 14px rgba(34,230,255,.95)}
+.ck4 .ring{position:absolute;inset:-8%}
+.ck4 .ring circle{fill:none;stroke-width:4;stroke-linecap:round;stroke:var(--cyan);
+  filter:drop-shadow(0 0 6px rgba(34,230,255,.9))}
+
+/* ═══ البطاقات ═══ */
+#cards{position:absolute;z-index:4;display:flex;flex-wrap:wrap;
+  align-items:center;justify-content:center;cursor:grab;user-select:none;touch-action:none}
+#cards.drag{cursor:grabbing}
+#cards.lock{cursor:default}
+.card{position:relative;aspect-ratio:1/1.5;border-radius:14px;flex:0 0 auto;
+  background:linear-gradient(160deg,var(--pc1),var(--pc2));
+  box-shadow:0 10px 26px -6px rgba(0,0,0,.75),inset 0 0 0 2px rgba(255,255,255,.22);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4%;
+  animation:cardFloat 4.2s ease-in-out infinite;transition:transform .2s var(--spring)}
+.card:nth-child(1){--tilt:-11deg;animation-delay:.0s}
+.card:nth-child(2){--tilt:7deg;animation-delay:.5s}
+.card:nth-child(3){--tilt:-6deg;animation-delay:1s}
+.card:nth-child(4){--tilt:12deg;animation-delay:1.5s}
+.card:nth-child(5){--tilt:-9deg;animation-delay:2s}
+.card:nth-child(6){--tilt:5deg;animation-delay:2.5s}
+@keyframes cardFloat{0%,100%{transform:translateY(0) rotate(var(--tilt))}
+  50%{transform:translateY(-11px) rotate(calc(var(--tilt)*.55))}}
+.card .em{font-size:190%;line-height:1;filter:drop-shadow(0 2px 5px rgba(0,0,0,.5))}
+.card .lb{font-size:74%;font-weight:900;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.75);
+  text-align:center;padding:0 6%;line-height:1.2}
+.card .self{position:absolute;top:5%;font-size:56%;font-weight:800;
+  background:rgba(0,0,0,.5);padding:2px 8px;border-radius:99px;color:#fff}
+
+/* مقابض التحجيم */
+.grip{position:absolute;left:50%;bottom:-11px;transform:translateX(-50%);
+  width:52px;height:9px;border-radius:99px;background:rgba(255,255,255,.5);
+  cursor:ns-resize;box-shadow:0 0 0 2px rgba(0,0,0,.5);display:none}
+.showGrips .grip{display:block}
+.hint{position:absolute;top:-24px;left:50%;transform:translateX(-50%);
+  font-size:11px;font-weight:800;color:#fff;background:rgba(0,0,0,.6);
+  padding:2px 9px;border-radius:99px;white-space:nowrap;display:none}
+.showGrips .hint{display:block}
+
+/* ═══ لوحة التحكم ═══ */
+#panel{position:fixed;top:12px;inset-inline-start:12px;z-index:50;width:290px;
+  background:rgba(8,11,20,.94);border:1px solid var(--stroke);border-radius:16px;
+  padding:12px;backdrop-filter:blur(10px);box-shadow:0 14px 40px rgba(0,0,0,.6);
+  max-height:calc(100vh - 24px);overflow:auto;font-size:13px}
+#panel.min{width:auto;padding:8px 12px}
+#panel.min .body{display:none}
+#panel h3{margin:0 0 8px;font-size:14px;display:flex;align-items:center;gap:8px}
+#panel h3 button{margin-inline-start:auto;background:none;border:0;color:var(--dim);
+  cursor:pointer;font-size:16px}
+.row{display:flex;align-items:center;gap:8px;margin:7px 0}
+.row label{flex:0 0 74px;color:var(--dim);font-weight:700;font-size:12px}
+.row input[type=range]{flex:1;accent-color:var(--violet)}
+.row output{flex:0 0 46px;text-align:center;font-weight:900;font-size:12px}
+.seg{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0}
+.seg button{flex:1;min-width:56px;padding:7px 4px;border-radius:9px;cursor:pointer;
+  border:1px solid var(--stroke);background:rgba(255,255,255,.05);color:var(--ink);
+  font-family:inherit;font-weight:800;font-size:12px}
+.seg button.on{background:linear-gradient(135deg,var(--violet),var(--magenta));border-color:transparent}
+.btn{width:100%;padding:9px;border-radius:10px;border:0;cursor:pointer;margin-top:7px;
+  background:linear-gradient(135deg,var(--violet),var(--magenta));color:#fff;
+  font-family:inherit;font-weight:900;font-size:13px}
+.btn.alt{background:rgba(255,255,255,.09);color:var(--ink);border:1px solid var(--stroke)}
+.note{color:var(--dim);font-size:11px;line-height:1.5;margin:8px 0 0}
+#out{margin-top:8px;background:rgba(0,0,0,.5);border:1px solid var(--stroke);
+  border-radius:9px;padding:8px;font:11px/1.6 ui-monospace,monospace;
+  white-space:pre;direction:ltr;text-align:left;max-height:150px;overflow:auto;display:none}
+#out.on{display:block}
+</style></head><body>
+
+<div id="stage">
+  <video id="vid" playsinline muted preload="auto"></video>
+  <img id="still" alt="">
+
+  <div id="clockWrap">
+    <div class="hint">اسحب لتحريك · المقبض للحجم</div>
+    <div id="clockBox"></div>
+    <div class="grip" data-for="clock"></div>
+  </div>
+
+  <div id="cards">
+    <div class="hint">اسحب لتحريك · المقبض للحجم</div>
+    <div class="grip" data-for="cards"></div>
+  </div>
+</div>
+
+<div id="panel">
+  <h3>🎛️ مختبر مشهد الفخاخ <button id="minB" type="button">−</button></h3>
+  <div class="body">
+
+    <div class="seg" id="ckSeg">
+      <button data-ck="1" class="on">قرص</button>
+      <button data-ck="2">أنبوب</button>
+      <button data-ck="3">شريط</button>
+      <button data-ck="4">نيون</button>
+    </div>
+
+    <div class="row"><label>حجم العدّاد</label>
+      <input type="range" id="ckS" min="50" max="260" value="110"><output id="ckSo"></output></div>
+    <div class="row"><label>أفقي</label>
+      <input type="range" id="ckX" min="0" max="100" value="50"><output id="ckXo"></output></div>
+    <div class="row"><label>رأسي</label>
+      <input type="range" id="ckY" min="0" max="100" value="14"><output id="ckYo"></output></div>
+
+    <div class="row" style="margin-top:12px"><label>حجم البطاقة</label>
+      <input type="range" id="cdS" min="50" max="220" value="108"><output id="cdSo"></output></div>
+    <div class="row"><label>تباعد</label>
+      <input type="range" id="cdG" min="0" max="60" value="18"><output id="cdGo"></output></div>
+    <div class="row"><label>عرض المنطقة</label>
+      <input type="range" id="cdW" min="30" max="100" value="62"><output id="cdWo"></output></div>
+    <div class="row"><label>أفقي</label>
+      <input type="range" id="cdX" min="0" max="100" value="50"><output id="cdXo"></output></div>
+    <div class="row"><label>رأسي</label>
+      <input type="range" id="cdY" min="0" max="100" value="58"><output id="cdYo"></output></div>
+    <div class="row"><label>عدد</label>
+      <input type="range" id="cdN" min="1" max="6" value="3"><output id="cdNo"></output></div>
+
+    <button class="btn" id="playB" type="button">▶ أعد تشغيل المشهد</button>
+    <button class="btn alt" id="gripB" type="button">إظهار مقابض السحب</button>
+    <button class="btn alt" id="copyB" type="button">📋 انسخ القياسات</button>
+    <div id="out"></div>
+    <p class="note">اسحب العدّاد أو البطاقات مباشرةً على الشاشة، أو استعمل الأشرطة.
+      القياسات نِسَبية فتثبت على كل الأحجام.</p>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const PW_EM={freeze:"❄️",gloop:"🟢",bombs:"💣",nibble:"👾",double:"✨",bet:"🎲"};
+const PW_NM={freeze:"تجميد",gloop:"وحل",bombs:"قنابل",nibble:"أكلة الحروف",double:"مضاعفة",bet:"رهان"};
+const PW_CL={freeze:["#7ee8ff","#2b6cff"],gloop:["#a8e063","#2f7d32"],
+  bombs:["#ff9a5a","#b3261e"],nibble:["#c9a4ff","#5b21b6"],
+  double:["#ffe36e","#ff8a00"],bet:["#ffcb2e","#ff2f8e"]};
+const SELF=new Set(["double"]);
+const ORDER=["freeze","gloop","bombs","nibble","double","bet"];
+
+/* ═══ الحالة ═══ */
+const S={ck:1,ckS:110,ckX:50,ckY:14,cdS:108,cdG:18,cdW:62,cdX:50,cdY:58,cdN:3};
+const LS="trapLab";
+try{Object.assign(S,JSON.parse(localStorage.getItem(LS)||"{}"));}catch(e){}
+
+/* ═══ المشهد: الفيديو ثم تجميد الإطار الأخير ═══ */
+const vid=$("vid"), still=$("still");
+still.src="/traps/end.webp";
+function playScene(){
+  still.classList.remove("on");
+  vid.style.opacity="1";
+  vid.src="/traps/intro.mp4";
+  vid.currentTime=0;
+  vid.play().catch(()=>{});
+}
+/* عند انتهاء الفيديو نُظهر الإطار الأخير الثابت — فلا وميض ولا عودة للبداية */
+vid.addEventListener("ended",()=>{ still.classList.add("on"); });
+vid.addEventListener("error",()=>{ still.classList.add("on"); });
+playScene();
+$("playB").onclick=playScene;
+
+/* ═══ العدّاد ═══ */
+function clockHTML(k,n){
+  if(k===1){
+    let t="";for(let i=0;i<12;i++)t+='<i style="transform:translateX(-50%) rotate('+(i*30)+'deg)"></i>';
+    return '<div class="ck1"><div class="ticks">'+t+'</div>'+
+      '<svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="47" stroke="rgba(255,255,255,.12)"/>'+
+      '<circle id="ckArc" cx="50" cy="50" r="47" stroke="url(#g1)" transform="rotate(-90 50 50)"/>'+
+      '<defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">'+
+      '<stop offset="0" stop-color="#ffcb2e"/><stop offset="1" stop-color="#ff2f8e"/></linearGradient></defs></svg>'+
+      '<span class="num">'+n+'</span></div>';
+  }
+  if(k===2) return '<div class="ck2"><div class="scan"></div><span class="num">'+n+'</span></div>';
+  if(k===3) return '<div class="ck3"><span class="num">'+n+'</span>'+
+      '<span class="bar"><i id="ckBar"></i></span></div>';
+  return '<div class="ck4">'+
+      '<svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="47" stroke="rgba(34,230,255,.15)"/>'+
+      '<circle id="ckArc" cx="50" cy="50" r="47" transform="rotate(-90 50 50)"/></svg>'+
+      '<span class="num">'+n+'</span></div>';
+}
+let secs=60, t0=Date.now();
+function tick(){
+  const el=Date.now()-t0;
+  secs=Math.max(0,60-Math.floor(el/1000));
+  const frac=Math.max(0,1-el/60000);
+  const num=$("clockBox").querySelector(".num");
+  if(num)num.textContent=secs;
+  const arc=document.getElementById("ckArc");
+  if(arc){const C=2*Math.PI*47;arc.style.strokeDasharray=C;arc.style.strokeDashoffset=C*(1-frac);}
+  const bar=document.getElementById("ckBar");
+  if(bar)bar.style.width=(frac*100)+"%";
+  if(secs<=0)t0=Date.now();
+  requestAnimationFrame(tick);
+}
+function drawClock(){ $("clockBox").innerHTML=clockHTML(S.ck,secs); }
+
+/* ═══ البطاقات ═══ */
+function drawCards(){
+  const box=$("cards");
+  [...box.querySelectorAll(".card")].forEach(e=>e.remove());
+  ORDER.slice(0,S.cdN).forEach(p=>{
+    const cl=PW_CL[p], d=document.createElement("div");
+    d.className="card";
+    d.style.setProperty("--pc1",cl[0]);d.style.setProperty("--pc2",cl[1]);
+    d.innerHTML=(SELF.has(p)?'<span class="self">لنفسك</span>':(p==="bet"?'<span class="self">مراهنة</span>':''))+
+      '<span class="em">'+PW_EM[p]+'</span><span class="lb">'+PW_NM[p]+'</span>';
+    box.appendChild(d);
+  });
+}
+
+/* ═══ التخطيط ═══ */
+function apply(){
+  const cw=$("clockWrap");
+  cw.style.width=S.ckS+"px"; cw.style.height=S.ckS+"px";
+  cw.style.left=S.ckX+"%"; cw.style.top=S.ckY+"%";
+  cw.style.transform="translate(-50%,-50%)";
+  $("clockBox").style.cssText="width:100%;height:100%";
+
+  const cd=$("cards");
+  cd.style.width=S.cdW+"%";
+  cd.style.left=S.cdX+"%"; cd.style.top=S.cdY+"%";
+  cd.style.transform="translate(-50%,-50%)";
+  cd.style.gap=S.cdG+"px";
+  cd.style.fontSize=(S.cdS*.22)+"px";
+  [...cd.querySelectorAll(".card")].forEach(c=>{c.style.width=S.cdS+"px";});
+
+  ["ckS","ckX","ckY","cdS","cdG","cdW","cdX","cdY","cdN"].forEach(k=>{
+    const i=$(k); if(i)i.value=S[k];
+    const o=$(k+"o"); if(o)o.textContent=S[k]+(k==="ckS"||k==="cdS"||k==="cdG"?"px":(k==="cdN"?"":"%"));
+  });
+  [...$("ckSeg").children].forEach(b=>b.classList.toggle("on",+b.dataset.ck===S.ck));
+  try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}
+  if($("out").classList.contains("on"))showOut();
+}
+
+/* ═══ الأشرطة ═══ */
+["ckS","ckX","ckY","cdS","cdG","cdW","cdX","cdY","cdN"].forEach(k=>{
+  $(k).oninput=e=>{ S[k]=+e.target.value; if(k==="cdN")drawCards(); apply(); };
+});
+[...$("ckSeg").children].forEach(b=>{
+  b.onclick=()=>{ S.ck=+b.dataset.ck; drawClock(); apply(); };
+});
+
+/* ═══ السحب المباشر ═══ */
+function draggable(el,kx,ky){
+  el.addEventListener("pointerdown",e=>{
+    if(e.target.classList.contains("grip"))return;
+    if(!document.body.classList.contains("showGrips"))return;
+    e.preventDefault(); el.classList.add("drag");
+    const R=$("stage").getBoundingClientRect();
+    const mv=ev=>{
+      S[kx]=Math.round(Math.min(100,Math.max(0,(ev.clientX-R.left)/R.width*100)));
+      S[ky]=Math.round(Math.min(100,Math.max(0,(ev.clientY-R.top)/R.height*100)));
+      apply();
+    };
+    const up=()=>{el.classList.remove("drag");
+      document.removeEventListener("pointermove",mv);
+      document.removeEventListener("pointerup",up);};
+    document.addEventListener("pointermove",mv);
+    document.addEventListener("pointerup",up);
+  });
+}
+draggable($("clockWrap"),"ckX","ckY");
+draggable($("cards"),"cdX","cdY");
+
+document.querySelectorAll(".grip").forEach(g=>{
+  g.addEventListener("pointerdown",e=>{
+    e.preventDefault();e.stopPropagation();
+    const key=g.dataset.for==="clock"?"ckS":"cdS";
+    const y0=e.clientY, v0=S[key];
+    const mv=ev=>{ S[key]=Math.max(50,Math.min(260,Math.round(v0+(ev.clientY-y0)))); apply(); };
+    const up=()=>{document.removeEventListener("pointermove",mv);
+      document.removeEventListener("pointerup",up);};
+    document.addEventListener("pointermove",mv);
+    document.addEventListener("pointerup",up);
+  });
+});
+
+$("gripB").onclick=()=>{
+  const on=document.body.classList.toggle("showGrips");
+  $("gripB").textContent=on?"إخفاء مقابض السحب":"إظهار مقابض السحب";
+};
+$("minB").onclick=()=>{
+  const p=$("panel"), m=p.classList.toggle("min");
+  $("minB").textContent=m?"+":"−";
+};
+function showOut(){
+  $("out").textContent=
+"/* قياسات مشهد الفخاخ */\n"+
+"clock: shape "+S.ck+" · size "+S.ckS+"px · x "+S.ckX+"% · y "+S.ckY+"%\n"+
+"cards: size "+S.cdS+"px · gap "+S.cdG+"px · area "+S.cdW+"%\n"+
+"       x "+S.cdX+"% · y "+S.cdY+"% · count "+S.cdN;
+}
+$("copyB").onclick=()=>{
+  $("out").classList.add("on"); showOut();
+  navigator.clipboard&&navigator.clipboard.writeText($("out").textContent);
+  $("copyB").textContent="✓ نُسخت";
+  setTimeout(()=>$("copyB").textContent="📋 انسخ القياسات",1400);
+};
+
+drawClock(); drawCards(); apply(); tick();
+</script></body></html>
