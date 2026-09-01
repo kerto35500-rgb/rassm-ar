@@ -14,7 +14,12 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
   font-family:"Tajawal","Segoe UI",system-ui,sans-serif;overflow:hidden}
 
 /* ═══ المسرح: الفيديو ثم الإطار الثابت ═══ */
-#stage{position:relative;width:100%;height:100%;overflow:hidden;background:#000}
+#stage{position:relative;width:100%;height:100%;overflow:hidden;background:#000;
+  margin-inline:auto;transition:width .3s var(--ease)}
+/* في وضع الجوال نحصر المسرح في إطار ٩:١٦ ليكون القياس واقعيًّا على الحاسوب.
+   النِّسب المئوية للمواضع تُحسب من مستطيل المسرح نفسه، فتنتقل كما هي إلى الهاتف. */
+body.dev-m #stage{width:min(100%,calc(100vh * 9 / 16));
+  box-shadow:0 0 0 1px rgba(255,255,255,.18),0 0 60px rgba(0,0,0,.9)}
 #vid,#still{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 /* الصورة أرضية دائمة تحت الفيديو: لو تأخّر التحميل أو فشل، يرى اللاعب
    الإطار الأخير بدل شاشة سوداء. والفيديو فوقها يتلاشى عند انتهائه فينكشف
@@ -92,13 +97,28 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
   border:1px solid rgba(34,230,255,.22);animation:halo 2.4s ease-out infinite}
 @keyframes halo{0%{transform:scale(.85);opacity:.8}100%{transform:scale(1.28);opacity:0}}
 
+/* ═══ النصّ ═══ */
+#title{position:absolute;z-index:5;cursor:grab;user-select:none;touch-action:none;
+  text-align:center;white-space:nowrap;font-weight:900;
+  color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.9),0 0 22px rgba(34,230,255,.35)}
+#title.drag{cursor:grabbing}
+#title .grip{bottom:-15px}
+/* أنماط النصّ الثلاثة */
+.tt-glow #titleTxt{background:linear-gradient(90deg,var(--cyan),#fff 45%,var(--magenta));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 8px rgba(0,0,0,.9))}
+.tt-plate #titleTxt{background:rgba(0,0,0,.55);padding:.28em .9em;border-radius:99px;
+  border:1px solid rgba(255,255,255,.2);display:inline-block}
+.tt-crt #titleTxt{color:#b8ffe0;text-shadow:0 0 14px rgba(90,255,190,.85),0 2px 4px #000;
+  letter-spacing:.04em}
+
 /* ═══ ظهور العدّاد والبطاقات بعد انتهاء الفيديو ═══
    الاثنان مخفيّان تمامًا أثناء المشهد ثم يدخلان بأنيميشن — فلا يشوّشان
    على الزوم ولا يظهران فوق شاشة لم تُفتح بعد. */
-#clockWrap,#cards{opacity:0;pointer-events:none}
-#clockWrap.reveal,#cards.reveal{opacity:1;pointer-events:auto}
+#clockWrap,#cards,#title{opacity:0;pointer-events:none}
+#clockWrap.reveal,#cards.reveal,#title.reveal{opacity:1;pointer-events:auto}
 /* أ · نبضة CRT: يتمدّد من خط أفقي كأن الشاشة أشعلته */
-.rv-crt #clockWrap.reveal{animation:crtIn .5s var(--spring) both}
+.rv-crt #clockWrap.reveal,.rv-crt #title.reveal{animation:crtIn .5s var(--spring) both}
 .rv-crt #cards.reveal .card{animation:crtIn2 .5s var(--spring) both,
   cardFloat 4.2s ease-in-out infinite calc(var(--d) + .6s)}
 @keyframes crtIn{0%{opacity:0;transform:translate(-50%,-50%) scaleY(.02) scaleX(1.3)}
@@ -108,7 +128,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
   55%{opacity:1;transform:scaleY(1.08) scaleX(.96)}
   100%{opacity:1;transform:rotate(var(--tilt))}}
 /* ب · صعود ناعم من الأسفل */
-.rv-rise #clockWrap.reveal{animation:riseIn .55s var(--spring) both}
+.rv-rise #clockWrap.reveal,.rv-rise #title.reveal{animation:riseIn .55s var(--spring) both}
 .rv-rise #cards.reveal .card{animation:riseCard .6s var(--spring) both,
   cardFloat 4.2s ease-in-out infinite calc(var(--d) + .7s)}
 @keyframes riseIn{from{opacity:0;transform:translate(-50%,-30%) scale(.8)}
@@ -116,7 +136,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
 @keyframes riseCard{from{opacity:0;transform:translateY(60px) rotate(calc(var(--tilt)*2)) scale(.7)}
   to{opacity:1;transform:translateY(0) rotate(var(--tilt)) scale(1)}}
 /* ج · قلب ثلاثي الأبعاد */
-.rv-flip #clockWrap.reveal{animation:riseIn .5s var(--spring) both}
+.rv-flip #clockWrap.reveal,.rv-flip #title.reveal{animation:riseIn .5s var(--spring) both}
 .rv-flip #cards.reveal .card{animation:flipIn .65s var(--ease) both,
   cardFloat 4.2s ease-in-out infinite calc(var(--d) + .75s)}
 @keyframes flipIn{from{opacity:0;transform:perspective(700px) rotateY(90deg) scale(.85)}
@@ -177,6 +197,9 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
 .row{display:flex;align-items:center;gap:8px;margin:7px 0}
 .row label{flex:0 0 74px;color:var(--dim);font-weight:700;font-size:12px}
 .row input[type=range]{flex:1;accent-color:var(--violet)}
+.row input[type=text]{flex:1;min-width:0;padding:6px 9px;border-radius:8px;
+  border:1px solid var(--stroke);background:rgba(255,255,255,.06);color:var(--ink);
+  font-family:inherit;font-size:12px;font-weight:700}
 .row output{flex:0 0 46px;text-align:center;font-weight:900;font-size:12px}
 .seg{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0}
 .seg button{flex:1;min-width:56px;padding:7px 4px;border-radius:9px;cursor:pointer;
@@ -204,6 +227,12 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
     <div class="grip" data-for="clock"></div>
   </div>
 
+  <div id="title">
+    <div class="hint">اسحب لتحريك · المقبض للحجم</div>
+    <span id="titleTxt">اختر بطاقتك الهجومية</span>
+    <div class="grip" data-for="title"></div>
+  </div>
+
   <div id="cards">
     <div class="hint">اسحب لتحريك · المقبض للحجم</div>
     <div class="grip" data-for="cards"></div>
@@ -213,6 +242,11 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
 <div id="panel">
   <h3>🎛️ مختبر مشهد الفخاخ <button id="minB" type="button">−</button></h3>
   <div class="body">
+
+    <div class="seg" id="devSeg">
+      <button data-dev="d" class="on">💻 كومبيوتر</button>
+      <button data-dev="m">📱 جوال</button>
+    </div>
 
     <div class="seg" id="ckSeg">
       <button data-ck="1" class="on">قرص</button>
@@ -234,6 +268,20 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
       <input type="range" id="ckX" min="0" max="100" value="44"><output id="ckXo"></output></div>
     <div class="row"><label>رأسي</label>
       <input type="range" id="ckY" min="0" max="100" value="23"><output id="ckYo"></output></div>
+
+    <div class="row" style="margin-top:12px"><label>النصّ</label>
+      <input type="text" id="ttTxt" value="اختر بطاقتك الهجومية"></div>
+    <div class="seg" id="ttSeg">
+      <button data-tt="glow" class="on">متدرّج</button>
+      <button data-tt="plate">لوحة</button>
+      <button data-tt="crt">فوسفوري</button>
+    </div>
+    <div class="row"><label>حجم النصّ</label>
+      <input type="range" id="ttS" min="12" max="90" value="30"><output id="ttSo"></output></div>
+    <div class="row"><label>أفقي</label>
+      <input type="range" id="ttX" min="0" max="100" value="44"><output id="ttXo"></output></div>
+    <div class="row"><label>رأسي</label>
+      <input type="range" id="ttY" min="0" max="100" value="41"><output id="ttYo"></output></div>
 
     <div class="row" style="margin-top:12px"><label>حجم البطاقة</label>
       <input type="range" id="cdS" min="50" max="220" value="138"><output id="cdSo"></output></div>
@@ -268,26 +316,56 @@ const SELF=new Set(["double"]);
 const ORDER=["freeze","gloop","bombs","nibble","double","bet"];
 
 /* ═══ الحالة ═══ */
-const S={ck:1,ckS:163,ckX:44,ckY:23,cdS:138,cdG:40,cdW:41,cdX:44,cdY:66,cdN:3,rv:'crt'};
+/* كل جهاز له قياساته الخاصّة: الشاشة الرأسية تحتاج بطاقات أصغر وصفًّا أضيق. */
+const DEF={
+  d:{ck:1,ckS:163,ckX:44,ckY:23,cdS:138,cdG:40,cdW:41,cdX:44,cdY:66,cdN:3,
+     ttS:30,ttX:44,ttY:41},
+  m:{ck:1,ckS:104,ckX:50,ckY:26,cdS:92,cdG:14,cdW:84,cdX:50,cdY:63,cdN:3,
+     ttS:20,ttX:50,ttY:44}
+};
+const SHARED=["rv","tt","ttSt"];          /* لا تتغيّر بتغيّر الجهاز */
+const MEDIA={d:{v:"/traps/intro.mp4",i:"/traps/end.webp"},
+             m:{v:"/traps/intro-m.mp4",i:"/traps/end-m.webp"}};
 const LS="trapLab";
-try{Object.assign(S,JSON.parse(localStorage.getItem(LS)||"{}"));}catch(e){}
+
+let DEV = (innerWidth<760 || innerWidth<innerHeight) ? "m" : "d";
+const BOX={d:{...DEF.d},m:{...DEF.m}};
+const S={...DEF.d,rv:'crt',tt:'اختر بطاقتك الهجومية',ttSt:'glow'};
+try{
+  const raw=JSON.parse(localStorage.getItem(LS)||"{}");
+  if(raw.d)Object.assign(BOX.d,raw.d);
+  if(raw.m)Object.assign(BOX.m,raw.m);
+  SHARED.forEach(k=>{ if(raw[k]!==undefined)S[k]=raw[k]; });
+  if(raw.dev)DEV=raw.dev;
+}catch(e){}
+Object.assign(S,BOX[DEV]);
+
+function stash(){ Object.keys(DEF[DEV]).forEach(k=>BOX[DEV][k]=S[k]); }
+function setDev(k){
+  if(k===DEV)return;
+  stash(); DEV=k; Object.assign(S,BOX[DEV]);
+  document.body.classList.toggle("dev-m",DEV==="m");
+  still.src=MEDIA[DEV].i;
+  drawClock(); drawCards(); apply(); playScene();
+}
 
 /* ═══ المشهد: الفيديو ثم تجميد الإطار الأخير ═══ */
 const vid=$("vid"), still=$("still");
-still.src="/traps/end.webp";
+still.src=MEDIA[DEV].i;
+document.body.classList.toggle("dev-m",DEV==="m");
 /* العدّاد والبطاقات لا يظهران إلا بعد أن تُفتح الشاشة — أي عند انتهاء الفيديو */
-function hideUI(){ $("clockWrap").classList.remove("reveal"); $("cards").classList.remove("reveal"); }
+function hideUI(){ ["clockWrap","cards","title"].forEach(i=>$(i).classList.remove("reveal")); }
 function showUI(){
   /* إعادة تشغيل الأنيميشن: نزيل الصنف ونجبر إعادة التخطيط ثم نعيده */
   hideUI(); void $("cards").offsetWidth;
-  $("clockWrap").classList.add("reveal"); $("cards").classList.add("reveal");
+  ["clockWrap","cards","title"].forEach(i=>$(i).classList.add("reveal"));
   t0=Date.now();                    /* العدّاد يبدأ من ٦٠ لحظة الظهور */
 }
 let sceneT=null;
 function playScene(){
   clearTimeout(sceneT); hideUI();
   vid.classList.remove("done");
-  vid.src="/traps/intro.mp4";
+  vid.src=MEDIA[DEV].v;
   vid.currentTime=0;
   vid.play().catch(()=>finishScene());
   /* صمّام أمان: لو تعذّر التشغيل خلال ٣ ثوانٍ نُظهر الواجهة على الإطار الثابت */
@@ -369,9 +447,18 @@ function drawCards(){
 function apply(){
   const cw=$("clockWrap");
   cw.style.width=S.ckS+"px"; cw.style.height=S.ckS+"px";
+  /* النِّسب المئوية في font-size تُحسب من الخط الموروث لا من ارتفاع العنصر،
+     فنُثبّت أساسًا يساوي حجم العدّاد ليكبر الرقم معه فعلًا. */
+  cw.style.fontSize=S.ckS+"px";
   cw.style.left=S.ckX+"%"; cw.style.top=S.ckY+"%";
   cw.style.transform="translate(-50%,-50%)";
   $("clockBox").style.cssText="width:100%;height:100%";
+
+  const tt=$("title");
+  tt.style.left=S.ttX+"%"; tt.style.top=S.ttY+"%";
+  tt.style.transform="translate(-50%,-50%)";
+  tt.style.fontSize=S.ttS+"px";
+  $("titleTxt").textContent=S.tt;
 
   const cd=$("cards");
   cd.style.width=S.cdW+"%";
@@ -381,21 +468,31 @@ function apply(){
   cd.style.fontSize=(S.cdS*.22)+"px";
   [...cd.querySelectorAll(".card")].forEach(c=>{c.style.width=S.cdS+"px";});
 
-  ["ckS","ckX","ckY","cdS","cdG","cdW","cdX","cdY","cdN"].forEach(k=>{
+  ["ckS","ckX","ckY","cdS","cdG","cdW","cdX","cdY","cdN","ttS","ttX","ttY"].forEach(k=>{
     const i=$(k); if(i)i.value=S[k];
-    const o=$(k+"o"); if(o)o.textContent=S[k]+(k==="ckS"||k==="cdS"||k==="cdG"?"px":(k==="cdN"?"":"%"));
+    const o=$(k+"o"); if(o)o.textContent=S[k]+
+      (["ckS","cdS","cdG","ttS"].includes(k)?"px":(k==="cdN"?"":"%"));
   });
+  if($("ttTxt")&&$("ttTxt").value!==S.tt)$("ttTxt").value=S.tt;
+  [...$("ttSeg").children].forEach(b=>b.classList.toggle("on",b.dataset.tt===S.ttSt));
+  document.body.className=document.body.className.replace(/\btt-\w+/g,"").trim()+" tt-"+S.ttSt;
+  [...$("devSeg").children].forEach(b=>b.classList.toggle("on",b.dataset.dev===DEV));
   [...$("ckSeg").children].forEach(b=>b.classList.toggle("on",+b.dataset.ck===S.ck));
   [...$("rvSeg").children].forEach(b=>b.classList.toggle("on",b.dataset.rv===S.rv));
   document.body.className=document.body.className.replace(/\brv-\w+/g,"").trim()+" rv-"+S.rv;
-  try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}
+  stash();
+  try{localStorage.setItem(LS,JSON.stringify(
+    {dev:DEV,d:BOX.d,m:BOX.m,rv:S.rv,tt:S.tt,ttSt:S.ttSt}));}catch(e){}
   if($("out").classList.contains("on"))showOut();
 }
 
 /* ═══ الأشرطة ═══ */
-["ckS","ckX","ckY","cdS","cdG","cdW","cdX","cdY","cdN"].forEach(k=>{
+["ckS","ckX","ckY","cdS","cdG","cdW","cdX","cdY","cdN","ttS","ttX","ttY"].forEach(k=>{
   $(k).oninput=e=>{ S[k]=+e.target.value; if(k==="cdN")drawCards(); apply(); };
 });
+$("ttTxt").oninput=e=>{ S.tt=e.target.value; apply(); };
+[...$("ttSeg").children].forEach(b=>{ b.onclick=()=>{ S.ttSt=b.dataset.tt; apply(); }; });
+[...$("devSeg").children].forEach(b=>{ b.onclick=()=>setDev(b.dataset.dev); });
 [...$("ckSeg").children].forEach(b=>{
   b.onclick=()=>{ S.ck=+b.dataset.ck; drawClock(); apply(); };
 });
@@ -424,13 +521,15 @@ function draggable(el,kx,ky){
 }
 draggable($("clockWrap"),"ckX","ckY");
 draggable($("cards"),"cdX","cdY");
+draggable($("title"),"ttX","ttY");
 
 document.querySelectorAll(".grip").forEach(g=>{
   g.addEventListener("pointerdown",e=>{
     e.preventDefault();e.stopPropagation();
-    const key=g.dataset.for==="clock"?"ckS":"cdS";
+    const key={clock:"ckS",cards:"cdS",title:"ttS"}[g.dataset.for];
+    const LIM={ckS:[50,260],cdS:[50,220],ttS:[12,90]}[key];
     const y0=e.clientY, v0=S[key];
-    const mv=ev=>{ S[key]=Math.max(50,Math.min(260,Math.round(v0+(ev.clientY-y0)))); apply(); };
+    const mv=ev=>{ S[key]=Math.max(LIM[0],Math.min(LIM[1],Math.round(v0+(ev.clientY-y0)))); apply(); };
     const up=()=>{document.removeEventListener("pointermove",mv);
       document.removeEventListener("pointerup",up);};
     document.addEventListener("pointermove",mv);
@@ -446,13 +545,19 @@ $("minB").onclick=()=>{
   const p=$("panel"), m=p.classList.toggle("min");
   $("minB").textContent=m?"+":"−";
 };
+function blockOut(k,o){
+  return (k==="d"?"💻 كومبيوتر":"📱 جوال")+"\n"+
+"  clock: shape "+o.ck+" · size "+o.ckS+"px · x "+o.ckX+"% · y "+o.ckY+"%\n"+
+"  cards: size "+o.cdS+"px · gap "+o.cdG+"px · area "+o.cdW+"% · x "+o.cdX+"% · y "+o.cdY+"% · count "+o.cdN+"\n"+
+"  title: size "+o.ttS+"px · x "+o.ttX+"% · y "+o.ttY+"%\n";
+}
 function showOut(){
+  stash();
   $("out").textContent=
 "/* قياسات مشهد الفخاخ */\n"+
-"clock: shape "+S.ck+" · size "+S.ckS+"px · x "+S.ckX+"% · y "+S.ckY+"%\n"+
-"cards: size "+S.cdS+"px · gap "+S.cdG+"px · area "+S.cdW+"%\n"+
-"reveal: "+S.rv+"\n"+
-"       x "+S.cdX+"% · y "+S.cdY+"% · count "+S.cdN;
+blockOut("d",BOX.d)+blockOut("m",BOX.m)+
+"مشترك: reveal "+S.rv+" · نمط النصّ "+S.ttSt+"\n"+
+"النصّ: \""+S.tt+"\"";
 }
 $("copyB").onclick=()=>{
   $("out").classList.add("on"); showOut();
