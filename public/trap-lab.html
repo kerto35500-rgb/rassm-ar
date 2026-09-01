@@ -328,7 +328,16 @@ const MEDIA={d:{v:"/traps/intro.mp4",i:"/traps/end.webp"},
              m:{v:"/traps/intro-m.mp4",i:"/traps/end-m.webp"}};
 const LS="trapLab";
 
-let DEV = (innerWidth<760 || innerWidth<innerHeight) ? "m" : "d";
+/* التبويب الخلفي قد يبلّغ عن أبعاد صفرية قبل أوّل رسم، فنتحصّن بمصادر بديلة
+   ونؤجّل الحكم لو كان القياس غير صالح. */
+function sniffDev(){
+  const W=innerWidth||document.documentElement.clientWidth||screen.width||0;
+  const H=innerHeight||document.documentElement.clientHeight||screen.height||0;
+  if(!W||!H)return null;
+  return (W<760 || W<H) ? "m" : "d";
+}
+let AUTO=true;                       /* يبقى صحيحًا حتى يختار المستخدم بنفسه */
+let DEV = sniffDev() || "d";
 const BOX={d:{...DEF.d},m:{...DEF.m}};
 const S={...DEF.d,rv:'crt',tt:'اختر بطاقتك الهجومية',ttSt:'glow'};
 try{
@@ -336,12 +345,13 @@ try{
   if(raw.d)Object.assign(BOX.d,raw.d);
   if(raw.m)Object.assign(BOX.m,raw.m);
   SHARED.forEach(k=>{ if(raw[k]!==undefined)S[k]=raw[k]; });
-  if(raw.dev)DEV=raw.dev;
+  if(raw.dev){DEV=raw.dev;AUTO=false;}
 }catch(e){}
 Object.assign(S,BOX[DEV]);
 
 function stash(){ Object.keys(DEF[DEV]).forEach(k=>BOX[DEV][k]=S[k]); }
-function setDev(k){
+function setDev(k,auto){
+  if(!auto)AUTO=false;
   if(k===DEV)return;
   stash(); DEV=k; Object.assign(S,BOX[DEV]);
   document.body.classList.toggle("dev-m",DEV==="m");
@@ -492,7 +502,10 @@ function apply(){
 });
 $("ttTxt").oninput=e=>{ S.tt=e.target.value; apply(); };
 [...$("ttSeg").children].forEach(b=>{ b.onclick=()=>{ S.ttSt=b.dataset.tt; apply(); }; });
-[...$("devSeg").children].forEach(b=>{ b.onclick=()=>setDev(b.dataset.dev); });
+[...$("devSeg").children].forEach(b=>{ b.onclick=()=>setDev(b.dataset.dev,false); });
+/* لو حُمّلت الصفحة بأبعاد غير صالحة، نصحّح الوضع فور أوّل قياس حقيقي. */
+addEventListener("resize",()=>{ if(!AUTO)return; const d=sniffDev(); if(d)setDev(d,true); });
+requestAnimationFrame(()=>{ if(!AUTO)return; const d=sniffDev(); if(d&&d!==DEV)setDev(d,true); });
 [...$("ckSeg").children].forEach(b=>{
   b.onclick=()=>{ S.ck=+b.dataset.ck; drawClock(); apply(); };
 });
