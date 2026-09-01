@@ -250,11 +250,29 @@ input,select,textarea{font-family:inherit}
    الصندوق مثبّت من أسفل وارتفاعه تلقائي، فحافّته العليا وحدها هي التي ترتفع. */
 .rStack{position:absolute;bottom:76px;width:0;z-index:1;
   display:flex;flex-direction:column-reverse;align-items:center;pointer-events:none}
-.rStack .coin{display:block;width:30px;flex:0 0 auto;border-radius:50%;
-  height:calc(var(--pitch,7px) + 4px);margin-top:-4px;
-  background:linear-gradient(180deg,#ffe28a,#e0a814 55%,#a97806);
-  box-shadow:0 1px 2px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.6);
+/* عملة معدنية مرئية من زاوية مائلة: حافّة سميكة داكنة، وجه مضيء،
+   لمعة علوية، ونجمة محفورة في الوسط — لا قرص مسطّح. */
+.rStack .coin{position:relative;display:block;width:34px;flex:0 0 auto;border-radius:50%;
+  height:calc(var(--pitch,7px) + 5px);margin-top:-5px;
+  background:
+    /* اللمعة الزاحفة */
+    linear-gradient(100deg,transparent 32%,rgba(255,255,255,.55) 47%,transparent 60%),
+    /* حافّة العملة: داكنة أسفل، ذهبية أعلى */
+    linear-gradient(180deg,#fff3bd 0%,#ffd34d 26%,#e8a712 58%,#9c6a05 86%,#6d4703 100%);
+  box-shadow:
+    0 2px 3px rgba(0,0,0,.55),
+    inset 0 1.5px 0 rgba(255,255,255,.85),
+    inset 0 -1.5px 2px rgba(90,58,2,.9);
   animation:coinDrop .3s var(--spring) both}
+/* الوجه الداخلي الغائر */
+.rStack .coin::before{content:"";position:absolute;inset:14% 13%;border-radius:50%;
+  background:linear-gradient(180deg,#ffeaa0 0%,#f7c93c 40%,#d99c0d 100%);
+  box-shadow:inset 0 1px 2px rgba(120,78,4,.55)}
+/* نجمة محفورة */
+.rStack .coin::after{content:"";position:absolute;left:50%;top:50%;
+  width:38%;height:52%;transform:translate(-50%,-50%);
+  background:rgba(140,92,6,.55);
+  clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 92%,50% 71%,21% 92%,32% 57%,2% 35%,39% 35%)}
 @keyframes coinDrop{from{transform:translateY(-16px) scaleX(.5);opacity:0}to{transform:none;opacity:1}}
 
 /* ═══ صور بطاقات الفخاخ ═══
@@ -351,6 +369,34 @@ input,select,textarea{font-family:inherit}
   animation:orbRing 2.6s ease-out infinite}
 @keyframes orbAura{0%,100%{transform:scale(.94);opacity:.75}50%{transform:scale(1.08);opacity:1}}
 @keyframes orbRing{0%{transform:scale(.9);opacity:.85}100%{transform:scale(1.35);opacity:0}}
+
+/* ═══ القُرص المسحوب: نسخة صغيرة متوهّجة تخرج من قلب الدائرة وتتبع الإصبع ═══
+   الدائرة الكبيرة تبقى في مكانها كمَصدر، وهذا ما يُرمى. */
+#stTok{position:fixed;z-index:60;pointer-events:none;
+  width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  padding:8px;font-weight:900;font-size:13px;line-height:1.2;color:#fff;
+  text-shadow:0 1px 4px rgba(0,0,0,.8);
+  background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.5),rgba(255,255,255,.06) 55%),
+    linear-gradient(150deg,rgba(139,92,246,.95),rgba(34,230,255,.85));
+  border:2px solid rgba(255,255,255,.85);
+  box-shadow:0 0 0 5px rgba(34,230,255,.16),0 14px 44px -6px rgba(0,0,0,.8),
+             0 0 56px -4px rgba(34,230,255,.95);
+  opacity:0;transform:scale(.2);transition:opacity .12s,transform .12s var(--spring)}
+#stTok.on{opacity:1;transform:scale(1)}
+#stTok.up{background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.5),rgba(255,255,255,.06) 55%),
+    linear-gradient(150deg,#39e08a,#0f9c5a);box-shadow:0 0 0 5px rgba(57,224,138,.2),
+    0 14px 44px -6px rgba(0,0,0,.8),0 0 60px -4px rgba(57,224,138,.95)}
+#stTok.dn{background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.5),rgba(255,255,255,.06) 55%),
+    linear-gradient(150deg,#ffcb2e,#e0700d);box-shadow:0 0 0 5px rgba(255,203,46,.2),
+    0 14px 44px -6px rgba(0,0,0,.8),0 0 60px -4px rgba(255,203,46,.95)}
+#stTok.fly{transition:transform .26s ease-in,opacity .26s ease-in}
+/* ذيل خفيف يتبع القرص فيُقرأ الرمي حركةً لا قفزة */
+#stTok::after{content:"";position:absolute;inset:-18%;border-radius:50%;
+  border:2px solid rgba(255,255,255,.3);animation:tokRing 1.1s ease-out infinite}
+@keyframes tokRing{0%{transform:scale(.85);opacity:.9}100%{transform:scale(1.35);opacity:0}}
+/* الدائرة الكبيرة تخفت وتنكمش قليلاً وهي «تُفرغ» قرصها */
+#stOrb.src{transform:scale(.94)!important;opacity:.45;transition:transform .18s,opacity .18s}
 
 #stOrb.drag{cursor:grabbing;transition:none;
   border-color:rgba(34,230,255,.95);
@@ -1313,6 +1359,7 @@ body.noTop #hud,body.noTop #roster{display:none}
         <div class="stZone" id="stZoneL"><span class="szName"></span></div>
         <div id="stMid">
           <div id="stOrb"><span id="stWord"></span></div>
+          <div id="stTok"></div>
           <div id="stCount"></div>
         </div>
         <div class="stZone" id="stZoneR"><span class="szName"></span></div>
@@ -2193,6 +2240,17 @@ function rAtk(fresh){
   const menu=(MYMENU&&MYMENU.length)?MYMENU:(ST.settings.allowedPowers||[]);
   $("atkTitle").textContent="اختر بطاقتك الهجومية";
 
+  /* كل بثّ من الخادم أثناء الطور (لاعب آخر ضرب، تغيّر نقاط…) كان يعيد بناء
+     الصفّ فتضيع البطاقة المقلوبة ويُضطر اللاعب للنقر مرّتين. نبني الصفّ مرّة
+     واحدة لكل قائمة، ولا نمسّه ما دامت القائمة نفسها. */
+  const key=menu.join(",")+"|"+left;
+  if(row.dataset.key===key && row.children.length) {
+    let ammo0='<span class="ammo">';
+    for(let i=0;i<tot;i++)ammo0+='<i class="'+(i<left?"":"spent")+'"></i>';
+    $("atkNote").innerHTML="اقلب بطاقة لتكشف قوّتها"+ammo0+"</span>";
+    return;
+  }
+  row.dataset.key=key;
   row.innerHTML="";
   menu.forEach(p=>{
     const cl=PW_CL[p]||["#22e6ff","#8b5cf6"];
@@ -2252,7 +2310,11 @@ function openTargets(card,power,cl,foes){
   const L=$("tgList");L.innerHTML="";
   foes.forEach(p=>{
     const b=document.createElement("button");b.className="tg";
-    b.innerHTML='<span class="av">'+avatar(p.name,p.color)+'</span>'+
+    /* صورة الشخصية المختارة إن وُجدت، وإلا الحرف الأول */
+    const face=p.charId?'<img src="'+charImg(p.charId)+'" alt="" '+
+      'style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block">'
+      :avatar(p.name,p.color);
+    b.innerHTML='<span class="av">'+face+'</span>'+
                 '<span class="nm">'+esc(p.name)+'</span>'+
                 '<span class="sc">'+(p.score||0)+'</span>';
     b.onclick=()=>{
@@ -2482,6 +2544,7 @@ function rOpen(fresh){
   $("opHint").classList.toggle("gone",opSkipped||host);
   if(!fresh||opStarted)return;
   opStarted=true;
+  opStartAt=Date.now();
   document.body.classList.add("filmOn");   /* يوقف الطبقات الخلفية المتحركة */
   voStop(); vStop();
   const v=$("opVid");
@@ -2503,12 +2566,22 @@ function rOpen(fresh){
   const b=$("opSkip");
   b.disabled=false; b.textContent="تخطي المقدمة ⏭";
 }
+let opBailT=null;
 function opBail(){
   /* بعد التخطي ينتهي الفيلم طبيعيًا وهو صامت: لا نُرسل تخطيًا ثانيًا،
      بل نعرض شاشة الانتظار لما تبقّى من تعليق المعلّق. */
   if(opSkipped){ $("opWait").classList.remove("gone"); return; }
   if(!ST||ST.phase!=="opening")return;
   if(ST.ownerId!==ME)return;          /* المضيف وحده يُنهي المرحلة للجميع */
+  /* لو كان فيلمُ المضيف أقصر انتظرنا الفارق على إطاره الأخير المتجمّد،
+     فينتهي الجميع في اللحظة نفسها ولا تُقطع خاتمة أحد. */
+  const left=opStartAt ? (OP_LONGEST*1000-(Date.now()-opStartAt)) : 0;
+  if(left>120){
+    clearTimeout(opBailT);
+    opBailT=setTimeout(()=>{ if(ST&&ST.phase==="opening"&&!opSkipped)opBail(); },left);
+    return;
+  }
+  clearTimeout(opBailT);
   opEnd();
   socket.emit("skipIntro");
 }
@@ -2518,6 +2591,7 @@ function opKill(){                       /* يوقف الفيديو ويحرّر
   $("opTap").classList.remove("show");
 }
 function opEnd(){
+  clearTimeout(opBailT); opBailT=null;
   opKill();
   $("sOpen").classList.remove("on");
   $("opWait").classList.add("gone");
@@ -2531,6 +2605,11 @@ function opEnd(){
    الشخصية ثم الزوم على التلفزيون ثم انطفاؤه ثم الوميض. القياس من البداية
    كان يترك في الجوال ثانيتين زائدتين فتُقطع خاتمته قبل أن تكتمل. */
 const OP_TAIL = 7.8;
+/* النسختان صارتا متطابقتي الطول (46.76ث و46.81ث): سُرّعت نسخة الجوال
+   ٤.٣٪ بتعديل PTS وatempo فبقيت النبرة كما هي. الحارس أدناه يبقى صمّام
+   أمان لو اختلّ الطولان مستقبلًا، ولا يؤخّر شيئًا ما داما متطابقين. */
+const OP_LONGEST = 46.9;
+let opStartAt = 0;
 function opStop(voDur){
   opSkipped=true;
   const v=$("opVid");
@@ -2801,50 +2880,75 @@ function sortShow(){
 }
 /* المناطق فوق/تحت على الجوال (نفس عتبة الـCSS: 699px) */
 function vert(){ return innerWidth<=699; }
+/* السحب: يخرج قرصٌ صغير متوهّج من قلب الدائرة الكبيرة ويتبع الإصبع،
+   والدائرة تبقى مكانها كمصدر. الرمي نحو المنطقة يُرسل الاختيار. */
 function sortDrag(){
-  const o=$("stOrb");
+  const o=$("stOrb"), tok=$("stTok");
   let sx=0,sy=0,dx=0,dyR=0,dragging=false;
+
+  function place(x,y){ tok.style.left=x+"px"; tok.style.top=y+"px"; }
+  function reset(){
+    tok.className=""; tok.style.transition="";
+    o.classList.remove("src");
+    $("stZoneR").classList.remove("hot");$("stZoneL").classList.remove("hot");
+  }
+
   o.onpointerdown=e=>{
     if(stBusy||stIdx>=ST.sort.items.length)return;
     e.preventDefault();
     dragging=true;sx=e.clientX;sy=e.clientY;dx=0;dyR=0;
-    o.classList.add("drag");o.classList.remove("snap");
-    try{o.setPointerCapture(e.pointerId);}catch(x){}   /* وإلا توقفت الحركة عند مغادرة الدائرة */
+    /* القرص يولد من مركز الدائرة ثم ينتقل مع الإصبع */
+    const r=o.getBoundingClientRect();
+    tok.textContent=ST.sort.items[stIdx]||"";
+    tok.style.transition="";
+    place(r.left+r.width/2, r.top+r.height/2);
+    void tok.offsetWidth;
+    tok.className="on";
+    o.classList.add("src");
+    requestAnimationFrame(()=>place(e.clientX,e.clientY));
+    try{o.setPointerCapture(e.pointerId);}catch(x){}
   };
+
   o.onpointermove=e=>{
     if(!dragging)return;
     dx=e.clientX-sx; dyR=e.clientY-sy;
-    if(vert()){
-      /* الجوال: المناطق فوق وتحت، فالمحور الحاسم رأسي */
-      o.style.transform=`translate(${dx*.25}px,${dyR}px) rotate(${dx*.03}deg) scale(1.06)`;
-      const TH=innerHeight*.09;
-      $("stZoneR").classList.toggle("hot",dyR<-TH);   /* أعلى = الفئة أ */
-      $("stZoneL").classList.toggle("hot",dyR>TH);
-    }else{
-      o.style.transform=`translate(${dx}px,${dyR*.25}px) rotate(${dx*.06}deg) scale(1.06)`;
-      const TH=innerWidth*.16;
-      $("stZoneR").classList.toggle("hot",dx>TH);
-      $("stZoneL").classList.toggle("hot",dx<-TH);
-    }
+    place(e.clientX,e.clientY);
+    const V=vert();
+    const move=V?dyR:dx, TH=V?innerHeight*.09:innerWidth*.16;
+    /* أعلى/يمين = الفئة أ · أسفل/يسار = الفئة ب */
+    const toA=V? move<-TH : move>TH;
+    const toB=V? move> TH : move<-TH;
+    $("stZoneR").classList.toggle("hot",toA);
+    $("stZoneL").classList.toggle("hot",toB);
+    tok.classList.toggle("up",toA);
+    tok.classList.toggle("dn",toB);
   };
+
   o.onpointerup=o.onpointercancel=e=>{
     if(!dragging)return;dragging=false;
-    o.classList.remove("drag");
-    $("stZoneR").classList.remove("hot");$("stZoneL").classList.remove("hot");
     const V=vert();
     const move=V?dyR:dx, TH=V?innerHeight*.09:innerWidth*.16;
     if(Math.abs(move)>TH){
-      /* أعلى/يمين = الفئة أ (0) · أسفل/يسار = الفئة ب (1) */
       const side=(V? move<0 : move>0)?0:1;
       stBusy=true;
-      o.style.transition="transform .22s ease-in";
-      o.style.transform=V
-        ? `translate(0,${move<0?-innerHeight:innerHeight}px) scale(.7)`
-        : `translate(${move>0?innerWidth:-innerWidth}px,0) rotate(${dx*.2}deg) scale(.7)`;
+      /* يطير نحو المنطقة ويتلاشى */
+      const z=(side===0?$("stZoneR"):$("stZoneL")).getBoundingClientRect();
+      tok.classList.add("fly");
+      requestAnimationFrame(()=>{
+        place(z.left+z.width/2, z.top+z.height/2);
+        tok.style.transform="scale(.35)"; tok.style.opacity="0";
+      });
       socket.emit("sortPick",{i:stIdx,side});
-      setTimeout(()=>{o.style.transition="";},240);
+      setTimeout(reset,300);
     }else{
-      o.classList.add("snap");o.style.transform="";
+      /* دون العتبة: يعود إلى قلب الدائرة ويختفي */
+      const r=o.getBoundingClientRect();
+      tok.classList.add("fly");
+      requestAnimationFrame(()=>{
+        place(r.left+r.width/2, r.top+r.height/2);
+        tok.style.transform="scale(.2)"; tok.style.opacity="0";
+      });
+      setTimeout(reset,300);
     }
   };
 }
@@ -3352,7 +3456,8 @@ const FX={
       }
       const self=this;
       let last=null,moves=0,done=false;
-      const BRUSH=Math.max(30,Math.min(46,h*.55));
+      /* فرشاة أعرض: المسح كان يطول أكثر ممّا ينبغي */
+      const BRUSH=Math.max(46,Math.min(74,h*.85));
       /* عدّ البكسلات الشفافة من قناع الألفا — «كشف البكسلات» حرفيًا */
       function pct(){
         const d=cx.getImageData(0,0,cv.width,cv.height).data;
@@ -3402,48 +3507,46 @@ const FX={
     });
   },
 
-  /* ─── ٣ · القنابل: تحوم كبيرةً فوق منطقة الأسئلة كلها (أعلى طبقة) ───
-     لمسها أو مرور الإصبع عليها أثناء المسح يفجّرها: صعقة نصف ثانية. */
+  /* ─── ٣ · القنابل: داخل كل خيار على حدة كالجليد والوحل ───
+     لكل خيار قنابله المحبوسة في حدوده، فيُعالج اللاعب خيارًا خيارًا بدل
+     سحابة واحدة تغطّي الشاشة. لمسها أو مرور الإصبع عليها يفجّرها. */
   fx_bombs(){
-    const box=this.answersBox();if(!box)return;
-    const host=this.hostEl();if(!host)return;
-    const g=this.geom(box,host);
-    const wrap=document.createElement("div");
-    wrap.className="bombWrap";
-    wrap.style.cssText=`position:absolute;left:${g.x}px;top:${g.y}px;direction:ltr;`+
-      `width:${g.w}px;height:${g.h}px;z-index:30;pointer-events:none;overflow:hidden;border-radius:18px`;
-    host.appendChild(wrap);
-    this.el=wrap;
-    const W=g.w,H=g.h,SZ=54;
-    const MX=Math.max(0,W-SZ),MY=Math.max(0,H-SZ);
-    const N=Math.max(4,Math.min(9,Math.round(W/150)));
-    const bombs=[];
-    const self=this;
-    for(let i=0;i<N;i++){
-      const d=document.createElement("div");
-      d.className="bomb";d.innerHTML='<i class="bi"></i>';
-      d.style.pointerEvents="auto";
-      wrap.appendChild(d);
-      const b={el:d,
-        x:Math.random()*MX, y:Math.random()*MY,
-        vx:(Math.random()<.5?-1:1)*(1.5+Math.random()*1.9),
-        vy:(Math.random()<.5?-1:1)*(1.3+Math.random()*1.7),
-        r:Math.random()*360, vr:(Math.random()-.5)*4, dead:false};
-      b.el.style.transform=`translate3d(${b.x}px,${b.y}px,0)`;
-      bombs.push(b);
-      d.__blow=()=>self.blowUp(b);
-      d.onpointerdown=ev=>{ev.preventDefault();ev.stopPropagation();d.__blow();};
-      /* سحبٌ بالفأرة يمرّ فوقها (بلا أسر أحداث) */
-      d.onpointerenter=ev=>{if(ev.buttons)d.__blow();};
-    }
+    const btns=this.buttons(); if(!btns.length)return;
+    this.els=[]; const self=this; const all=[];
+    btns.forEach(btn=>{
+      const el=this.overBtn(btn,30,"bombWrap"); if(!el)return;
+      el.style.pointerEvents="none"; el.style.direction="ltr";
+      this.els.push(el);
+      const W=el.clientWidth,H=el.clientHeight;
+      const SZ=Math.max(26,Math.min(44,Math.round(Math.min(W,H)*.42)));
+      const MX=Math.max(0,W-SZ),MY=Math.max(0,H-SZ);
+      /* عدد يتناسب مع مساحة الخيار: صغيرٌ لا يُغرق، وكبيرٌ لا يبدو خاويًا */
+      const N=Math.max(2,Math.min(5,Math.round(W*H/9000)));
+      for(let i=0;i<N;i++){
+        const d=document.createElement("div");
+        d.className="bomb";d.innerHTML='<i class="bi"></i>';
+        d.style.cssText="pointer-events:auto;width:"+SZ+"px;height:"+SZ+"px";
+        el.appendChild(d);
+        const b={el:d,
+          x:Math.random()*MX, y:Math.random()*MY, MX, MY,
+          vx:(Math.random()<.5?-1:1)*(1.1+Math.random()*1.5),
+          vy:(Math.random()<.5?-1:1)*(0.9+Math.random()*1.3),
+          r:Math.random()*360, vr:(Math.random()-.5)*4, dead:false};
+        d.style.transform=`translate3d(${b.x}px,${b.y}px,0)`;
+        all.push(b);
+        d.__blow=()=>self.blowUp(b);
+        d.onpointerdown=ev=>{ev.preventDefault();ev.stopPropagation();d.__blow();};
+        d.onpointerenter=ev=>{if(ev.buttons)d.__blow();};
+      }
+    });
     (function loop(){
-      bombs.forEach(b=>{
+      all.forEach(b=>{
         if(b.dead)return;
         b.x+=b.vx;b.y+=b.vy;b.r+=b.vr;
         if(b.x<=0){b.x=0;b.vx=Math.abs(b.vx);}
-        else if(b.x>=MX){b.x=MX;b.vx=-Math.abs(b.vx);}
+        else if(b.x>=b.MX){b.x=b.MX;b.vx=-Math.abs(b.vx);}
         if(b.y<=0){b.y=0;b.vy=Math.abs(b.vy);}
-        else if(b.y>=MY){b.y=MY;b.vy=-Math.abs(b.vy);}
+        else if(b.y>=b.MY){b.y=b.MY;b.vy=-Math.abs(b.vy);}
         b.el.style.transform=`translate3d(${b.x}px,${b.y}px,0) rotate(${b.r}deg)`;
       });
       self.raf=requestAnimationFrame(loop);
