@@ -1125,7 +1125,7 @@ body.lkOn #aurora,body.lkOn #bgFx,body.lkOn #grid{display:none!important}
 body.lkOn #lkBoard{position:absolute;inset:0;display:block;gap:0;padding:0}
 body.lkOn #lkBoard .col{position:absolute;inset:0;display:block;gap:0;max-width:none}
 body.lkOn .node{
-  position:absolute;transform:translate(-50%,-50%);
+  position:absolute;
   background:url("sort3d/disc.webp") center/100% 100% no-repeat!important;
   border:0!important;border-radius:50%!important;
   display:flex;align-items:center;justify-content:center;
@@ -1137,11 +1137,11 @@ body.lkOn .node{
   transition:filter .2s var(--ease),transform .2s var(--spring)}
 /* الحالات تُلوَّن بهالةٍ حول القرص لا بتعبئةٍ تُخفي رسمه.
    التحويل يحتفظ بالتوسيط دائمًا وإلا قفز القرص عند التحويم. */
-body.lkOn .node:hover{transform:translate(-50%,-50%) scale(1.05)}
+body.lkOn .node:hover{transform:scale(1.05)}
 body.lkOn .node.sel {filter:drop-shadow(0 0 12px var(--cyan)) drop-shadow(0 8px 16px rgba(0,0,0,.55));
-                     transform:translate(-50%,-50%) scale(1.07)}
+                     transform:scale(1.07)}
 body.lkOn .node.hot {filter:drop-shadow(0 0 14px var(--gold)) drop-shadow(0 8px 16px rgba(0,0,0,.55));
-                     transform:translate(-50%,-50%) scale(1.07)}
+                     transform:scale(1.07)}
 body.lkOn .node.tied{filter:drop-shadow(0 0 10px var(--violet)) drop-shadow(0 8px 16px rgba(0,0,0,.55))}
 body.lkOn .node.good{filter:drop-shadow(0 0 12px var(--lime)) drop-shadow(0 8px 16px rgba(0,0,0,.55))}
 body.lkOn .node.bad {filter:drop-shadow(0 0 12px var(--red)) drop-shadow(0 8px 16px rgba(0,0,0,.55))}
@@ -1150,8 +1150,7 @@ body.lkOn .node.bad {filter:drop-shadow(0 0 12px var(--red)) drop-shadow(0 8px 1
    جهةٍ على قرصٍ عرضه ١٣٢. المختبر يضعها على الـspan فتُحسب من القرص. */
 body.lkOn .node>span{display:block;padding:0 8%}
 body.lkOn #lkTitle,body.lkOn #lkMeta{position:absolute;left:0;right:0;
-  transform:translateY(-50%);margin:0;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.98)}
-body.lkOn #sLink>#clock{transform:translate(-50%,-50%)}
+  margin:0;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.98)}
 body.lkOn #sLink>#clock #cNum{font-size:var(--lkCk,24px)}
 
 /* التصنيف */
@@ -3180,19 +3179,25 @@ function lkFit(){
     if(!col) return;
     const x=cx/100*sw;
     [...col.children].forEach((b,i)=>{
+      /* نطرح نصف القطر بأنفسنا بدل translate(-50%,-50%): أنيميشن
+         الدخول orbIn ينتهي عند transform:scale(1) بـboth، فيمحو أيّ
+         إزاحةٍ في transform ويترك القرص مزاحًا بنصف قطره. */
       b.style.width=D+"px"; b.style.height=D+"px";
-      b.style.left=x+"px"; b.style.top=((P.rT+P.rG*i)/100*sh)+"px";
+      b.style.left=(x-D/2)+"px";
+      b.style.top=((P.rT+P.rG*i)/100*sh-D/2)+"px";
       b.style.fontSize=(P.fS/100*D)+"px";
     });
   });
   const ti=$("lkTitle"), me=$("lkMeta");
-  if(ti){ ti.style.top=(P.tY/100*sh)+"px"; ti.style.fontSize=P.tS+"px"; }
-  if(me){ me.style.top=(P.mY/100*sh)+"px"; me.style.fontSize=P.mS+"px"; }
+  if(ti){ ti.style.fontSize=P.tS+"px";
+          ti.style.top=(P.tY/100*sh-ti.offsetHeight/2)+"px"; }
+  if(me){ me.style.fontSize=P.mS+"px";
+          me.style.top=(P.mY/100*sh-me.offsetHeight/2)+"px"; }
   const c=$("clock");
   if(c&&c.parentElement===host){
     const kd=P.kS/100*sh;
     c.style.width=kd+"px"; c.style.height=kd+"px";
-    c.style.left=(l+P.kX/100*sw)+"px"; c.style.top=(t+P.kY/100*sh)+"px";
+    c.style.left=(l+P.kX/100*sw-kd/2)+"px"; c.style.top=(t+P.kY/100*sh-kd/2)+"px";
     c.style.setProperty("--lkCk",(kd*0.42)+"px");
   }
 }
