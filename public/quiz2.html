@@ -331,90 +331,110 @@ input,select,textarea{font-family:inherit}
   animation:nShake .4s}
 @keyframes nShake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 
-/* ═══ لعبة التصنيف: سحب الدائرة يمينًا أو يسارًا ═══ */
-#stArena{flex:1;display:flex;align-items:stretch;gap:8px;min-height:0;direction:ltr}
-/* الترتيب في الوضع العمودي: الفئة أ فوق (stZoneR) والفئة ب تحت (stZoneL) */
-@media (max-width:699px){#stZoneR{order:1}#stMid{order:2}#stZoneL{order:3}}
-.stZone{flex:0 0 26%;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;border-radius:18px;
-  border:2px dashed rgba(255,255,255,.25);background:rgba(255,255,255,.04);
-  transition:background .18s,border-color .18s,box-shadow .18s}
-.stZone .szName{font-weight:900;font-size:clamp(15px,2.6vw,19px);text-align:center;padding:8px;
-  letter-spacing:.5px}
-/* على الجوال: منطقة فوق وأخرى تحت — الكتابة الرأسية كانت تقلب النص */
-@media (max-width:699px){
-  #stArena{flex-direction:column;direction:rtl;gap:10px}
-  .stZone{flex:0 0 19%}
-  #stMid{flex:1 1 auto}
-}
-.stZone.hot{border-color:rgba(139,92,246,.8);background:rgba(139,92,246,.14)}
-/* ═══ قوس الاستقبال: نصف قرص مرسوم بالكود — حوافّ نظيفة بلا قصّ.
-   الشكل نفسه هو العنصر: زوايا مدوّرة من جهة القبّة وحدٌّ مفتوح من جهة
-   الفم، فيُقرأ مرمى يستقبل القرص. يتنفّس توهّجًا، ويستيقظ مع كل
-   عنصر جديد، ويشتعل حين يقترب القرص. ═══ */
-.szSlot{position:relative;display:block;flex:0 0 auto;
-  border:4px solid rgba(139,92,246,.7);
-  background:radial-gradient(circle at 50% 50%,rgba(139,92,246,.22),rgba(139,92,246,.05) 72%);
-  transition:transform .2s var(--spring);
-  animation:slotBreath 2.4s ease-in-out infinite}
-/* حاسوب: يمين ويسار — القبّة للخارج والفم نحو المركز */
-#stZoneR .szSlot{width:66px;height:132px;border-radius:0 132px 132px 0;border-left:0}
-#stZoneL .szSlot{width:66px;height:132px;border-radius:132px 0 0 132px;border-right:0}
-/* جوال: فوق وتحت */
-@media(max-width:699px){
-  #stZoneR .szSlot{width:132px;height:66px;border-radius:132px 132px 0 0;border-bottom:0}
-  #stZoneL .szSlot{width:132px;height:66px;border-radius:0 0 132px 132px;border-top:0}
-}
-@keyframes slotBreath{
-  0%,100%{box-shadow:0 0 12px rgba(139,92,246,.35),inset 0 0 14px rgba(139,92,246,.25)}
-  50%{box-shadow:0 0 30px rgba(139,92,246,.75),inset 0 0 26px rgba(139,92,246,.5)}}
-/* استيقاظ مع وصول عنصر جديد */
-.szSlot.wake{animation:slotWake .55s var(--spring),slotBreath 2.4s ease-in-out .55s infinite}
-@keyframes slotWake{0%{transform:scale(.78);filter:brightness(1.8)}
-  60%{transform:scale(1.12)}100%{transform:scale(1);filter:none}}
-/* القرص يقترب: اشتعال سماوي */
-.stZone.hot .szSlot{transform:scale(1.15);border-color:var(--cyan);animation:none;
-  background:radial-gradient(circle at 50% 50%,rgba(34,230,255,.3),rgba(34,230,255,.06) 72%);
-  box-shadow:0 0 36px rgba(34,230,255,.95),inset 0 0 28px rgba(34,230,255,.55)}
-.szSlot.gulp{animation:gulp .45s var(--spring)}
-@keyframes gulp{0%{transform:scale(1.35)}45%{transform:scale(.88)}100%{transform:scale(1)}}
-.stZone.hit{border-color:#39e08a;background:rgba(57,224,138,.22);
-  box-shadow:0 0 34px -4px rgba(57,224,138,.8);animation:zFlash .5s}
-.stZone.bad{border-color:#ff5470;background:rgba(255,84,112,.22);
-  box-shadow:0 0 34px -4px rgba(255,84,112,.8);animation:zFlash .5s}
-@keyframes zFlash{0%{filter:brightness(2)}100%{filter:none}}
-#stMid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-width:0}
-#stOrb{width:min(46vw,190px);aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.16),rgba(255,255,255,.02) 60%),
-    linear-gradient(150deg,rgba(139,92,246,.32),rgba(34,230,255,.18));
-  border:2.5px solid rgba(139,92,246,.6);box-shadow:0 10px 34px -8px rgba(139,92,246,.55);
-  cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
-  transition:box-shadow .2s;will-change:transform}
-/* هالة نابضة خلف الكرة تجعلها تبدو خارجةً من مركز الشاشة */
-#stOrb::before{content:"";position:absolute;inset:-14%;border-radius:50%;
-  background:radial-gradient(circle,rgba(139,92,246,.42),rgba(34,230,255,.16) 55%,transparent 72%);
-  filter:blur(6px);pointer-events:none;z-index:-1;
-  animation:orbAura 2.6s ease-in-out infinite}
-#stOrb::after{content:"";position:absolute;inset:-4%;border-radius:50%;
-  border:2px solid rgba(34,230,255,.5);pointer-events:none;z-index:-1;
-  animation:orbRing 2.6s ease-out infinite}
-@keyframes orbAura{0%,100%{transform:scale(.94);opacity:.75}50%{transform:scale(1.08);opacity:1}}
-@keyframes orbRing{0%{transform:scale(.9);opacity:.85}100%{transform:scale(1.35);opacity:0}}
-
-#stOrb.drag{cursor:grabbing;transition:none;
-  border-color:rgba(34,230,255,.95);
-  box-shadow:0 0 0 4px rgba(34,230,255,.16),0 18px 60px -8px rgba(139,92,246,.95),
-             0 0 70px -6px rgba(34,230,255,.85)}
-#stOrb.drag::before{animation:none;transform:scale(1.16);opacity:1}
-#stOrb.drag::after{animation:none;opacity:0}
-#stOrb.snap{transition:transform .28s var(--spring)}
-#stOrb.popIn{animation:orbIn .38s var(--spring) both}
-/* تخرج من مركز الشاشة صغيرةً باهتة ثم تكبر */
+/* حركتان تستعملهما لعبة التوصيل أيضًا — تبقيان هنا */
 @keyframes orbIn{from{transform:scale(.4);opacity:0;filter:brightness(2)}
   to{transform:scale(1);opacity:1;filter:none}}
-#stWord{font-size:clamp(17px,4.6vw,26px);font-weight:900;text-align:center;padding:8px;line-height:1.3}
-#stCount{font-size:12.5px;font-weight:800;color:var(--dim)}
-#stDone{text-align:center;font-weight:900;color:var(--lime);padding:8px}
+@keyframes zFlash{0%{filter:brightness(2)}100%{filter:none}}
+
+/* ═══ لعبة التصنيف — المشهد المعتمَد من مختبر التصميم (sort-lab) ═══
+   كل رقم هنا خرج من ضبط المصمّم على الجهازين، فلا يُغيَّر ارتجالًا.
+   بنية الطبقات: خلفية → وسمان (3) → قرص داخل غلاف مقصوص (5) →
+   قوسان (7) → عنوان وعدّاد (8) → مؤقّت (12). */
+@font-face{font-family:"Ara Asmaa Beltajie";
+  src:url("fonts/AraAsmaaBeltajie.otf") format("opentype");
+  font-weight:400 900;font-display:swap}
+
+#sSort{padding:0}
+#stStage{position:absolute;inset:0;overflow:hidden;
+  background:url("sort3d/bg.webp") center/cover no-repeat}
+
+/* المؤقّت داخل هذا المشهد وحده: حجمٌ ولونٌ وموضعٌ خاصّ به */
+#sSort>#clock{position:absolute;left:50%;top:11%;transform:translate(-50%,-50%);
+  width:120px;height:120px;margin:0;z-index:12;
+  filter:drop-shadow(0 8px 13px rgba(58,31,120,.57))}
+#sSort>#clock .halo{display:none}
+#sSort>#clock #cTrack{stroke:rgba(110,75,175,.22)}
+#sSort>#clock #cArc{stroke:#6e4baf}
+#sSort>#clock #cNum{fill:#3b2570;font-size:34px}
+
+#stTitle{position:absolute;left:49.6%;top:23.6%;transform:translate(-50%,-50%);
+  z-index:8;margin:0;font-family:"Ara Asmaa Beltajie",inherit;
+  font-size:29px;font-weight:900;color:#5b3fa8;letter-spacing:0;
+  text-transform:none;opacity:1;white-space:nowrap}
+
+/* الوسمان تحت القرص عمدًا: النصّ خلفيةٌ لا يعبر فوق القرص المسحوب */
+.stLbl{position:absolute;transform:translate(-50%,-50%);z-index:3;
+  white-space:nowrap;text-align:center;pointer-events:none;
+  font-family:"Ara Asmaa Beltajie",inherit;font-size:31px;font-weight:900;color:#5b3fa8}
+#stLblA{left:70.6%;top:50.5%}
+#stLblB{left:28.4%;top:50.1%}
+
+/* الغلاف يُقصّ أثناء الرمي فقط: حافّة القصّ حادّة، ولو عملت والقرص
+   ساكن لقطعت ظلَّه الناعم فظهر خيطٌ مستقيم عبره. */
+#stDiscWrap{position:absolute;inset:0;z-index:5;pointer-events:none}
+#stOrb{position:absolute;left:50%;top:52%;width:200px;height:200px;
+  transform:translate(-50%,-50%);pointer-events:auto;display:grid;place-items:center;
+  cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;will-change:transform}
+#stOrb.drag{cursor:grabbing}
+#stOrb.snap{transition:transform .3s var(--spring)}
+#stOrbIn{position:absolute;inset:0;display:grid;place-items:center;will-change:transform}
+#stOrb img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;
+  filter:drop-shadow(0 10px 22px rgba(58,31,120,.45))}
+/* حركة الدخول على الطبقة الداخلية وحدها: لو وُضعت على #stOrb لَملَكت
+   transform إلى الأبد (fill:both) فمَحَت التمركز وبقي القرص منزاحًا. */
+#stOrb.pop #stOrbIn{animation:stPop .42s var(--spring) both}
+@keyframes stPop{0%{transform:scale(.35) rotate(-14deg);opacity:0}
+  62%{transform:scale(1.1) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+#stWord{position:relative;z-index:2;text-align:center;padding:0 14%;line-height:1.25;
+  word-break:break-word;font-family:"Ara Asmaa Beltajie",inherit;
+  font-size:40px;font-weight:800;color:#3f189a;
+  /* الحفر وهمٌ بصري: ظلّ داكن من الأعلى وضوءٌ فاتح من الأسفل (عمق 55%) */
+  text-shadow:0 -1.8px 1.1px rgba(26,13,58,.50),
+              0 1.8px 1.1px rgba(255,255,255,.62),
+              0 3.7px 5.8px rgba(43,27,77,.15);
+  opacity:.83}
+
+.stArc{position:absolute;z-index:7;pointer-events:none;transform:translate(-50%,-50%)}
+.stArcIn{width:100%;height:100%;transition:transform .22s var(--spring),filter .22s}
+.stArc img{width:100%;height:100%;object-fit:contain;display:block;
+  filter:drop-shadow(8px 13px 5px rgba(58,31,120,.21))}
+/* التمركز على .stArc والتحجيم على .stArcIn — وإلا محت حركةُ التكبير
+   إزاحةَ التمركز فقفز القوس من مكانه عند كل استقبال. */
+.stArc.hot .stArcIn{transform:scale(1.13)}
+.stArc.gulp .stArcIn{animation:stGulp .5s var(--spring)}
+@keyframes stGulp{0%{transform:scale(1.3)}45%{transform:scale(.9)}100%{transform:scale(1)}}
+.stArc.good .stArcIn{filter:drop-shadow(0 0 26px rgba(57,224,138,.95)) saturate(1.4)}
+.stArc.bad  .stArcIn{filter:drop-shadow(0 0 26px rgba(255,77,94,.95)) saturate(1.4)}
+#stArcA{left:81%;top:52%;width:153.6px;height:256px}
+#stArcB{left:19%;top:52%;width:153.6px;height:256px}
+
+#stCount{position:absolute;left:50%;bottom:5%;transform:translateX(-50%);z-index:8;
+  font-size:13px;font-weight:800;color:#5b3fa8;opacity:.7}
+#stDone{position:absolute;left:50%;bottom:12%;transform:translateX(-50%);z-index:9;
+  text-align:center;font-weight:900;color:#2f7d52;padding:8px 16px;border-radius:12px;
+  background:rgba(255,255,255,.7)}
 #stDone.gone{display:none}
+
+/* ═══ الجوال: القوسان فوق وتحت، وكل القياسات مستقلّة ═══ */
+@media (max-width:699px){
+  #sSort>#clock{width:77px;height:77px;top:6%;
+    filter:drop-shadow(0 7px 15px rgba(58,31,120,.45))}
+  #sSort>#clock #cArc{stroke:#8460c7}
+  #sSort>#clock #cNum{font-size:28px}
+  #stTitle{left:50%;top:14%;font-size:23px}
+  .stLbl{font-size:23px}
+  #stLblA{left:49.5%;top:36.5%}
+  #stLblB{left:49.5%;top:64%}
+  #stOrb{left:50%;top:50%;width:114px;height:114px}
+  #stWord{font-size:29px;color:#4b2f8f}
+  .stArc img{filter:drop-shadow(0 9px 8px rgba(58,31,120,.2))}
+  /* الدوران والقلب على الصورة وحدها، فيبقى الصندوق أفقيًّا كما هو */
+  #stArcA img{transform:rotate(90deg) scaleX(-1)}
+  #stArcB img{transform:rotate(-90deg)}
+  #stArcA{left:49.4%;top:24.1%;width:258px;height:159.96px}
+  #stArcB{left:49.4%;top:75.9%;width:258px;height:159.96px}
+  #stCount{bottom:4%}
+}
 /* ═══ سباق الصعود العمودي (نتيجة التصنيف) ═══ */
 #raceWrap{flex:1;display:flex;flex-direction:column;min-height:0}
 #raceTitle{text-align:center;font-weight:900;font-size:17px;padding:4px 0 10px}
@@ -1455,16 +1475,18 @@ body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
     </div>
 
     <div class="scene" id="sSort">
-      <div class="eyebrow" id="stTitle"></div>
-      <div id="stArena">
-        <div class="stZone" id="stZoneL"><span class="szName"></span><i class="szSlot"></i></div>
-        <div id="stMid">
-          <div id="stOrb"><span id="stWord"></span></div>
-          <div id="stCount"></div>
+      <div id="stStage">
+        <span class="stLbl" id="stLblA"></span>
+        <span class="stLbl" id="stLblB"></span>
+        <div id="stDiscWrap">
+          <div id="stOrb"><div id="stOrbIn"><img src="sort3d/disc.webp" alt=""><span id="stWord"></span></div></div>
         </div>
-        <div class="stZone" id="stZoneR"><span class="szName"></span><i class="szSlot"></i></div>
+        <div class="stArc" id="stArcA"><div class="stArcIn"><img src="sort3d/arc-a.webp" alt=""></div></div>
+        <div class="stArc" id="stArcB"><div class="stArcIn"><img src="sort3d/arc-b.webp" alt=""></div></div>
+        <div id="stTitle"></div>
+        <div id="stCount"></div>
+        <div id="stDone" class="gone">✓ أنهيت القائمة — بانتظار البقية</div>
       </div>
-      <div id="stDone" class="gone">✓ أنهيت القائمة — بانتظار البقية</div>
     </div>
 
     <div class="scene" id="sPy">
@@ -3015,59 +3037,94 @@ socket.on("linkFb",d=>{
 
 
 
-/* ═══ التصنيف: اسحب الدائرة يمينًا (الفئة أ) أو يسارًا (الفئة ب) ═══
+/* ═══ التصنيف: امسك القرص وارمِه نحو القوس كقرص هوكي ═══
    الخادم يحكم: نرسل sortPick وننتظر sortFb — لا نعرف الإجابة محليًا
-   فلا مجال للغش من الطرفية، والوميض الأخضر/الأحمر يأتي من رد الخادم. */
-let stIdx=0, stBusy=false;
+   فلا مجال للغش من الطرفية، والتوهّج الأخضر/الأحمر يأتي من رد الخادم.
+   المشهد بقياسات مختبر التصميم المعتمَدة (sort-lab). */
+let stIdx=0, stBusy=false, stClipOn=false;
+/* نفس عتبة الـCSS: القوسان يمين/يسار فوق 699px، وفوق/تحت دونها */
+function vert(){ return innerWidth<=699; }
+
+/* الغلاف يُقصّ أثناء الحركة فقط. حافّة clip-path حادّة، فلو عملت والقرص
+   ساكن لقطعت ظلَّه الناعم فظهر خيطٌ مستقيم عبره. ونقيس من صندوق الصورة
+   بعد الدوران (getBoundingClientRect للصورة نفسها) لا من صندوق القوس،
+   لأنّ الصورة على الجوال مُدارة 90° فتتجاوز صندوقها بفارقٍ كبير. */
+function stSetClip(on){ if(stClipOn===on)return; stClipOn=on; stClip(); }
+function stClip(){
+  const w=$("stDiscWrap"); if(!w)return;
+  if(!stClipOn){ w.style.clipPath="none"; return; }
+  const st=$("stStage").getBoundingClientRect();
+  const a=$("stArcA").querySelector("img").getBoundingClientRect();
+  const b=$("stArcB").querySelector("img").getBoundingClientRect();
+  if(!st.width||!st.height||!a.width||!b.width){
+    clearTimeout(stClip._t); stClip._t=setTimeout(stClip,120); return; }
+  const g=vert()?24:30;
+  if(vert()){
+    const cy=st.top+st.height/2;
+    const up=(a.top+a.height/2<cy)?a:b, dn=(up===a)?b:a;
+    const top=Math.max(0,up.bottom-st.top-g), bot=Math.max(0,st.bottom-dn.top-g);
+    w.style.clipPath="inset("+top+"px 0 "+bot+"px 0)";
+  }else{
+    const cx=st.left+st.width/2;
+    const rt=(a.left+a.width/2>cx)?a:b, lf=(rt===a)?b:a;
+    const right=Math.max(0,st.right-rt.left-g), left=Math.max(0,lf.right-st.left-g);
+    w.style.clipPath="inset(0 "+right+"px 0 "+left+"px)";
+  }
+}
+/* القوس الواقع في جهة الرمي: نقارن مركزَيهما على محور الحركة، فيصحّ
+   الاختيار سواءٌ كانا يمين/يسار أم فوق/تحت. يُرجع رقم الجهة للخادم. */
+function stSideToward(mv){
+  const a=$("stArcA").getBoundingClientRect(), b=$("stArcB").getBoundingClientRect();
+  const ca=vert()?a.top+a.height/2:a.left+a.width/2;
+  const cb=vert()?b.top+b.height/2:b.left+b.width/2;
+  return (mv>0) ? (ca>cb?0:1) : (ca<cb?0:1);
+}
+const stArcOf=side=>$(side===0?"stArcA":"stArcB");
+
 function rSort(fresh){
   scene("sSort");mountClock("sSort");
   if(!fresh||!ST.sort)return;
   stIdx=0;stBusy=false;
-  $("stTitle").textContent=`صنّف: ${ST.sort.a}  أم  ${ST.sort.b}؟`;
-  /* direction:ltr في الساحة — اليمين البصري هو stZoneR دائمًا */
-  $("stZoneR").querySelector(".szName").textContent=ST.sort.a;   /* يمين = الفئة أ (side 0) */
-  $("stZoneL").querySelector(".szName").textContent=ST.sort.b;   /* يسار = الفئة ب (side 1) */
-  $("stZoneR").className="stZone";$("stZoneL").className="stZone";
+  $("stTitle").textContent=`صنّف: ${ST.sort.a} أم ${ST.sort.b}؟`;
+  $("stLblA").textContent=ST.sort.a;      /* القوس أ = الفئة أ = side 0 */
+  $("stLblB").textContent=ST.sort.b;
+  $("stArcA").className="stArc";$("stArcB").className="stArc";
   $("stDone").classList.add("gone");
-  $("stOrb").style.display="";
+  $("stDiscWrap").style.display="";
+  stSetClip(false);
   sortShow();
   sortDrag();
 }
 function sortShow(){
-  const it=ST.sort.items;
+  const it=ST.sort.items, o=$("stOrb");
   if(stIdx>=it.length){
-    $("stOrb").style.display="none";
+    $("stDiscWrap").style.display="none";
     $("stCount").textContent="";
     $("stDone").classList.remove("gone");
+    stSetClip(false);
     return;
   }
-  const o=$("stOrb");
   $("stWord").textContent=it[stIdx];
   $("stCount").textContent=(stIdx+1)+" / "+it.length;
-  o.style.transform="";o.style.opacity="";o.style.transition="";
-  o.classList.remove("popIn");void o.offsetWidth;o.classList.add("popIn");
-  document.querySelectorAll(".szSlot").forEach(z=>{
-    z.classList.remove("wake");void z.offsetWidth;z.classList.add("wake");});
+  /* عودةٌ مؤكَّدة إلى البيت قبل إعادة تشغيل الانتقالات */
+  o.style.transition="none"; o.style.opacity=""; o.classList.remove("snap","drag");
+  o.style.transform="translate(-50%,-50%)";
+  void o.offsetWidth; o.style.transition="";
+  stSetClip(false);
+  o.classList.remove("pop");void o.offsetWidth;o.classList.add("pop");
 }
-/* المناطق فوق/تحت على الجوال (نفس عتبة الـCSS: 699px) */
-function vert(){ return innerWidth<=699; }
-/* السحب: القرص نفسه في يدك — يتبعها بلا مقاومة، وتقذفه نحو الفتحة
-   كقرص هوكي: نفضة سريعة تكفي ولو كانت قصيرة، فالسرعة تُقاس لا المسافة،
-   ثم يطير إلى فمّ المنطقة ويُبتلَع فيه. */
 function sortDrag(){
   const o=$("stOrb");
   let sx=0,sy=0,dx=0,dyR=0,dragging=false,trail=[];
-  const zoneOf=side=>side===0?$("stZoneR"):$("stZoneL");
 
   o.onpointerdown=e=>{
-    if(stBusy||stIdx>=ST.sort.items.length)return;
+    if(stBusy||!ST.sort||stIdx>=ST.sort.items.length)return;
     e.preventDefault();
     dragging=true;sx=e.clientX;sy=e.clientY;dx=0;dyR=0;
     trail=[{t:performance.now(),x:sx,y:sy}];
-    /* أنيميشن الدخول بوضع fill يبقى مالكًا لـtransform حتى بعد انتهائه،
-       فيَحجب أي تحريك يدوي — نرفعه لحظة الإمساك ليعود القرص لليد. */
-    o.classList.remove("popIn");
+    o.classList.remove("pop");           /* الحركة تملك transform — نرفعها لليد */
     o.classList.add("drag");o.classList.remove("snap");
+    stSetClip(true);
     try{o.setPointerCapture(e.pointerId);}catch(x){}
   };
 
@@ -3076,60 +3133,61 @@ function sortDrag(){
     dx=e.clientX-sx; dyR=e.clientY-sy;
     trail.push({t:performance.now(),x:e.clientX,y:e.clientY});
     if(trail.length>6)trail.shift();
-    /* محور واحد فقط: أفقي على الحاسوب ورأسي على الجوال — لا شرود حرّ */
-    o.style.transform=vert()
-      ? `translate(0,${dyR}px)`
-      : `translate(${dx}px,0) rotate(${dx*.04}deg)`;
-    const V=vert(),TH=V?innerHeight*.09:innerWidth*.16,mv=V?dyR:dx;
-    zoneOf(0).classList.toggle("hot",V?mv<-TH:mv>TH);
-    zoneOf(1).classList.toggle("hot",V?mv>TH:mv<-TH);
+    const V=vert(), tilt=V?dx*.03:dx*.05;
+    o.style.transform=V
+      ? `translate(-50%,calc(-50% + ${dyR}px)) rotate(${tilt}deg)`
+      : `translate(calc(-50% + ${dx}px),-50%) rotate(${tilt}deg)`;
+    const TH=V?innerHeight*.08:innerWidth*.13, mv=V?dyR:dx;
+    const t=Math.abs(mv)>TH ? stSideToward(mv) : -1;
+    $("stArcA").classList.toggle("hot",t===0);
+    $("stArcB").classList.toggle("hot",t===1);
   };
 
   o.onpointerup=o.onpointercancel=e=>{
     if(!dragging)return;dragging=false;
     o.classList.remove("drag");
-    /* سرعة الدفعة من آخر عيّنات المسار (بكسل/مللي ثانية) */
     let v=0;
     if(trail.length>1){
       const a=trail[0],b=trail[trail.length-1],dt=Math.max(1,b.t-a.t);
       v=(vert()?(b.y-a.y):(b.x-a.x))/dt;
     }
-    const V=vert(),mv=V?dyR:dx,TH=V?innerHeight*.09:innerWidth*.16;
-    const flick=Math.abs(v)>0.5;              /* نفضة خاطفة تكفي */
-    zoneOf(0).classList.remove("hot");zoneOf(1).classList.remove("hot");
+    const V=vert(),mv=V?dyR:dx,TH=V?innerHeight*.08:innerWidth*.13;
+    const flick=Math.abs(v)>0.5;            /* نفضة خاطفة تكفي ولو قصُرت */
+    $("stArcA").classList.remove("hot");$("stArcB").classList.remove("hot");
     if(Math.abs(mv)>TH||flick){
-      const dir=flick?v:mv;
-      const side=(V?dir<0:dir>0)?0:1;
+      const side=stSideToward(flick?v:mv);
       stBusy=true;
-      const z=zoneOf(side),slot=z.querySelector(".szSlot")||z;
-      const sr=slot.getBoundingClientRect(),or0=o.getBoundingClientRect();
-      /* مركز الراحة = مركزه الآن ناقص إزاحة السحب */
-      const rx=or0.left+or0.width/2-dx, ry=or0.top+or0.height/2-dyR;
-      const tx=sr.left+sr.width/2-rx, ty=sr.top+sr.height/2-ry;
-      z.classList.add("hot");
-      o.style.transition="transform .3s cubic-bezier(.2,.7,.3,1),opacity .18s .14s";
-      o.style.transform=`translate(${tx}px,${ty}px) scale(.16) rotate(${dx*.15}deg)`;
+      const arc=stArcOf(side);
+      const dr=o.getBoundingClientRect(), ar=arc.getBoundingClientRect();
+      const tx=ar.left+ar.width/2-(dr.left+dr.width/2);
+      const ty=ar.top+ar.height/2-(dr.top+dr.height/2);
+      const cur=new DOMMatrix(getComputedStyle(o).transform);
+      /* يغوص خلف القوس: يصغر ويتلاشى متأخّرًا فيبدو مبتلَعًا لا متبخّرًا */
+      o.style.transition="transform 280ms cubic-bezier(.35,.1,.2,1),opacity 126ms 168ms";
+      o.style.transform=`translate(${cur.e+tx}px,${cur.f+ty}px) scale(.34)`;
       o.style.opacity="0";
       setTimeout(()=>{
-        slot.classList.remove("gulp");void slot.offsetWidth;slot.classList.add("gulp");
-        z.classList.remove("hot");
-      },250);
+        arc.classList.remove("gulp");void arc.offsetWidth;arc.classList.add("gulp");
+      },200);
       socket.emit("sortPick",{i:stIdx,side});
     }else{
-      o.classList.add("snap");o.style.transform="";
+      o.classList.add("snap");
+      o.style.transform="translate(-50%,-50%)";
+      setTimeout(()=>stSetClip(false),320);
     }
   };
 }
 socket.on("sortFb",d=>{
-  /* رد الخادم: وميض الجهة، صوت، ثم العنصر التالي */
-  const z=d.side===0?$("stZoneR"):$("stZoneL");
-  z.classList.remove("hit","bad");void z.offsetWidth;
-  z.classList.add(d.correct?"hit":"bad");
+  /* رد الخادم: توهّج القوس، صوت، ثم العنصر التالي */
+  const arc=stArcOf(d.side);
+  arc.classList.remove("good","bad");void arc.offsetWidth;
+  arc.classList.add(d.correct?"good":"bad");
   if(d.correct){sTap();}else{sLose();}
+  setTimeout(()=>arc.classList.remove("good","bad","gulp"),620);
   stIdx=d.i+1;stBusy=false;
-  setTimeout(()=>z.classList.remove("hit","bad"),480);
-  sortShow();
+  setTimeout(sortShow,320);
 });
+addEventListener("resize",()=>{ if(stClipOn) stClip(); });
 
 /* ═══ الهرم 3D ═══ */
 function rPy(fresh){
