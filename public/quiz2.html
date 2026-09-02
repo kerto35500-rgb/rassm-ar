@@ -731,12 +731,19 @@ body.filmOn #aurora,body.filmOn #bgFx,body.filmOn #grid{display:none!important}
 /* إخفاء الشريط العلوي أثناء اللعب لتوسيع المسرح */
 /* أثناء اللعب يُطوى الشريط العلوي، وسهمٌ صغير أعلى الشاشة يفتحه ويطويه */
 body.noTop:not(.topOpen) #hud,body.noTop:not(.topOpen) #roster{display:none}
+/* السهم كان نُبَيْذةً فارغة لا يهتدي إليها أحد — صار زرًّا مكتوبًا نابضًا */
 #topTab{display:none;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:95;
-  width:56px;height:20px;border:1px solid var(--stroke);border-top:0;
-  border-radius:0 0 12px 12px;background:rgba(20,26,44,.85);color:var(--dim);
-  font-size:11px;line-height:1;cursor:pointer;backdrop-filter:blur(8px);
+  padding:3px 14px 4px;border:1px solid rgba(255,203,46,.6);border-top:0;
+  border-radius:0 0 13px 13px;background:rgba(20,26,44,.92);color:var(--gold);
+  font:inherit;font-size:11.5px;font-weight:900;line-height:1.35;cursor:pointer;
+  backdrop-filter:blur(8px);white-space:nowrap;
+  box-shadow:0 3px 14px -4px rgba(255,203,46,.5);
   transition:background .2s,color .2s}
-#topTab:hover{color:#fff;background:rgba(139,92,246,.4)}
+#topTab b{font-weight:900}
+#topTab:hover{color:#fff;background:rgba(139,92,246,.55)}
+body.noTop:not(.topOpen) #topTab{animation:tabPulse 2.6s ease-in-out infinite}
+@keyframes tabPulse{0%,100%{box-shadow:0 3px 14px -4px rgba(255,203,46,.45)}
+                    50%{box-shadow:0 4px 20px -2px rgba(255,203,46,.95)}}
 body.noTop #topTab{display:block}
 /* سطر مراجعة السؤال داخل الشريط المنسدل */
 #hudQ{font-size:14px;font-weight:900;line-height:1.7;color:#fff;
@@ -1093,10 +1100,16 @@ body.noTop:not(.topOpen) #devBar{display:none}
 /* ══════ الهرم ثنائي الأبعاد — الخلفية المعتمدة من المختبر ══════
    المسرح يحافظ على نسبة الصورة تمامًا (16:9 أو 9:16)، لأنّ كل مرسًى
    نسبةٌ مئوية من الصورة نفسها: لو تمدّد الصندوق زاغت الأقدام. */
-#pyScene{flex:1;min-height:0;position:relative;display:flex;
-  align-items:center;justify-content:center;overflow:hidden}
-#pyStage{position:relative;border-radius:16px;overflow:hidden;
-  box-shadow:0 18px 48px -18px rgba(0,0,0,.85)}
+/* الهرم يملأ المشهد كلّه: المسرح يُقصّ لا يُحشر (cover لا contain)،
+   فيبقى بنسبة الصورة — وهو شرطُ صحّة المراسي — ويخرج فائضُه خلف الحوافّ. */
+#sPy{padding:0;position:relative;overflow:hidden;border-radius:24px}
+#pyScene{position:absolute;inset:0;overflow:hidden;background:#050713}
+/* ما فاض عن جانبَي الهرم على الشاشات العريضة: نسخةٌ ضبابية من الخلفية
+   نفسها بدل شريطٍ أسود — فتبدو الشاشة مملوءةً ولا يُقصّ من الهرم شيء. */
+#pyBgBlur{position:absolute;inset:-6%;width:112%;height:112%;object-fit:cover;
+  filter:blur(34px) brightness(.55) saturate(.9);opacity:0;
+  transition:opacity .4s var(--ease);z-index:0}
+#pyStage{position:absolute;left:50%;top:0;transform:translateX(-50%);z-index:1}
 #pyBg,.pyGlow{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block}
 .pyGlow{opacity:0;transition:opacity .5s var(--ease);pointer-events:none;
   mix-blend-mode:screen;z-index:1}
@@ -1106,7 +1119,10 @@ body.noTop:not(.topOpen) #devBar{display:none}
   pointer-events:none;z-index:2}
 .pyActor{position:absolute;z-index:3;pointer-events:none;
   transform-origin:50% 100%;will-change:transform,left,top}
-.pyActor img,.pyActor video{width:100%;height:100%;object-fit:contain;display:block}
+/* object-position عند الأسفل: أيّ فارقٍ يسير بين نسبة الصورة والمقطع
+   يُؤكَل من الأعلى لا من تحت القدمين، فتبقى القدمان على الدرجة. */
+.pyActor img,.pyActor video{width:100%;height:100%;object-fit:contain;
+  object-position:bottom center;display:block}
 .pyActor video{display:none}
 .pyActor.vid video{display:block}
 .pyActor.vid img{display:none}
@@ -1117,11 +1133,33 @@ body.noTop:not(.topOpen) #devBar{display:none}
 .pyActor.mine .pyTag{background:linear-gradient(90deg,var(--cyan),var(--pink));color:#04060f;
   text-shadow:none;border-color:#fff}
 
-#pyQ{flex-shrink:0;margin-top:8px}
-#pyText{font-size:15.5px;font-weight:900;text-align:center;margin-bottom:9px;line-height:1.5}
+/* السؤال والأجوبة فوق الهرم لا تحته: طبقةٌ سفلية بتدرّجٍ داكن يضمن
+   قراءة النصّ على أيّ جزءٍ من الصورة. */
+/* المؤقّت يطفو فوق الهرم بدل أن يقتطع صفًّا من أعلى المشهد */
+#sPy>#clock{position:absolute;top:8px;inset-inline-start:10px;
+  z-index:10;margin:0;width:70px;height:70px;
+  filter:drop-shadow(0 4px 16px rgba(0,0,0,.85))}
+#sPy>#clock #cNum{font-size:24px}
+#pyBrow{position:absolute;top:0;left:0;right:0;z-index:8;padding:9px 12px 22px;
+  text-align:center;font-size:11.5px;font-weight:800;letter-spacing:2.2px;color:#bff6ff;
+  text-shadow:0 2px 10px rgba(0,0,0,.9);pointer-events:none;
+  background:linear-gradient(180deg,rgba(4,6,16,.72),rgba(4,6,16,0))}
+#pyQ{position:absolute;left:0;right:0;bottom:0;z-index:9;padding:26px 12px 12px;
+  background:linear-gradient(0deg,rgba(4,6,16,.94) 42%,rgba(4,6,16,.72) 74%,rgba(4,6,16,0))}
+#pyQ.hide{display:none}
+#pyText{font-size:16px;font-weight:900;text-align:center;margin-bottom:9px;line-height:1.5;
+  color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.95)}
 #pyAns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-#pyAns .ans{padding:12px 8px;font-size:13.5px;border-radius:14px}
+#pyAns .ans{padding:12px 8px;font-size:13.5px;border-radius:14px;
+  background:rgba(12,16,34,.86);border:1px solid rgba(255,255,255,.22);color:#fff;
+  backdrop-filter:blur(6px)}
 #pyAns .ans .key{display:none}
+@media (max-width:560px){
+  #pyQ{padding:22px 8px 9px}
+  #pyText{font-size:14px}
+  #pyAns{gap:6px}
+  #pyAns .ans{padding:10px 6px;font-size:12.5px}
+}
 
 /* الكشف */
 #revBody{display:flex;flex-direction:column;height:100%}
@@ -1404,7 +1442,7 @@ body.noTop:not(.topOpen) #devBar{display:none}
 
   <div id="roster"></div>
   <div id="hudQ"></div>
-  <button id="topTab" type="button" title="إظهار الشريط"><i>▾</i></button>
+  <button id="topTab" type="button" title="إظهار شريط الأدوات والقفز التجريبي"><b>أدوات</b> <i>▾</i></button>
 
   <div id="rpModal"><div id="rpBox" class="glass">
     <h3>🚩 التبليغ عن خطأ</h3>
@@ -1529,8 +1567,8 @@ body.noTop:not(.topOpen) #devBar{display:none}
     </div>
 
     <div class="scene" id="sPy">
-      <div class="eyebrow">🔺 أول من يصل القمة يفوز</div>
-      <div id="pyScene"><div id="pyStage"><img id="pyBg" alt=""></div></div>
+      <div id="pyScene"><img id="pyBgBlur" alt=""><div id="pyStage"><img id="pyBg" alt=""></div></div>
+      <div id="pyBrow">🔺 أول من يصل القمة يفوز</div>
       <div id="pyQ" class="hide"><div id="pyText"></div><div id="pyAns"></div></div>
     </div>
 
@@ -1646,6 +1684,13 @@ let atkT=null,atkP=null,atkSent=false,scoreShown={};
 /* ═══ أدوات ═══ */
 const esc=s=>{const d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML;};
 $("topTab").onclick=()=>document.body.classList.toggle("topOpen");
+/* نُنزّل فيلم الهرم مبكّرًا وقت انتظار اللاعبين، فلا ينتظره أحد لحظةَ الشرح */
+(function warmIntro(){
+  const iv=$("inVid"); if(!iv) return;
+  const src=(innerHeight>innerWidth?"pyr2d/intro-m.mp4":"pyr2d/intro-d.mp4");
+  if(iv.getAttribute("src")!==src){ iv.setAttribute("src",src); iv.load(); }
+  addEventListener("orientationchange",()=>setTimeout(warmIntro,400));
+})();
 /* التبليغ: يلتقط السؤال المعروض حاليًا إن وُجد، ويُرسل لصفحة بلاغات الأدمن */
 /* ═══ القفز التجريبي — مؤقّت، يُحذف بعد التجربة ═══ */
 [...document.querySelectorAll(".djb")].forEach(b=>{
@@ -2911,7 +2956,13 @@ function rIntro(fresh){
   if(film){
     const src = (innerHeight>innerWidth ? "pyr2d/intro-m.mp4" : "pyr2d/intro-d.mp4");
     if(iv.getAttribute("src")!==src){ iv.setAttribute("src",src); iv.load(); }
-    try{ iv.currentTime=0; }catch(e){}
+    /* لا نُرجِع الزمن إلى الصفر قبل وصول البيانات الوصفية: الطلبُ يُقيَّد
+       بحثًا عن إطارٍ لم يُنزَّل بعد فيعلق العنصر عند readyState=0 ولا يبدأ
+       التشغيل أبدًا. ننتظر جاهزيّته ثم نُرجِعه ونُشغّله. */
+    const go=()=>{ try{ if(iv.currentTime>0.05) iv.currentTime=0; }catch(e){}
+                   iv.play().catch(()=>{}); };
+    if(iv.readyState>=1) go();
+    else iv.addEventListener("loadedmetadata",go,{once:true});
     iv.play().catch(()=>{});
   }else{
     try{ iv.pause(); }catch(e){}
@@ -3299,6 +3350,11 @@ addEventListener("resize",()=>{ if(stClipOn) stClip(); });
    الصورتين. لذلك لا تُعدَّل هنا — تُعدَّل في المختبر ثم تُنسخ. */
 const PY_TIERS=7;
 const PY_CH=["prof","granny","beast","pizza","nerd","trendy","boss"];
+/* نسبةُ عرضِ إطار كل شخصيةٍ إلى ارتفاعه، مقيسةً من ملفّاتها.
+   المختبر يقرأها من الصورة وقت الضبط، فلا بدّ أن تطابقها هنا وإلا
+   صَغُرت الشخصيةُ عن قياسك وطارت قدماها فوق الدرجة. */
+const PY_AR={prof:361/606,granny:394/606,beast:400/602,
+             pizza:400/591,nerd:347/606,trendy:400/581,boss:336/606};
 const PY_JT={prof:{jD:1166,jT:875},granny:{jD:1041,jT:1000},beast:{jD:1416,jT:875},
   pizza:{jD:1416,jT:916},nerd:{jD:1250,jT:750},trendy:{jD:1500,jT:750},boss:{jD:1333,jT:916}};
 const PY_CH0={"prof":{"d":{"anch":[[36.79,92.62],[38.75,77.58],[41.52,64.95],[42.67,51.47],[43.82,39.2],[46.87,27.89],[48.63,16.22]],"sc":117,"rot":0,"flip":false},"m":{"anch":[[32.89,71.81],[35.43,64.88],[39.01,59.75],[40.5,54.24],[41.99,49.25],[45.95,44.58],[48.23,39.69]],"sc":117,"rot":0,"flip":false}},"granny":{"d":{"anch":[[24.13,80.95],[28.53,69.64],[32.25,59.66],[36.24,48.83],[39.22,38.12],[41.86,27.65],[46.46,16.82]],"sc":120,"rot":0,"flip":false},"m":{"anch":[[16.49,66.24],[22.19,61.66],[27.0,57.58],[32.17,53.17],[36.03,48.8],[39.45,44.48],[45.41,39.98]],"sc":120,"rot":0,"flip":false}},"beast":{"d":{"anch":[[56.68,95.39],[55.53,79.63],[54.59,65.67],[54.72,51.83],[53.91,38.84],[55.26,27.65],[51.0,16.94]],"sc":158,"rot":0,"flip":false},"m":{"anch":[[58.65,73.24],[57.16,65.71],[55.95,60.04],[56.11,54.38],[55.07,49.1],[56.81,44.48],[51.3,40.03]],"sc":158,"rot":0,"flip":false}},"pizza":{"d":{"anch":[[44.77,99.72],[45.45,84.92],[46.46,67.24],[47.41,52.92],[47.88,39.8],[49.1,28.61],[49.64,16.94]],"sc":132,"rot":0,"flip":false},"m":{"anch":[[43.22,75.48],[44.11,67.85],[45.41,60.68],[46.64,54.83],[47.25,49.5],[48.83,44.87],[49.53,40.03]],"sc":132,"rot":0,"flip":false}},"nerd":{"d":{"anch":[[70.29,84.32],[66.7,71.57],[67.38,59.05],[62.77,49.07],[61.22,36.79],[57.23,27.05],[50.12,15.26]],"sc":128,"rot":0,"flip":false},"m":{"anch":[[76.29,67.61],[71.63,62.45],[72.52,57.33],[66.54,53.26],[64.54,48.25],[59.37,44.23],[50.16,39.23]],"sc":128,"rot":0,"flip":false}},"trendy":{"d":{"anch":[[78.82,79.75],[74.42,68.92],[71.24,57.85],[66.9,47.86],[64.67,36.19],[59.53,26.81],[54.25,16.94]],"sc":128,"rot":0,"flip":false},"m":{"anch":[[87.34,65.76],[81.64,61.37],[77.52,56.84],[71.89,52.77],[69.0,48.0],[62.35,44.13],[55.51,40.03]],"sc":128,"rot":0,"flip":false}},"boss":{"d":{"anch":[[66.23,87.93],[64.2,73.73],[62.23,61.22],[60.88,49.43],[57.63,37.76],[55.8,27.41],[52.69,17.18]],"sc":144,"rot":0,"flip":false},"m":{"anch":[[71.03,69.39],[68.4,63.32],[65.84,58.22],[64.1,53.41],[59.88,48.65],[57.51,44.38],[53.48,40.15]],"sc":144,"rot":0,"flip":false}}};
@@ -3331,13 +3387,40 @@ function pyAlphaOK(){
   });
 }
 const pyJump={};                       /* حالة القفزة لكل لاعب */
+/* ═══ الغلاف الرأسيّ ═══
+   نحسب من قياساتك أعلى رأسٍ وأخفض قدمٍ على كل الدرجات لكل الشخصيات.
+   الناتج للحاسوب يتجاوز ١٠٠٪ من ارتفاع الصورة، أي أنّ أيّ قصٍّ رأسيّ
+   يقطع أحدهم حتمًا. لذلك نملأ الارتفاع بهذا الغلاف بالضبط، ونملأ ما
+   يفيض عن العرض بنسخةٍ ضبابية من الخلفية بدل الشريط الأسود. */
+const PY_ENV=(function(){
+  const out={};
+  ["d","m"].forEach(dev=>{
+    const S=PY_S[dev]; let top=0, bot=1;
+    for(const cid in PY_CH0){ const C=PY_CH0[cid][dev];
+      C.anch.forEach((a,i)=>{
+        const h=(S.baseH/100)*((100-i*S.step)/100)*(C.sc/100);
+        top=Math.min(top, a[1]/100-h); bot=Math.max(bot, a[1]/100);
+      });
+    }
+    out[dev]={top:top-0.004, bot:bot+0.004};      /* هامشٌ رفيع */
+  });
+  return out;
+})();
 function pyFit(){
   const s=$("pyScene"),st=$("pyStage"); if(!s||!st) return null;
-  const ar=pyDev()==="m"?9/16:16/9;
-  let H=s.clientHeight-6, W=H*ar;
-  if(W>s.clientWidth-6){ W=s.clientWidth-6; H=W/ar; }
-  if(H<40) return null;
-  st.style.width=W+"px"; st.style.height=H+"px";
+  const dev=pyDev(), ar=dev==="m"?9/16:16/9, E=PY_ENV[dev];
+  const sw=s.clientWidth, sh=s.clientHeight;
+  if(sh<40||sw<40) return null;
+  /* الارتفاع يُملأ بالغلاف تمامًا — لا نُكبّر أكثر مهما اتّسعت الشاشة،
+     لأنّ أيّ تكبيرٍ إضافيّ يقصّ رأسًا أو قدمًا. ما زاد من العرض يُقصّ
+     (الجانبان فراغٌ حول الهرم)، وما نقص تملؤه النسخةُ الضبابية. */
+  /* نحجز شريطَ الأجوبة: لو ملأ الهرمُ الارتفاعَ كلَّه لاختفى الواقفُ على
+     الدرجة الأولى خلف الأزرار. فنُجلس الهرمَ فوقها كاملًا. */
+  const q=$("pyQ"), qH=(q&&!q.classList.contains("hide"))?q.offsetHeight:0;
+  const usable=Math.max(140, sh-qH);
+  const H=usable/(E.bot-E.top), W=H*ar, top=-E.top*H;
+  st.style.width=W+"px"; st.style.height=H+"px"; st.style.top=top+"px";
+  const b=$("pyBgBlur"); if(b) b.style.opacity = (W < sw-1) ? 1 : 0;
   return {w:W,h:H};
 }
 function pyPlace(el,p,box,dev,S){
@@ -3348,7 +3431,7 @@ function pyPlace(el,p,box,dev,S){
   const sA=100-el._from*S.step, sB=100-el._to*S.step;
   const persp=(sA+(sB-sA)*t)/100;
   const h=box.h*(S.baseH/100)*persp*(C.sc/100);
-  const w=h*(352/606);                 /* الإطار المشترك لكل المقاطع */
+  const w=h*PY_AR[id];                 /* لكل شخصيةٍ نسبةُ إطارها هي — لا نسبةٌ واحدة */
   const off=J?J.off:0, sq=J?J.sq:0;
   el.style.width=w+"px"; el.style.height=h+"px";
   el.style.left=x+"%";  el.style.top=y+"%";
@@ -3406,7 +3489,8 @@ function rPyDraw(){
   const box=pyFit(); if(!box) return;
   const dev=pyDev(), S=PY_S[dev], st=$("pyStage");
   const H=Math.max(1,ST.pyramidHeight||PY_TIERS);
-  $("pyBg").src="pyr2d/bg-"+dev+".webp";
+  const bgs="pyr2d/bg-"+dev+".webp";
+  if(!$("pyBg").src.endsWith(bgs)){ $("pyBg").src=bgs; $("pyBgBlur").src=bgs; }
   const alive=ST.players.filter(p=>!p.spectator);
 
   /* هالة الدرجة التي بلغها المتصدّر — إشارةُ السباق */
@@ -3438,10 +3522,15 @@ function rPyDraw(){
       el._v=vs[0]; el._vj=vs[1]; el._shadow=sh;
       el._from=el._to=pyAnchIdx(Math.min(H,p.pyPos||0),H);
       st.appendChild(el);
-      if(PY_ALPHA){
-        el._v.src="pyr2d/"+cid+"-idle.webm"; el._vj.src="pyr2d/"+cid+"-jump.webm";
-        el.classList.add("vid"); el._v.play().catch(()=>{});
-      }
+    }
+    /* فحص الشفافية غير متزامن: قد يصل بعد إنشاء العنصر. فنَصِل المقاطع
+       هنا في كل رسمة لا في لحظة الإنشاء وحدها — وإلا بقيت الصور ثابتة. */
+    if(PY_ALPHA && !el._wired){
+      el._wired=1;
+      el._v.src="pyr2d/"+cid+"-idle.webm"; el._vj.src="pyr2d/"+cid+"-jump.webm";
+      el.classList.add("vid");
+      el._v.play().catch(()=>{});
+      el._v.addEventListener("canplay",()=>el._v.play().catch(()=>{}),{once:true});
     }
     const want=pyAnchIdx(Math.min(H,p.pyPos||0),H);
     if(want!==el._to && !pyJump[p.id]) pyLeap(el,p,el._to,want,box,dev,S);
