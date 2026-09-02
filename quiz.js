@@ -117,7 +117,9 @@ function sanitize(s = {}, old = DEFAULTS) {
     o.allowedPowers = list.length ? list : POWERS.slice();
   }
   if (s.pyramid !== undefined) o.pyramid = !!s.pyramid;
-  if (s.pyramidHeight !== undefined) o.pyramidHeight = clampInt(s.pyramidHeight, 4, 6, old.pyramidHeight);
+  /* الارتفاع ستٌّ دائمًا: صورة الهرم فيها سبع درجات ثابتة، فسبعةُ مواضع
+     (٠..٦). أيّ قيمةٍ أخرى تجعل خطوةً واحدة تُرسَم درجتين أو صفرًا. */
+  if (s.pyramidHeight !== undefined) o.pyramidHeight = 6;
   if (s.pyramidTime !== undefined) o.pyramidTime = clampInt(s.pyramidTime, MIN_P, 15, old.pyramidTime);
   if (s.pyramidPenalty !== undefined) o.pyramidPenalty = !!s.pyramidPenalty;
   if (s.headStart !== undefined) o.headStart = !!s.headStart;
