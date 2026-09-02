@@ -1097,8 +1097,8 @@ body.lkOn #stage{background:#0f192f!important;border-color:transparent!important
 body.lkOn #aurora,body.lkOn #bgFx,body.lkOn #grid{display:none!important}
 #sLink{padding:0}
 /* كل ما يُلعب به يعيش داخل زجاج الشاشة، لا على إطار التلفزيون الخشبيّ */
-#lkScreen{position:absolute;z-index:3;display:flex;flex-direction:column;
-  padding:10px 12px 8px;min-height:0}
+/* بلا حشو — كما في المختبر تمامًا، فما يُقاس هناك يقع هنا */
+#lkScreen{position:absolute;z-index:3;padding:0}
 /* المؤقّت يطفو في زاوية الزجاج بدل أن يقتطع صفًّا من أعلى المشهد */
 #sLink>#clock{position:absolute;z-index:6;margin:0;
   filter:drop-shadow(0 4px 16px rgba(0,0,0,.9))}
@@ -1129,8 +1129,8 @@ body.lkOn .node{
   background:url("sort3d/disc.webp") center/100% 100% no-repeat!important;
   border:0!important;border-radius:50%!important;
   display:flex;align-items:center;justify-content:center;
-  padding:0 13%!important;color:#20140a!important;font-weight:900;
-  line-height:1.18;text-align:center;white-space:normal;overflow:hidden;
+  padding:0!important;color:#20140a!important;font-weight:900;
+  line-height:1.15;text-align:center;white-space:normal;overflow:hidden;
   max-width:none!important;
   filter:drop-shadow(0 8px 16px rgba(0,0,0,.55));
   text-shadow:0 1px 0 rgba(255,255,255,.45);
@@ -1145,6 +1145,10 @@ body.lkOn .node.hot {filter:drop-shadow(0 0 14px var(--gold)) drop-shadow(0 8px 
 body.lkOn .node.tied{filter:drop-shadow(0 0 10px var(--violet)) drop-shadow(0 8px 16px rgba(0,0,0,.55))}
 body.lkOn .node.good{filter:drop-shadow(0 0 12px var(--lime)) drop-shadow(0 8px 16px rgba(0,0,0,.55))}
 body.lkOn .node.bad {filter:drop-shadow(0 0 12px var(--red)) drop-shadow(0 8px 16px rgba(0,0,0,.55))}
+/* الحشو على النصّ داخل القرص لا على القرص: النسبة المئوية على عنصرٍ
+   مطلق تُحسب من عرض الحاوية — أي عرض الزجاج كلّه — فتصير ٩٨ بكسل لكل
+   جهةٍ على قرصٍ عرضه ١٣٢. المختبر يضعها على الـspan فتُحسب من القرص. */
+body.lkOn .node>span{display:block;padding:0 8%}
 body.lkOn #lkTitle,body.lkOn #lkMeta{position:absolute;left:0;right:0;
   transform:translateY(-50%);margin:0;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.98)}
 body.lkOn #sLink>#clock{transform:translate(-50%,-50%)}
@@ -3144,10 +3148,10 @@ let lkPlayed=false;
    المختبر ثم تُنسخ. المرجع في كل شيء هو مستطيل زجاج الشاشة:
    gl/gr/gt/gb نِسبٌ من الصورة، وما بعدها نِسبٌ من الزجاج نفسه. */
 const LK={
- d:{gl:22,gr:72,gt:7.5,gb:87, dS:19.5,cA:13,cB:73,rT:29,rG:29,fS:18,
-    tY:7.5,tS:22.5,mY:99,mS:13.5, kS:11,kX:0,kY:13.9, w:1280,h:720},
- m:{gl:5.5,gr:94.5,gt:13.5,gb:81.5, dS:17.5,cA:14,cB:83.5,rT:26.5,rG:29,fS:17,
-    tY:5,tS:16,mY:95,mS:13.5, kS:9,kX:1.9,kY:9.1, w:720,h:1280}
+ d:{gl:17.5,gr:72,gt:7.5,gb:87, dS:21.5,cA:25,cB:75,rT:26,rG:30,fS:15,
+    tY:6,tS:20,mY:96,mS:14, kS:11,kX:6.1,kY:13.3, w:1280,h:720},
+ m:{gl:5.5,gr:94.5,gt:13.5,gb:81.5, dS:18.5,cA:19.5,cB:81.5,rT:24,rG:29,fS:19.5,
+    tY:5,tS:16,mY:96,mS:11.5, kS:9,kX:2.5,kY:10.7, w:720,h:1280}
 };
 /* الخلفية تُعرض بـcover، فموضع الزجاج على الشاشة يتبع القصّ.
    نحسبه بالمعادلة نفسها التي يستعملها المتصفّح فيقع اللعبُ على الزجاج
@@ -3225,13 +3229,15 @@ function lkPaint(d){
   R.innerHTML="";L.innerHTML="";
   d.r.forEach(o=>{
     const b=document.createElement("button");
-    b.className="node ring src";b.textContent=o.txt;b.dataset.k=o.k;
+    b.className="node ring src";b.innerHTML="<span></span>";
+    b.firstChild.textContent=o.txt;b.dataset.k=o.k;
     R.appendChild(b);lkRingIn(b);
     b.onpointerdown=e=>lkDragStart(e,b);
   });
   d.l.forEach(o=>{
     const b=document.createElement("button");
-    b.className="node ring dst";b.textContent=o.txt;b.dataset.k=o.k;
+    b.className="node ring dst";b.innerHTML="<span></span>";
+    b.firstChild.textContent=o.txt;b.dataset.k=o.k;
     L.appendChild(b);lkRingIn(b);
   });
   /* اكتمال القائمة: الخادم يرسل لوحة فارغة برصيد كامل */
