@@ -1120,12 +1120,16 @@ body.noTop:not(.topOpen) #devBar{display:none}
 .pyActor{position:absolute;z-index:3;pointer-events:none;
   transform-origin:50% 100%;will-change:transform,left,top}
 /* object-position عند الأسفل: أيّ فارقٍ يسير بين نسبة الصورة والمقطع
-   يُؤكَل من الأعلى لا من تحت القدمين، فتبقى القدمان على الدرجة. */
-.pyActor img,.pyActor video{width:100%;height:100%;object-fit:contain;
-  object-position:bottom center;display:block}
-.pyActor video{display:none}
-.pyActor.vid video{display:block}
-.pyActor.vid img{display:none}
+   يُؤكَل من الأعلى لا من تحت القدمين، فتبقى القدمان على الدرجة.
+   والتبديل بالشفافية لا بـdisplay: المقطعُ الذي يبدأ تحميلَه وهو مخفيٌّ
+   بـdisplay:none يعلق ولا يعمل أبدًا — قِستُ ذلك على الموقع. */
+.pyActor img,.pyActor video{position:absolute;inset:0;width:100%;height:100%;
+  object-fit:contain;object-position:bottom center;display:block}
+.pyActor video{opacity:0}
+.pyActor.vid img{opacity:0}
+.pyActor.vid video:nth-of-type(1){opacity:1}
+.pyActor.vid.j video:nth-of-type(1){opacity:0}
+.pyActor.vid.j video:nth-of-type(2){opacity:1}
 .pyTag{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);
   margin-bottom:3px;font-size:10px;font-weight:900;white-space:nowrap;
   padding:1px 7px;border-radius:8px;background:rgba(6,8,22,.72);
@@ -1515,7 +1519,7 @@ body.noTop:not(.topOpen) #devBar{display:none}
     </div>
 
     <div class="scene" id="sIntro">
-      <video id="inVid" playsinline muted preload="auto"></video>
+      <video id="inVid" playsinline muted></video>
       <div id="inScrim"></div>
       <div id="inWrap">
         <div id="inBadge">شرح اللعبة</div>
@@ -1684,13 +1688,24 @@ let atkT=null,atkP=null,atkSent=false,scoreShown={};
 /* ═══ أدوات ═══ */
 const esc=s=>{const d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML;};
 $("topTab").onclick=()=>document.body.classList.toggle("topOpen");
-/* نُنزّل فيلم الهرم مبكّرًا وقت انتظار اللاعبين، فلا ينتظره أحد لحظةَ الشرح */
-(function warmIntro(){
-  const iv=$("inVid"); if(!iv) return;
-  const src=(innerHeight>innerWidth?"pyr2d/intro-m.mp4":"pyr2d/intro-d.mp4");
-  if(iv.getAttribute("src")!==src){ iv.setAttribute("src",src); iv.load(); }
-  addEventListener("orientationchange",()=>setTimeout(warmIntro,400));
-})();
+/* نُسخّن الفيلم في ذاكرة المتصفّح لا في العنصر نفسه: تنزيلٌ عاديّ يملأ
+   الكاش، فحين يُنشَأ العنصر لحظةَ الشرح يجده جاهزًا. */
+setTimeout(()=>{ try{
+  fetch(innerHeight>innerWidth?"pyr2d/intro-m.mp4":"pyr2d/intro-d.mp4",{mode:"same-origin"})
+    .then(r=>r.blob()).catch(()=>{});
+}catch(e){} },2500);
+/* عنصرُ الفيديو يُبنى من جديدٍ عند كل عرض.
+   السبب: عنصرٌ يبدأ تحميلَه وهو داخل شجرةٍ مخفيّة (display:none) يعلق
+   عند readyState=0 ولا يُنقذه load() ولا play(). قِستُ ذلك على الموقع:
+   العنصر القديم بقي ميتًا، وعنصرٌ جديد بنفس العنوان حمّل في ٢٥٦ م.ث. */
+function introVideo(src){
+  const old=$("inVid");
+  const n=document.createElement("video");
+  n.id="inVid"; n.muted=true; n.defaultMuted=true; n.playsInline=true;
+  n.setAttribute("playsinline",""); n.preload="auto"; n.src=src;
+  old.replaceWith(n);
+  return n;
+}
 /* التبليغ: يلتقط السؤال المعروض حاليًا إن وُجد، ويُرسل لصفحة بلاغات الأدمن */
 /* ═══ القفز التجريبي — مؤقّت، يُحذف بعد التجربة ═══ */
 [...document.querySelectorAll(".djb")].forEach(b=>{
@@ -2952,20 +2967,15 @@ function rIntro(fresh){
   /* الهرم وحده له فيلمُ صعودٍ خلف الشرح — نتعرّف عليه من مفتاح التعليق */
   const film = ST.intro.vo && ST.intro.vo.key==="pyramid_intro";
   $("sIntro").classList.toggle("film",!!film);
-  const iv=$("inVid");
   if(film){
+    /* الصنف film أُضيف قبل سطر، فالعنصر يُبنى وهو ظاهرٌ لا مخفيّ */
     const src = (innerHeight>innerWidth ? "pyr2d/intro-m.mp4" : "pyr2d/intro-d.mp4");
-    if(iv.getAttribute("src")!==src){ iv.setAttribute("src",src); iv.load(); }
-    /* لا نُرجِع الزمن إلى الصفر قبل وصول البيانات الوصفية: الطلبُ يُقيَّد
-       بحثًا عن إطارٍ لم يُنزَّل بعد فيعلق العنصر عند readyState=0 ولا يبدأ
-       التشغيل أبدًا. ننتظر جاهزيّته ثم نُرجِعه ونُشغّله. */
-    const go=()=>{ try{ if(iv.currentTime>0.05) iv.currentTime=0; }catch(e){}
-                   iv.play().catch(()=>{}); };
-    if(iv.readyState>=1) go();
-    else iv.addEventListener("loadedmetadata",go,{once:true});
-    iv.play().catch(()=>{});
+    const iv = introVideo(src);
+    const go=()=>iv.play().catch(()=>{});
+    iv.addEventListener("loadeddata",go,{once:true});
+    go();
   }else{
-    try{ iv.pause(); }catch(e){}
+    try{ $("inVid").pause(); }catch(e){}
   }
   if(ST.intro.vo) voFile(ST.intro.vo.key,ST.intro.vo.i);
 }
@@ -3373,8 +3383,13 @@ function pyAlphaOK(){
   return new Promise(res=>{
     const v=document.createElement("video");
     if(!v.canPlayType||!v.canPlayType('video/webm; codecs="vp9"')){PY_ALPHA=false;return res(false);}
-    v.muted=true;v.playsInline=true;v.src="pyr2d/prof-idle.webm";
-    const done=ok=>{PY_ALPHA=ok;res(ok);};
+    v.muted=true;v.playsInline=true;
+    /* المُجسّ يوضع في الصفحة بشفافيةٍ صفر لا بـdisplay:none ولا منفصلًا:
+       العنصر المخفيّ أو المنفصل قد يعلق تحميلُه فيُخطئ الفحصُ بلا سبب. */
+    v.style.cssText="position:fixed;left:-9999px;top:0;width:8px;height:8px;opacity:0;pointer-events:none";
+    document.body.appendChild(v);
+    v.src="pyr2d/prof-idle.webm";
+    const done=ok=>{PY_ALPHA=ok;try{v.remove();}catch(e){}res(ok);};
     v.onerror=()=>done(false);
     v.onloadeddata=()=>{
       try{
@@ -3527,10 +3542,10 @@ function rPyDraw(){
        هنا في كل رسمة لا في لحظة الإنشاء وحدها — وإلا بقيت الصور ثابتة. */
     if(PY_ALPHA && !el._wired){
       el._wired=1;
+      el.classList.add("vid");          /* الإظهار قبل التحميل لا بعده */
       el._v.src="pyr2d/"+cid+"-idle.webm"; el._vj.src="pyr2d/"+cid+"-jump.webm";
-      el.classList.add("vid");
       el._v.play().catch(()=>{});
-      el._v.addEventListener("canplay",()=>el._v.play().catch(()=>{}),{once:true});
+      el._v.addEventListener("loadeddata",()=>el._v.play().catch(()=>{}),{once:true});
     }
     const want=pyAnchIdx(Math.min(H,p.pyPos||0),H);
     if(want!==el._to && !pyJump[p.id]) pyLeap(el,p,el._to,want,box,dev,S);
@@ -3540,12 +3555,6 @@ function rPyDraw(){
     if(!seen[el.dataset.id]){ el._shadow.remove(); el.remove(); }
   });
 }
-/* عند تبديل القفزة نُظهر مقطعها ونخفي مقطع الوقفة */
-(function(){ const s=document.createElement("style");
-  s.textContent=".pyActor.vid.j video:nth-of-type(1){display:none}"+
-                ".pyActor.vid.j video:nth-of-type(2){display:block}"+
-                ".pyActor.vid video:nth-of-type(2){display:none}";
-  document.head.appendChild(s); })();
 
 /* ═══ الكشف ═══ */
 /* ═══ مراسم الكشف على ثلاثة فصول ═══
