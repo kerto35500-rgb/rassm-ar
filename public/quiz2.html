@@ -1166,12 +1166,8 @@ body.pyOn #stage{border-radius:24px}
   background:rgba(12,16,34,.86);border:1px solid rgba(255,255,255,.22);color:#fff;
   backdrop-filter:blur(6px)}
 #pyAns .ans .key{display:none}
-/* شاشةٌ عريضة قصيرة: صفٌّ واحد من أربعة أجوبة — يوفّر مئةَ بكسلٍ رأسيّ
-   تذهب كلّها إلى تكبير الهرم وتقليص الفراغ على الجانبين. */
 @media (min-width:900px){
-  #pyAns{grid-template-columns:repeat(4,1fr)}
   #pyText{font-size:24px;margin-bottom:10px}
-  #pyAns .ans{padding:10px 6px;font-size:13px}
 }
 @media (max-width:560px){
   #pyQ{padding:22px 8px 9px}
@@ -3369,9 +3365,12 @@ const PY_CH0={"prof":{"d":{"anch":[[36.79,92.62],[38.75,77.58],[41.52,64.95],[42
 const PY_S={ d:{baseH:19,shW:64,shF:26,shO:38,shB:10,jH:62,jS:16,step:32/6},
              m:{baseH:7.8,shW:64,shF:26,shO:38,shB:7,jH:25.5,jS:16,step:26/6} };
 const pyDev=()=>innerHeight>innerWidth?"m":"d";
-/* عند ارتفاعٍ أقلّ من سبع، نوزّع الدرجات على المراسي السبعة بحيث تبقى
-   القمّة قمّةً — لا نقصّ من الأعلى فيقف الفائز في منتصف الهرم. */
-const pyAnchIdx=(pos,H)=>H<2?PY_TIERS-1:Math.round(pos*(PY_TIERS-1)/H);
+/* الموضع = الدرجة، واحدًا لواحد.
+   كان التوزيع نسبيًّا (‏pos×6/H) ليصل الفائزُ إلى الكأس مهما كان الارتفاع،
+   لكنّه يجعل خطوةً واحدة تُرسَم درجتين حين لا يكون الارتفاع ستًّا: عند
+   ارتفاع أربعٍ يقفز الموضعُ الأول من الدرجة ١ إلى ٣ مباشرة. والصورة فيها
+   سبع درجات ثابتة، فالمقابلة الصحيحة هي المطابقة لا التوزيع. */
+const pyAnchIdx=(pos,H)=>Math.max(0,Math.min(PY_TIERS-1,pos));
 
 /* هل يدعم المتصفّح webm بقناة شفافية؟
    كان الفحص سابقًا يُنزّل مقطعًا ويقرأ بكسل الزاوية، ومهلتُه تنقضي على
