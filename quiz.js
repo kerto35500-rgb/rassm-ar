@@ -353,17 +353,19 @@ function setupQuiz(io, deps) {
   }
 
   // المضيف يتخطى الشرح: نُعلم الجميع ليشغّلوا تعليق التخطي ثم ننتقل فورًا
-  function skipIntro(room) {
+  function skipIntro(room, natural) {
     // تخطي فيلم المقدمة: ننتقل فورًا لأول جولة
     if (room.phase === "opening") {
       if (room.openingSkipped) return;   // نقرة مزدوجة لا تجدول انتقالين
       room.openingSkipped = true;
       clearTimeout(room.phaseTimer);
-      const ov = voc.pick("skip");
-      nsp.to(room.id).emit("introSkipped", { kind: "opening", vo: ov });
+      /* حين ينتهي الفيلم من نفسه لا يوجد ما يُتخطّى: لا تعليق تخطٍّ،
+         ولا انتظارَ خاتمةٍ سبق أن رآها الجميع. */
+      const ov = natural ? null : voc.pick("skip");
+      nsp.to(room.id).emit("introSkipped", { kind: "opening", vo: ov, natural: !!natural });
       // ننتظر خاتمة الفيلم والتعليق معًا (OP_TAIL في العميل = 7.8ث)، فتبدأ
       // الجولة لحظة الوميض الأبيض تمامًا على كل الأجهزة مهما اختلف طول نسختها.
-      const tail = Math.max(7.8, ov ? ov.dur + 0.4 : 0);
+      const tail = natural ? 0.35 : Math.max(7.8, ov ? ov.dur + 0.4 : 0);
       const w = FAST ? 100 : Math.round(tail * 1000 + 150);
       setTimeout(() => { if (room.state === "playing") nextStage(room); }, w);
       return;
@@ -1231,9 +1233,9 @@ function setupQuiz(io, deps) {
       startGame(room);
     });
 
-    socket.on("skipIntro", () => {
+    socket.on("skipIntro", (d) => {
       if (!room || !player || room.ownerId !== player.id) return;
-      skipIntro(room);
+      skipIntro(room, !!(d && d.natural));
     });
 
     socket.on("backToLobby", () => {
