@@ -358,14 +358,14 @@ input,select,textarea{font-family:inherit}
 #sSort>#clock #cNum{fill:#3b2570;font-size:34px}
 
 #stTitle{position:absolute;left:49.6%;top:23.6%;transform:translate(-50%,-50%);
-  z-index:8;margin:0;font-family:"Ara Asmaa Beltajie",inherit;
+  z-index:8;margin:0;font-family:"Ara Asmaa Beltajie",inherit!important;
   font-size:29px;font-weight:900;color:#5b3fa8;letter-spacing:0;
   text-transform:none;opacity:1;white-space:nowrap}
 
 /* الوسمان تحت القرص عمدًا: النصّ خلفيةٌ لا يعبر فوق القرص المسحوب */
 .stLbl{position:absolute;transform:translate(-50%,-50%);z-index:3;
   white-space:nowrap;text-align:center;pointer-events:none;
-  font-family:"Ara Asmaa Beltajie",inherit;font-size:31px;font-weight:900;color:#5b3fa8}
+  font-family:"Ara Asmaa Beltajie",inherit!important;font-size:31px;font-weight:900;color:#5b3fa8}
 #stLblA{left:70.6%;top:50.5%}
 #stLblB{left:28.4%;top:50.1%}
 
@@ -382,11 +382,11 @@ input,select,textarea{font-family:inherit}
   filter:drop-shadow(0 10px 22px rgba(58,31,120,.45))}
 /* حركة الدخول على الطبقة الداخلية وحدها: لو وُضعت على #stOrb لَملَكت
    transform إلى الأبد (fill:both) فمَحَت التمركز وبقي القرص منزاحًا. */
-#stOrb.pop #stOrbIn{animation:stPop .42s var(--spring) both}
+#stOrb.orbPop #stOrbIn{animation:stPop .42s var(--spring) both}
 @keyframes stPop{0%{transform:scale(.35) rotate(-14deg);opacity:0}
   62%{transform:scale(1.1) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
 #stWord{position:relative;z-index:2;text-align:center;padding:0 14%;line-height:1.25;
-  word-break:break-word;font-family:"Ara Asmaa Beltajie",inherit;
+  word-break:break-word;font-family:"Ara Asmaa Beltajie",inherit!important;
   font-size:40px;font-weight:800;color:#3f189a;
   /* الحفر وهمٌ بصري: ظلّ داكن من الأعلى وضوءٌ فاتح من الأسفل (عمق 55%) */
   text-shadow:0 -1.8px 1.1px rgba(26,13,58,.50),
@@ -938,11 +938,17 @@ body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
   50%{transform:translateY(-11px) rotate(calc(var(--tilt)*.55))}}
 /* البطاقات تُنشأ مكشوفة بصنف flip، فلا يجوز أن يُلغي حركتها —
    قلبُ الوجه شأن .cIn وحده، والرفع للمرور بالمؤشّر أو للاختيار. */
-.card:hover{filter:brightness(1.12);animation:none;
-  transform:translateY(-14px) rotate(0deg) scale(1.08)}
-.card.spent{pointer-events:none;filter:grayscale(1) brightness(.45);animation:none;transform:rotate(var(--tilt)) scale(.92)}
-.card.picked{filter:brightness(1.25);animation:none;transform:translateY(-10px) scale(1.07);
-  box-shadow:0 0 0 3px #fff,0 0 44px -4px var(--pc1)}
+/* لا نُلغي الحركة بل نُجمّدها: إلغاؤها يُعيد تشغيل cardIn من opacity:0
+   بمجرّد ابتعاد المؤشّر، فكانت البطاقة تختفي ثم تدخل من جديد.
+   والرفع بخصائص translate/scale المستقلّة كي لا تنازع transform الحركةَ. */
+.card{transition:transform .4s var(--spring),translate .28s var(--spring),
+      scale .28s var(--spring),filter .3s}
+.card:hover{filter:brightness(1.12);animation-play-state:paused;
+  translate:0 -14px;scale:1.08}
+.card.spent{pointer-events:none;filter:grayscale(1) brightness(.45);
+  animation-play-state:paused;scale:.92}
+.card.picked{filter:brightness(1.25);animation-play-state:paused;
+  translate:0 -10px;scale:1.07;box-shadow:0 0 0 3px #fff,0 0 44px -4px var(--pc1)}
 
 .cIn{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .72s var(--ease)}
 .card.flip .cIn{transform:rotateY(180deg)}
@@ -2811,8 +2817,14 @@ function opStop(voDur){
     const d=v.duration;
     /* لو كان التعليق أطول من الخاتمة مدّدناها ليكتمل الصوت مع الصورة معًا */
     const tail=Math.max(OP_TAIL,(voDur||0)+0.4);
-    if(d && isFinite(d)) v.currentTime=Math.max(0,d-tail);
-    v.play().catch(()=>{});
+    /* من انتهى فيلمه قبل وصول أمر التخطّي (يحدث على الجوال كثيرًا) لا يُرجَع
+       إلى الخلف ليُعيد الخاتمة، بل يُنقل مباشرةً إلى شاشة الانتظار. */
+    const atEnd = v.ended || (d && isFinite(d) && v.currentTime >= d-tail-0.25);
+    if(atEnd){ try{v.pause();}catch(e){} $("opWait").classList.remove("gone"); }
+    else{
+      if(d && isFinite(d)) v.currentTime=Math.max(0,d-tail);
+      v.play().catch(()=>{});
+    }
   }catch(e){ $("opWait").classList.remove("gone"); }
   $("opTap").classList.remove("show");
   $("opSkip").classList.add("gone");
@@ -3050,9 +3062,11 @@ function vert(){ return innerWidth<=699; }
    بعد الدوران (getBoundingClientRect للصورة نفسها) لا من صندوق القوس،
    لأنّ الصورة على الجوال مُدارة 90° فتتجاوز صندوقها بفارقٍ كبير. */
 function stSetClip(on){ if(stClipOn===on)return; stClipOn=on; stClip(); }
+const ST_FEATHER=22;   /* عرض التدرّج: يُذيب الحافّة فلا يبقى خطٌّ مرئي */
+function stMask(w,val){ w.style.webkitMaskImage=val; w.style.maskImage=val; }
 function stClip(){
   const w=$("stDiscWrap"); if(!w)return;
-  if(!stClipOn){ w.style.clipPath="none"; return; }
+  if(!stClipOn){ stMask(w,"none"); return; }
   const st=$("stStage").getBoundingClientRect();
   const a=$("stArcA").querySelector("img").getBoundingClientRect();
   const b=$("stArcB").querySelector("img").getBoundingClientRect();
@@ -3062,13 +3076,15 @@ function stClip(){
   if(vert()){
     const cy=st.top+st.height/2;
     const up=(a.top+a.height/2<cy)?a:b, dn=(up===a)?b:a;
-    const top=Math.max(0,up.bottom-st.top-g), bot=Math.max(0,st.bottom-dn.top-g);
-    w.style.clipPath="inset("+top+"px 0 "+bot+"px 0)";
+    const top=Math.max(0,up.bottom-st.top-g), bot=Math.max(0,st.bottom-dn.top-g), F=ST_FEATHER;
+    stMask(w,"linear-gradient(to bottom,transparent "+top+"px,#000 "+(top+F)+"px,"+
+      "#000 "+(st.height-bot-F)+"px,transparent "+(st.height-bot)+"px)");
   }else{
     const cx=st.left+st.width/2;
     const rt=(a.left+a.width/2>cx)?a:b, lf=(rt===a)?b:a;
-    const right=Math.max(0,st.right-rt.left-g), left=Math.max(0,lf.right-st.left-g);
-    w.style.clipPath="inset(0 "+right+"px 0 "+left+"px)";
+    const right=Math.max(0,st.right-rt.left-g), left=Math.max(0,lf.right-st.left-g), F=ST_FEATHER;
+    stMask(w,"linear-gradient(to right,transparent "+left+"px,#000 "+(left+F)+"px,"+
+      "#000 "+(st.width-right-F)+"px,transparent "+(st.width-right)+"px)");
   }
 }
 /* القوس الواقع في جهة الرمي: نقارن مركزَيهما على محور الحركة، فيصحّ
@@ -3111,7 +3127,7 @@ function sortShow(){
   o.style.transform="translate(-50%,-50%)";
   void o.offsetWidth; o.style.transition="";
   stSetClip(false);
-  o.classList.remove("pop");void o.offsetWidth;o.classList.add("pop");
+  o.classList.remove("orbPop");void o.offsetWidth;o.classList.add("orbPop");
 }
 function sortDrag(){
   const o=$("stOrb");
@@ -3122,7 +3138,7 @@ function sortDrag(){
     e.preventDefault();
     dragging=true;sx=e.clientX;sy=e.clientY;dx=0;dyR=0;
     trail=[{t:performance.now(),x:sx,y:sy}];
-    o.classList.remove("pop");           /* الحركة تملك transform — نرفعها لليد */
+    o.classList.remove("orbPop");        /* الحركة تملك transform — نرفعها لليد */
     o.classList.add("drag");o.classList.remove("snap");
     stSetClip(true);
     try{o.setPointerCapture(e.pointerId);}catch(x){}

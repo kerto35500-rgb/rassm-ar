@@ -456,8 +456,10 @@ function applyInner(){
    وما دام القرص في بيته فهو لا يقارب القوسين أصلًا، فلا حاجة للقصّ. */
 let clipOn=false;
 function setClip(on){ if(clipOn===on)return; clipOn=on; clipWrap(); }
+const FEATHER=22;   /* حافّة متدرّجة بدل القصّ الحادّ: لا خطَّ يقطع القرص */
+function mask(w,v){ w.style.webkitMaskImage=v; w.style.maskImage=v; }
 function clipWrap(){
-  if(!clipOn){ $("discWrap").style.clipPath="none"; return; }
+  if(!clipOn){ mask($("discWrap"),"none"); return; }
   const st=$("stage").getBoundingClientRect();
   /* نقيس صندوق الصورة بعد الدوران لا صندوق القوس: على الجوال الصورة
      مُدارة 90° فتتجاوز صندوقها رأسيًّا بفارقٍ كبير، فكان القصّ يقع
@@ -478,14 +480,16 @@ function clipWrap(){
     const dn = (up===a) ? b : a;
     const top = Math.max(0, up.bottom - st.top - g);
     const bot = Math.max(0, st.bottom - dn.top - g);
-    w.style.clipPath = "inset("+top+"px 0 "+bot+"px 0)";
+    mask(w,"linear-gradient(to bottom,transparent "+top+"px,#000 "+(top+FEATHER)+"px,"+
+      "#000 "+(st.height-bot-FEATHER)+"px,transparent "+(st.height-bot)+"px)");
   }else{
     const cx=st.left+st.width/2;
     const rt = (a.left+a.width/2 > cx) ? a : b;      /* القوس اليميني */
     const lf = (rt===a) ? b : a;
     const right = Math.max(0, st.right - rt.left - g);
     const left  = Math.max(0, lf.right - st.left - g);
-    w.style.clipPath = "inset(0 "+right+"px 0 "+left+"px)";
+    mask(w,"linear-gradient(to right,transparent "+left+"px,#000 "+(left+FEATHER)+"px,"+
+      "#000 "+(st.width-right-FEATHER)+"px,transparent "+(st.width-right)+"px)");
   }
 }
 
