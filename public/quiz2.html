@@ -559,7 +559,14 @@ body.pyOn   #aurora,body.pyOn   #bgFx,body.pyOn   #grid{display:none!important}
   background:radial-gradient(ellipse at 50% 45%,transparent 30%,rgba(8,6,26,.72) 100%)}
 #sIntro.film #inScrim{display:block}
 #sIntro.film #inWrap{position:relative;z-index:2}
-#sIntro.film #inText,#sIntro.film #inTitle{text-shadow:0 2px 14px rgba(0,0,0,.85)}
+/* الفيلم يشرح نفسه ومعه صوت المعلّق — فلا نُغطّيه بنصٍّ مكرَّر.
+   يبقى زرّ التخطي وحده، ويُدفع إلى الأسفل كي لا يحجب اللقطة. */
+#sIntro.film #inBadge,#sIntro.film #inTitle,#sIntro.film #inText,
+#sIntro.film #inBar,#sIntro.film #inHint{display:none}
+#sIntro.film #inWrap{position:absolute;inset:auto 0 0 0;z-index:3;
+  display:flex;justify-content:center;padding:0 0 26px;background:none;border:0;box-shadow:none}
+#sIntro.film #inSkip{margin:0}
+#sIntro.film #inScrim{background:linear-gradient(0deg,rgba(3,5,14,.62),rgba(3,5,14,0) 34%)}
 
 /* شاشة شرح اللعبة: تُعرض مرة واحدة لكل نوع، والمضيف يقدر يتخطاها */
 /* margin:auto يوسّط اللوحة رأسيًا وأفقيًا داخل المشهد — كانت تلتصق بالأعلى
@@ -1093,9 +1100,8 @@ body.lkOn #aurora,body.lkOn #bgFx,body.lkOn #grid{display:none!important}
 #lkScreen{position:absolute;z-index:3;display:flex;flex-direction:column;
   padding:10px 12px 8px;min-height:0}
 /* المؤقّت يطفو في زاوية الزجاج بدل أن يقتطع صفًّا من أعلى المشهد */
-#sLink>#clock{position:absolute;z-index:6;
-  margin:0;width:66px;height:66px;filter:drop-shadow(0 4px 16px rgba(0,0,0,.9))}
-#sLink>#clock #cNum{font-size:23px}
+#sLink>#clock{position:absolute;z-index:6;margin:0;
+  filter:drop-shadow(0 4px 16px rgba(0,0,0,.9))}
 #lkTitle{text-align:center;font-size:15px;font-weight:800;margin-bottom:10px}
 #lkBoard{position:relative;flex:1;min-height:0;display:flex;gap:clamp(28px,9vw,90px);padding:2px 4px}
 /* العمودان متمايزان: المستطيل لا يمتدّ على نصف اللوحة بل يقف عند حدّ،
@@ -1115,26 +1121,34 @@ body.lkOn #aurora,body.lkOn #bgFx,body.lkOn #grid{display:none!important}
 /* ═══ العقد أقراصٌ لا مربّعات ═══
    القرص نفسه المستعمل في لعبة التصنيف (sort3d/disc.webp) خلفيةً للعقدة،
    والنصّ فوقه. المربّع الأبيض كان يحجب الزجاج ويقطع جوّ التلفزيون. */
+/* المواضع بالبكسل من lkFit، فالعمودان مجرّد حاويتين لا تخطيطًا مرنًا */
+body.lkOn #lkBoard{position:absolute;inset:0;display:block;gap:0;padding:0}
+body.lkOn #lkBoard .col{position:absolute;inset:0;display:block;gap:0;max-width:none}
 body.lkOn .node{
+  position:absolute;transform:translate(-50%,-50%);
   background:url("sort3d/disc.webp") center/100% 100% no-repeat!important;
   border:0!important;border-radius:50%!important;
-  aspect-ratio:1/1;width:auto!important;max-width:none!important;
-  height:var(--lkD,104px);display:flex;align-items:center;justify-content:center;
-  padding:14% 13%!important;color:#20140a!important;font-weight:900;
-  font-size:clamp(10px,1.05vw,13.5px);line-height:1.18;text-align:center;
-  white-space:normal;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 13%!important;color:#20140a!important;font-weight:900;
+  line-height:1.18;text-align:center;white-space:normal;overflow:hidden;
+  max-width:none!important;
   filter:drop-shadow(0 8px 16px rgba(0,0,0,.55));
-  text-shadow:0 1px 0 rgba(255,255,255,.45)}
-body.lkOn #lkBoard .col{justify-content:space-evenly;gap:2px}
-body.lkOn #lkBoard .col .node{max-width:none}
-/* الحالات تُلوَّن بهالةٍ حول القرص لا بتعبئةٍ تُخفي رسمه */
-body.lkOn .node.sel {filter:drop-shadow(0 0 10px var(--cyan)) drop-shadow(0 8px 16px rgba(0,0,0,.55));transform:scale(1.06)}
-body.lkOn .node.tied{filter:drop-shadow(0 0 9px var(--violet)) drop-shadow(0 8px 16px rgba(0,0,0,.55))}
-body.lkOn .node.good{filter:drop-shadow(0 0 11px var(--lime)) drop-shadow(0 8px 16px rgba(0,0,0,.55))}
-body.lkOn .node.bad {filter:drop-shadow(0 0 11px var(--red)) drop-shadow(0 8px 16px rgba(0,0,0,.55))}
-body.lkOn .node:hover{transform:scale(1.05)}
-body.lkOn #lkTitle,body.lkOn #lkMeta{color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.95)}
-body.lkOn #lkTitle{font-size:17px}
+  text-shadow:0 1px 0 rgba(255,255,255,.45);
+  transition:filter .2s var(--ease),transform .2s var(--spring)}
+/* الحالات تُلوَّن بهالةٍ حول القرص لا بتعبئةٍ تُخفي رسمه.
+   التحويل يحتفظ بالتوسيط دائمًا وإلا قفز القرص عند التحويم. */
+body.lkOn .node:hover{transform:translate(-50%,-50%) scale(1.05)}
+body.lkOn .node.sel {filter:drop-shadow(0 0 12px var(--cyan)) drop-shadow(0 8px 16px rgba(0,0,0,.55));
+                     transform:translate(-50%,-50%) scale(1.07)}
+body.lkOn .node.hot {filter:drop-shadow(0 0 14px var(--gold)) drop-shadow(0 8px 16px rgba(0,0,0,.55));
+                     transform:translate(-50%,-50%) scale(1.07)}
+body.lkOn .node.tied{filter:drop-shadow(0 0 10px var(--violet)) drop-shadow(0 8px 16px rgba(0,0,0,.55))}
+body.lkOn .node.good{filter:drop-shadow(0 0 12px var(--lime)) drop-shadow(0 8px 16px rgba(0,0,0,.55))}
+body.lkOn .node.bad {filter:drop-shadow(0 0 12px var(--red)) drop-shadow(0 8px 16px rgba(0,0,0,.55))}
+body.lkOn #lkTitle,body.lkOn #lkMeta{position:absolute;left:0;right:0;
+  transform:translateY(-50%);margin:0;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.98)}
+body.lkOn #sLink>#clock{transform:translate(-50%,-50%)}
+body.lkOn #sLink>#clock #cNum{font-size:var(--lkCk,24px)}
 
 /* التصنيف */
 #stItem{font-size:clamp(21px,6vw,31px);font-weight:900;text-align:center;padding:20px 10px;letter-spacing:-.5px;
@@ -3125,38 +3139,58 @@ let lkBusy=false, lkLast=null;
 /* المقطع صار في شاشة الشرح، فمشهد اللعب يبدأ على الصورة الثابتة مباشرةً
    ولا يحمل فيديو. المربّعات تظهر بعد استقرار الصورة لا مع أوّل لحظة. */
 let lkPlayed=false;
-/* حدود زجاج الشاشة داخل الصورة — مقيسةٌ من الملفّين لا مقدَّرة */
-const LK_GLASS={ d:{l:.175,r:.720,t:.075,b:.870,w:1280,h:720},
-                 m:{l:.055,r:.945,t:.135,b:.815,w:720, h:1280} };
+/* ═══ قياسات لعبة التوصيل ═══
+   مضبوطةٌ بيد صاحب اللعبة في link-lab.html. لا تُعدَّل هنا — تُعدَّل في
+   المختبر ثم تُنسخ. المرجع في كل شيء هو مستطيل زجاج الشاشة:
+   gl/gr/gt/gb نِسبٌ من الصورة، وما بعدها نِسبٌ من الزجاج نفسه. */
+const LK={
+ d:{gl:22,gr:72,gt:7.5,gb:87, dS:19.5,cA:13,cB:73,rT:29,rG:29,fS:18,
+    tY:7.5,tS:22.5,mY:99,mS:13.5, kS:11,kX:0,kY:13.9, w:1280,h:720},
+ m:{gl:5.5,gr:94.5,gt:13.5,gb:81.5, dS:17.5,cA:14,cB:83.5,rT:26.5,rG:29,fS:17,
+    tY:5,tS:16,mY:95,mS:13.5, kS:9,kX:1.9,kY:9.1, w:720,h:1280}
+};
 /* الخلفية تُعرض بـcover، فموضع الزجاج على الشاشة يتبع القصّ.
    نحسبه بالمعادلة نفسها التي يستعملها المتصفّح فيقع اللعبُ على الزجاج
    مهما كان شكل النافذة. */
 function lkFit(){
   const host=$("sLink"), scr=$("lkScreen"); if(!host||!scr) return;
   const W=host.clientWidth, H=host.clientHeight; if(W<40||H<40) return;
-  const G=LK_GLASS[atkDev()];
-  const gw=G.r-G.l, gh=G.b-G.t;
+  const P=LK[atkDev()];
+  const gl=P.gl/100, gr=P.gr/100, gt=P.gt/100, gb=P.gb/100;
+  const gw=gr-gl, gh=gb-gt;
   /* نكبّر بقدر ما يملأ الصورةُ الشاشة، لكن لا نتجاوز ما يُبقي الزجاج
-     كاملًا داخلها — ثمّ نُوسّط على مركز الزجاج لا على مركز الصورة.
-     التوسيطُ على الصورة هو ما كان يقصّ أعلى الزجاج فيخرج العنوان
-     على الإطار الخشبيّ. */
-  const s=Math.min(Math.max(W/G.w,H/G.h), Math.min(W/(gw*G.w), H/(gh*G.h)));
-  const rw=G.w*s, rh=G.h*s;
-  const ox=W/2-((G.l+G.r)/2)*rw, oy=H/2-((G.t+G.b)/2)*rh;
-  [$("lkStill")].forEach(el=>{ if(!el) return;
-    el.style.width=rw+"px"; el.style.height=rh+"px";
-    el.style.left=ox+"px"; el.style.top=oy+"px"; el.style.inset="auto"; });
-  const l=G.l*rw+ox, t=G.t*rh+oy;
-  const sw=gw*rw, sh=gh*rh;
+     كاملًا داخلها — ثمّ نُوسّط على مركز الزجاج لا على مركز الصورة. */
+  const s=Math.min(Math.max(W/P.w,H/P.h), Math.min(W/(gw*P.w), H/(gh*P.h)));
+  const rw=P.w*s, rh=P.h*s;
+  const ox=W/2-((gl+gr)/2)*rw, oy=H/2-((gt+gb)/2)*rh;
+  const im=$("lkStill");
+  if(im){ im.style.width=rw+"px"; im.style.height=rh+"px";
+          im.style.left=ox+"px"; im.style.top=oy+"px"; im.style.inset="auto"; }
+  const l=gl*rw+ox, t=gt*rh+oy, sw=gw*rw, sh=gh*rh;
   scr.style.left=l+"px"; scr.style.top=t+"px";
   scr.style.width=sw+"px"; scr.style.height=sh+"px";
-  /* قطر القرص: ثلاثةٌ في العمود مع فواصل، ولا يتجاوز نصفَ عرض العمود */
-  const rows=Math.max(1,$("lkL").children.length||3);
-  const byH=(sh-64)/rows*0.86, byW=(sw/2)*0.62;
-  scr.style.setProperty("--lkD",Math.max(52,Math.min(byH,byW))+"px");
-  /* المؤقّت داخل الزجاج، في زاويته العليا */
+
+  /* الأقراص: قطرٌ ومواضعُ من قياسات المختبر لا من تخطيط مرن */
+  const D=P.dS/100*sh;
+  [[$("lkL"),P.cA],[$("lkR"),P.cB]].forEach(([col,cx])=>{
+    if(!col) return;
+    const x=cx/100*sw;
+    [...col.children].forEach((b,i)=>{
+      b.style.width=D+"px"; b.style.height=D+"px";
+      b.style.left=x+"px"; b.style.top=((P.rT+P.rG*i)/100*sh)+"px";
+      b.style.fontSize=(P.fS/100*D)+"px";
+    });
+  });
+  const ti=$("lkTitle"), me=$("lkMeta");
+  if(ti){ ti.style.top=(P.tY/100*sh)+"px"; ti.style.fontSize=P.tS+"px"; }
+  if(me){ me.style.top=(P.mY/100*sh)+"px"; me.style.fontSize=P.mS+"px"; }
   const c=$("clock");
-  if(c&&c.parentElement===host){ c.style.left=(l+10)+"px"; c.style.top=(t+8)+"px"; }
+  if(c&&c.parentElement===host){
+    const kd=P.kS/100*sh;
+    c.style.width=kd+"px"; c.style.height=kd+"px";
+    c.style.left=(l+P.kX/100*sw)+"px"; c.style.top=(t+P.kY/100*sh)+"px";
+    c.style.setProperty("--lkCk",(kd*0.42)+"px");
+  }
 }
 function lkMedia(){
   const M=ATK_MEDIA[atkDev()], im=$("lkStill");
@@ -3202,7 +3236,7 @@ function lkPaint(d){
   });
   /* اكتمال القائمة: الخادم يرسل لوحة فارغة برصيد كامل */
   $("lkDone").classList.toggle("gone",!(d.hits>=d.total));
-  lkFit();   /* عدد العقد يحدّد قطر القرص */
+  lkFit();   /* المواضع تُضبط بعد بناء العقد */
 }
 function lkRingIn(b){b.classList.remove("popIn");void b.offsetWidth;b.classList.add("popIn");}
 function lkCenter(el){
