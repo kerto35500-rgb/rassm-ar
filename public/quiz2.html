@@ -546,6 +546,18 @@ body.filmOn #aurora,body.filmOn #bgFx,body.filmOn #grid{display:none!important}
 #opTap.show{display:block}
 @keyframes opPulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}
 
+/* ═══ شرح الهرم: الفيديو خلفيةُ الشاشة ═══
+   المقطع ١٠ ثوانٍ والتعليق ٢٦٫٨، فيتجمّد على آخر إطاره بقيّة الشرح.
+   وذلك الإطارُ نفسه هو خلفية مشهد الهرم، فلا يُرى انتقالٌ حين يبدأ اللعب. */
+#inVid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  display:none;z-index:0;background:#0b0a26}
+#sIntro.film #inVid{display:block}
+#inScrim{position:absolute;inset:0;z-index:1;display:none;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 45%,transparent 30%,rgba(8,6,26,.72) 100%)}
+#sIntro.film #inScrim{display:block}
+#sIntro.film #inWrap{position:relative;z-index:2}
+#sIntro.film #inText,#sIntro.film #inTitle{text-shadow:0 2px 14px rgba(0,0,0,.85)}
+
 /* شاشة شرح اللعبة: تُعرض مرة واحدة لكل نوع، والمضيف يقدر يتخطاها */
 /* margin:auto يوسّط اللوحة رأسيًا وأفقيًا داخل المشهد — كانت تلتصق بالأعلى
    فيبدو زر التخطي في طرف الشاشة على الشاشات العريضة. */
@@ -1446,6 +1458,8 @@ body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
     </div>
 
     <div class="scene" id="sIntro">
+      <video id="inVid" playsinline muted preload="auto"></video>
+      <div id="inScrim"></div>
       <div id="inWrap">
         <div id="inBadge">شرح اللعبة</div>
         <h2 id="inTitle"></h2>
@@ -2853,6 +2867,18 @@ function rIntro(fresh){
   const f=$("inFill");
   f.style.animation="none";void f.offsetWidth;
   f.style.animation="inFill "+Math.max(.3,ST.phaseDur||10)+"s linear both";
+  /* الهرم وحده له فيلمُ صعودٍ خلف الشرح — نتعرّف عليه من مفتاح التعليق */
+  const film = ST.intro.vo && ST.intro.vo.key==="pyramid_intro";
+  $("sIntro").classList.toggle("film",!!film);
+  const iv=$("inVid");
+  if(film){
+    const src = (innerHeight>innerWidth ? "pyr2d/intro-m.mp4" : "pyr2d/intro-d.mp4");
+    if(iv.getAttribute("src")!==src){ iv.setAttribute("src",src); iv.load(); }
+    try{ iv.currentTime=0; }catch(e){}
+    iv.play().catch(()=>{});
+  }else{
+    try{ iv.pause(); }catch(e){}
+  }
   if(ST.intro.vo) voFile(ST.intro.vo.key,ST.intro.vo.i);
 }
 $("inSkip").onclick=()=>{
@@ -3513,10 +3539,11 @@ function clockTick(){
     const s=Math.ceil(left/1000);
     $("cNum").textContent=s;
     wrap.classList.toggle("hot",left<3600);
-    if(s!==last&&s<=3&&s>0){last=s;sTick();}
-    /* استعجال اللاعبين: مرة واحدة لكل مرحلة إجابة، قبل النهاية بخمس ثوانٍ */
+    if(s!==last&&s<=3&&s>0&&ST.phase!=="pyramid"){last=s;sTick();}
+    /* استعجال اللاعبين: مرة واحدة لكل مرحلة إجابة، قبل النهاية بخمس ثوانٍ.
+       الهرم مستثنى — لا نقر عدّاد ولا تعليق استعجال. */
     if(left<=5000&&left>3800&&hurryKey!==phaseKey&&
-       (ST.phase==="question"||ST.phase==="link"||ST.phase==="sort"||ST.phase==="pyramid")){
+       (ST.phase==="question"||ST.phase==="link"||ST.phase==="sort")){
       hurryKey=phaseKey;
       if(ST.hurry) voFile(ST.hurry.key,ST.hurry.i);
     }

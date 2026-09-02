@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>مختبر الهرم ثنائي الأبعاد — قمّة الهرم</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   مختبر الهرم 2D
+   الفكرة: خلفية الهرم صورةٌ مسطّحة، والشخصية فيديو مفرَّغ من الأخضر
+   يُركَّب فوقها. لكل درجة إحداثيّاتها وحجمها ودورانها، لأنّ المنظور
+   يتغيّر كلّما ارتفعنا — درجةٌ واحدة بإعداداتٍ واحدة تبدو ملصوقة.
+   ═══════════════════════════════════════════════════════════════ */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --ink:#1c1233; --pan:#f4f0ff; --line:#d9cff5;
+  --acc:#7c3aed; --acc2:#a78bfa;
+  --spring:cubic-bezier(.2,1.35,.35,1);
+}
+body{background:#0d0820;color:var(--ink);font-family:"Tajawal","Segoe UI",system-ui,sans-serif;
+  height:100vh;overflow:hidden;display:flex}
+
+/* ── المسرح ── */
+#wrap{flex:1;position:relative;overflow:hidden;background:#0d0820;display:grid;place-items:center}
+#stage{position:relative;overflow:hidden;background:#000;
+  box-shadow:0 0 0 1px rgba(160,130,240,.3),0 0 80px rgba(80,40,150,.5)}
+#bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+#glow{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  opacity:0;transition:opacity .35s;pointer-events:none;mix-blend-mode:screen}
+
+/* مراسي الدرجات: دوائر صغيرة تُظهر أين تقف الشخصية */
+.anch{position:absolute;width:14px;height:14px;border-radius:50%;transform:translate(-50%,-50%);
+  border:2px solid #fff;background:rgba(124,58,237,.85);z-index:5;cursor:pointer;
+  box-shadow:0 0 0 2px rgba(0,0,0,.35);transition:transform .18s var(--spring)}
+.anch:hover{transform:translate(-50%,-50%) scale(1.35)}
+.anch.on{background:#ffd23f;box-shadow:0 0 0 2px #000,0 0 16px 4px rgba(255,210,63,.8)}
+.anch span{position:absolute;left:50%;top:-20px;transform:translateX(-50%);
+  font-size:11px;font-weight:900;color:#fff;text-shadow:0 1px 3px #000}
+#anchLayer.off .anch{display:none}
+
+/* ── الشخصية ── */
+/* الظلّ عنصرٌ مستقلّ تحت القدمين: لو رُسم داخل طبقة الشخصية لقفز معها
+   في الهواء أثناء القفزة، والظلّ يبقى على الأرض ويصغر فقط. */
+#shadow{position:absolute;border-radius:50%;background:#000;z-index:6;pointer-events:none;
+  transform:translate(-50%,-50%)}
+#actor{position:absolute;z-index:7;pointer-events:none;
+  transform-origin:50% 100%;will-change:transform}
+#actor>*{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
+/* ثلاث طبقات عرض، واحدةٌ فقط ظاهرة:
+   .alpha = فيديو webm بقناة شفافية يُعرض كما هو (لا معالجة، أخفّ ما يكون)
+   .vid   = لوحة WebGL تُفرّغ الأخضر لحظيًّا (لمن لا يدعم شفافية webm)
+   بلا صنف = صورة ساكنة قبل تحميل أي مقطع */
+#actorCv,#actorVid,#actorVidJ{display:none}
+#actorImg{display:block}
+#actor.vid #actorCv{display:block}
+#actor.vid #actorImg{display:none}
+#actor.alpha #actorVid{display:block}
+#actor.alpha #actorImg,#actor.alpha #actorCv{display:none}
+#actor.alpha.jumping #actorVid{display:none}
+#actor.alpha.jumping #actorVidJ{display:block}
+#vid{display:none}
+
+/* ── اللوحة ── */
+#panel{width:330px;flex:0 0 330px;background:var(--pan);height:100vh;overflow-y:auto;
+  padding:12px;font-size:13px;border-inline-start:1px solid var(--line)}
+#panel h1{font-size:15px;margin-bottom:8px;color:var(--acc)}
+.grp{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:9px}
+.grp b{display:block;font-size:12.5px;margin-bottom:7px;color:#4c2d92}
+.row{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.row label{flex:0 0 92px;font-size:12px;color:#5a4a80}
+.row input[type=range]{flex:1;min-width:0;accent-color:var(--acc)}
+.row output{flex:0 0 56px;text-align:end;font-size:11.5px;font-weight:800;color:#3b2570}
+.row input[type=color]{width:40px;height:26px;border:1px solid var(--line);border-radius:6px;background:none}
+.row input[type=file]{flex:1;min-width:0;font-size:11px}
+.seg{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}
+.seg button{flex:1;min-width:44px;padding:6px 4px;border:1px solid var(--line);background:#fff;
+  border-radius:8px;font:inherit;font-size:12px;font-weight:800;color:#4c2d92;cursor:pointer}
+.seg button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.btn{width:100%;padding:9px;border:0;border-radius:10px;background:var(--acc);color:#fff;
+  font:inherit;font-weight:900;cursor:pointer;margin-top:5px}
+.btn.alt{background:#ece5ff;color:var(--acc)}
+.chk{display:flex;align-items:center;gap:7px;margin-bottom:6px;font-size:12px;color:#5a4a80;cursor:pointer}
+.chk input{accent-color:var(--acc);width:15px;height:15px}
+.hint{font-size:11px;color:#8878ad;line-height:1.5;margin-top:4px}
+#out{white-space:pre-wrap;font-size:11px;background:#1c1233;color:#d9ccff;padding:8px;
+  border-radius:8px;margin-top:6px;max-height:190px;overflow:auto;display:none;font-family:monospace;direction:ltr;text-align:left}
+</style>
+</head>
+<body>
+
+<div id="wrap">
+  <div id="stage">
+    <img id="bg" alt="">
+    <img id="glow" alt="">
+    <div id="anchLayer"></div>
+    <div id="shadow"></div>
+    <div id="actor">
+      <img id="actorImg" src="pyr2d/prof-still.webp" alt="">
+      <canvas id="actorCv"></canvas>
+      <video id="actorVid" playsinline muted loop preload="auto"></video>
+      <video id="actorVidJ" playsinline muted preload="auto"></video>
+    </div>
+  </div>
+</div>
+<video id="vid" playsinline muted loop></video>
+<video id="vidJump" playsinline muted style="display:none"></video>
+
+<div id="panel">
+  <h1>🔺 مختبر الهرم — ثنائي الأبعاد</h1>
+
+  <div class="grp"><b>🖥 الجهاز والدرجة</b>
+    <div class="seg" id="devSeg">
+      <button data-dev="d">💻 كمبيوتر</button>
+      <button data-dev="m">📱 جوال</button>
+    </div>
+    <div class="seg" id="tierSeg"></div>
+    <div class="seg">
+      <button id="downB">⬇ انزل</button>
+      <button id="jumpB">⬆ اقفز</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="showAnch" checked> أظهر مراسي الدرجات</label>
+    <button class="btn alt" id="resetAnchB">📍 أعد المراسي لمواضعها المحسوبة</button>
+    <div class="hint">اسحب أيّ مرساة (الدائرة المرقّمة) لتضعها على سطح الدرجة بالضبط —
+      وهي نقطة وقوف قدمَي الشخصية. تُحفظ تلقائيًّا لكل جهاز على حدة.</div>
+    <label class="chk"><input type="checkbox" id="showGlow" checked> أظهر توهّج الدرجة</label>
+  </div>
+
+  <div class="grp"><b>🎭 الشخصية</b>
+    <div class="seg" id="chSeg"></div>
+    <div class="row"><label>حجمها</label><input type="range" id="chSc" min="40" max="200" step="1"><output id="chSco"></output></div>
+    <div class="row"><label>دورانها</label><input type="range" id="chRot" min="-30" max="30" step="0.5"><output id="chRoto"></output></div>
+    <label class="chk"><input type="checkbox" id="chFlip"> اعكسها أفقيًّا</label>
+    <button class="btn alt" id="chCopyB">⧉ انسخ مراسي هذه الشخصية للبقيّة</button>
+    <button class="btn alt" id="d2mB">📱 اشتقّ قياسات الجوال من الحاسوب</button>
+    <div class="hint">لكل شخصية مراسيها السبعة وحجمها ودورانها — فلا تتداخل الأقدام
+      ولا تطفو الطويلة فوق القصيرة. والتحكّم منفصل للحاسوب والجوال.</div>
+  </div>
+
+  <div class="grp"><b>🧍 المشهد — عامّ</b>
+    <div class="row"><label>الطول الأساس</label><input type="range" id="baseH" min="4" max="40" step="0.5"><output id="baseHo"></output></div>
+    <div class="row"><label>تناقص المنظور</label><input type="range" id="persp" min="0" max="60"><output id="perspo"></output></div>
+    <button class="btn alt" id="autoB">📐 وزّع الأحجام تلقائيًّا</button>
+    <div class="hint">التناقص يُصغّر الشخصية كلّما صعدت: صفر = حجمٌ ثابت، ٦٠٪ = القمّة أصغر من القاعدة بـ٦٠٪.</div>
+  </div>
+
+  <div class="grp"><b>📍 الدرجة <span id="tLbl">١</span> — إحداثيّات خاصّة</b>
+    <div class="row"><label>إزاحة أفقية</label><input type="range" id="dx" min="-25" max="25" step="0.2"><output id="dxo"></output></div>
+    <div class="row"><label>إزاحة رأسية</label><input type="range" id="dy" min="-25" max="25" step="0.2"><output id="dyo"></output></div>
+    <div class="row"><label>الحجم</label><input type="range" id="sc" min="30" max="200" step="1"><output id="sco"></output></div>
+    <div class="row"><label>الدوران</label><input type="range" id="rot" min="-25" max="25" step="0.5"><output id="roto"></output></div>
+    <button class="btn alt" id="copyDownB">⬇ انسخ هذه الإعدادات لما تحتها</button>
+    <div class="hint">اسحب الشخصية بالفأرة على المسرح للضبط السريع.</div>
+  </div>
+
+  <div class="grp"><b>🕶 الظلّ</b>
+    <label class="chk"><input type="checkbox" id="shOn" checked> ظلٌّ تحت القدمين</label>
+    <div class="row"><label>العرض</label><input type="range" id="shW" min="10" max="200"><output id="shWo"></output></div>
+    <div class="row"><label>التسطّح</label><input type="range" id="shF" min="5" max="60"><output id="shFo"></output></div>
+    <div class="row"><label>العتامة</label><input type="range" id="shO" min="0" max="100"><output id="shOo"></output></div>
+    <div class="row"><label>النعومة</label><input type="range" id="shB" min="0" max="40"><output id="shBo"></output></div>
+    <div class="row"><label>إزاحة رأسية</label><input type="range" id="shY" min="-30" max="30"><output id="shYo"></output></div>
+  </div>
+
+  <div class="grp"><b>🦘 القفزة</b>
+    <div class="row"><label>الارتفاع</label><input type="range" id="jH" min="0" max="120"><output id="jHo"></output></div>
+    <div class="row"><label>المدّة</label><input type="range" id="jT" min="200" max="2200" step="20"><output id="jTo"></output></div>
+    <div class="row"><label>تأخير الانطلاق</label><input type="range" id="jD" min="0" max="2000" step="20"><output id="jDo"></output></div>
+    <div class="row"><label>الانضغاط</label><input type="range" id="jS" min="0" max="40"><output id="jSo"></output></div>
+    <div class="hint">الانضغاط هو تسطّح الجسم لحظة النطّ والهبوط — يعطي إحساس الثقل.</div>
+    <div class="hint">في المقطع: انحناءٌ عند ٠٫٩ث، انطلاقٌ عند ١٫٠ث، ذروةٌ عند ١٫٥ث، هبوطٌ عند ٢٫٣ث.
+      «تأخير الانطلاق» يجعل صعود الشخصية يبدأ مع تمدُّد جسمها لا قبله.</div>
+  </div>
+
+  <div class="grp"><b>🎬 مقاطع Flow</b>
+    <div class="row"><label>وقفة (لوب)</label><input type="file" id="fIdle" accept="video/*"></div>
+    <div class="row"><label>قفزة</label><input type="file" id="fJump" accept="video/*"></div>
+    <label class="chk"><input type="checkbox" id="chOn"> تفريغ الأخضر (كروما)</label>
+    <div class="row"><label>لون المفتاح</label><input type="color" id="chC" value="#00b140"><span style="flex:1"></span></div>
+    <div class="row"><label>السماحية</label><input type="range" id="chT" min="0" max="100"><output id="chTo"></output></div>
+    <div class="row"><label>نعومة الحافّة</label><input type="range" id="chS" min="0" max="60"><output id="chSo"></output></div>
+    <div class="row"><label>كبح الانعكاس</label><input type="range" id="chP" min="0" max="100"><output id="chPo"></output></div>
+    <div class="hint">الملفات تُقرأ من جهازك مباشرةً ولا تُرفع — للتجربة قبل الاعتماد.</div>
+    <div class="seg" id="modeSeg">
+      <button data-m="auto">تلقائي</button>
+      <button data-m="alpha">شفافية</button>
+      <button data-m="chroma">كروما</button>
+    </div>
+    <div class="hint">الطريق الحالي: <b id="modeLbl">جارٍ الفحص…</b></div>
+  </div>
+
+  <button class="btn" id="reportB">📋 انسخ القياسات</button>
+  <button class="btn alt" id="resetB">↺ القيم الأصلية</button>
+  <pre id="out"></pre>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const TIERS=7;
+const AR0={ d:[[50.0, 84.4], [50.0, 68.0], [50.0, 53.1], [50.0, 39.3], [50.0, 26.9], [50.0, 15.6], [50.0, 9.5]],
+           m:[[50.0, 67.75], [50.0, 61.0], [50.0, 54.87], [50.0, 49.19], [50.0, 44.09], [50.0, 39.44], [50.0, 36.93]] };
+
+/* لكل درجة سجلٌّ مستقلّ: dx وdy نسبةً لعرض المسرح وارتفاعه، sc نسبةً
+   للحجم الأساس، rot بالدرجات. هذا جوهر «الواقعية»: الدرجة العليا
+   أبعد فتصغر، وقد تحتاج إزاحةً لأنّ سطحها ليس فوق مركز التي تحتها. */
+const mk=(sc)=>Array.from({length:TIERS},(_,i)=>({dx:0,dy:0,sc:Math.round(sc(i)),rot:0}));
+const DEF={
+  d:{ baseH:19, persp:32, tiers:mk(i=>100-i*(32/6)),
+      shOn:true, shW:64, shF:26, shO:38, shB:10, shY:0,
+      jH:62, jT:1250, jD:1000, jS:16,
+      chOn:false, chC:"#00b140", chT:38, chS:18, chP:55 },
+  m:{ baseH:7.8, persp:32, tiers:mk(i=>100-i*(26/6)),
+      shOn:true, shW:64, shF:26, shO:38, shB:7, shY:0,
+      jH:25.5, jT:1250, jD:1000, jS:16,
+      chOn:false, chC:"#00b140", chT:38, chS:18, chP:55 }
+};
+/* ═══ سبع شخصيات، لكلٍّ مراسيها وحجمها ودورانها وانعكاسها ═══
+   لا تقف شخصيتان في نقطةٍ واحدة: أطوالهنّ وعروضهنّ مختلفة (الوحش عريض
+   والعصرية نحيلة)، فمرسًى واحد للجميع يُنتج تداخلًا وأقدامًا في الهواء. */
+const CHARS=[["prof","البروفيسور"],["granny","الحاجّة"],["beast","الوحش"],
+             ["pizza","أبو بيتزا"],["nerd","المثقّف"],["trendy","العصرية"],["boss","المديرة"]];
+let CH="prof";
+/* توقيت القفزة مقيسٌ من كل مقطعٍ على حدة: رُصد ارتفاع الرأس إطارًا إطارًا،
+   فعُرف قاع الانحناء ولحظة الانطلاق والذروة والهبوط. الحاجّة تنطلق عند
+   ١٫٠٤ث والعصرية عند ١٫٥ث — ورقمٌ واحدٌ للجميع يجعل نصفهم يصعد قبل أن ينحني. */
+const JT={"prof": {"jD": 1166, "jT": 875}, "granny": {"jD": 1041, "jT": 1000}, "beast": {"jD": 1416, "jT": 875}, "pizza": {"jD": 1416, "jT": 916}, "nerd": {"jD": 1250, "jT": 750}, "trendy": {"jD": 1500, "jT": 750}, "boss": {"jD": 1333, "jT": 916}};
+/* ═══ القياسات المعتمَدة ═══
+   ضُبطت على الحاسوب باليد، ونسخة الجوال مشتقّةٌ منها حسابيًّا لا تقديريًّا:
+   الإطاران قصّتان من صورةٍ واحدة (scale 1404:790 ← crop 1080 عند x=162
+   ← pad إلى 1920 عند y=634)، فالتحويل معكوسُ هذه العمليات بالضبط. */
+const CH0={"prof": {"d": {"anch": [[36.79, 92.62], [38.75, 77.58], [41.52, 64.95], [42.67, 51.47], [43.82, 39.2], [46.87, 27.89], [48.63, 16.22]], "sc": 117, "rot": 0, "flip": false}, "m": {"anch": [[32.89, 71.81], [35.43, 64.88], [39.01, 59.75], [40.5, 54.24], [41.99, 49.25], [45.95, 44.58], [48.23, 39.69]], "sc": 117, "rot": 0, "flip": false}}, "granny": {"d": {"anch": [[24.13, 80.95], [28.53, 69.64], [32.25, 59.66], [36.24, 48.83], [39.22, 38.12], [41.86, 27.65], [46.46, 16.82]], "sc": 120, "rot": 0, "flip": false}, "m": {"anch": [[16.49, 66.24], [22.19, 61.66], [27.0, 57.58], [32.17, 53.17], [36.03, 48.8], [39.45, 44.48], [45.41, 39.98]], "sc": 120, "rot": 0, "flip": false}}, "beast": {"d": {"anch": [[56.68, 95.39], [55.53, 79.63], [54.59, 65.67], [54.72, 51.83], [53.91, 38.84], [55.26, 27.65], [51.0, 16.94]], "sc": 158, "rot": 0, "flip": false}, "m": {"anch": [[58.65, 73.24], [57.16, 65.71], [55.95, 60.04], [56.11, 54.38], [55.07, 49.1], [56.81, 44.48], [51.3, 40.03]], "sc": 158, "rot": 0, "flip": false}}, "pizza": {"d": {"anch": [[44.77, 99.72], [45.45, 84.92], [46.46, 67.24], [47.41, 52.92], [47.88, 39.8], [49.1, 28.61], [49.64, 16.94]], "sc": 132, "rot": 0, "flip": false}, "m": {"anch": [[43.22, 75.48], [44.11, 67.85], [45.41, 60.68], [46.64, 54.83], [47.25, 49.5], [48.83, 44.87], [49.53, 40.03]], "sc": 132, "rot": 0, "flip": false}}, "nerd": {"d": {"anch": [[70.29, 84.32], [66.7, 71.57], [67.38, 59.05], [62.77, 49.07], [61.22, 36.79], [57.23, 27.05], [50.12, 15.26]], "sc": 128, "rot": 0, "flip": false}, "m": {"anch": [[76.29, 67.61], [71.63, 62.45], [72.52, 57.33], [66.54, 53.26], [64.54, 48.25], [59.37, 44.23], [50.16, 39.23]], "sc": 128, "rot": 0, "flip": false}}, "trendy": {"d": {"anch": [[78.82, 79.75], [74.42, 68.92], [71.24, 57.85], [66.9, 47.86], [64.67, 36.19], [59.53, 26.81], [54.25, 16.94]], "sc": 128, "rot": 0, "flip": false}, "m": {"anch": [[87.34, 65.76], [81.64, 61.37], [77.52, 56.84], [71.89, 52.77], [69.0, 48.0], [62.35, 44.13], [55.51, 40.03]], "sc": 128, "rot": 0, "flip": false}}, "boss": {"d": {"anch": [[66.23, 87.93], [64.2, 73.73], [62.23, 61.22], [60.88, 49.43], [57.63, 37.76], [55.8, 27.41], [52.69, 17.18]], "sc": 144, "rot": 0, "flip": false}, "m": {"anch": [[71.03, 69.39], [68.4, 63.32], [65.84, 58.22], [64.1, 53.41], [59.88, 48.65], [57.51, 44.38], [53.48, 40.15]], "sc": 144, "rot": 0, "flip": false}}};
+const chDef=id=>({d:JSON.parse(JSON.stringify(CH0[id].d)),
+                  m:JSON.parse(JSON.stringify(CH0[id].m)),
+                  jD:(JT[id]||{}).jD||1200, jT:(JT[id]||{}).jT||900});
+/* تحويل نقطةٍ من إطار الحاسوب إلى إطار الجوال */
+const SXm=1404/1920, SYm=790/1080;
+const d2m=(x,y)=>[+((x/100*1920*SXm-162)/1080*100).toFixed(2),
+                  +((y/100*1080*SYm+634)/1920*100).toFixed(2)];
+let CHS={}; CHARS.forEach(([id])=>CHS[id]=chDef(id));
+const AR_=()=>CHS[CH][DEV].anch;      /* مراسي الشخصية الحالية على الجهاز الحالي */
+const CHC=()=>CHS[CH][DEV];
+/* مفتاحٌ جديد: الإعدادات المحفوظة من الخلفية القديمة تُزيح الشخصية عن الدرج */
+const LS="pyr2dLab6";
+let DEV="d", TIER=0, BOX=JSON.parse(JSON.stringify(DEF)), S=BOX.d;
+try{
+  const sv=JSON.parse(localStorage.getItem(LS)||"null");
+  if(sv&&sv.d&&sv.m){ ["d","m"].forEach(k=>{
+    Object.keys(DEF[k]).forEach(p=>{ if(sv[k][p]!==undefined) BOX[k][p]=sv[k][p]; });
+    if(!Array.isArray(BOX[k].tiers)||BOX[k].tiers.length!==TIERS) BOX[k].tiers=DEF[k].tiers;
+  }); DEV=sv.dev==="m"?"m":"d";
+    if(sv.chs) CHARS.forEach(([id])=>{ if(sv.chs[id]&&sv.chs[id].d&&sv.chs[id].m) CHS[id]=sv.chs[id]; });
+    if(sv.ch&&CHS[sv.ch]) CH=sv.ch; }
+}catch(e){}
+S=BOX[DEV];
+
+/* ── المسرح يأخذ نسبة الجهاز: 16:9 للحاسوب و9:16 للجوال ── */
+function fitStage(){
+  const w=$("wrap").getBoundingClientRect();
+  const ar = DEV==="m" ? 9/16 : 16/9;
+  let H=w.height-24, W=H*ar;
+  if(W>w.width-24){ W=w.width-24; H=W/ar; }
+  const st=$("stage"); st.style.width=W+"px"; st.style.height=H+"px";
+}
+
+function buildAnchors(){
+  const L=$("anchLayer"); L.innerHTML="";
+  for(let i=0;i<TIERS;i++){
+    const d=document.createElement("div");
+    d.className="anch"; d.dataset.i=i;
+    d.innerHTML='<span>'+(i+1)+'</span>';
+    d.style.touchAction="none";
+    d.onpointerdown=e=>{
+      e.preventDefault(); e.stopPropagation();
+      TIER=i; apply();
+      const st=$("stage").getBoundingClientRect();
+      const mv=ev=>{
+        AR_()[i][0]=+Math.min(100,Math.max(0,(ev.clientX-st.left)/st.width*100)).toFixed(2);
+        AR_()[i][1]=+Math.min(100,Math.max(0,(ev.clientY-st.top)/st.height*100)).toFixed(2);
+        apply();
+      };
+      const up=()=>{ document.removeEventListener("pointermove",mv);
+                     document.removeEventListener("pointerup",up); save(); };
+      document.addEventListener("pointermove",mv);
+      document.addEventListener("pointerup",up);
+    };
+    L.appendChild(d);
+  }
+}
+function buildTierSeg(){
+  const g=$("tierSeg"); g.innerHTML="";
+  for(let i=0;i<TIERS;i++){
+    const b=document.createElement("button");
+    b.textContent=i+1; b.dataset.t=i;
+    b.onclick=()=>{ TIER=i; apply(); };
+    g.appendChild(b);
+  }
+}
+
+/* ملاحظة: نقيس من ارتفاع المسرح لا من عرضه، فيبقى حجم الشخصية
+   ثابتًا بالنسبة للهرم مهما تغيّر عرض النافذة. */
+function actorSize(){
+  const st=$("stage").getBoundingClientRect();
+  const h=st.height*(S.baseH/100)*(poseNow().sc/100)*(CHC().sc/100);
+  const img=$("actorImg");
+  /* نسبة العرض للطول ثابتة (352×606) فالإطار المشترك واحدٌ للمقطعين */
+  const ar=(img.naturalWidth&&img.naturalHeight)?img.naturalWidth/img.naturalHeight:352/606;
+  return {w:h*ar, h:h, st:st};
+}
+let jumpOff=0, jumpSquash=0;      /* تُحرّكهما القفزة وحدها */
+/* أثناء العبور بين درجتين نمزج الموضعَ والحجمَ والدورانَ بينهما بدل
+   أن نُبدّل الدرجة فجأةً عند القمّة — القفزُ يجب أن يكون انزلاقًا لا قفزةَ إطار. */
+let jFrom=null, jTo=null, jP=0;
+const lerp=(a,b,t)=>a+(b-a)*t;
+function poseNow(){
+  const A=AR_();
+  const g=i=>({x:A[i][0]+S.tiers[i].dx, y:A[i][1]+S.tiers[i].dy,
+               sc:S.tiers[i].sc, rot:S.tiers[i].rot});
+  if(jFrom===null) return g(TIER);
+  const a=g(jFrom), b=g(jTo), t=jP;
+  return {x:lerp(a.x,b.x,t), y:lerp(a.y,b.y,t), sc:lerp(a.sc,b.sc,t), rot:lerp(a.rot,b.rot,t)};
+}
+
+function apply(){ try{ applyInner(); }catch(e){ console.error("apply:",e); } save(); }
+function applyInner(){
+  fitStage();
+  $("bg").src = DEV==="m" ? "pyr2d/bg-m.webp" : "pyr2d/bg-d.webp";
+  const gl=$("glow");
+  gl.src = "pyr2d/glow-"+DEV+"-"+TIER+".webp";
+  gl.style.opacity = $("showGlow").checked ? 1 : 0;
+  $("anchLayer").classList.toggle("off",!$("showAnch").checked);
+
+  const st=$("stage").getBoundingClientRect();
+  const A=AR_();
+  [...$("anchLayer").children].forEach((el,i)=>{
+    el.style.left=A[i][0]+"%"; el.style.top=A[i][1]+"%";
+    el.classList.toggle("on",i===TIER);
+  });
+  [...$("tierSeg").children].forEach((b,i)=>b.classList.toggle("on",i===TIER));
+  [...$("devSeg").children].forEach(b=>b.classList.toggle("on",b.dataset.dev===DEV));
+  $("tLbl").textContent=TIER+1;
+
+  const t=S.tiers[TIER];
+  const P=poseNow();
+  const sz=actorSize();
+  /* موضع القدمين = مرساة الدرجة + إزاحتها (ممزوجةً أثناء القفز) */
+  const fx=P.x, fy=P.y;
+  const a=$("actor");
+  a.style.width=sz.w+"px"; a.style.height=sz.h+"px";
+  a.style.left=fx+"%"; a.style.top=fy+"%";
+  /* الأصل عند القدمين: التحجيم والدوران يدوران حول موضع الوقوف لا حول الوسط */
+  /* الانعكاس على الطبقة الخارجية مع التمركز، فلا يقلب اتّجاه القفزة */
+  a.style.transform="translate(-50%,-100%) translateY("+(-jumpOff)+"px) "+
+    "rotate("+(P.rot+CHC().rot)+"deg) scale("+((1+jumpSquash*0.6)*(CHC().flip?-1:1))+
+    ","+(1-jumpSquash)+")";
+
+  const sh=$("shadow");
+  if(S.shOn){
+    /* الظلّ يصغر ويبهت كلّما ارتفعت الشخصية — إشارةُ الارتفاع الوحيدة في 2D */
+    const k=Math.max(0,1-jumpOff/Math.max(1,st.height*0.35));
+    const w=sz.w*(S.shW/100)*(0.55+0.45*k);
+    sh.style.display="";
+    sh.style.width=w+"px"; sh.style.height=(w*S.shF/100)+"px";
+    sh.style.left=fx+"%"; sh.style.top="calc("+fy+"% + "+S.shY+"px)";
+    sh.style.opacity=(S.shO/100)*(0.35+0.65*k);
+    sh.style.filter="blur("+S.shB+"px)";
+  }else sh.style.display="none";
+
+  /* اللوحة */
+  ["baseH","persp","shW","shF","shO","shB","shY","jH","jT","jD","jS","chT","chS","chP"]
+    .forEach(k=>{ const el=$(k); if(!el) return;
+       const v=(k==="jT"||k==="jD")?CHS[CH][k]:S[k];
+       if(el.value!=String(v)) el.value=v; });
+  ["dx","dy","sc","rot"].forEach(k=>{ const el=$(k); if(el&&el.value!=String(t[k])) el.value=t[k]; });
+  const U={baseH:"%",persp:"%",shW:"%",shF:"%",shO:"%",shB:"px",shY:"px",jH:"%",jT:"م.ث",jD:"م.ث",jS:"%",
+           chT:"%",chS:"%",chP:"%",dx:"%",dy:"%",sc:"%",rot:"°"};
+  for(const k in U){ const o=$(k+"o"); if(!o) continue;
+    o.textContent=((k==="jT"||k==="jD")?CHS[CH][k]:(k in t?t[k]:S[k]))+U[k]; }
+  [...$("chSeg").children].forEach(b=>b.classList.toggle("on",b.dataset.c===CH));
+  const cc=CHC();
+  if($("chSc").value!=String(cc.sc)) $("chSc").value=cc.sc;
+  if($("chRot").value!=String(cc.rot)) $("chRot").value=cc.rot;
+  $("chSco").textContent=cc.sc+"%"; $("chRoto").textContent=cc.rot+"°";
+  $("chFlip").checked=!!cc.flip;
+  $("shOn").checked=!!S.shOn; $("chOn").checked=!!S.chOn; $("chC").value=S.chC;
+  const stillSrc="pyr2d/"+CH+"-still.webp";
+  if(!$("actorImg").src.endsWith(stillSrc)) $("actorImg").src=stillSrc;
+  $("actor").classList.toggle("alpha", MODE==="alpha");
+  $("actor").classList.toggle("vid", MODE==="chroma" && vidReady);
+}
+
+/* ═══ القفزة: قوسٌ مع انضغاطٍ عند الانطلاق والهبوط ═══ */
+let jumping=false;
+function jumpTo(nt){
+  if(jumping) return;
+  const from=TIER, to=Math.max(0,Math.min(TIERS-1,nt));
+  if(to===from){ hop(); return; }
+  jumping=true;
+  const st=$("stage").getBoundingClientRect();
+  const peak=st.height*(S.jH/100)*0.35;
+  const T=CHS[CH].jT, t0=performance.now();
+  jFrom=from; jTo=to; jP=0;
+  playJump();
+  /* المقطع يبدأ الآن، لكنّ الجسم لا ينطلق إلا بعد jD — فننتظرها ثم نرفع
+     الشخصية، فيتّحد الصعودُ المرسوم مع تمدُّد الجسم المصوَّر. */
+  const t0d=t0+(CHS[CH].jD||0);
+  (function f(now){
+    if(now<t0d){ requestAnimationFrame(f); return; }
+    const p=Math.min(1,(now-t0d)/T);
+    /* الانتقال الأفقيّ/الرأسيّ بتسارعٍ ثم تباطؤ، والارتفاع قوسُ جيبٍ فوقه */
+    jP = p<.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;
+    jumpOff = Math.sin(Math.PI*p)*peak;
+    jumpSquash = (p<.14 ? (p/.14) : p>.86 ? ((1-p)/.14) : 0) * (S.jS/100);
+    applyInner();
+    if(p<1) requestAnimationFrame(f);
+    else{ jumpOff=0; jumpSquash=0; jumping=false; jFrom=jTo=null; jP=0; TIER=to; apply(); }
+  })(t0);
+}
+function hop(){
+  if(jumping) return; jumping=true;
+  const st=$("stage").getBoundingClientRect();
+  const peak=st.height*(S.jH/100)*0.35, T=CHS[CH].jT, t0=performance.now()+(CHS[CH].jD||0);
+  playJump();
+  (function f(now){
+    if(now<t0){ requestAnimationFrame(f); return; }
+    const p=Math.min(1,(now-t0)/T);
+    jumpOff=Math.sin(Math.PI*p)*peak;
+    jumpSquash=(p<.14?(p/.14):p>.86?((1-p)/.14):0)*(S.jS/100);
+    applyInner();
+    if(p<1) requestAnimationFrame(f); else{ jumpOff=0;jumpSquash=0;jumping=false;apply(); }
+  })(t0);
+}
+
+/* ═══ الكروما: تفريغ الأخضر على GPU ═══
+   الشادر يقيس البُعد اللونيّ (Cb,Cr) عن لون المفتاح لا البُعد الكامل،
+   فلا يأكل الظلال ولا الإضاءة. ثم يكبح الانعكاس الأخضر على الحوافّ. */
+let gl=null, prog=null, tex=null, vidReady=false, vidJumpReady=false, rafCv=0;
+let MODE="still";                 /* still | alpha | chroma */
+const SRC=()=>({ idle:"pyr2d/"+CH+"-idle", jump:"pyr2d/"+CH+"-jump" });
+const VS=`attribute vec2 p;varying vec2 v;void main(){v=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}`;
+const FS=`precision mediump float;varying vec2 v;uniform sampler2D t;
+uniform vec3 key;uniform float tol,soft,spill;
+vec2 cbcr(vec3 c){return vec2(-0.169*c.r-0.331*c.g+0.5*c.b, 0.5*c.r-0.419*c.g-0.081*c.b);}
+void main(){
+  vec4 c=texture2D(t,v);
+  float d=distance(cbcr(c.rgb),cbcr(key));
+  float a=smoothstep(tol,tol+soft+0.001,d);
+  /* كبح الانعكاس: لو غلب الأخضر على الأحمر والأزرق أنزلناه لمتوسطهما */
+  float g=max(c.r,c.b);
+  c.rgb=mix(c.rgb,vec3(c.r,min(c.g,g),c.b),spill);
+  gl_FragColor=vec4(c.rgb,a);
+}`;
+function initGL(){
+  const cv=$("actorCv");
+  gl=cv.getContext("webgl",{premultipliedAlpha:false,alpha:true});
+  if(!gl){ console.warn("لا WebGL — الكروما معطّلة"); return; }
+  const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);
+    if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(o));return o;};
+  prog=gl.createProgram();
+  gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS));
+  gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));
+  gl.linkProgram(prog); gl.useProgram(prog);
+  const buf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  const p=gl.getAttribLocation(prog,"p"); gl.enableVertexAttribArray(p);
+  gl.vertexAttribPointer(p,2,gl.FLOAT,false,0,0);
+  tex=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,tex);
+  [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T].forEach(k=>gl.texParameteri(gl.TEXTURE_2D,k,gl.CLAMP_TO_EDGE));
+  [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER].forEach(k=>gl.texParameteri(gl.TEXTURE_2D,k,gl.LINEAR));
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+}
+const hex2rgb=h=>[parseInt(h.slice(1,3),16)/255,parseInt(h.slice(3,5),16)/255,parseInt(h.slice(5,7),16)/255];
+function drawFrame(){
+  const src=curVid(); const cv=$("actorCv");
+  if(!gl||!src||src.readyState<2){ rafCv=requestAnimationFrame(drawFrame); return; }
+  if(cv.width!==src.videoWidth){ cv.width=src.videoWidth; cv.height=src.videoHeight; }
+  gl.viewport(0,0,cv.width,cv.height);
+  gl.bindTexture(gl.TEXTURE_2D,tex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src);
+  const k=hex2rgb(S.chOn?S.chC:"#00b140");
+  gl.uniform3f(gl.getUniformLocation(prog,"key"),k[0],k[1],k[2]);
+  gl.uniform1f(gl.getUniformLocation(prog,"tol"), S.chOn?S.chT/500:0);
+  gl.uniform1f(gl.getUniformLocation(prog,"soft"),S.chS/500);
+  gl.uniform1f(gl.getUniformLocation(prog,"spill"),S.chOn?S.chP/100:0);
+  gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  rafCv=requestAnimationFrame(drawFrame);
+}
+let usingJump=false;
+function curVid(){ return usingJump ? $("vidJump") : $("vid"); }
+function playJump(){
+  if(MODE==="alpha"){
+    const j=$("actorVidJ");
+    if(!j.src) return;
+    $("actor").classList.add("jumping");
+    try{ j.currentTime=0; }catch(e){}
+    j.play().catch(()=>{});
+    j.onended=()=>{ $("actor").classList.remove("jumping"); $("actorVid").play().catch(()=>{}); };
+    return;
+  }
+  const j=$("vidJump"); if(!vidJumpReady) return;
+  usingJump=true; j.currentTime=0; j.play().catch(()=>{});
+  j.onended=()=>{ usingJump=false; $("vid").play().catch(()=>{}); };
+}
+
+/* ═══ أيّ طريقٍ نسلك؟ نختبر فعليًّا لا نخمّن ═══
+   بعض المتصفّحات تُعلن دعم webm/vp9 ثم تتجاهل قناة الشفافية فتُظهر
+   مستطيلًا أسود. فنرسم أول إطار على لوحة ونقرأ ركنها: إن كان معتمًا
+   فالشفافية غير مدعومة، ونتحوّل إلى المقطع الأخضر مع مُفرِّغ WebGL. */
+let FORCE="auto";
+async function pickMode(){
+  const v=$("actorVid");
+  if(FORCE!=="auto"){ applyMode(FORCE==="alpha"); return; }
+  const ok = await new Promise(res=>{
+    let done=false; const fin=r=>{ if(!done){done=true;res(r);} };
+    v.onerror=()=>fin(false);
+    v.onloadeddata=()=>{
+      try{
+        const c=document.createElement("canvas");
+        c.width=32; c.height=32;
+        const x=c.getContext("2d");
+        x.clearRect(0,0,32,32);
+        x.drawImage(v,0,0,32,32);
+        const px=x.getImageData(1,1,1,1).data;   /* ركنٌ يجب أن يكون شفافًا */
+        fin(px[3] < 40);
+      }catch(e){
+        /* قراءة البكسل ممنوعة على file:// (أصلٌ مجهول). ليست دليلًا على
+           غياب الشفافية، بل على غياب الخادم — فنفترض الشفافية ونُتيح
+           التبديل اليدوي، إذ عرضُ الفيديو مباشرةً لا يحتاج قراءةً أصلًا. */
+        fin(true);
+      }
+    };
+    setTimeout(()=>fin(false),6000);
+    v.src=SRC().idle+".webm"; v.load();
+  });
+  applyMode(ok);
+}
+function applyMode(ok){
+  const v=$("actorVid");
+  if(ok){
+    MODE="alpha"; v.loop=true;
+    if(!v.src||!/idle\.webm$/.test(v.src)) v.src=SRC().idle+".webm";
+    v.play().catch(()=>{});
+    const j=$("actorVidJ");
+    if(!j.src){ j.src=SRC().jump+".webm"; j.load(); }
+    $("modeLbl").textContent="webm بقناة شفافية — بلا معالجة";
+  }else{
+    MODE="chroma";
+    const a=$("vid"), b=$("vidJump");
+    a.src=SRC().idle+".mp4"; b.src=SRC().jump+".mp4";
+    a.onloadeddata=()=>{ vidReady=true; if(!gl) initGL(); a.play().catch(()=>{});
+      cancelAnimationFrame(rafCv); drawFrame(); apply(); };
+    b.onloadeddata=()=>{ vidJumpReady=true; if(!gl) initGL(); apply(); };
+    S.chOn=true;
+    $("modeLbl").textContent="مقطعٌ أخضر + مُفرِّغ WebGL (لا شفافية في هذا المتصفّح)";
+  }
+  apply();
+}
+$("fIdle").onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const v=$("vid"); v.src=URL.createObjectURL(f); v.loop=true;
+  v.onloadeddata=()=>{ vidReady=true; if(!gl) initGL(); v.play().catch(()=>{});
+    cancelAnimationFrame(rafCv); drawFrame(); apply(); };
+};
+$("fJump").onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const v=$("vidJump"); v.src=URL.createObjectURL(f); v.loop=false;
+  v.onloadeddata=()=>{ vidJumpReady=true; if(!gl) initGL(); apply(); };
+};
+
+/* ═══ الربط ═══ */
+["baseH","persp","shW","shF","shO","shB","shY","jH","jT","jD","jS","chT","chS","chP"].forEach(k=>{
+  const el=$(k); if(!el) return;
+  el.oninput=e=>{
+    if(k==="jT"||k==="jD") CHS[CH][k]=+e.target.value; else S[k]=+e.target.value;
+    if(k==="persp") spread(); apply(); };
+});
+["dx","dy","sc","rot"].forEach(k=>{
+  const el=$(k); if(!el) return;
+  el.oninput=e=>{ S.tiers[TIER][k]=+e.target.value; apply(); };
+});
+["shOn","chOn"].forEach(k=>{ $(k).onchange=e=>{ S[k]=e.target.checked; apply(); }; });
+["showAnch","showGlow"].forEach(k=>{ $(k).onchange=apply; });
+$("chC").oninput=e=>{ S.chC=e.target.value; apply(); };
+(function(){
+  const g=$("chSeg");
+  CHARS.forEach(([id,nm])=>{
+    const b=document.createElement("button");
+    b.textContent=nm; b.dataset.c=id;
+    b.onclick=()=>{ if(CH===id)return; CH=id; MODE="still"; vidReady=false;
+                    $("actorVid").removeAttribute("src"); $("actorVidJ").removeAttribute("src");
+                    pickMode(); apply(); };
+    g.appendChild(b);
+  });
+})();
+["chSc","chRot"].forEach(k=>{ const el=$(k); if(!el)return;
+  el.oninput=e=>{ CHC()[k==="chSc"?"sc":"rot"]=+e.target.value; apply(); }; });
+$("chFlip").onchange=e=>{ CHC().flip=e.target.checked; apply(); };
+/* الجوال يرث الحاسوب: كل مرساة تُحوَّل بمعكوس عمليات القصّ، والأحجام
+   تُنقل كما هي، والمقادير بالنسبة المئوية الرأسية تُضرب في معامل الإطار. */
+$("d2mB").onclick=()=>{
+  CHARS.forEach(([id])=>{
+    const d=CHS[id].d, m=CHS[id].m;
+    m.anch=d.anch.map(p=>d2m(p[0],p[1]));
+    m.sc=d.sc; m.rot=d.rot; m.flip=d.flip;
+  });
+  const K=SYm*1080/1920;
+  BOX.m.baseH=+(BOX.d.baseH*K).toFixed(2);
+  BOX.m.jH   =+(BOX.d.jH*K).toFixed(1);
+  BOX.m.persp=BOX.d.persp; BOX.m.jS=BOX.d.jS;
+  BOX.m.tiers=JSON.parse(JSON.stringify(BOX.d.tiers));
+  BOX.m.shW=BOX.d.shW; BOX.m.shF=BOX.d.shF; BOX.m.shO=BOX.d.shO;
+  BOX.m.shB=Math.round(BOX.d.shB*SYm); BOX.m.shOn=BOX.d.shOn;
+  apply();
+  alert("اشتُقّت قياسات الجوال من الحاسوب ✓");
+};
+$("chCopyB").onclick=()=>{
+  const src=JSON.stringify(CHC().anch);
+  CHARS.forEach(([id])=>{ if(id!==CH) CHS[id][DEV].anch=JSON.parse(src); });
+  apply();
+};
+[...$("devSeg").children].forEach(b=>b.onclick=()=>{
+  if(b.dataset.dev===DEV) return; DEV=b.dataset.dev; S=BOX[DEV]; TIER=Math.min(TIER,TIERS-1); apply(); });
+[...$("modeSeg").children].forEach(b=>b.onclick=()=>{
+  FORCE=b.dataset.m;
+  [...$("modeSeg").children].forEach(x=>x.classList.toggle("on",x===b));
+  MODE="still"; vidReady=false; pickMode();
+});
+$("jumpB").onclick=()=>jumpTo(TIER+1);
+$("downB").onclick=()=>jumpTo(TIER-1);
+$("autoB").onclick=()=>{ spread(); apply(); };
+function spread(){
+  /* توزيعٌ خطّيّ للحجم من القاعدة إلى القمّة بمقدار «تناقص المنظور» */
+  for(let i=0;i<TIERS;i++) S.tiers[i].sc=Math.round(100-i*(S.persp/(TIERS-1)));
+}
+$("copyDownB").onclick=()=>{
+  const t=S.tiers[TIER];
+  for(let i=0;i<TIER;i++) S.tiers[i]={...t};
+  apply();
+};
+$("resetAnchB").onclick=()=>{ CHS[CH][DEV].anch=JSON.parse(JSON.stringify(AR0[DEV])); apply(); };
+$("resetB").onclick=()=>{
+  if(!confirm("إرجاع كل القياسات للقيم الأصلية؟")) return;
+  BOX=JSON.parse(JSON.stringify(DEF)); S=BOX[DEV];
+  CHS={}; CHARS.forEach(([id])=>CHS[id]=chDef(id));
+  try{localStorage.removeItem(LS);}catch(e){} apply();
+};
+function save(){
+  try{ localStorage.setItem(LS,JSON.stringify({dev:DEV,ch:CH,d:BOX.d,m:BOX.m,chs:CHS})); }catch(e){}
+}
+
+/* سحب الشخصية مباشرةً على المسرح */
+$("stage").addEventListener("pointerdown",e=>{
+  const a=$("actor").getBoundingClientRect();
+  if(e.clientX<a.left-20||e.clientX>a.right+20||e.clientY<a.top-20||e.clientY>a.bottom+20) return;
+  e.preventDefault();
+  const st=$("stage").getBoundingClientRect();
+  const A=AR_(), t=S.tiers[TIER];
+  const x0=e.clientX, y0=e.clientY, dx0=t.dx, dy0=t.dy;
+  const mv=ev=>{
+    t.dx=+(dx0+(ev.clientX-x0)/st.width*100).toFixed(1);
+    t.dy=+(dy0+(ev.clientY-y0)/st.height*100).toFixed(1);
+    apply();
+  };
+  const up=()=>{document.removeEventListener("pointermove",mv);document.removeEventListener("pointerup",up);};
+  document.addEventListener("pointermove",mv); document.addEventListener("pointerup",up);
+});
+
+$("reportB").onclick=()=>{
+  const line=(o,k)=>`  الدرجة ${k+1}: x ${o.dx}% y ${o.dy}% · حجم ${o.sc}% · دوران ${o.rot}°`;
+  const anb=k=>CHARS.map(([id,nm])=>{
+    const c=CHS[id][k];
+    return `  【${nm}】 حجم ${c.sc}% · دوران ${c.rot}°${c.flip?" · معكوسة":""}\n`+
+      c.anch.map((p,i)=>`    مرساة ${i+1}: x ${p[0]}% y ${p[1]}%`).join("\n");
+  }).join("\n");
+  const blk=(n,o)=>`${n}
+  الطول الأساس ${o.baseH}% · تناقص المنظور ${o.persp}%
+${o.tiers.map(line).join("\n")}
+${anb(o===BOX.d?"d":"m")}
+  الظلّ: ${o.shOn?`عرض ${o.shW}% · تسطّح ${o.shF}% · عتامة ${o.shO}% · نعومة ${o.shB}px · إزاحة ${o.shY}px`:"بلا"}
+  القفزة: ارتفاع ${o.jH}% · انضغاط ${o.jS}% · (المدّة والتأخير لكل شخصية)
+  الكروما: ${o.chOn?`${o.chC} · سماحية ${o.chT}% · نعومة ${o.chS}% · كبح ${o.chP}%`:"مطفأة"}`;
+  const txt=`/* قياسات هرم 2D */\n${blk("💻 كمبيوتر",BOX.d)}\n${blk("📱 جوال",BOX.m)}`;
+  $("out").style.display="block"; $("out").textContent=txt;
+  navigator.clipboard&&navigator.clipboard.writeText(txt).catch(()=>{});
+};
+
+buildAnchors(); buildTierSeg();
+[...$("modeSeg").children].forEach(b=>b.classList.toggle("on",b.dataset.m==="auto"));
+pickMode();
+addEventListener("resize",()=>apply());
+$("actorImg").addEventListener("load",()=>apply(),{once:true});
+apply();
+</script>
+</body></html>
