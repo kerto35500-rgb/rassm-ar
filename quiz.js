@@ -778,25 +778,6 @@ function setupQuiz(io, deps) {
     sendBoard(room, p, st);
   }
 
-  function submitLink(room, p, arr) {
-    if (room.phase !== "link" || p.answered || p.spectator) return;
-    if (!Array.isArray(arr) || arr.length !== 4) return;
-    p.answered = true;
-    const ans = room.currentLink.answer;
-    let hits = 0;
-    arr.forEach((v, i) => { if (Number(v) === ans[i]) hits++; });
-    const elapsed = Math.max(0, Date.now() - room.qSentAt - (p.rtt || 0) / 2);
-    let gain = hits * CHALLENGE_POINTS;
-    if (hits === 4) gain += Math.round(SPEED_POINTS * Math.max(0, 1 - elapsed / (room.phaseDur * 1000)));
-    room.answers[p.id] = { hits, gain, elapsed, picks: arr };
-    p.score += gain; p.lastGain = gain;
-    nsp.to(p.id).emit("answerAck", { locked: true, hits });
-    broadcast(room);
-    if (alive(room).every(x => x.answered)) {
-      clearTimers(room);
-      setTimeout(() => { if (room.phase === "link") revealChallenge(room, "link"); }, 400);
-    }
-  }
 
   // ====== جولة التصنيف ======
   function beginSort(room) {
@@ -843,25 +824,6 @@ function setupQuiz(io, deps) {
     }
   }
 
-  function submitSort(room, p, arr) {
-    if (room.phase !== "sort" || p.answered || p.spectator) return;
-    if (!Array.isArray(arr) || arr.length !== 8) return;
-    p.answered = true;
-    const ans = room.currentSort.answer;
-    let hits = 0;
-    arr.forEach((v, i) => { if (Number(v) === ans[i]) hits++; });
-    const elapsed = Math.max(0, Date.now() - room.qSentAt - (p.rtt || 0) / 2);
-    let gain = hits * CHALLENGE_POINTS;
-    if (hits === 8) gain += Math.round(SPEED_POINTS * Math.max(0, 1 - elapsed / (room.phaseDur * 1000)));
-    room.answers[p.id] = { hits, gain, elapsed, picks: arr };
-    p.score += gain; p.lastGain = gain;
-    nsp.to(p.id).emit("answerAck", { locked: true, hits });
-    broadcast(room);
-    if (alive(room).every(x => x.answered)) {
-      clearTimers(room);
-      setTimeout(() => { if (room.phase === "sort") revealChallenge(room, "sort"); }, 400);
-    }
-  }
 
   function revealChallenge(room, kind) {
     clearTimers(room);
@@ -1377,8 +1339,6 @@ function setupQuiz(io, deps) {
       else if (room.phase === "pyramid") submitPyramid(room, player, Number(idx));
     });
 
-    socket.on("linkAnswer", (arr) => { if (room && player) submitLink(room, player, arr); });
-    socket.on("sortAnswer", (arr) => { if (room && player) submitSort(room, player, arr); });
     socket.on("sortPick", (d) => { if (room && player) sortPick(room, player, d); });
     socket.on("linkPick", (d) => { if (room && player) linkPick(room, player, d); });
 

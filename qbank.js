@@ -532,11 +532,14 @@ function validateChallenges() {
     if (new Set(l.p.map(x => x[0])).size !== 15) problems.push(`ربط[${i}] ${l.t}: طرف أيمن مكرر`);
   });
   SORTS.forEach((s, i) => {
-    if (s.items.length < 15) problems.push(`تصنيف[${i}] ${s.a}: عدد العناصر ${s.items.length}`);
+    const n = s.items.length;
+    if (n < 15) problems.push(`تصنيف[${i}] ${s.a}: عدد العناصر ${n}`);
+    // التوازن لا يعني التساوي التامّ: العدد فردي، فيكفي ألّا يزيد الفارق عن واحد
     const zeros = s.items.filter(x => x[1] === 0).length;
-    if (zeros !== 4) problems.push(`تصنيف[${i}] ${s.a}/${s.b}: التوزيع ${zeros}/${8 - zeros} وليس 4/4`);
+    if (Math.abs(zeros - (n - zeros)) > 1)
+      problems.push(`تصنيف[${i}] ${s.a}/${s.b}: التوزيع ${zeros}/${n - zeros} غير متوازن`);
     if (s.items.some(x => ![0, 1].includes(x[1]))) problems.push(`تصنيف[${i}] ${s.a}: قيمة صندوق غير صالحة`);
-    if (new Set(s.items.map(x => x[0])).size !== 8) problems.push(`تصنيف[${i}] ${s.a}: عنصر مكرر`);
+    if (new Set(s.items.map(x => x[0])).size !== n) problems.push(`تصنيف[${i}] ${s.a}: عنصر مكرر`);
   });
   return { links: LINKS.length, sorts: SORTS.length, problems };
 }
