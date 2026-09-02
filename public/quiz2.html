@@ -1158,13 +1158,6 @@ body.pyOn #stage{border-radius:24px}
   background:linear-gradient(180deg,rgba(4,6,16,.72),rgba(4,6,16,0))}
 #pyQ{position:absolute;left:0;right:0;bottom:0;z-index:9;padding:24px 12px 10px;
   background:linear-gradient(0deg,rgba(7,11,32,.96) 46%,rgba(7,11,32,.74) 76%,rgba(7,11,32,0))}
-/* شاشةٌ عريضة قصيرة: صفٌّ واحد من أربعة أجوبة — يوفّر مئةَ بكسلٍ رأسيّ
-   تذهب كلّها إلى تكبير الهرم وتقليص الفراغ على الجانبين. */
-@media (min-width:900px){
-  #pyAns{grid-template-columns:repeat(4,1fr)}
-  #pyText{font-size:24px;margin-bottom:10px}
-  #pyAns .ans{padding:10px 6px;font-size:13px}
-}
 #pyQ.hide{display:none}
 #pyText{font-size:22px;font-weight:900;text-align:center;margin-bottom:11px;line-height:1.45;
   color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.98),0 0 26px rgba(0,0,0,.7)}
@@ -1173,6 +1166,13 @@ body.pyOn #stage{border-radius:24px}
   background:rgba(12,16,34,.86);border:1px solid rgba(255,255,255,.22);color:#fff;
   backdrop-filter:blur(6px)}
 #pyAns .ans .key{display:none}
+/* شاشةٌ عريضة قصيرة: صفٌّ واحد من أربعة أجوبة — يوفّر مئةَ بكسلٍ رأسيّ
+   تذهب كلّها إلى تكبير الهرم وتقليص الفراغ على الجانبين. */
+@media (min-width:900px){
+  #pyAns{grid-template-columns:repeat(4,1fr)}
+  #pyText{font-size:24px;margin-bottom:10px}
+  #pyAns .ans{padding:10px 6px;font-size:13px}
+}
 @media (max-width:560px){
   #pyQ{padding:22px 8px 9px}
   #pyText{font-size:17px;margin-bottom:8px}
@@ -3519,7 +3519,10 @@ function rPyDraw(){
   const seen={};
   alive.forEach((p,idx)=>{
     seen[p.id]=1;
-    const cid=PY_CH[idx%PY_CH.length];
+    /* شخصيةُ اللاعب هي التي اختارها في الردهة — لا ترتيبُه في القائمة.
+       معرّفات الخادم هي نفسها معرّفات المجسّمات، فتُستعمل كما هي؛
+       ولا نرجع للترتيب إلا إن لم يختر أحدٌ شيئًا. */
+    const cid=(p.charId&&PY_CH.indexOf(p.charId)>=0)?p.charId:PY_CH[idx%PY_CH.length];
     let el=st.querySelector('.pyActor[data-id="'+p.id+'"]');
     if(!el||el.dataset.cid!==cid||el.dataset.dev!==dev){
       if(el){ el._shadow.remove(); el.remove(); }
