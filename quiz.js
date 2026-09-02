@@ -915,8 +915,12 @@ function setupQuiz(io, deps) {
     room.answers = {};
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
 
-    // فخاخ الدرجات: احتمال بسيط لإطلاق قوة عشوائية
-    if (room.settings.powers) {
+    /* فخاخ الدرجات: احتمال بسيط لإطلاق قوة عشوائية.
+       تُستثنى الجولة الأولى: الفخّ يُغطّي أزرار الإجابة بطبقةٍ معتمة
+       (وحلٌ أو ثلجٌ أو قنابل)، ولو وقع في أوّل سؤالٍ من النهائي لظنّ
+       اللاعب أنّ الأجوبة لم تظهر أصلًا — والبداية المتقدّمة ترفعه فوق
+       الأرض فورًا فيصير مؤهَّلًا للفخّ من اللحظة الأولى. */
+    if (room.settings.powers && room.pyQIndex > 1) {
       alive(room).forEach(p => {
         if (p.pyPos > 0 && Math.random() < 0.16) {
           const sab = room.settings.allowedPowers.filter(x => SABOTAGE.includes(x));
@@ -960,7 +964,10 @@ function setupQuiz(io, deps) {
     alive(room).forEach(p => {
       const a = room.answers[p.id];
       let d = 0;
-      if (a && a.correct) d = (p.id === fastest) ? 2 : 1;
+      /* درجةٌ واحدة لكل إجابةٍ صحيحة مهما كانت السرعة. كانت القاعدة
+         تمنح الأسرعَ درجتين، فيقفز مسافةَ درجتين على الصورة ويبدو خطأً
+         في الرسم لا قاعدةً في اللعب. الأسرعُ يبقى متقدّمًا بالنقاط. */
+      if (a && a.correct) d = 1;
       else if (room.settings.pyramidPenalty) d = -1;
       const before = p.pyPos;
       p.pyPos = Math.max(0, Math.min(H, p.pyPos + d));

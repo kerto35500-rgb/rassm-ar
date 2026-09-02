@@ -228,10 +228,14 @@ const ask = (s, e, d, ms = 400) => new Promise(res => {
   if (pyr.length) {
     const allMoves = pyr.flatMap(p => p.moves);
     ok(allMoves.every(m => m.to >= 0 && m.to <= 6), "المواقع داخل حدود الهرم (0..6)");
-    ok(allMoves.every(m => m.d >= -1 && m.d <= 2), "الحركة بين -1 و+2 درجات");
+    ok(allMoves.every(m => m.d >= -1 && m.d <= 1), "الحركة بين -1 و+1 درجة");
     ok(pyr.some(p => p.fastest), "الأسرع يُحدَّد في كل جولة");
+    /* القاعدة تغيّرت: درجةٌ واحدة لكل إجابةٍ صحيحة مهما كانت السرعة.
+       القفزُ درجتين كان يبدو خطأً في الرسم على صورة الهرم. */
     const twoStep = allMoves.filter(m => m.d === 2);
-    ok(twoStep.length > 0, `الأسرع يصعد درجتين (${twoStep.length} مرة)`);
+    ok(twoStep.length === 0, `لا أحد يصعد درجتين (${twoStep.length} مرة)`);
+    const oneStep = allMoves.filter(m => m.d === 1);
+    ok(oneStep.length > 0, `المُجيب صحيحًا يصعد درجةً واحدة (${oneStep.length} مرة)`);
   }
   if (snap.pyramid) {
     const pos = snap.pyramid.players.map(p => p.pyPos);
