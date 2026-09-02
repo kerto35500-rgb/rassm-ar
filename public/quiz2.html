@@ -523,7 +523,10 @@ input,select,textarea{font-family:inherit}
 .pl .av img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
 /* الفيلم يغطي الشاشة كاملة، فالطبقات الخلفية محجوبة تمامًا — نطفئها كي لا
    ينافس تمويهها (blur 70px المتحرك) فكَّ ترميز الفيديو على البطاقات الضعيفة. */
-body.filmOn #aurora,body.filmOn #bgFx,body.filmOn #grid{display:none!important}
+/* والهرم مثلُه: صورته تملأ المشهد فالطبقات الخلفية محجوبة، وإبقاؤها
+   يعني ثلاثَ هالاتٍ متحرّكة بمزجٍ screen تُحسَب مع كل إطارٍ من القفزة. */
+body.filmOn #aurora,body.filmOn #bgFx,body.filmOn #grid,
+body.pyOn   #aurora,body.pyOn   #bgFx,body.pyOn   #grid{display:none!important}
 #opWait{position:absolute;bottom:16%;left:50%;transform:translateX(-50%);z-index:3;
   padding:11px 24px;border-radius:99px;background:rgba(0,0,0,.6);
   color:rgba(255,255,255,.85);font-weight:700;font-size:14px}
@@ -1067,7 +1070,27 @@ body.noTop:not(.topOpen) #devBar{display:none}
 .ammo i{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
 .ammo i.spent{background:rgba(255,255,255,.16);box-shadow:none}
 
-/* الربط */
+/* ══════ الربط ══════
+   خلفيته صارت فيلم الفخّ نفسه ثم إطارُه الأخير الثابت — كما في مشهد
+   التلفزيون. الصورة أرضية دائمة تحت الفيديو، فإن تأخّر التحميل أو فشل
+   بقيت اللوحة على الإطار الثابت بدل سوادٍ فارغ. */
+#lkStill,#lkVid{position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;display:block;pointer-events:none}
+#lkStill{z-index:0}
+#lkVid{z-index:1;opacity:1;transition:opacity .35s var(--ease)}
+#lkVid.done{opacity:0}
+/* اللوحة البنفسجية خلف المربّعات تُلغى في هذا المشهد وحده */
+body.lkOn #stage{background:transparent!important;border-color:transparent!important;
+  box-shadow:none!important}
+body.lkOn #aurora,body.lkOn #bgFx,body.lkOn #grid{display:none!important}
+#sLink{padding:0}
+/* كل ما يُلعب به يعيش داخل زجاج الشاشة، لا على إطار التلفزيون الخشبيّ */
+#lkScreen{position:absolute;z-index:3;display:flex;flex-direction:column;
+  padding:10px 12px 8px;min-height:0}
+/* المؤقّت يطفو في زاوية الزجاج بدل أن يقتطع صفًّا من أعلى المشهد */
+#sLink>#clock{position:absolute;top:10px;inset-inline-start:12px;z-index:6;
+  margin:0;width:66px;height:66px;filter:drop-shadow(0 4px 16px rgba(0,0,0,.9))}
+#sLink>#clock #cNum{font-size:23px}
 #lkTitle{text-align:center;font-size:15px;font-weight:800;margin-bottom:10px}
 #lkBoard{position:relative;flex:1;min-height:0;display:flex;gap:clamp(28px,9vw,90px);padding:2px 4px}
 /* العمودان متمايزان: المستطيل لا يمتدّ على نصف اللوحة بل يقف عند حدّ،
@@ -1084,6 +1107,16 @@ body.noTop:not(.topOpen) #devBar{display:none}
 .node.good{border-color:var(--lime);background:rgba(57,224,138,.15)}
 .node.bad{border-color:var(--red);background:rgba(255,77,94,.13)}
 #lkSvg{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:visible}
+/* فوق صورةٍ لا فوق لوحةٍ سادة: المربّعات تحتاج عتمةً وحدًّا فاتحًا لتُقرأ،
+   والعنوانُ والعدّاد يحتاجان ظلًّا يفصلهما عن الخلفية. */
+body.lkOn .node{background:rgba(9,12,28,.9);border-color:rgba(255,255,255,.3);
+  color:#fff;box-shadow:0 6px 18px -8px rgba(0,0,0,.9)}
+body.lkOn .node.sel{background:rgba(20,70,96,.94);border-color:var(--cyan)}
+body.lkOn .node.tied{background:rgba(52,36,104,.94);border-color:var(--violet)}
+body.lkOn .node.good{background:rgba(18,86,54,.94);border-color:var(--lime)}
+body.lkOn .node.bad{background:rgba(96,24,38,.94);border-color:var(--red)}
+body.lkOn #lkTitle,body.lkOn #lkMeta{color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.95)}
+body.lkOn #lkTitle{font-size:17px}
 
 /* التصنيف */
 #stItem{font-size:clamp(21px,6vw,31px);font-weight:900;text-align:center;padding:20px 10px;letter-spacing:-.5px;
@@ -1124,7 +1157,7 @@ body.pyOn #stage{border-radius:24px}
 .pyGlow.on{opacity:.85}
 .pyShadow{position:absolute;transform:translate(-50%,-50%);border-radius:50%;
   background:radial-gradient(ellipse at center,rgba(0,0,0,.85),rgba(0,0,0,0) 70%);
-  pointer-events:none;z-index:2}
+  pointer-events:none;z-index:2;will-change:transform,opacity}
 .pyActor{position:absolute;z-index:3;pointer-events:none;
   transform-origin:50% 100%;will-change:transform,left,top}
 /* object-position عند الأسفل: أيّ فارقٍ يسير بين نسبة الصورة والمقطع
@@ -1162,9 +1195,11 @@ body.pyOn #stage{border-radius:24px}
 #pyText{font-size:22px;font-weight:900;text-align:center;margin-bottom:11px;line-height:1.45;
   color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.98),0 0 26px rgba(0,0,0,.7)}
 #pyAns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* بلا backdrop-filter: تمويهُ ما خلف أربعة أزرارٍ يُعاد حسابه مع كل إطارٍ
+   من القفزة والمقاطع خلفها، وهو من أثقل ما يُطلب من المتصفّح. الخلفية
+   معتمة بما يكفي للقراءة بدونه. */
 #pyAns .ans{padding:12px 8px;font-size:13.5px;border-radius:14px;
-  background:rgba(12,16,34,.86);border:1px solid rgba(255,255,255,.22);color:#fff;
-  backdrop-filter:blur(6px)}
+  background:rgba(12,16,34,.92);border:1px solid rgba(255,255,255,.22);color:#fff}
 #pyAns .ans .key{display:none}
 @media (min-width:900px){
   #pyText{font-size:24px;margin-bottom:10px}
@@ -1544,10 +1579,14 @@ body.pyOn #stage{border-radius:24px}
     </div>
 
     <div class="scene" id="sLink">
-      <div id="lkTitle"></div>
-      <div id="lkBoard"><svg id="lkSvg"></svg><div class="col" id="lkL"></div><div class="col" id="lkR"></div></div>
-      <div id="lkMeta"></div>
-      <div id="lkDone" class="gone">✓ أكملت الـ١٥ — بانتظار البقية</div>
+      <img id="lkStill" alt="">
+      <video id="lkVid" playsinline muted preload="auto"></video>
+      <div id="lkScreen">
+        <div id="lkTitle"></div>
+        <div id="lkBoard"><svg id="lkSvg"></svg><div class="col" id="lkL"></div><div class="col" id="lkR"></div></div>
+        <div id="lkMeta"></div>
+        <div id="lkDone" class="gone">✓ أكملت الـ١٥ — بانتظار البقية</div>
+      </div>
     </div>
 
     <div class="scene" id="sSort">
@@ -1741,6 +1780,7 @@ function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");clear
 function scene(id){document.querySelectorAll(".scene").forEach(s=>s.classList.toggle("on",s.id===id));
   document.body.classList.toggle("noTop",id!=="sWait");
   document.body.classList.toggle("pyOn",id==="sPy");
+  document.body.classList.toggle("lkOn",id==="sLink");
   /* السؤال الحالي للمراجعة في الشريط المنسدل — لمن نسيه */
   const hq=document.getElementById("hudQ");
   if(hq)hq.textContent=(ST&&ST.question&&ST.question.text)?("📝 "+ST.question.text):"";}
@@ -3058,8 +3098,46 @@ function rQ(fresh){
    الخادم يبني لوحة كل لاعب (٣×٣) برموز عشوائية لا تكشف الأزواج،
    ويضخّ عناصر جديدة بعد كل توصيلة صحيحة. الخطأ لا يُفقد شيئًا. */
 let lkBusy=false, lkLast=null;
+/* ═══ خلفية التوصيل: الفيلم مرّةً ثم إطارُه الثابت ═══
+   يُبنى الفيديو من جديدٍ عند كل جولة وهو ظاهرٌ لا مخفيّ — العنصرُ الذي
+   يبدأ تحميلَه قبل أن يُرسم إطارٌ واحد يعلق عند readyState صفر. */
+let lkPlayed=false;
+/* حدود زجاج الشاشة داخل الصورة — مقيسةٌ من الملفّين لا مقدَّرة */
+const LK_GLASS={ d:{l:.175,r:.720,t:.075,b:.870,w:1280,h:720},
+                 m:{l:.055,r:.945,t:.135,b:.815,w:720, h:1280} };
+/* الخلفية تُعرض بـcover، فموضع الزجاج على الشاشة يتبع القصّ.
+   نحسبه بالمعادلة نفسها التي يستعملها المتصفّح فيقع اللعبُ على الزجاج
+   مهما كان شكل النافذة. */
+function lkFit(){
+  const host=$("sLink"), scr=$("lkScreen"); if(!host||!scr) return;
+  const W=host.clientWidth, H=host.clientHeight; if(W<40||H<40) return;
+  const G=LK_GLASS[atkDev()];
+  const s=Math.max(W/G.w, H/G.h);
+  const rw=G.w*s, rh=G.h*s, ox=(rw-W)/2, oy=(rh-H)/2;
+  const L=G.l*rw-ox, R=G.r*rw-ox, T=G.t*rh-oy, B=G.b*rh-oy;
+  /* لا نخرج عن حدود المشهد لو قُصَّ الزجاج نفسه على نافذةٍ متطرّفة */
+  const l=Math.max(4,L), r=Math.min(W-4,R), t=Math.max(4,T), b=Math.min(H-4,B);
+  scr.style.left=l+"px"; scr.style.top=t+"px";
+  scr.style.width=Math.max(60,r-l)+"px"; scr.style.height=Math.max(60,b-t)+"px";
+}
+function lkMedia(){
+  const M=ATK_MEDIA[atkDev()], im=$("lkStill"), old=$("lkVid");
+  if(im.getAttribute("src")!==M.i) im.src=M.i;
+  if(lkPlayed) return;                       /* لا يُعاد مع كل رسمة */
+  lkPlayed=true;
+  const v=document.createElement("video");
+  v.id="lkVid"; v.muted=true; v.defaultMuted=true; v.playsInline=true;
+  v.setAttribute("playsinline",""); v.preload="auto"; v.src=M.v;
+  old.replaceWith(v);
+  const fade=()=>v.classList.add("done");    /* الكشف عن الصورة الثابتة تحته */
+  v.addEventListener("ended",fade,{once:true});
+  v.addEventListener("error",fade,{once:true});
+  v.play().catch(fade);
+  setTimeout(()=>{ if(v.readyState<2) fade(); },3000);
+}
 function rLink(fresh){
   scene("sLink");mountClock("sLink");
+  lkMedia(); lkFit();
   if(fresh){
     lkBusy=false;
     $("lkTitle").textContent=(ST.link&&ST.link.title)||"";
@@ -3421,35 +3499,60 @@ function pyFit(){
   const b=$("pyBgBlur"); if(b) b.style.opacity = (W < sw-1) ? 1 : 0;
   return {w:W,h:H};
 }
+/* ═══ الوضع في كل إطار ═══
+   كان هذا يكتب width وheight وleft وtop في كل إطارٍ لكل شخصية، ويُعيد
+   ضبط blur() على الظلّ معها — وكلٌّ من ذلك يُبطل التخطيط ويُبطل ذاكرةَ
+   التمويه، فتتقطّع الحركة. الآن يُثبَّت الصندوق على درجة الانطلاق مرّةً
+   واحدة، ولا يتغيّر في أثناء القفزة إلا transform وopacity — وكلاهما
+   يعمل على المُركِّب بلا تخطيطٍ ولا إعادة رسم. */
 function pyPlace(el,p,box,dev,S){
   const id=el.dataset.cid, C=PY_CH0[id][dev], A=C.anch;
   const J=pyJump[p.id];
-  const a=A[el._from], b=A[el._to], t=J?J.p:1;
-  const x=a[0]+(b[0]-a[0])*t, y=a[1]+(b[1]-a[1])*t;
-  const sA=100-el._from*S.step, sB=100-el._to*S.step;
-  const persp=(sA+(sB-sA)*t)/100;
-  const h=box.h*(S.baseH/100)*persp*(C.sc/100);
-  const w=h*PY_AR[id];                 /* لكل شخصيةٍ نسبةُ إطارها هي — لا نسبةٌ واحدة */
+  const f=el._from, o=el._to, t=J?J.p:1;
+  const a=A[f], b=A[o];
+  const persp=i=>(100-i*S.step)/100;
+  const pF=persp(f);
+  const hF=box.h*(S.baseH/100)*pF*(C.sc/100);
+  const wF=hF*PY_AR[id];               /* لكل شخصيةٍ نسبةُ إطارها هي */
+  /* القياس الثابت: يُكتب فقط حين تتغيّر الدرجة أو حجم المشهد */
+  if(el._bw!==wF||el._bx!==a[0]||el._by!==a[1]){
+    el._bw=wF; el._bx=a[0]; el._by=a[1];
+    el.style.width=wF+"px"; el.style.height=hF+"px";
+    el.style.left=a[0]+"%"; el.style.top=a[1]+"%";
+    const sw=wF*(S.shW/100);
+    const sh=el._shadow;
+    sh.style.width=sw+"px"; sh.style.height=(sw*S.shF/100)+"px";
+    sh.style.left=a[0]+"%"; sh.style.top=a[1]+"%";
+    sh.style.filter="blur("+S.shB+"px)";     /* مرّةً واحدة لا كل إطار */
+  }
+  const dx=(b[0]-a[0])*t/100*box.w, dy=(b[1]-a[1])*t/100*box.h;
+  const ps=(pF+(persp(o)-pF)*t)/pF;          /* تناقص المنظور كتحجيمٍ لا كقياس */
   const off=J?J.off:0, sq=J?J.sq:0;
-  el.style.width=w+"px"; el.style.height=h+"px";
-  el.style.left=x+"%";  el.style.top=y+"%";
-  el.style.transform="translate(-50%,-100%) translateY("+(-off)+"px) rotate("+C.rot+"deg) scale("+
-    ((1+sq*0.6)*(C.flip?-1:1))+","+(1-sq)+")";
-  const sh=el._shadow, k=Math.max(0,1-off/Math.max(1,box.h*0.35));
-  const sw=w*(S.shW/100)*(0.55+0.45*k);
-  sh.style.width=sw+"px"; sh.style.height=(sw*S.shF/100)+"px";
-  sh.style.left=x+"%"; sh.style.top=y+"%";
-  sh.style.opacity=(S.shO/100)*(0.35+0.65*k);
-  sh.style.filter="blur("+S.shB+"px)";
+  el.style.transform="translate(-50%,-100%) translate("+dx.toFixed(2)+"px,"+(dy-off).toFixed(2)+"px) "+
+    "rotate("+C.rot+"deg) scale("+(ps*(1+sq*0.6)*(C.flip?-1:1)).toFixed(4)+","+(ps*(1-sq)).toFixed(4)+")";
+  const k=Math.max(0,1-off/Math.max(1,box.h*0.35));
+  el._shadow.style.transform="translate(-50%,-50%) translate("+dx.toFixed(2)+"px,"+dy.toFixed(2)+"px) "+
+    "scale("+(ps*(0.55+0.45*k)).toFixed(4)+")";
+  el._shadow.style.opacity=((S.shO/100)*(0.35+0.65*k)).toFixed(3);
 }
+/* التحفّز قبل الوثب في المقطع المولَّد يطول (١٣٠٣ م.ث وسطيًّا)، وانتظارُه
+   كاملًا يجعل الشخصية تقف جامدةً بعد الإجابة فيبدو الأمر تعليقًا. فنبدأ
+   المقطع من قبيل لحظة الانطلاق بمقدار PY_LEAD، ونؤخّر ارتفاع الجسم
+   بالمقدار نفسه — فيتّحد الصعودُ المرسوم مع تمدّد الجسم المصوَّر كما كان،
+   لكن بلا سكون. */
+const PY_LEAD=340;
 function pyLeap(el,p,from,to,box,dev,S){
   const id=el.dataset.cid, T=PY_JT[id]||{jD:1200,jT:900};
   const peak=box.h*(S.jH/100)*0.35;
   const J=pyJump[p.id]={p:0,off:0,sq:0};
   el._from=from; el._to=to;
-  if(PY_ALPHA&&el._vj){ el._vj.currentTime=0; el.classList.add("j");
-    el._v.pause(); el._vj.play().catch(()=>{}); }
-  const t0=performance.now()+T.jD;
+  const skip=Math.max(0,T.jD-PY_LEAD)/1000;
+  if(PY_ALPHA&&el._vj){
+    el.classList.add("j"); el._v.pause();
+    const go=()=>{ try{ el._vj.currentTime=skip; }catch(e){} el._vj.play().catch(()=>{}); };
+    if(el._vj.readyState>=1) go(); else el._vj.addEventListener("loadedmetadata",go,{once:true});
+  }
+  const t0=performance.now()+Math.min(PY_LEAD,T.jD);
   (function f(now){
     if(!document.body.contains(el)){ delete pyJump[p.id]; return; }
     if(now<t0){ requestAnimationFrame(f); return; }
@@ -4277,6 +4380,7 @@ function resetClient(){
   document.querySelectorAll(".fxLayer,.fxBtnLayer,.bombWrap,.fxPenalty,.zoomClone,.partyFlash")
     .forEach(e=>e.remove());
   ZVEIL=null; clearTimeout(veilSafety);
+  lkPlayed=false;   /* فيلم التوصيل يُعاد في المباراة القادمة */
   document.body.classList.remove("filmOn","topOpen");
   ["hitVeil","rpModal","cfg"].forEach(id=>{
     const e=$(id); if(e)e.classList.remove("on");
@@ -4376,6 +4480,7 @@ function fit(){
   if(ST&&ST.phase==="link")$("lkSvg").innerHTML="";  /* تغيّر القياس يُبطل إحداثيات الخط */
   /* دوران الجهاز يبدّل الخلفية والمراسي معًا — نعيد الرسم لا القياس فقط */
   if(ST&&(ST.phase==="pyramid"||ST.phase==="pyramidIntro"))rPyDraw();
+  if(ST&&ST.phase==="link")lkFit();
 }
 addEventListener("resize",fit);
 addEventListener("orientationchange",()=>setTimeout(fit,320));
