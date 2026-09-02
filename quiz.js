@@ -77,7 +77,10 @@ const DEFAULTS = {
   powerChoices: 3,      // كم بطاقة مكشوفة تُعرض لكل لاعب في كل جولة
   allowedPowers: POWERS.slice(),
   pyramid: true,        // تفعيل النهائي
-  pyramidHeight: 7,     // خلفية الهرم مرسومة بسبع درجات — لا تُزَد بلا صورة جديدة
+  /* سبعُ درجاتٍ في الصورة = سبعةُ مواضع (0..6)، فالارتفاع ستّة.
+     لو صار سبعة لصارت ثمانيةُ مواضع على سبعة مراسٍ، فيقف موضعان
+     على درجةٍ واحدة ولا تُرى الحركة عند الإجابة الصحيحة. */
+  pyramidHeight: 6,
   pyramidTime: 7,       // ثواني سؤال الهرم
   pyramidPenalty: false,// الإجابة الخاطئة تُنزل درجة (مطفأ = لا تحرّك)
   headStart: true,      // بداية متدرجة حسب النقاط
@@ -114,7 +117,7 @@ function sanitize(s = {}, old = DEFAULTS) {
     o.allowedPowers = list.length ? list : POWERS.slice();
   }
   if (s.pyramid !== undefined) o.pyramid = !!s.pyramid;
-  if (s.pyramidHeight !== undefined) o.pyramidHeight = clampInt(s.pyramidHeight, 5, 7, old.pyramidHeight);
+  if (s.pyramidHeight !== undefined) o.pyramidHeight = clampInt(s.pyramidHeight, 4, 6, old.pyramidHeight);
   if (s.pyramidTime !== undefined) o.pyramidTime = clampInt(s.pyramidTime, MIN_P, 15, old.pyramidTime);
   if (s.pyramidPenalty !== undefined) o.pyramidPenalty = !!s.pyramidPenalty;
   if (s.headStart !== undefined) o.headStart = !!s.headStart;
@@ -1237,6 +1240,34 @@ function setupQuiz(io, deps) {
     socket.on("skipIntro", (d) => {
       if (!room || !player || room.ownerId !== player.id) return;
       skipIntro(room, !!(d && d.natural));
+    });
+
+    /* ═══ أداة تجربة مؤقّتة: القفز مباشرةً إلى مرحلة ═══
+       للمدير وحده. تبني قائمة مراحل من عنصرٍ واحد وتبدأه، وتُنسي الغرفةَ
+       أنّها عرضت شرحه من قبل — فيُعاد الشرح والتعليق الصوتيّ في كل قفزة،
+       وهذا هو المقصود من الأداة. تُحذف بعد انتهاء التجربة. */
+    socket.on("devJump", (kind) => {
+      if (!room || !player || room.ownerId !== player.id) return;
+      if (!["q", "link", "sort", "pyramid"].includes(kind)) return;
+      if (alive(room).length < 2) { sys(room, "نحتاج لاعبَين على الأقل", "warn"); return; }
+      clearTimers(room);
+      if (room.state !== "playing") {
+        room.settings.opening = false;      // لا فيلم افتتاحيّ عند القفز
+        startGame(room);
+        if (room.state !== "playing") return;
+        clearTimers(room);
+      }
+      room.winner = null; room.finalTable = null;
+      room.pubQuestion = null; room.pubLink = null; room.pubSort = null;
+      room.pubIntro = null; room.pubVo = null; room.pubHurry = null;
+      room.attacks = []; room.bets = [];
+      room.party = false; room.partyNext = false; room.partyN = 0; room.partyCount = 0;
+      room.players.forEach(p => { p.answered = false; p.spectator = false; p.effects = []; });
+      if (kind === "pyramid") { room.pyQIndex = 0; room.players.forEach(p => { p.pyPos = 0; }); }
+      room.introDone[kind] = false;
+      room.stages = [kind]; room.stageIdx = -1;
+      sys(room, "⏩ قفزٌ تجريبيّ إلى: " + kind, "system");
+      nextStage(room);
     });
 
     socket.on("backToLobby", () => {

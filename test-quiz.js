@@ -83,7 +83,7 @@ const ask = (s, e, d, ms = 400) => new Promise(res => {
   ok(A.last("state").settings.questionTime !== 30, "غير المضيف لا يغيّر الإعدادات");
   A.fire("updateSettings", { questionTime: 999, pyramidHeight: 999, maxPlayers: 99, powerUses: 99 });
   S = A.last("state");
-  ok(S.settings.questionTime === 30 && S.settings.pyramidHeight === 20 && S.settings.maxPlayers === 8 && S.settings.powerUses === 12,
+  ok(S.settings.questionTime === 30 && S.settings.pyramidHeight === 6 && S.settings.maxPlayers === 8 && S.settings.powerUses === 12,
      "القيم الشاذة تُقصّ للحدود القصوى", JSON.stringify({q:S.settings.questionTime,h:S.settings.pyramidHeight,m:S.settings.maxPlayers,u:S.settings.powerUses}));
   A.fire("updateSettings", {
     length: "short", questionTime: 1, voteTime: 1, attackTime: 1,
