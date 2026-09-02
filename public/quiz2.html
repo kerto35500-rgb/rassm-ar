@@ -750,6 +750,21 @@ body.noTop:not(.topOpen) #hudQ{display:none}
 body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
 #topTab i{display:inline-block;font-style:normal;transition:transform .25s}
 
+/* ═══ شريط القفز التجريبي — مؤقّت ═══
+   يعيش داخل الشريط المنسدل نفسه، فينطوي معه بالسهم ولا يزاحم المسرح. */
+#devBar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  padding:7px 10px;margin-bottom:9px;border-radius:14px;flex-shrink:0;
+  border:1px dashed rgba(255,203,46,.55);background:rgba(255,203,46,.07)}
+#devBar .lbl{font-size:11.5px;font-weight:900;color:var(--gold);white-space:nowrap}
+#devBar .hint{font-size:10.5px;color:var(--dim);margin-inline-start:auto}
+.djb{font:inherit;font-size:12px;font-weight:800;cursor:pointer;
+  padding:5px 11px;border-radius:9px;color:#fff;
+  border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);
+  transition:background .15s,transform .15s}
+.djb:hover{background:rgba(255,203,46,.28);transform:translateY(-1px)}
+.djb:disabled{opacity:.35;cursor:not-allowed;transform:none}
+body.noTop:not(.topOpen) #devBar{display:none}
+
 /* ═══ نافذة التبليغ عن سؤال ═══ */
 #rpModal{position:fixed;inset:0;z-index:96;display:none;align-items:center;
   justify-content:center;background:rgba(4,6,14,.6);backdrop-filter:blur(4px);padding:16px}
@@ -1075,38 +1090,32 @@ body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
 #stDots i{width:22px;height:4px;border-radius:99px;background:rgba(255,255,255,.14);transition:.3s var(--ease)}
 #stDots i.on{background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
 
-/* ══════ الهرم ثلاثي الأبعاد ══════ */
-#pyScene{flex:1;min-height:0;position:relative;perspective:1100px;perspective-origin:50% 42%;overflow:hidden}
-#pyWorld{position:absolute;inset:0;transform-style:preserve-3d;
-  transform:rotateX(var(--tilt,16deg)) rotateY(var(--spin,0deg));
-  transition:transform 1.2s var(--ease);display:flex;flex-direction:column-reverse;
-  align-items:center;justify-content:flex-start;padding-bottom:8px}
-.tier{position:relative;transform-style:preserve-3d;margin-bottom:var(--gap,3px);
-  height:var(--sh,24px);border-radius:4px;
-  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.05));
-  border:1px solid rgba(255,255,255,.13);
-  box-shadow:0 6px 14px -6px rgba(0,0,0,.7)}
-.tier::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:var(--dep,13px);
-  background:linear-gradient(180deg,rgba(255,255,255,.30),rgba(255,255,255,.12));
-  transform:rotateX(72deg);transform-origin:bottom;border-radius:3px 3px 0 0}
-.tier.apex{background:linear-gradient(180deg,#ffe27a,var(--gold));border-color:#fff2b8;
-  box-shadow:0 0 40px -4px rgba(255,203,46,.85),0 8px 20px -8px rgba(0,0,0,.8)}
-.tier.apex::before{background:linear-gradient(180deg,#fff6cf,#ffd75e)}
-.tier .cap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-size:10px;font-weight:900;color:#4a3400;letter-spacing:1px}
-#beam{position:absolute;left:50%;bottom:0;width:3px;height:0;transform:translateX(-50%);
-  background:linear-gradient(0deg,rgba(255,203,46,.9),transparent);pointer-events:none;z-index:1;
-  filter:blur(1px);transition:height .8s var(--ease)}
-
-.climber{position:absolute;width:var(--sh,24px);height:var(--sh,24px);border-radius:50%;z-index:6;
-  transition:bottom .85s var(--spring),left .5s var(--ease);
-  box-shadow:0 5px 14px rgba(0,0,0,.6),0 0 0 2px rgba(255,255,255,.22)}
-.climber svg{width:100%;height:100%;border-radius:50%;display:block}
-.climber.mine{box-shadow:0 5px 16px rgba(0,0,0,.6),0 0 0 2.5px #fff,0 0 22px rgba(255,255,255,.6)}
-.climber.hop{animation:hop .85s var(--ease)}
-@keyframes hop{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-22px) scale(1.22)}70%{transform:translateY(-4px) scale(.96)}100%{transform:translateY(0) scale(1)}}
-.climber .tagn{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:800;
-  white-space:nowrap;color:var(--dim);text-shadow:0 1px 4px #000}
+/* ══════ الهرم ثنائي الأبعاد — الخلفية المعتمدة من المختبر ══════
+   المسرح يحافظ على نسبة الصورة تمامًا (16:9 أو 9:16)، لأنّ كل مرسًى
+   نسبةٌ مئوية من الصورة نفسها: لو تمدّد الصندوق زاغت الأقدام. */
+#pyScene{flex:1;min-height:0;position:relative;display:flex;
+  align-items:center;justify-content:center;overflow:hidden}
+#pyStage{position:relative;border-radius:16px;overflow:hidden;
+  box-shadow:0 18px 48px -18px rgba(0,0,0,.85)}
+#pyBg,.pyGlow{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block}
+.pyGlow{opacity:0;transition:opacity .5s var(--ease);pointer-events:none;
+  mix-blend-mode:screen;z-index:1}
+.pyGlow.on{opacity:.85}
+.pyShadow{position:absolute;transform:translate(-50%,-50%);border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.85),rgba(0,0,0,0) 70%);
+  pointer-events:none;z-index:2}
+.pyActor{position:absolute;z-index:3;pointer-events:none;
+  transform-origin:50% 100%;will-change:transform,left,top}
+.pyActor img,.pyActor video{width:100%;height:100%;object-fit:contain;display:block}
+.pyActor video{display:none}
+.pyActor.vid video{display:block}
+.pyActor.vid img{display:none}
+.pyTag{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);
+  margin-bottom:3px;font-size:10px;font-weight:900;white-space:nowrap;
+  padding:1px 7px;border-radius:8px;background:rgba(6,8,22,.72);
+  color:#fff;text-shadow:0 1px 4px #000;border:1px solid rgba(255,255,255,.18)}
+.pyActor.mine .pyTag{background:linear-gradient(90deg,var(--cyan),var(--pink));color:#04060f;
+  text-shadow:none;border-color:#fff}
 
 #pyQ{flex-shrink:0;margin-top:8px}
 #pyText{font-size:15.5px;font-weight:900;text-align:center;margin-bottom:9px;line-height:1.5}
@@ -1383,6 +1392,16 @@ body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
     <button class="ic" id="exB" title="خروج">✕</button>
   </div>
 
+  <!-- ═══ شريط القفز التجريبي — مؤقّت، يُحذف بعد التجربة ═══ -->
+  <div id="devBar" class="glass">
+    <span class="lbl">⏩ قفزٌ تجريبيّ</span>
+    <button class="djb" data-k="q">الأسئلة</button>
+    <button class="djb" data-k="link">التوصيل</button>
+    <button class="djb" data-k="sort">التصنيف</button>
+    <button class="djb" data-k="pyramid">الهرم</button>
+    <span class="hint" id="devHint">للمدير فقط</span>
+  </div>
+
   <div id="roster"></div>
   <div id="hudQ"></div>
   <button id="topTab" type="button" title="إظهار الشريط"><i>▾</i></button>
@@ -1511,7 +1530,7 @@ body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
 
     <div class="scene" id="sPy">
       <div class="eyebrow">🔺 أول من يصل القمة يفوز</div>
-      <div id="pyScene"><div id="pyWorld"></div><div id="beam"></div></div>
+      <div id="pyScene"><div id="pyStage"><img id="pyBg" alt=""></div></div>
       <div id="pyQ" class="hide"><div id="pyText"></div><div id="pyAns"></div></div>
     </div>
 
@@ -1580,7 +1599,7 @@ body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
       </div>
       <div class="cp" data-p="y">
         <div class="tgl"><span>النهائي: الهرم<small>أول من يصل القمة يفوز</small></span><label class="sw"><input type="checkbox" id="cPyOn"><i></i></label></div>
-        <div class="f"><label>ارتفاع الهرم</label><div class="vv"><input type="range" id="sPH" min="6" max="20"><output id="oPH"></output></div></div>
+        <div class="f"><label>ارتفاع الهرم</label><div class="vv"><input type="range" id="sPH" min="4" max="6"><output id="oPH"></output></div></div>
         <div class="f"><label>مهلة سؤال الهرم</label><div class="vv"><input type="range" id="sPT" min="4" max="15"><output id="oPT"></output></div></div>
         <div class="tgl"><span>بداية متدرجة<small>الأعلى نقاطاً يبدأ أقرب</small></span><label class="sw"><input type="checkbox" id="sHS"><i></i></label></div>
         <div class="tgl"><span>أسئلة الصور<small>السماح بالأسئلة التي تعرض صورة</small></span><label class="sw"><input type="checkbox" id="sIM"><i></i></label></div>
@@ -1628,6 +1647,22 @@ let atkT=null,atkP=null,atkSent=false,scoreShown={};
 const esc=s=>{const d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML;};
 $("topTab").onclick=()=>document.body.classList.toggle("topOpen");
 /* التبليغ: يلتقط السؤال المعروض حاليًا إن وُجد، ويُرسل لصفحة بلاغات الأدمن */
+/* ═══ القفز التجريبي — مؤقّت، يُحذف بعد التجربة ═══ */
+[...document.querySelectorAll(".djb")].forEach(b=>{
+  b.onclick=()=>{
+    if(!ST||ST.ownerId!==ME) return;
+    socket.emit("devJump",b.dataset.k);
+    document.body.classList.remove("topOpen");
+  };
+});
+function devBarSync(){
+  const host=!!(ST&&ST.ownerId===ME);
+  [...document.querySelectorAll(".djb")].forEach(b=>b.disabled=!host);
+  $("devHint").textContent = host
+    ? "يبدأ المرحلة فورًا مع شرحها وتعليقها"
+    : "للمدير فقط";
+}
+
 $("rpB").onclick=()=>{
   const q=ST&&ST.question&&ST.question.text;
   $("rpQ").textContent=q?("السؤال: "+q):"لا يوجد سؤال معروض الآن — سيُرسل بلاغ عام";
@@ -2032,8 +2067,9 @@ socket.on("pyramidReveal",d=>{
   const mine=d.moves.find(m=>m.id===ME);
   (mine&&mine.correct)?sWin():sLose();
   d.moves.forEach(m=>{
-    if(m.d>0){const el=document.querySelector('.climber[data-id="'+m.id+'"]');
-      if(el){el.classList.remove("hop");void el.offsetWidth;el.classList.add("hop");tone(700+m.to*40,.14,"sine",.045);}}
+    /* القفزة نفسها يشغّلها rPyDraw حين يصل الموضع الجديد من الخادم؛
+       هنا نُصدر نغمة الصعود فقط كي لا تُشغَّل القفزة مرّتين. */
+    if(m.d>0) tone(700+m.to*40,.14,"sine",.045);
   });
 });
 // الهجمات تصل قبل أن تُبنى شاشة السؤال — نخزّنها كلها ونطبّقها فور جاهزية الأزرار
@@ -2082,6 +2118,7 @@ function render(){
   if(!ST)return;
   const host=ST.ownerId===ME;
   $("cfgOpen").style.display=host?"":"none";
+  devBarSync();
   $("stgChip").textContent=ST.state==="playing"?`${ST.stage}/${ST.totalStages}`:"";
   renderRoster();
   if(previewMode)return;   // معاينة فخ جارية — لا نبدّل المشهد
@@ -3255,47 +3292,102 @@ socket.on("sortFb",d=>{
 });
 addEventListener("resize",()=>{ if(stClipOn) stClip(); });
 
-/* ═══ الهرم 3D ═══ */
+/* ═══ الهرم ثنائي الأبعاد ═══
+   القياسات أدناه ليست تقديرًا: هي ما ضبطه صاحب اللعبة بيده في
+   pyr2d-lab.html للحاسوب، ثمّ أُسقِط على صورة الجوال بمعامل أفقي
+   ثابت 1.2955 وثماني نقاط تحكّم رأسية قِيست من القضبان الذهبية في
+   الصورتين. لذلك لا تُعدَّل هنا — تُعدَّل في المختبر ثم تُنسخ. */
+const PY_TIERS=7;
+const PY_CH=["prof","granny","beast","pizza","nerd","trendy","boss"];
+const PY_JT={prof:{jD:1166,jT:875},granny:{jD:1041,jT:1000},beast:{jD:1416,jT:875},
+  pizza:{jD:1416,jT:916},nerd:{jD:1250,jT:750},trendy:{jD:1500,jT:750},boss:{jD:1333,jT:916}};
+const PY_CH0={"prof":{"d":{"anch":[[36.79,92.62],[38.75,77.58],[41.52,64.95],[42.67,51.47],[43.82,39.2],[46.87,27.89],[48.63,16.22]],"sc":117,"rot":0,"flip":false},"m":{"anch":[[32.89,71.81],[35.43,64.88],[39.01,59.75],[40.5,54.24],[41.99,49.25],[45.95,44.58],[48.23,39.69]],"sc":117,"rot":0,"flip":false}},"granny":{"d":{"anch":[[24.13,80.95],[28.53,69.64],[32.25,59.66],[36.24,48.83],[39.22,38.12],[41.86,27.65],[46.46,16.82]],"sc":120,"rot":0,"flip":false},"m":{"anch":[[16.49,66.24],[22.19,61.66],[27.0,57.58],[32.17,53.17],[36.03,48.8],[39.45,44.48],[45.41,39.98]],"sc":120,"rot":0,"flip":false}},"beast":{"d":{"anch":[[56.68,95.39],[55.53,79.63],[54.59,65.67],[54.72,51.83],[53.91,38.84],[55.26,27.65],[51.0,16.94]],"sc":158,"rot":0,"flip":false},"m":{"anch":[[58.65,73.24],[57.16,65.71],[55.95,60.04],[56.11,54.38],[55.07,49.1],[56.81,44.48],[51.3,40.03]],"sc":158,"rot":0,"flip":false}},"pizza":{"d":{"anch":[[44.77,99.72],[45.45,84.92],[46.46,67.24],[47.41,52.92],[47.88,39.8],[49.1,28.61],[49.64,16.94]],"sc":132,"rot":0,"flip":false},"m":{"anch":[[43.22,75.48],[44.11,67.85],[45.41,60.68],[46.64,54.83],[47.25,49.5],[48.83,44.87],[49.53,40.03]],"sc":132,"rot":0,"flip":false}},"nerd":{"d":{"anch":[[70.29,84.32],[66.7,71.57],[67.38,59.05],[62.77,49.07],[61.22,36.79],[57.23,27.05],[50.12,15.26]],"sc":128,"rot":0,"flip":false},"m":{"anch":[[76.29,67.61],[71.63,62.45],[72.52,57.33],[66.54,53.26],[64.54,48.25],[59.37,44.23],[50.16,39.23]],"sc":128,"rot":0,"flip":false}},"trendy":{"d":{"anch":[[78.82,79.75],[74.42,68.92],[71.24,57.85],[66.9,47.86],[64.67,36.19],[59.53,26.81],[54.25,16.94]],"sc":128,"rot":0,"flip":false},"m":{"anch":[[87.34,65.76],[81.64,61.37],[77.52,56.84],[71.89,52.77],[69.0,48.0],[62.35,44.13],[55.51,40.03]],"sc":128,"rot":0,"flip":false}},"boss":{"d":{"anch":[[66.23,87.93],[64.2,73.73],[62.23,61.22],[60.88,49.43],[57.63,37.76],[55.8,27.41],[52.69,17.18]],"sc":144,"rot":0,"flip":false},"m":{"anch":[[71.03,69.39],[68.4,63.32],[65.84,58.22],[64.1,53.41],[59.88,48.65],[57.51,44.38],[53.48,40.15]],"sc":144,"rot":0,"flip":false}}};
+/* مقاسات المشهد: الطول الأساس، تناقص المنظور، الظلّ، قوس القفزة */
+const PY_S={ d:{baseH:19,shW:64,shF:26,shO:38,shB:10,jH:62,jS:16,step:32/6},
+             m:{baseH:7.8,shW:64,shF:26,shO:38,shB:7,jH:25.5,jS:16,step:26/6} };
+const pyDev=()=>innerHeight>innerWidth?"m":"d";
+/* عند ارتفاعٍ أقلّ من سبع، نوزّع الدرجات على المراسي السبعة بحيث تبقى
+   القمّة قمّةً — لا نقصّ من الأعلى فيقف الفائز في منتصف الهرم. */
+const pyAnchIdx=(pos,H)=>H<2?PY_TIERS-1:Math.round(pos*(PY_TIERS-1)/H);
+
+/* هل يدعم المتصفّح webm بقناة شفافية؟ سفاري لا، فيبقى على الصورة الثابتة. */
+let PY_ALPHA=null;
+function pyAlphaOK(){
+  if(PY_ALPHA!==null) return Promise.resolve(PY_ALPHA);
+  return new Promise(res=>{
+    const v=document.createElement("video");
+    if(!v.canPlayType||!v.canPlayType('video/webm; codecs="vp9"')){PY_ALPHA=false;return res(false);}
+    v.muted=true;v.playsInline=true;v.src="pyr2d/prof-idle.webm";
+    const done=ok=>{PY_ALPHA=ok;res(ok);};
+    v.onerror=()=>done(false);
+    v.onloadeddata=()=>{
+      try{
+        const c=document.createElement("canvas");c.width=c.height=8;
+        const x=c.getContext("2d");x.clearRect(0,0,8,8);x.drawImage(v,0,0,8,8);
+        done(x.getImageData(0,0,1,1).data[3]<40);       /* الزاوية شفافة = القناة تعمل */
+      }catch(e){ done(true); }                          /* file:// يمنع القراءة — نثق بالصيغة */
+    };
+    setTimeout(()=>{ if(PY_ALPHA===null) done(false); },4000);
+  });
+}
+const pyJump={};                       /* حالة القفزة لكل لاعب */
+function pyFit(){
+  const s=$("pyScene"),st=$("pyStage"); if(!s||!st) return null;
+  const ar=pyDev()==="m"?9/16:16/9;
+  let H=s.clientHeight-6, W=H*ar;
+  if(W>s.clientWidth-6){ W=s.clientWidth-6; H=W/ar; }
+  if(H<40) return null;
+  st.style.width=W+"px"; st.style.height=H+"px";
+  return {w:W,h:H};
+}
+function pyPlace(el,p,box,dev,S){
+  const id=el.dataset.cid, C=PY_CH0[id][dev], A=C.anch;
+  const J=pyJump[p.id];
+  const a=A[el._from], b=A[el._to], t=J?J.p:1;
+  const x=a[0]+(b[0]-a[0])*t, y=a[1]+(b[1]-a[1])*t;
+  const sA=100-el._from*S.step, sB=100-el._to*S.step;
+  const persp=(sA+(sB-sA)*t)/100;
+  const h=box.h*(S.baseH/100)*persp*(C.sc/100);
+  const w=h*(352/606);                 /* الإطار المشترك لكل المقاطع */
+  const off=J?J.off:0, sq=J?J.sq:0;
+  el.style.width=w+"px"; el.style.height=h+"px";
+  el.style.left=x+"%";  el.style.top=y+"%";
+  el.style.transform="translate(-50%,-100%) translateY("+(-off)+"px) rotate("+C.rot+"deg) scale("+
+    ((1+sq*0.6)*(C.flip?-1:1))+","+(1-sq)+")";
+  const sh=el._shadow, k=Math.max(0,1-off/Math.max(1,box.h*0.35));
+  const sw=w*(S.shW/100)*(0.55+0.45*k);
+  sh.style.width=sw+"px"; sh.style.height=(sw*S.shF/100)+"px";
+  sh.style.left=x+"%"; sh.style.top=y+"%";
+  sh.style.opacity=(S.shO/100)*(0.35+0.65*k);
+  sh.style.filter="blur("+S.shB+"px)";
+}
+function pyLeap(el,p,from,to,box,dev,S){
+  const id=el.dataset.cid, T=PY_JT[id]||{jD:1200,jT:900};
+  const peak=box.h*(S.jH/100)*0.35;
+  const J=pyJump[p.id]={p:0,off:0,sq:0};
+  el._from=from; el._to=to;
+  if(PY_ALPHA&&el._vj){ el._vj.currentTime=0; el.classList.add("j");
+    el._v.pause(); el._vj.play().catch(()=>{}); }
+  const t0=performance.now()+T.jD;
+  (function f(now){
+    if(!document.body.contains(el)){ delete pyJump[p.id]; return; }
+    if(now<t0){ requestAnimationFrame(f); return; }
+    const q=Math.min(1,(now-t0)/T.jT);
+    J.p = q<.5 ? 2*q*q : 1-Math.pow(-2*q+2,2)/2;
+    J.off = Math.sin(Math.PI*q)*peak;
+    J.sq  = (q<.14?(q/.14):q>.86?((1-q)/.14):0)*(S.jS/100);
+    pyPlace(el,p,box,dev,S);
+    if(q<1) requestAnimationFrame(f);
+    else{ delete pyJump[p.id]; el._from=el._to=to;
+      if(PY_ALPHA&&el._vj){ el.classList.remove("j"); el._vj.pause();
+        el._v.play().catch(()=>{}); }
+      pyPlace(el,p,box,dev,S); }
+  })(performance.now());
+}
 function rPy(fresh){
   scene("sPy");mountClock("sPy");
-  const H=ST.pyramidHeight||12,W=$("pyWorld");
-  if(W.dataset.h!==String(H)){
-    W.dataset.h=String(H);W.innerHTML="";
-    for(let i=0;i<=H;i++){
-      const t=document.createElement("div");
-      t.className="tier"+(i===H?" apex":"");
-      t.style.width=Math.round(94-(i/H)*60)+"%";
-      if(i===H)t.innerHTML='<span class="cap">القمة</span>';
-      W.appendChild(t);
-    }
-  }
-  fitPy(H);
-  const sh=parseFloat(getComputedStyle(W).getPropertyValue("--sh"))||24;
-  const gp=parseFloat(getComputedStyle(W).getPropertyValue("--gap"))||3;
-  const alive=ST.players.filter(p=>!p.spectator);
-  alive.forEach((p,idx)=>{
-    let c=W.querySelector('.climber[data-id="'+p.id+'"]');
-    if(!c){c=document.createElement("div");c.className="climber"+(p.id===ME?" mine":"");
-      c.dataset.id=p.id;c.innerHTML=avatar(p.name,p.color)+`<span class="tagn">${esc(p.name)}</span>`;
-      W.appendChild(c);}
-    const pos=Math.min(H,p.pyPos||0);
-    c.style.bottom=(pos*(sh+gp)+4)+"px";
-    // توزيع حول منتصف الهرم بموضع فيزيائي صريح
-    // (inset-inline-start يقيس من اليمين في RTL ويخرجهم عن الهرم)
-    const n=alive.length, cw=W.clientWidth;
-    const spread=Math.min(26,n*9);
-    const off=n<2?0:(-spread/2+idx*(spread/(n-1)));
-    c.style.insetInlineStart="auto";c.style.right="auto";
-    c.style.left=Math.round(cw*0.5+cw*off/100-sh/2)+"px";
-  });
-  // شعاع القمة يرتفع مع أعلى لاعب
-  const best=Math.max(0,...alive.map(p=>p.pyPos||0));
-  $("beam").style.height=(best*(sh+gp)+30)+"px";
-  $("beam").style.opacity=best>H*0.6?1:.35;
-  /* تعليق «الاقتراب من القمة» يقرّره الخادم (انظر pyramidReveal) */
-  // ميلان الكاميرا يزيد مع الارتفاع
-  W.style.setProperty("--tilt",(13+Math.min(9,best*0.7))+"deg");
-
+  pyAlphaOK().then(()=>{ if(ST&&(ST.phase==="pyramid"||ST.phase==="pyramidIntro")) rPyDraw(); });
+  rPyDraw();
   if(ST.phase==="pyramid"&&ST.question){
     $("pyQ").classList.remove("hide");
     if(fresh){
@@ -3310,16 +3402,61 @@ function rPy(fresh){
     }
   }else $("pyQ").classList.add("hide");
 }
-function fitPy(H){
-  const s=$("pyScene"),W=$("pyWorld");
-  const av=s.clientHeight-10;
-  if(av<40)return;
-  let sh=Math.floor(av/(H+1))-3;
-  sh=Math.max(10,Math.min(26,sh));
-  W.style.setProperty("--sh",sh+"px");
-  W.style.setProperty("--gap",(sh<15?2:3)+"px");
-  W.style.setProperty("--dep",Math.round(sh*.55)+"px");
+function rPyDraw(){
+  const box=pyFit(); if(!box) return;
+  const dev=pyDev(), S=PY_S[dev], st=$("pyStage");
+  const H=Math.max(1,ST.pyramidHeight||PY_TIERS);
+  $("pyBg").src="pyr2d/bg-"+dev+".webp";
+  const alive=ST.players.filter(p=>!p.spectator);
+
+  /* هالة الدرجة التي بلغها المتصدّر — إشارةُ السباق */
+  const best=Math.max(0,...alive.map(p=>Math.min(H,p.pyPos||0)));
+  const gi=pyAnchIdx(best,H);
+  let g=st.querySelector(".pyGlow");
+  if(!g){ g=document.createElement("img"); g.className="pyGlow"; g.alt="";
+          st.appendChild(g); }
+  const gs="pyr2d/glow-"+dev+"-"+gi+".webp";
+  if(!g.src.endsWith(gs)) g.src=gs;
+  g.classList.toggle("on",best>0);
+
+  const seen={};
+  alive.forEach((p,idx)=>{
+    seen[p.id]=1;
+    const cid=PY_CH[idx%PY_CH.length];
+    let el=st.querySelector('.pyActor[data-id="'+p.id+'"]');
+    if(!el||el.dataset.cid!==cid||el.dataset.dev!==dev){
+      if(el){ el._shadow.remove(); el.remove(); }
+      const sh=document.createElement("div"); sh.className="pyShadow"; st.appendChild(sh);
+      el=document.createElement("div");
+      el.className="pyActor"+(p.id===ME?" mine":"");
+      el.dataset.id=p.id; el.dataset.cid=cid; el.dataset.dev=dev;
+      el.innerHTML='<img alt="" src="pyr2d/'+cid+'-still.webp">'+
+        '<video muted playsinline loop preload="auto"></video>'+
+        '<video muted playsinline preload="auto"></video>'+
+        '<span class="pyTag">'+esc(p.name)+'</span>';
+      const vs=el.querySelectorAll("video");
+      el._v=vs[0]; el._vj=vs[1]; el._shadow=sh;
+      el._from=el._to=pyAnchIdx(Math.min(H,p.pyPos||0),H);
+      st.appendChild(el);
+      if(PY_ALPHA){
+        el._v.src="pyr2d/"+cid+"-idle.webm"; el._vj.src="pyr2d/"+cid+"-jump.webm";
+        el.classList.add("vid"); el._v.play().catch(()=>{});
+      }
+    }
+    const want=pyAnchIdx(Math.min(H,p.pyPos||0),H);
+    if(want!==el._to && !pyJump[p.id]) pyLeap(el,p,el._to,want,box,dev,S);
+    else if(!pyJump[p.id]) pyPlace(el,p,box,dev,S);
+  });
+  st.querySelectorAll(".pyActor").forEach(el=>{
+    if(!seen[el.dataset.id]){ el._shadow.remove(); el.remove(); }
+  });
 }
+/* عند تبديل القفزة نُظهر مقطعها ونخفي مقطع الوقفة */
+(function(){ const s=document.createElement("style");
+  s.textContent=".pyActor.vid.j video:nth-of-type(1){display:none}"+
+                ".pyActor.vid.j video:nth-of-type(2){display:block}"+
+                ".pyActor.vid video:nth-of-type(2){display:none}";
+  document.head.appendChild(s); })();
 
 /* ═══ الكشف ═══ */
 /* ═══ مراسم الكشف على ثلاثة فصول ═══
@@ -4130,7 +4267,8 @@ function fit(){
   const h=(window.visualViewport?window.visualViewport.height:innerHeight);
   $("game").style.height=h+"px";$("lobby").style.height=h+"px";
   if(ST&&ST.phase==="link")$("lkSvg").innerHTML="";  /* تغيّر القياس يُبطل إحداثيات الخط */
-  if(ST&&(ST.phase==="pyramid"||ST.phase==="pyramidIntro"))fitPy(ST.pyramidHeight||12);
+  /* دوران الجهاز يبدّل الخلفية والمراسي معًا — نعيد الرسم لا القياس فقط */
+  if(ST&&(ST.phase==="pyramid"||ST.phase==="pyramidIntro"))rPyDraw();
 }
 addEventListener("resize",fit);
 addEventListener("orientationchange",()=>setTimeout(fit,320));
