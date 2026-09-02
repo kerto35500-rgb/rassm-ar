@@ -358,14 +358,14 @@ input,select,textarea{font-family:inherit}
 #sSort>#clock #cNum{fill:#3b2570;font-size:34px}
 
 #stTitle{position:absolute;left:49.6%;top:23.6%;transform:translate(-50%,-50%);
-  z-index:8;margin:0;font-family:"Ara Asmaa Beltajie",inherit!important;
+  z-index:8;margin:0;font-family:"Ara Asmaa Beltajie","Baloo Bhaijaan 2","Segoe UI",sans-serif!important;
   font-size:29px;font-weight:900;color:#5b3fa8;letter-spacing:0;
   text-transform:none;opacity:1;white-space:nowrap}
 
 /* الوسمان تحت القرص عمدًا: النصّ خلفيةٌ لا يعبر فوق القرص المسحوب */
 .stLbl{position:absolute;transform:translate(-50%,-50%);z-index:3;
   white-space:nowrap;text-align:center;pointer-events:none;
-  font-family:"Ara Asmaa Beltajie",inherit!important;font-size:31px;font-weight:900;color:#5b3fa8}
+  font-family:"Ara Asmaa Beltajie","Baloo Bhaijaan 2","Segoe UI",sans-serif!important;font-size:31px;font-weight:900;color:#5b3fa8}
 #stLblA{left:70.6%;top:50.5%}
 #stLblB{left:28.4%;top:50.1%}
 
@@ -386,7 +386,7 @@ input,select,textarea{font-family:inherit}
 @keyframes stPop{0%{transform:scale(.35) rotate(-14deg);opacity:0}
   62%{transform:scale(1.1) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
 #stWord{position:relative;z-index:2;text-align:center;padding:0 14%;line-height:1.25;
-  word-break:break-word;font-family:"Ara Asmaa Beltajie",inherit!important;
+  word-break:break-word;font-family:"Ara Asmaa Beltajie","Baloo Bhaijaan 2","Segoe UI",sans-serif!important;
   font-size:40px;font-weight:800;color:#3f189a;
   /* الحفر وهمٌ بصري: ظلّ داكن من الأعلى وضوءٌ فاتح من الأسفل (عمق 55%) */
   text-shadow:0 -1.8px 1.1px rgba(26,13,58,.50),
@@ -421,19 +421,19 @@ input,select,textarea{font-family:inherit}
     filter:drop-shadow(0 7px 15px rgba(58,31,120,.45))}
   #sSort>#clock #cArc{stroke:#8460c7}
   #sSort>#clock #cNum{font-size:28px}
-  #stTitle{left:50%;top:14%;font-size:23px}
+  #stTitle{left:50%;top:14%;font-size:19px;white-space:normal;max-width:90%;line-height:1.35}
   .stLbl{font-size:23px}
   #stLblA{left:49.5%;top:36.5%}
   #stLblB{left:49.5%;top:64%}
   #stOrb{left:50%;top:50%;width:114px;height:114px}
-  #stWord{font-size:29px;color:#4b2f8f}
+  #stWord{font-size:22px;color:#4b2f8f}
   .stArc img{filter:drop-shadow(0 9px 8px rgba(58,31,120,.2))}
   /* الدوران والقلب على الصورة وحدها، فيبقى الصندوق أفقيًّا كما هو */
   #stArcA img{transform:rotate(90deg) scaleX(-1)}
   #stArcB img{transform:rotate(-90deg)}
   #stArcA{left:49.4%;top:24.1%;width:258px;height:159.96px}
   #stArcB{left:49.4%;top:75.9%;width:258px;height:159.96px}
-  #stCount{bottom:4%}
+  #stCount{bottom:4%;font-size:11px}
 }
 /* ═══ سباق الصعود العمودي (نتيجة التصنيف) ═══ */
 #raceWrap{flex:1;display:flex;flex-direction:column;min-height:0}
@@ -2782,7 +2782,8 @@ function opBail(){
   }
   clearTimeout(opBailT);
   opEnd();
-  socket.emit("skipIntro");
+  /* نهايةٌ طبيعية لا تخطٍّ: الخادم يتخطّى التعليق وينتقل فورًا */
+  socket.emit("skipIntro",{natural:true});
 }
 function opKill(){                       /* يوقف الفيديو ويحرّر فك الترميز */
   const v=$("opVid");
@@ -3062,29 +3063,36 @@ function vert(){ return innerWidth<=699; }
    بعد الدوران (getBoundingClientRect للصورة نفسها) لا من صندوق القوس،
    لأنّ الصورة على الجوال مُدارة 90° فتتجاوز صندوقها بفارقٍ كبير. */
 function stSetClip(on){ if(stClipOn===on)return; stClipOn=on; stClip(); }
-const ST_FEATHER=22;   /* عرض التدرّج: يُذيب الحافّة فلا يبقى خطٌّ مرئي */
-function stMask(w,val){ w.style.webkitMaskImage=val; w.style.maskImage=val; }
+/* حافّة القبّة الحقيقية لا حافّة الصندوق: الصورة 437×801 وobject-fit:contain
+   يُصغّرها داخل الصندوق ويترك فراغًا على الجانبين. على الحاسوب الفارق 7px
+   فلا يُرى، وعلى الجوال 85px — وهناك كان الخطّ يقع في الهواء قبل القبّة. */
+function stDome(el){
+  const im=el.querySelector("img"), r=el.getBoundingClientRect();
+  const nw=im.naturalWidth||437, nh=im.naturalHeight||801;
+  const s=Math.min(el.offsetWidth/nw, el.offsetHeight/nh);   /* contain */
+  return { cx:r.left+r.width/2, cy:r.top+r.height/2, half:(nw*s)/2 };
+}
 function stClip(){
   const w=$("stDiscWrap"); if(!w)return;
-  if(!stClipOn){ stMask(w,"none"); return; }
+  if(!stClipOn){ w.style.clipPath="none"; return; }
   const st=$("stStage").getBoundingClientRect();
-  const a=$("stArcA").querySelector("img").getBoundingClientRect();
-  const b=$("stArcB").querySelector("img").getBoundingClientRect();
-  if(!st.width||!st.height||!a.width||!b.width){
+  const a=stDome($("stArcA")), b=stDome($("stArcB"));
+  if(!st.width||!st.height||!a.half||!b.half){
     clearTimeout(stClip._t); stClip._t=setTimeout(stClip,120); return; }
-  const g=vert()?24:30;
+  /* الحاسوب 37 والجوال 24: الرقمان يضعان الحدَّ حيث ضبطه المصمّم بالضبط */
+  const g=vert()?24:37;
   if(vert()){
     const cy=st.top+st.height/2;
-    const up=(a.top+a.height/2<cy)?a:b, dn=(up===a)?b:a;
-    const top=Math.max(0,up.bottom-st.top-g), bot=Math.max(0,st.bottom-dn.top-g), F=ST_FEATHER;
-    stMask(w,"linear-gradient(to bottom,transparent "+top+"px,#000 "+(top+F)+"px,"+
-      "#000 "+(st.height-bot-F)+"px,transparent "+(st.height-bot)+"px)");
+    const up=(a.cy<cy)?a:b, dn=(up===a)?b:a;
+    const top=Math.max(0,(up.cy+up.half)-st.top-g);
+    const bot=Math.max(0,st.bottom-(dn.cy-dn.half)-g);
+    w.style.clipPath="inset("+top+"px 0 "+bot+"px 0)";
   }else{
     const cx=st.left+st.width/2;
-    const rt=(a.left+a.width/2>cx)?a:b, lf=(rt===a)?b:a;
-    const right=Math.max(0,st.right-rt.left-g), left=Math.max(0,lf.right-st.left-g), F=ST_FEATHER;
-    stMask(w,"linear-gradient(to right,transparent "+left+"px,#000 "+(left+F)+"px,"+
-      "#000 "+(st.width-right-F)+"px,transparent "+(st.width-right)+"px)");
+    const rt=(a.cx>cx)?a:b, lf=(rt===a)?b:a;
+    const right=Math.max(0,st.right-(rt.cx-rt.half)-g);
+    const left =Math.max(0,(lf.cx+lf.half)-st.left-g);
+    w.style.clipPath="inset(0 "+right+"px 0 "+left+"px)";
   }
 }
 /* القوس الواقع في جهة الرمي: نقارن مركزَيهما على محور الحركة، فيصحّ
@@ -3121,6 +3129,7 @@ function sortShow(){
     return;
   }
   $("stWord").textContent=it[stIdx];
+  stFitWord();
   $("stCount").textContent=(stIdx+1)+" / "+it.length;
   /* عودةٌ مؤكَّدة إلى البيت قبل إعادة تشغيل الانتقالات */
   o.style.transition="none"; o.style.opacity=""; o.classList.remove("snap","drag");
@@ -3129,6 +3138,21 @@ function sortShow(){
   stSetClip(false);
   o.classList.remove("orbPop");void o.offsetWidth;o.classList.add("orbPop");
 }
+/* لا كلمةَ تُقسَم ولا تفيض: نُنقص القياس درجةً درجةً حتى تسع داخل القرص.
+   القرص 200px على الحاسوب و114px على الجوال، والكلمات تتراوح بين
+   «مصر» و«الإسكندرية» — فقياسٌ ثابتٌ واحد لا يكفيها جميعًا. */
+function stFitWord(){
+  const w=$("stWord"), o=$("stOrb");
+  w.style.fontSize="";
+  const base=parseFloat(getComputedStyle(w).fontSize)||24;
+  const avail=o.clientWidth*0.72;            /* الحشوة 14% من كل جانب */
+  let f=base;
+  w.style.whiteSpace="nowrap";
+  while(f>9 && w.scrollWidth>avail){ f-=1; w.style.fontSize=f+"px"; }
+  w.style.whiteSpace="";                     /* الالتفاف مسموح كملاذ أخير */
+}
+addEventListener("resize",()=>{ if(ST&&ST.phase==="sort") stFitWord(); });
+
 function sortDrag(){
   const o=$("stOrb");
   let sx=0,sy=0,dx=0,dyR=0,dragging=false,trail=[];
