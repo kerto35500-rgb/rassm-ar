@@ -1162,12 +1162,12 @@ body.pyOn #stage{border-radius:24px}
    تذهب كلّها إلى تكبير الهرم وتقليص الفراغ على الجانبين. */
 @media (min-width:900px){
   #pyAns{grid-template-columns:repeat(4,1fr)}
-  #pyText{font-size:15px;margin-bottom:7px}
+  #pyText{font-size:24px;margin-bottom:10px}
   #pyAns .ans{padding:10px 6px;font-size:13px}
 }
 #pyQ.hide{display:none}
-#pyText{font-size:16px;font-weight:900;text-align:center;margin-bottom:9px;line-height:1.5;
-  color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.95)}
+#pyText{font-size:22px;font-weight:900;text-align:center;margin-bottom:11px;line-height:1.45;
+  color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.98),0 0 26px rgba(0,0,0,.7)}
 #pyAns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 #pyAns .ans{padding:12px 8px;font-size:13.5px;border-radius:14px;
   background:rgba(12,16,34,.86);border:1px solid rgba(255,255,255,.22);color:#fff;
@@ -1175,7 +1175,7 @@ body.pyOn #stage{border-radius:24px}
 #pyAns .ans .key{display:none}
 @media (max-width:560px){
   #pyQ{padding:22px 8px 9px}
-  #pyText{font-size:14px}
+  #pyText{font-size:17px;margin-bottom:8px}
   #pyAns{gap:6px}
   #pyAns .ans{padding:10px 6px;font-size:12.5px}
 }
@@ -3466,13 +3466,20 @@ function pyLeap(el,p,from,to,box,dev,S){
       pyPlace(el,p,box,dev,S); }
   })(performance.now());
 }
+let pyQSig="";
 function rPy(fresh){
   scene("sPy");mountClock("sPy");
-  pyAlphaOK().then(()=>{ if(ST&&(ST.phase==="pyramid"||ST.phase==="pyramidIntro")) rPyDraw(); });
-  rPyDraw();
+  /* الأجوبة أوّلًا ثم رسم الهرم: القياس يقرأ ارتفاع شريط الأجوبة، فلو
+     رسمنا قبل إظهاره لحسبنا الشريط صفرًا في أوّل سؤالٍ وحده. */
   if(ST.phase==="pyramid"&&ST.question){
     $("pyQ").classList.remove("hide");
-    if(fresh){
+    /* لا نبني على fresh وحده. لو وصلت حالةٌ فيها الطور «هرم» قبل السؤال
+       بلحظة، ثبت المفتاح ولم يُعَد البناء أبدًا فيبقى السؤال بلا أجوبة
+       حتى الجولة التالية — وهذا ما حدث في السؤال الأول. الآن نبني متى
+       تغيّر السؤال أو خلا الصندوق، فيُصلح نفسه مهما اختلّ الترتيب. */
+    const sig=(ST.pyramidQ||0)+"|"+ST.question.text;
+    if(sig!==pyQSig || !$("pyAns").children.length){
+      pyQSig=sig;
       $("pyText").textContent=ST.question.text;
       const o=$("pyAns");o.innerHTML="";
       ST.question.options.forEach((t,i)=>{
@@ -3482,7 +3489,9 @@ function rPy(fresh){
         o.appendChild(b);});
       tryFx();
     }
-  }else $("pyQ").classList.add("hide");
+  }else{ $("pyQ").classList.add("hide"); pyQSig=""; }
+  pyAlphaOK().then(()=>{ if(ST&&(ST.phase==="pyramid"||ST.phase==="pyramidIntro")) rPyDraw(); });
+  rPyDraw();
 }
 let pyRetry=0;
 function rPyDraw(){
@@ -3529,14 +3538,31 @@ function rPyDraw(){
     }
     /* فحص الشفافية غير متزامن: قد يصل بعد إنشاء العنصر. فنَصِل المقاطع
        هنا في كل رسمة لا في لحظة الإنشاء وحدها — وإلا بقيت الصور ثابتة. */
+    /* ═══ وصلُ المقاطع ═══
+       يؤجَّل إطارَين كاملَين. السبب مقيسٌ لا مُخمَّن: تعيين المصدر في
+       اللحظة نفسها التي يظهر فيها المشهد يجعل المتصفّح يراه عنصرًا غير
+       مرسوم بعدُ فيؤجّل تحميلَه إلى الأبد — بقي readyState صفرًا، بينما
+       إعادةُ التعيين على العنصر ذاته بعد ظهوره تمّت في ١٤ م.ث.
+       ولا نُبدّل إلى المقطع إلا بعد وصول أوّل إطار، فلا تختفي الشخصية
+       لحظةً بين صورةٍ أُخفيت ومقطعٍ لم يصل. */
     if(PY_ALPHA && !el._wired){
       el._wired=1;
-      el.classList.add("vid");          /* الإظهار قبل التحميل لا بعده */
-      el._v.src="pyr2d/"+cid+"-idle.webm"; el._vj.src="pyr2d/"+cid+"-jump.webm";
-      el._v.play().catch(()=>{});
-      el._v.addEventListener("loadeddata",()=>el._v.play().catch(()=>{}),{once:true});
-      /* تعثّر مقطعٍ بعينه يُرجع شخصيتَه إلى صورتها دون أن يُسقط البقية */
-      el._v.addEventListener("error",()=>el.classList.remove("vid"),{once:true});
+      const E=el, C=cid;
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        if(!document.body.contains(E)) return;
+        E._v.addEventListener("loadeddata",()=>{
+          E.classList.add("vid"); E._v.play().catch(()=>{});
+        },{once:true});
+        E._v.addEventListener("error",()=>E.classList.remove("vid"),{once:true});
+        E._vj.src="pyr2d/"+C+"-jump.webm";
+        E._v.src="pyr2d/"+C+"-idle.webm";
+        E._v.play().catch(()=>{});
+        /* حارسٌ أخير: إن بقي عالقًا نُعيد الطلب مرّة واحدة */
+        setTimeout(()=>{ if(E._v.readyState===0 && document.body.contains(E)){
+          E._v.removeAttribute("src"); E._v.load();
+          E._v.src="pyr2d/"+C+"-idle.webm"; E._v.play().catch(()=>{});
+        } },2500);
+      }));
     }
     const want=pyAnchIdx(Math.min(H,p.pyPos||0),H);
     if(want!==el._to && !pyJump[p.id]) pyLeap(el,p,el._to,want,box,dev,S);
