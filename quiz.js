@@ -77,7 +77,7 @@ const DEFAULTS = {
   powerChoices: 3,      // كم بطاقة مكشوفة تُعرض لكل لاعب في كل جولة
   allowedPowers: POWERS.slice(),
   pyramid: true,        // تفعيل النهائي
-  pyramidHeight: 12,
+  pyramidHeight: 7,     // خلفية الهرم مرسومة بسبع درجات — لا تُزَد بلا صورة جديدة
   pyramidTime: 7,       // ثواني سؤال الهرم
   pyramidPenalty: false,// الإجابة الخاطئة تُنزل درجة (مطفأ = لا تحرّك)
   headStart: true,      // بداية متدرجة حسب النقاط
@@ -114,7 +114,7 @@ function sanitize(s = {}, old = DEFAULTS) {
     o.allowedPowers = list.length ? list : POWERS.slice();
   }
   if (s.pyramid !== undefined) o.pyramid = !!s.pyramid;
-  if (s.pyramidHeight !== undefined) o.pyramidHeight = clampInt(s.pyramidHeight, 6, 20, old.pyramidHeight);
+  if (s.pyramidHeight !== undefined) o.pyramidHeight = clampInt(s.pyramidHeight, 5, 7, old.pyramidHeight);
   if (s.pyramidTime !== undefined) o.pyramidTime = clampInt(s.pyramidTime, MIN_P, 15, old.pyramidTime);
   if (s.pyramidPenalty !== undefined) o.pyramidPenalty = !!s.pyramidPenalty;
   if (s.headStart !== undefined) o.headStart = !!s.headStart;
@@ -245,7 +245,8 @@ function setupQuiz(io, deps) {
 
   // مراحل الإجابة التي يُستعجَل فيها اللاعبون قبل انتهاء العدّاد بخمس ثوانٍ.
   // الميزانية 4.6ث = ما يتبقى فعليًا من العدّاد لحظة التشغيل، فلا يُقطع التعليق.
-  const HURRY_AT = { question: 1, link: 1, sort: 1, pyramid: 1 };
+  /* الهرم مستثنى: طلب صاحب اللعبة ألا يُنبَّه المتأخّر فيه */
+  const HURRY_AT = { question: 1, link: 1, sort: 1 };
 
   function setPhase(room, phase, seconds, next) {
     clearTimers(room);
