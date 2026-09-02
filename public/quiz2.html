@@ -1105,13 +1105,19 @@ body.noTop:not(.topOpen) #devBar{display:none}
 /* لا نلمس position هنا: ‏.scene أصلًا absolute بـinset:0، وتغييرها إلى
    relative يُلغي التمدّد فينهار ارتفاع المشهد إلى صفر ويختفي كلّ شيء. */
 #sPy{padding:0;overflow:hidden;border-radius:24px}
-#pyScene{position:absolute;inset:0;overflow:hidden;background:#050713}
-/* ما فاض عن جانبَي الهرم على الشاشات العريضة: نسخةٌ ضبابية من الخلفية
-   نفسها بدل شريطٍ أسود — فتبدو الشاشة مملوءةً ولا يُقصّ من الهرم شيء. */
-#pyBgBlur{position:absolute;inset:-6%;width:112%;height:112%;object-fit:cover;
-  filter:blur(34px) brightness(.55) saturate(.9);opacity:0;
-  transition:opacity .4s var(--ease);z-index:0}
+body.pyOn #stage{border-radius:24px}
+/* حوافّ الصورة سماءٌ داكنة شبه مسطّحة (‏#0d112f يمينًا ويسارًا)، فنمدّها
+   بنفس اللون بدل نسخةٍ ضبابية كانت تصنع هالةً وحافّةً مرئية. النتيجة
+   سماءٌ واحدة متّصلة تملأ الشاشة، والهرمُ في وسطها بلا صندوق. */
+#pyScene{position:absolute;inset:0;overflow:hidden;
+  background:radial-gradient(120% 90% at 50% 42%,#131a3c 0%,#0d112f 45%,#070b20 100%)}
+#pyBgBlur{display:none}
 #pyStage{position:absolute;left:50%;top:0;transform:translateX(-50%);z-index:1}
+/* تلاشٍ جانبيّ رفيع يذيب حافّة الصورة في السماء الممتدّة */
+#pyStage::before,#pyStage::after{content:"";position:absolute;top:0;bottom:0;width:46px;
+  z-index:2;pointer-events:none}
+#pyStage::before{left:-1px;background:linear-gradient(90deg,#0d112f,rgba(13,17,47,0))}
+#pyStage::after{right:-1px;background:linear-gradient(270deg,#0d112f,rgba(13,17,47,0))}
 #pyBg,.pyGlow{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block}
 .pyGlow{opacity:0;transition:opacity .5s var(--ease);pointer-events:none;
   mix-blend-mode:screen;z-index:1}
@@ -1150,8 +1156,15 @@ body.noTop:not(.topOpen) #devBar{display:none}
   text-align:center;font-size:11.5px;font-weight:800;letter-spacing:2.2px;color:#bff6ff;
   text-shadow:0 2px 10px rgba(0,0,0,.9);pointer-events:none;
   background:linear-gradient(180deg,rgba(4,6,16,.72),rgba(4,6,16,0))}
-#pyQ{position:absolute;left:0;right:0;bottom:0;z-index:9;padding:26px 12px 12px;
-  background:linear-gradient(0deg,rgba(4,6,16,.94) 42%,rgba(4,6,16,.72) 74%,rgba(4,6,16,0))}
+#pyQ{position:absolute;left:0;right:0;bottom:0;z-index:9;padding:24px 12px 10px;
+  background:linear-gradient(0deg,rgba(7,11,32,.96) 46%,rgba(7,11,32,.74) 76%,rgba(7,11,32,0))}
+/* شاشةٌ عريضة قصيرة: صفٌّ واحد من أربعة أجوبة — يوفّر مئةَ بكسلٍ رأسيّ
+   تذهب كلّها إلى تكبير الهرم وتقليص الفراغ على الجانبين. */
+@media (min-width:900px){
+  #pyAns{grid-template-columns:repeat(4,1fr)}
+  #pyText{font-size:15px;margin-bottom:7px}
+  #pyAns .ans{padding:10px 6px;font-size:13px}
+}
 #pyQ.hide{display:none}
 #pyText{font-size:16px;font-weight:900;text-align:center;margin-bottom:9px;line-height:1.5;
   color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.95)}
@@ -1285,21 +1298,6 @@ body.noTop:not(.topOpen) #devBar{display:none}
 #hitVeil.on{animation:veil .55s}
 @keyframes veil{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
 
-/* الدردشة */
-#chat{position:absolute;inset:auto 0 0 0;height:52%;z-index:35;border-radius:22px 22px 0 0;
-  display:flex;flex-direction:column;transform:translateY(101%);transition:transform .38s var(--ease)}
-#chat.on{transform:none}
-#chatLog{flex:1;overflow-y:auto;padding:12px 14px;font-size:13.5px}
-.cm{margin-bottom:6px;line-height:1.55}
-.cm b{color:var(--cyan)}
-.cm.system{color:var(--dim);font-size:12.5px}
-.cm.good{color:var(--lime);font-weight:700}
-.cm.warn{color:var(--orange);font-weight:700}
-#chatF{display:flex;gap:7px;padding:11px;border-top:1px solid var(--stroke)}
-#chatI{flex:1;padding:11px 13px;border-radius:12px;background:rgba(255,255,255,.05);border:1.5px solid var(--stroke);
-  color:var(--ink);font-size:13.5px;min-width:0}
-#chatI:focus{outline:none;border-color:var(--cyan)}
-#chatF button{padding:0 16px;border-radius:12px;background:linear-gradient(100deg,var(--cyan),var(--violet));color:#04121a;font-weight:900}
 
 /* الإعدادات */
 #cfg{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;padding:14px;
@@ -1431,7 +1429,6 @@ body.noTop:not(.topOpen) #devBar{display:none}
     </a>
     <button class="ic" id="rpB" title="التبليغ عن السؤال">🚩</button>
     <button class="ic" id="cpB" title="نسخ الرابط">🔗</button>
-    <button class="ic" id="chB" title="الدردشة">💬</button>
     <button class="ic" id="cfgOpen" title="الإعدادات">⚙</button>
     <button class="ic" id="exB" title="خروج">✕</button>
   </div>
@@ -1591,10 +1588,6 @@ body.noTop:not(.topOpen) #devBar{display:none}
       <button class="btn" id="againB">مباراة جديدة</button>
     </div>
 
-    <div id="chat" class="glass">
-      <div id="chatLog"></div>
-      <form id="chatF" autocomplete="off"><input id="chatI" placeholder="اكتب رسالة…" maxlength="200"><button type="submit">↑</button></form>
-    </div>
   </div>
 </div>
 
@@ -1751,6 +1744,7 @@ $("rpSend").onclick=async()=>{
 function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),2300);}
 function scene(id){document.querySelectorAll(".scene").forEach(s=>s.classList.toggle("on",s.id===id));
   document.body.classList.toggle("noTop",id!=="sWait");
+  document.body.classList.toggle("pyOn",id==="sPy");
   /* السؤال الحالي للمراجعة في الشريط المنسدل — لمن نسيه */
   const hq=document.getElementById("hudQ");
   if(hq)hq.textContent=(ST&&ST.question&&ST.question.text)?("📝 "+ST.question.text):"";}
@@ -1860,7 +1854,6 @@ function enter(r){
 $("exB").onclick=()=>{socket.emit("leaveRoom");try{sessionStorage.removeItem("q2");}catch(e){}location.href="/quiz2";};
 $("cpB").onclick=()=>{const u=location.origin+"/quiz2?r="+ROOM;
   (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast("تم نسخ الرابط ✓")).catch(()=>prompt("انسخ:",u));};
-$("chB").onclick=()=>$("chat").classList.toggle("on");
 
 /* ═══ الشبكة ═══ */
 socket.on("hello",d=>{HELLO=d;buildPills(d);
@@ -1878,7 +1871,9 @@ socket.on("hello",d=>{HELLO=d;buildPills(d);
 socket.on("ping2",t=>socket.emit("pong2",t));
 socket.on("state",s=>{OFF=s.serverNow-Date.now();ST=s;render();});
 socket.on("kicked",()=>{toast("تم طردك");setTimeout(()=>location.href="/quiz2",1200);});
-socket.on("chat",m=>addChat(m));
+/* الرسائل الفوريّة: الدردشة حُذفت من هذه اللعبة، ورسائل النظام
+   المهمّة تظهر في التنبيه المنبثق بدلًا من سجلٍّ يقتطع من الشاشة. */
+socket.on("chat",m=>{ if(m&&m.system&&(m.cls==="good"||m.cls==="warn")) toast(m.text); });
 socket.on("connect",()=>{if(ROOM&&TOKEN)socket.emit("rejoin",{roomId:ROOM,token:TOKEN},r=>{if(r&&r.ok)ME=r.you;});});
 
 socket.on("voteResult",d=>{
@@ -3378,31 +3373,18 @@ const pyDev=()=>innerHeight>innerWidth?"m":"d";
    القمّة قمّةً — لا نقصّ من الأعلى فيقف الفائز في منتصف الهرم. */
 const pyAnchIdx=(pos,H)=>H<2?PY_TIERS-1:Math.round(pos*(PY_TIERS-1)/H);
 
-/* هل يدعم المتصفّح webm بقناة شفافية؟ سفاري لا، فيبقى على الصورة الثابتة. */
-let PY_ALPHA=null;
-function pyAlphaOK(){
-  if(PY_ALPHA!==null) return Promise.resolve(PY_ALPHA);
-  return new Promise(res=>{
-    const v=document.createElement("video");
-    if(!v.canPlayType||!v.canPlayType('video/webm; codecs="vp9"')){PY_ALPHA=false;return res(false);}
-    v.muted=true;v.playsInline=true;
-    /* المُجسّ يوضع في الصفحة بشفافيةٍ صفر لا بـdisplay:none ولا منفصلًا:
-       العنصر المخفيّ أو المنفصل قد يعلق تحميلُه فيُخطئ الفحصُ بلا سبب. */
-    v.style.cssText="position:fixed;left:-9999px;top:0;width:8px;height:8px;opacity:0;pointer-events:none";
-    document.body.appendChild(v);
-    v.src="pyr2d/prof-idle.webm";
-    const done=ok=>{PY_ALPHA=ok;try{v.remove();}catch(e){}res(ok);};
-    v.onerror=()=>done(false);
-    v.onloadeddata=()=>{
-      try{
-        const c=document.createElement("canvas");c.width=c.height=8;
-        const x=c.getContext("2d");x.clearRect(0,0,8,8);x.drawImage(v,0,0,8,8);
-        done(x.getImageData(0,0,1,1).data[3]<40);       /* الزاوية شفافة = القناة تعمل */
-      }catch(e){ done(true); }                          /* file:// يمنع القراءة — نثق بالصيغة */
-    };
-    setTimeout(()=>{ if(PY_ALPHA===null) done(false); },4000);
-  });
-}
+/* هل يدعم المتصفّح webm بقناة شفافية؟
+   كان الفحص سابقًا يُنزّل مقطعًا ويقرأ بكسل الزاوية، ومهلتُه تنقضي على
+   الشبكات البطيئة فيسقط الجميع إلى صورٍ ثابتة بلا سبب — وهذا ما حدث.
+   الفحصُ الآن لحظيّ من المُرمِّز نفسه: كل متصفّحٍ يفكّ VP9 يدعم قناته
+   الشفّافة، وسفاري لا يدّعي دعم webm أصلًا فيأخذ الصور. وإن تعثّر مقطعٌ
+   بعينه رجعت شخصيتُه وحدها إلى صورتها. */
+const PY_ALPHA=(function(){
+  try{ const v=document.createElement("video");
+    return !!(v.canPlayType && v.canPlayType('video/webm; codecs="vp9"')); }
+  catch(e){ return false; }
+})();
+function pyAlphaOK(){ return Promise.resolve(PY_ALPHA); }
 const pyJump={};                       /* حالة القفزة لكل لاعب */
 /* ═══ الغلاف الرأسيّ ═══
    نحسب من قياساتك أعلى رأسٍ وأخفض قدمٍ على كل الدرجات لكل الشخصيات.
@@ -3553,6 +3535,8 @@ function rPyDraw(){
       el._v.src="pyr2d/"+cid+"-idle.webm"; el._vj.src="pyr2d/"+cid+"-jump.webm";
       el._v.play().catch(()=>{});
       el._v.addEventListener("loadeddata",()=>el._v.play().catch(()=>{}),{once:true});
+      /* تعثّر مقطعٍ بعينه يُرجع شخصيتَه إلى صورتها دون أن يُسقط البقية */
+      el._v.addEventListener("error",()=>el.classList.remove("vid"),{once:true});
     }
     const want=pyAnchIdx(Math.min(H,p.pyPos||0),H);
     if(want!==el._to && !pyJump[p.id]) pyLeap(el,p,el._to,want,box,dev,S);
@@ -4252,16 +4236,6 @@ const FXM={
 function runFx(power,from,ms){FXM.start(power,from,ms);}
 function stopFx(){FXM.stop();}
 
-/* ═══ الدردشة ═══ */
-function addChat(m){
-  if(!m.system&&m.name&&window.RassmMod&&RassmMod.isMuted(m.name))return;   // كتم محلي
-  const l=$("chatLog"),d=document.createElement("div");
-  d.className="cm "+(m.cls||(m.system?"system":""));
-  d.innerHTML=m.system?esc(m.text):`<b style="color:${m.color||"var(--cyan)"}">${esc(m.name)}</b>: ${esc(m.text)}`;
-  l.appendChild(d);while(l.children.length>120)l.removeChild(l.firstChild);
-  l.scrollTop=l.scrollHeight;
-}
-$("chatF").onsubmit=e=>{e.preventDefault();const v=$("chatI").value.trim();if(!v)return;socket.emit("chat",v);$("chatI").value="";};
 $("startB").onclick=()=>socket.emit("startGame");
 $("againB").onclick=()=>{$("finale").classList.remove("on");resetClient();socket.emit("backToLobby");};
 
@@ -4276,7 +4250,7 @@ function resetClient(){
     .forEach(e=>e.remove());
   ZVEIL=null; clearTimeout(veilSafety);
   document.body.classList.remove("filmOn","topOpen");
-  ["hitVeil","rpModal","chat","cfg"].forEach(id=>{
+  ["hitVeil","rpModal","cfg"].forEach(id=>{
     const e=$(id); if(e)e.classList.remove("on");
   });
   /* حالات الجولة المحليّة */
