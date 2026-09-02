@@ -1102,7 +1102,9 @@ body.noTop:not(.topOpen) #devBar{display:none}
    نسبةٌ مئوية من الصورة نفسها: لو تمدّد الصندوق زاغت الأقدام. */
 /* الهرم يملأ المشهد كلّه: المسرح يُقصّ لا يُحشر (cover لا contain)،
    فيبقى بنسبة الصورة — وهو شرطُ صحّة المراسي — ويخرج فائضُه خلف الحوافّ. */
-#sPy{padding:0;position:relative;overflow:hidden;border-radius:24px}
+/* لا نلمس position هنا: ‏.scene أصلًا absolute بـinset:0، وتغييرها إلى
+   relative يُلغي التمدّد فينهار ارتفاع المشهد إلى صفر ويختفي كلّ شيء. */
+#sPy{padding:0;overflow:hidden;border-radius:24px}
 #pyScene{position:absolute;inset:0;overflow:hidden;background:#050713}
 /* ما فاض عن جانبَي الهرم على الشاشات العريضة: نسخةٌ ضبابية من الخلفية
    نفسها بدل شريطٍ أسود — فتبدو الشاشة مملوءةً ولا يُقصّ من الهرم شيء. */
@@ -3500,8 +3502,13 @@ function rPy(fresh){
     }
   }else $("pyQ").classList.add("hide");
 }
+let pyRetry=0;
 function rPyDraw(){
-  const box=pyFit(); if(!box) return;
+  const box=pyFit();
+  /* المشهد قد يُقاس قبل أن يأخذ أبعاده عند أول ظهور — نعيد المحاولة
+     بدل أن نصمت ونترك الشاشة بيضاء. */
+  if(!box){ if(pyRetry<12){ pyRetry++; requestAnimationFrame(rPyDraw); } return; }
+  pyRetry=0;
   const dev=pyDev(), S=PY_S[dev], st=$("pyStage");
   const H=Math.max(1,ST.pyramidHeight||PY_TIERS);
   const bgs="pyr2d/bg-"+dev+".webp";
