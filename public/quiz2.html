@@ -417,11 +417,12 @@ input,select,textarea{font-family:inherit}
 
 /* ═══ الجوال: القوسان فوق وتحت، وكل القياسات مستقلّة ═══ */
 @media (max-width:699px){
-  #sSort>#clock{width:77px;height:77px;top:6%;
-    filter:drop-shadow(0 7px 15px rgba(58,31,120,.45))}
+  #sSort>#clock{width:58px;height:58px;top:5.5%;
+    filter:drop-shadow(0 6px 12px rgba(58,31,120,.45))}
   #sSort>#clock #cArc{stroke:#8460c7}
-  #sSort>#clock #cNum{font-size:28px}
-  #stTitle{left:50%;top:14%;font-size:19px;white-space:normal;max-width:90%;line-height:1.35}
+  #sSort>#clock #cNum{font-size:22px}
+  /* سطرٌ واحد دائمًا: الخطّ يتقلّص مع عرض الشاشة بدل أن ينكسر النصّ */
+  #stTitle{left:50%;top:13%;font-size:19px;white-space:nowrap;max-width:94%;line-height:1.3}
   .stLbl{font-size:23px}
   #stLblA{left:49.5%;top:36.5%}
   #stLblB{left:49.5%;top:64%}
@@ -1078,30 +1079,27 @@ body.noTop:not(.topOpen) #devBar{display:none}
 .ammo i.spent{background:rgba(255,255,255,.16);box-shadow:none}
 
 /* ══════ الربط ══════
-   خلفيته صارت فيلم الفخّ نفسه ثم إطارُه الأخير الثابت — كما في مشهد
-   التلفزيون. الصورة أرضية دائمة تحت الفيديو، فإن تأخّر التحميل أو فشل
-   بقيت اللوحة على الإطار الثابت بدل سوادٍ فارغ. */
-/* القياس والموضع يضبطهما lkFit بالبكسل، فلا نستعمل object-fit هنا:
-   نحتاج توسيطًا على الزجاج لا على الصورة. */
-#lkStill{position:absolute;display:block;pointer-events:none;object-fit:fill;z-index:0}
-/* لوحةُ اللعب تدخل بعد استقرار الصورة */
-#lkScreen{opacity:0;transform:scale(.985);
-  transition:opacity .45s var(--ease),transform .45s var(--spring)}
-#lkScreen.ready{opacity:1;transform:none}
-/* اللوحة البنفسجية خلف المربّعات تُلغى في هذا المشهد وحده */
-/* خلف الصورة سماءٌ داكنة بلون حافّتها، فما فاض عن الجوانب لا يظهر
-   شريطًا فاتحًا من صفحة اللعبة. */
-body.lkOn #stage{background:#0f192f!important;border-color:transparent!important;
+   التلفزيون صار عرضًا تقديميًّا في شاشة الشرح فقط. مشهدُ اللعب نفسه يأخذ
+   خلفيةَ لعبة التصنيف ومؤقّتَها، وأقراصُه هي قرصُ التصنيف — بلا أقواس. */
+body.lkOn #stage{background:transparent!important;border-color:transparent!important;
   box-shadow:none!important}
-#sLink{background:#0f192f}
 body.lkOn #aurora,body.lkOn #bgFx,body.lkOn #grid{display:none!important}
-#sLink{padding:0}
-/* كل ما يُلعب به يعيش داخل زجاج الشاشة، لا على إطار التلفزيون الخشبيّ */
-/* بلا حشو — كما في المختبر تمامًا، فما يُقاس هناك يقع هنا */
-#lkScreen{position:absolute;z-index:3;padding:0}
-/* المؤقّت يطفو في زاوية الزجاج بدل أن يقتطع صفًّا من أعلى المشهد */
-#sLink>#clock{position:absolute;z-index:6;margin:0;
-  filter:drop-shadow(0 4px 16px rgba(0,0,0,.9))}
+#sLink{padding:0;background:url("sort3d/bg.webp") center/cover no-repeat}
+/* لوحة اللعب تملأ المشهد؛ lkFit يقيس منها */
+#lkScreen{position:absolute;inset:0;z-index:3;padding:0}
+/* المؤقّت كما في التصنيف تمامًا */
+#sLink>#clock{position:absolute;left:50%;top:11%;transform:translate(-50%,-50%);
+  width:120px;height:120px;margin:0;z-index:12;
+  filter:drop-shadow(0 8px 13px rgba(58,31,120,.57))}
+#sLink>#clock .halo{display:none}
+#sLink>#clock #cTrack{stroke:rgba(110,75,175,.22)}
+#sLink>#clock #cArc{stroke:#6e4baf}
+#sLink>#clock #cNum{fill:#3b2570;font-size:34px}
+@media (max-width:699px){
+  #sLink>#clock{width:58px;height:58px;top:5.5%;filter:drop-shadow(0 6px 12px rgba(58,31,120,.45))}
+  #sLink>#clock #cArc{stroke:#8460c7}
+  #sLink>#clock #cNum{font-size:22px}
+}
 #lkTitle{text-align:center;font-size:15px;font-weight:800;margin-bottom:10px}
 #lkBoard{position:relative;flex:1;min-height:0;display:flex;gap:clamp(28px,9vw,90px);padding:2px 4px}
 /* العمودان متمايزان: المستطيل لا يمتدّ على نصف اللوحة بل يقف عند حدّ،
@@ -1133,7 +1131,7 @@ body.lkOn .node{
   background:url("sort3d/disc.webp") center/100% 100% no-repeat!important;
   border:0!important;border-radius:50%!important;
   display:flex;align-items:center;justify-content:center;
-  padding:0!important;color:#20140a!important;font-weight:900;
+  padding:0!important;color:#4b2f8f!important;font-weight:900;
   line-height:1.15;text-align:center;white-space:normal;overflow:hidden;
   max-width:none!important;
   filter:drop-shadow(0 8px 16px rgba(0,0,0,.55));
@@ -1153,8 +1151,10 @@ body.lkOn .node.bad {filter:drop-shadow(0 0 12px var(--red)) drop-shadow(0 8px 1
    مطلق تُحسب من عرض الحاوية — أي عرض الزجاج كلّه — فتصير ٩٨ بكسل لكل
    جهةٍ على قرصٍ عرضه ١٣٢. المختبر يضعها على الـspan فتُحسب من القرص. */
 body.lkOn .node>span{display:block;padding:0 8%}
-body.lkOn #lkTitle,body.lkOn #lkMeta{position:absolute;left:0;right:0;
-  margin:0;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.98)}
+body.lkOn #lkTitle,body.lkOn #lkMeta{position:absolute;left:0;right:0;margin:0;text-align:center;
+  font-family:"Ara Asmaa Beltajie","Baloo Bhaijaan 2","Segoe UI",sans-serif!important;
+  color:#5b3fa8;text-shadow:none;white-space:nowrap}
+body.lkOn #lkMeta{font-weight:800;opacity:.7}
 body.lkOn #sLink>#clock #cNum{font-size:var(--lkCk,24px)}
 
 /* التصنيف */
@@ -1618,7 +1618,6 @@ body.pyOn #stage{border-radius:24px}
     </div>
 
     <div class="scene" id="sLink">
-      <img id="lkStill" alt="">
       <div id="lkScreen">
         <div id="lkTitle"></div>
         <div id="lkBoard"><svg id="lkSvg"></svg><div class="col" id="lkL"></div><div class="col" id="lkR"></div></div>
@@ -1750,6 +1749,7 @@ window.addEventListener("load",()=>{
 });
 let mode="login",acct=null,raf=0,picked=-1,phaseKey="";
 let previewMode=false;   // أثناء معاينة الفخاخ: لا نسمح لتحديثات الخادم بتبديل المشهد
+let lastState=null;      // لكشف العودة إلى الردهة بعد مباراة
 
 let atkT=null,atkP=null,atkSent=false,scoreShown={};
 
@@ -2269,12 +2269,18 @@ function render(){
   }
 
   if(ST.state==="lobby"){
+    /* العودة إلى الردهة من مباراةٍ سابقة: تنظيفٌ شامل عند كل اللاعبين لا عند
+       المدير وحده — غير المدير لا يضغط «مباراة جديدة» فكانت بقايا الهرم
+       والتوصيل تبقى عنده وتظهر مشوَّهةً في المباراة التالية. */
+    if(lastState && lastState!=="lobby") resetClient();
+    lastState="lobby";
     scene("sWait");
     $("startB").classList.toggle("gone",!host);
     renderChars();
     opPrefetch();                      /* نُحمّل فيلم المقدمة مسبقًا ونحن ننتظر */
     $("finale").classList.remove("on");
   }else if(ST.state==="ended"){
+    lastState="ended";
     $("againB").style.display=host?"":"none";
   }else{
     if(ST.phase==="opening")rOpen(fresh);
@@ -2289,6 +2295,7 @@ function render(){
     else if(ST.phase==="link")rLink(fresh);
     else if(ST.phase==="sort")rSort(fresh);
     else if(ST.phase==="pyramidIntro"||ST.phase==="pyramid")rPy(fresh);
+    lastState="playing";
   }
   /* تعليق يختاره الخادم لمرحلة بعينها — يُشغَّل مرة واحدة عند وصوله */
   if(ST.vo&&ST.vo.at===ST.phase){
@@ -2545,8 +2552,9 @@ function buildSparks(){
 /* قوس المؤقت على حلقة الطلاسم */
 (function(){
   const v=document.getElementById("atkVid");
-  v.addEventListener("ended",atkOpen);
-  v.addEventListener("error",atkOpen);
+  /* انتهاء الفيلم يُظهر إطارَه الثابت فقط؛ الفتحُ بتوقيت الخادم لا بانتهائه */
+  v.addEventListener("ended",()=>v.classList.add("done"));
+  v.addEventListener("error",()=>v.classList.add("done"));
 })();
 let atkArcRaf=0;
 function atkArcRun(){
@@ -2568,6 +2576,7 @@ function closeTg(){$("tgModal").classList.remove("on");}
 
 /* ═══ مشهد التلفزيون ═══
    الفيلم يعمل مرّة واحدة في أوّل دخول للجولة، ولا يعاد مع كل إعادة رسم. */
+const ATK_OPEN_MS=7800;   /* = TRAP_INTRO_S في الخادم: لحظة فتح البطاقات عند الجميع */
 const ATK_MEDIA={d:{v:"/traps/intro.mp4",i:"/traps/end.webp"},
                  m:{v:"/traps/intro-m.mp4",i:"/traps/end-m.webp"}};
 function atkDev(){
@@ -2593,17 +2602,17 @@ function atkPlay(){
   im.src=M.i;
   v.classList.remove("done");
   v.src=M.v; try{v.currentTime=0;}catch(e){}
-  /* سرعة الفيلم تُضبط على مدّة تعليق المعلّق فينتهيان معًا:
-     تعليق أقصر من الفيلم يسرّعه، وأطول يبطّئه — والفيلم صامت فلا
-     تتأثّر نبرة. الإطار المتجمّد بعده لا يُمسّ. */
+  /* الفيلم بسرعته الطبيعية دائمًا. كان يُبطَّأ ليمتدّ بطول تعليق المعلّق،
+     فمع تعليق «أوّل مرّة» (١٣ ث) يزحف الفيلم بنصف سرعته ولا تُفتح البطاقات
+     قبل ١٢ ثانية — ويختلف الجهازان لأن مقطعَيهما مختلفا الطول. */
   v.playbackRate=1;
-  const voDur=(ST&&ST.vo&&ST.vo.at==="attack"&&ST.vo.dur>1)?ST.vo.dur:0;
-  const fit=()=>{ if(!voDur||!isFinite(v.duration)||!v.duration)return;
-    v.playbackRate=Math.max(.5,Math.min(2.5,v.duration/voDur)); };
-  v.onloadedmetadata=fit; fit();
-  v.play().catch(atkOpen);
-  /* صمّام أمان: لو تعذّر التشغيل نفتح الواجهة على الإطار الثابت */
-  atkSceneT=setTimeout(()=>{ if(v.readyState<2)atkOpen(); },2500);
+  v.play().catch(()=>{});
+  /* البطاقات تُفتح في لحظةٍ واحدة عند الجميع: بداية الطور (بتوقيت الخادم)
+     + مدّة الفيلم الأطول التي يحجزها الخادم أصلًا (TRAP_INTRO). لا علاقة
+     لها بانتهاء الفيديو ولا بطول التعليق ولا بسرعة الجهاز. */
+  const startMs=(ST&&ST.phaseEndsAt&&ST.phaseDur)?(ST.phaseEndsAt-OFF-ST.phaseDur*1000):Date.now();
+  const wait=Math.max(300, startMs+ATK_OPEN_MS-Date.now());
+  atkSceneT=setTimeout(atkOpen, Math.min(wait, ATK_OPEN_MS+500));
 }
 
 function rAtk(fresh){
@@ -2626,8 +2635,24 @@ function rAtk(fresh){
     return;
   }
 
-  const menu=(MYMENU&&MYMENU.length)?MYMENU:(ST.settings.allowedPowers||[]);
-  $("atkTitle").textContent="اختر بطاقتك الهجومية";
+  /* فخاخ الهرم: الدرجةُ تحدّد السلاح — لا قائمةَ احتياطية من الإعدادات */
+  let menu;
+  if(ST.pyMode){
+    /* الموضع ٠ = الدرجة الأولى (القاعدة)، الموضع ٥ = السادسة، ٦ = الكأس */
+    const tier=(me?(me.pyPos||0):0)+1;
+    const NM={gloop:"الوحل 🟢",bombs:"القنابل 💣",nibble:"أكلة الحروف 👾",freeze:"التجميد ❄️"};
+    if(tier>=5){
+      row.innerHTML="";row.dataset.key="";
+      $("atkTitle").textContent="الدرجة "+tier+" تضرب الجميع تلقائيًّا بـ"+(tier>=6?NM.freeze:NM.gloop);
+      $("atkNote").innerHTML="لا حاجة للاختيار — انتظر البقيّة";
+      return;
+    }
+    menu=(MYMENU&&MYMENU.length)?MYMENU:[];
+    $("atkTitle").textContent="الدرجة "+tier+": اختر من تضرب بـ"+(NM[menu[0]]||"فخّك");
+  }else{
+    menu=(MYMENU&&MYMENU.length)?MYMENU:(ST.settings.allowedPowers||[]);
+    $("atkTitle").textContent="اختر بطاقتك الهجومية";
+  }
 
   /* كل بثّ من الخادم أثناء الطور (لاعب آخر ضرب، تغيّر نقاط…) كان يعيد بناء
      الصفّ فتضيع البطاقة المقلوبة ويُضطر اللاعب للنقر مرّتين. نبني الصفّ مرّة
@@ -2796,6 +2821,7 @@ const VO_DUR={first_door:[13.6],door:[4.4,2.4,3.9],door_enter:[5.3,4.4,5.4,4.2],
   trap_nibble:[2.4,2.1,2.4],trap_double:[2.9,1.8],trap_bet:[4.4,2.0],
   trap_multi:[2.4,2.8,1.3,2.5,2.1,2.8,1.5],near_top:[2.4,4.7,3.2],winner:[13.5,14.0,8.0,8.6],
   pyramid_intro:[26.8],sort_intro:[15.6],link_intro:[13.1],sort_timeup:[7.7],link_timeup:[9.7],
+  question_timeup:[],pyramid_timeup:[],attack_timeup:[],
   pyramid_skip:[8.4,5.1,6.3],minigame_skip:[4.8,4.2,5.0,3.0],skip:[7.9,5.9,6.6]};
 let VOA=null, hurryKey="", prevPhase="", voSig=""; const voLast={}, voDone={};
 function voStop(){ if(VOA){ try{VOA.pause();}catch(e){} VOA=null; } }
@@ -3074,7 +3100,10 @@ function rRead(fresh){
   killZoomClones();
   voStop();
   vPlay(ST.question.voice);
-  $("readMeta").innerHTML='<span class="tag">'+esc(ST.question.cat)+'</span>';
+  /* عنوان لعبةٍ (توصيل/تصنيف) أو سؤالُ هرم: لا فئة تُعرض */
+  const tag = ST.question.titleOnly ? (ST.stageKind==="link"?"لعبة التوصيل":ST.stageKind==="sort"?"لعبة التصنيف":"")
+            : ST.pyMode ? "سؤال الهرم" : (ST.question.cat||"");
+  $("readMeta").innerHTML = tag ? '<span class="tag">'+esc(tag)+'</span>' : "";
   const rim=$("readImg"), rsrc=ST.question.img;
   if(rsrc){rim.src=rsrc;rim.hidden=false;}else{rim.hidden=true;rim.removeAttribute("src");}
   $("readTxt").textContent=ST.question.text;
@@ -3120,7 +3149,7 @@ function rQ(fresh){
     $("sQ").appendChild(b);setTimeout(()=>b.remove(),2800);
   }
   vPlay(ST.question.voice);   /* في الهرم لا توجد مرحلة قراءة، فيُنطق هنا */
-  $("qMeta").innerHTML=`<span class="tag">${esc(ST.question.cat)}</span>`;
+  $("qMeta").innerHTML=`<span class="tag">${esc(ST.pyMode?"سؤال الهرم":(ST.question.cat||""))}</span>`;
   const qim=$("qImg"), qsrc=ST.question.img;
   if(qsrc){qim.src=qsrc;qim.hidden=false;}else{qim.hidden=true;qim.removeAttribute("src");}
   $("qText").textContent=ST.question.text;
@@ -3147,43 +3176,24 @@ let lkBusy=false, lkLast=null;
    ولا يحمل فيديو. المربّعات تظهر بعد استقرار الصورة لا مع أوّل لحظة. */
 let lkPlayed=false;
 /* ═══ قياسات لعبة التوصيل ═══
-   مضبوطةٌ بيد صاحب اللعبة في link-lab.html. لا تُعدَّل هنا — تُعدَّل في
-   المختبر ثم تُنسخ. المرجع في كل شيء هو مستطيل زجاج الشاشة:
-   gl/gr/gt/gb نِسبٌ من الصورة، وما بعدها نِسبٌ من الزجاج نفسه. */
+   مضبوطةٌ في link-lab.html. المرجع هو مشهدُ اللعب كلّه (لا زجاجَ تلفزيون
+   بعد الآن): cA/cB نِسبٌ من العرض، والباقي نِسبٌ من الارتفاع. dS قطر
+   القرص نسبةً من الارتفاع، fS حجم الخط نسبةً من القطر. */
 const LK={
- d:{gl:13.5,gr:68,gt:7.5,gb:87, dS:21.5,cA:25,cB:75,rT:26,rG:30,fS:15,
-    tY:6,tS:20,mY:96,mS:14, kS:11,kX:11.2,kY:12.1, w:1280,h:720},
- m:{gl:5.5,gr:94.5,gt:13.5,gb:81.5, dS:18.5,cA:19.5,cB:81.5,rT:24,rG:29,fS:19.5,
-    tY:5,tS:16,mY:96,mS:11.5, kS:9,kX:2.5,kY:10.7, w:720,h:1280}
+ d:{dS:21.5,cA:25,cB:75,rT:30,rG:26,fS:15, tY:20,tS:29, mY:95,mS:13},
+ m:{dS:14,  cA:22,cB:78,rT:27,rG:22,fS:19, tY:13,tS:19, mY:95,mS:12}
 };
 /* الخلفية تُعرض بـcover، فموضع الزجاج على الشاشة يتبع القصّ.
    نحسبه بالمعادلة نفسها التي يستعملها المتصفّح فيقع اللعبُ على الزجاج
    مهما كان شكل النافذة. */
 function lkFit(){
   const host=$("sLink"), scr=$("lkScreen"); if(!host||!scr) return;
-  const HW=host.clientWidth, HH=host.clientHeight; if(HW<40||HH<40) return;
+  const sw=host.clientWidth, sh=host.clientHeight; if(sw<40||sh<40) return;
   const P=LK[atkDev()];
-  /* المسرح صندوقٌ بنسبة الصورة يُحتوى داخل المشهد ويُوسَّط — وهذا بالضبط
-     ما يفعله المختبر. من غيره تتساوى النِّسَب ويختلف الشكل، لأنّ الصورة
-     تُقصّ وتتموضع على نافذةٍ عريضة غير ما تفعل على مسرحٍ بنسبتها. */
-  const ar=P.w/P.h;
-  let W=HW, H=W/ar; if(H>HH){ H=HH; W=H*ar; }
-  const SX=(HW-W)/2, SY=(HH-H)/2;
-  const gl=P.gl/100, gr=P.gr/100, gt=P.gt/100, gb=P.gb/100;
-  const gw=gr-gl, gh=gb-gt;
-  const s=Math.min(Math.max(W/P.w,H/P.h), Math.min(W/(gw*P.w), H/(gh*P.h)));
-  const rw=P.w*s, rh=P.h*s;
-  const ox=W/2-((gl+gr)/2)*rw, oy=H/2-((gt+gb)/2)*rh;
-  const im=$("lkStill");
-  if(im){ im.style.width=rw+"px"; im.style.height=rh+"px";
-          im.style.left=(SX+ox)+"px"; im.style.top=(SY+oy)+"px"; im.style.inset="auto"; }
-  const l=SX+gl*rw+ox, t=SY+gt*rh+oy, sw=gw*rw, sh=gh*rh;
-  scr.style.left=l+"px"; scr.style.top=t+"px";
-  scr.style.width=sw+"px"; scr.style.height=sh+"px";
-
-  /* الأقراص: المصادر (ما يُسحب) في العمود الأيمن cB، والأهداف في الأيسر cA —
-     فالتوصيل من اليمين إلى اليسار كاتّجاه القراءة. */
   const D=P.dS/100*sh;
+  /* المصادر (ما يُسحب) في العمود الأيمن cB، والأهداف في الأيسر cA —
+     فالتوصيل من اليمين إلى اليسار كاتّجاه القراءة. التوسيط بالحساب لا
+     بـtransform لأن أنيميشن الدخول يملك transform ويمحو أيّ إزاحةٍ فيه. */
   [[$("lkL"),P.cB],[$("lkR"),P.cA]].forEach(([col,cx])=>{
     if(!col) return;
     const x=cx/100*sw;
@@ -3195,28 +3205,15 @@ function lkFit(){
     });
   });
   const ti=$("lkTitle"), me=$("lkMeta");
-  if(ti){ ti.style.fontSize=P.tS+"px";
+  if(ti){ ti.style.fontSize=P.tS+"px"; fitOneLine(ti,P.tS,11);
           ti.style.top=(P.tY/100*sh-ti.offsetHeight/2)+"px"; }
   if(me){ me.style.fontSize=P.mS+"px";
           me.style.top=(P.mY/100*sh-me.offsetHeight/2)+"px"; }
-  const c=$("clock");
-  if(c&&c.parentElement===host){
-    const kd=P.kS/100*sh;
-    c.style.width=kd+"px"; c.style.height=kd+"px";
-    c.style.left=(l+P.kX/100*sw-kd/2)+"px"; c.style.top=(t+P.kY/100*sh-kd/2)+"px";
-    c.style.setProperty("--lkCk",(kd*0.42)+"px");
-  }
 }
 function lkMedia(){
-  const M=ATK_MEDIA[atkDev()], im=$("lkStill");
-  if(im.getAttribute("src")!==M.i) im.src=M.i;
   if(lkPlayed) return;
   lkPlayed=true;
-  /* المربّعات تنتظر ظهور الصورة ثم تدخل — لا تسبقها */
-  const show=()=>$("lkScreen").classList.add("ready");
-  if(im.complete&&im.naturalWidth) setTimeout(show,260);
-  else im.addEventListener("load",()=>setTimeout(show,260),{once:true});
-  setTimeout(show,2600);                     /* صمّام: لا تبقى مخفيّة أبدًا */
+  requestAnimationFrame(()=>$("lkScreen").classList.add("ready"));
 }
 function rLink(fresh){
   scene("sLink");mountClock("sLink");
@@ -3338,6 +3335,14 @@ socket.on("linkFb",d=>{
 let stIdx=0, stBusy=false, stClipOn=false;
 /* نفس عتبة الـCSS: القوسان يمين/يسار فوق 699px، وفوق/تحت دونها */
 function vert(){ return innerWidth<=699; }
+/* سطرٌ واحد مضمون: نبدأ من الحجم الأصليّ ونُنقص حتى يتّسع في عرض حاويته */
+function fitOneLine(el,maxPx,minPx){
+  if(!el) return;
+  const box=el.parentElement; if(!box) return;
+  const avail=(box.clientWidth||innerWidth)*0.94;
+  let fs=maxPx; el.style.fontSize=fs+"px";
+  while(fs>minPx && el.scrollWidth>avail){ fs-=0.5; el.style.fontSize=fs+"px"; }
+}
 
 /* الغلاف يُقصّ أثناء الحركة فقط. حافّة clip-path حادّة، فلو عملت والقرص
    ساكن لقطعت ظلَّه الناعم فظهر خيطٌ مستقيم عبره. ونقيس من صندوق الصورة
@@ -3391,6 +3396,7 @@ function rSort(fresh){
   if(!fresh||!ST.sort)return;
   stIdx=0;stBusy=false;
   $("stTitle").textContent=`صنّف: ${ST.sort.a} أم ${ST.sort.b}؟`;
+  fitOneLine($("stTitle"), vert()?19:29, 11);
   $("stLblA").textContent=ST.sort.a;      /* القوس أ = الفئة أ = side 0 */
   $("stLblB").textContent=ST.sort.b;
   $("stArcA").className="stArc";$("stArcB").className="stArc";
@@ -3654,30 +3660,11 @@ function pyLeap(el,p,from,to,box,dev,S){
       pyPlace(el,p,box,dev,S); }
   })(performance.now());
 }
-let pyQSig="";
 function rPy(fresh){
   scene("sPy");mountClock("sPy");
-  /* الأجوبة أوّلًا ثم رسم الهرم: القياس يقرأ ارتفاع شريط الأجوبة، فلو
-     رسمنا قبل إظهاره لحسبنا الشريط صفرًا في أوّل سؤالٍ وحده. */
-  if(ST.phase==="pyramid"&&ST.question){
-    $("pyQ").classList.remove("hide");
-    /* لا نبني على fresh وحده. لو وصلت حالةٌ فيها الطور «هرم» قبل السؤال
-       بلحظة، ثبت المفتاح ولم يُعَد البناء أبدًا فيبقى السؤال بلا أجوبة
-       حتى الجولة التالية — وهذا ما حدث في السؤال الأول. الآن نبني متى
-       تغيّر السؤال أو خلا الصندوق، فيُصلح نفسه مهما اختلّ الترتيب. */
-    const sig=(ST.pyramidQ||0)+"|"+ST.question.text;
-    if(sig!==pyQSig || !$("pyAns").children.length){
-      pyQSig=sig;
-      $("pyText").textContent=ST.question.text;
-      const o=$("pyAns");o.innerHTML="";
-      ST.question.options.forEach((t,i)=>{
-        const b=document.createElement("button");b.className="ans";
-        b.innerHTML=`<span class="flash"></span>${esc(t)}`;
-        b.onclick=()=>{if(picked>=0||FX.locked)return;picked=i;b.classList.add("pick");sTap();ripple(b);socket.emit("answer",i);};
-        o.appendChild(b);});
-      tryFx();
-    }
-  }else{ $("pyQ").classList.add("hide"); pyQSig=""; }
+  /* مشهد الهرم صار عرضًا فقط: المواضع والقفزات. السؤالُ وخياراته في
+     مشهدَي القراءة والخيارات كما في لعبة الأسئلة. */
+  $("pyQ").classList.add("hide");
   pyAlphaOK().then(()=>{ if(ST&&(ST.phase==="pyramid"||ST.phase==="pyramidIntro")) rPyDraw(); });
   rPyDraw();
 }
@@ -3966,7 +3953,13 @@ function showFinale(d){
 /* ═══ المؤقت ═══ */
 function mountClock(sceneId){
   const s=$(sceneId),c=$("clock");
-  if(c.parentElement!==s)s.insertBefore(c,s.firstChild);
+  if(c.parentElement!==s){
+    /* المشاهد التي تضبط المؤقّت بالبكسل (التوصيل) تكتب أنماطًا مضمَّنة
+       عليه؛ لو بقيت بعد نقله لمشهدٍ آخر انزاح موضعُه هناك — وهذا هو
+       الخلل الذي ظهر في مرحلة الأسئلة بعد التوصيل. نمسحها عند كل نقل. */
+    c.removeAttribute("style");
+    s.insertBefore(c,s.firstChild);
+  }
 }
 function clockTick(){
   cancelAnimationFrame(raf);
@@ -3982,7 +3975,7 @@ function clockTick(){
     const s=Math.ceil(left/1000);
     $("cNum").textContent=s;
     wrap.classList.toggle("hot",left<3600);
-    if(s!==last&&s<=3&&s>0&&ST.phase!=="pyramid"){last=s;sTick();}
+    if(s!==last&&s<=3&&s>0&&!ST.pyMode){last=s;sTick();}
     /* استعجال اللاعبين: مرة واحدة لكل مرحلة إجابة، قبل النهاية بخمس ثوانٍ.
        الهرم مستثنى — لا نقر عدّاد ولا تعليق استعجال. */
     if(left<=5000&&left>3800&&hurryKey!==phaseKey&&
@@ -4482,6 +4475,26 @@ function resetClient(){
     const e=$(id); if(e)e.innerHTML="";
   });
   document.querySelectorAll(".door").forEach(d=>{d.style.visibility="";});
+  /* ── ما أُضيف مع الهرم ثنائيّ الأبعاد والتوصيل الجديد ──
+     الشخصيات على الهرم تحمل حالةً داخليّة (درجةَ الانطلاق والوصول ومقاطعَها)
+     بقيت من المباراة السابقة، فتظهر في المباراة الجديدة بمواضعٍ قديمة وقفزاتٍ
+     من مكانٍ خاطئ. نُزيلها كلّها ليُعاد بناؤها من الحالة الجديدة. */
+  const st=$("pyStage");
+  if(st){ st.querySelectorAll(".pyActor,.pyShadow,.pyGlow").forEach(e=>e.remove()); }
+  for(const k in pyJump) delete pyJump[k];
+  pyRetry=0;
+  const pq=$("pyQ"); if(pq) pq.classList.add("hide");
+  /* لوحة التوصيل: العقد والخطوط */
+  ["lkL","lkR","lkSvg"].forEach(id=>{ const e=$(id); if(e)e.innerHTML=""; });
+  document.querySelectorAll(".dragGhost").forEach(e=>e.remove());
+  /* فيلم الشرح: نُوقفه ونُفرغ مصدره كي لا يبدأ من منتصفه في المباراة القادمة */
+  const iv=$("inVid"); if(iv){ try{iv.pause();}catch(e){} iv.removeAttribute("src"); try{iv.load();}catch(e){} }
+  $("sIntro").classList.remove("film");
+  /* أصناف الجسم التي تضبطها المشاهد */
+  document.body.classList.remove("pyOn","lkOn","noTop");
+  /* المؤقّت: أنماطه المضمَّنة ومكانه */
+  const c=$("clock"); if(c){ c.removeAttribute("style"); }
+  clockTick();
   scene("sWait");
 }
 
