@@ -19,7 +19,8 @@ const TRAP_INTRO_S = 7.8;   // أطول نسختي فيلم الفخاخ (الج
 function rankPoints(playersN, rank) { return Math.max(0, (playersN - rank + 1) * RANK_UNIT); }
 const CHALLENGE_POINTS = 25;  // نقاط كل عنصر صحيح في جولات التحدي
 const REVEAL_MS = FAST ? 300 : 7500;        // مدة الكشف: اصطفاف الأيقونات + الإنارة + النقاط + الجدول
-const PY_INTRO_MS = FAST ? 300 : 4000;      // مقدمة الهرم
+const PY_INTRO_MS = FAST ? 300 : 6000;      // مقدمة الهرم: وقوفٌ ثم قفزاتٌ افتتاحية
+const PY_START_JUMP_MS = 1500;              // لحظة القفزات الافتتاحية داخل المقدمة
 const PY_REVEAL_MS = FAST ? 300 : 3200;     // كشف حركة الهرم
 const EFFECT_MS = FAST ? 400 : 4000;        // أقصى مدة لتأثير القوة
 const RECONNECT_MS = 180000;   // ٣ دقائق: تبديل التطبيقات في الجوال لا يطرد اللاعب
@@ -235,6 +236,7 @@ function setupQuiz(io, deps) {
       dialects: DIALECTS, dialectsReady: DIALECTS_READY,
       pyramidHeight: room.settings.pyramidHeight,
       pyramidQ: room.pyQIndex,
+      pyMode: !!room.pyMode,          /* أسئلة الهرم تستعمل مشاهد الأسئلة — العميل يميّزها بهذا */
       powerMenu: room.powerMenu || [],
       winner: room.winner,
       bankSize: qbank.countAll()
@@ -257,7 +259,7 @@ function setupQuiz(io, deps) {
     clearTimers(room);
     room.phase = phase;
     // الخادم يختار تعليق الاستعجال مرة واحدة للمرحلة، فيسمع اللاعبون كلهم التسجيل نفسه
-    if (HURRY_AT[phase]) room.pubHurry = voc.pick("hurry", 4.6);
+    if (HURRY_AT[phase] && !room.pyMode) room.pubHurry = voc.pick("hurry", 4.6);
     room.phaseDur = seconds;
     room.phaseEndsAt = seconds ? Date.now() + seconds * 1000 : 0;
     if (seconds && next) room.phaseTimer = setTimeout(() => { try { next(); } catch (e) { console.error("quiz phase:", e); } }, seconds * 1000 + 250);
@@ -309,7 +311,8 @@ function setupQuiz(io, deps) {
     room.lastCats = [];
     room.bets = []; room.partyCount = 0; room.partyN = 0;
     room.winner = null;
-    room.pyQIndex = 0;
+    room.pyQIndex = 0; room.pyMode = false; room.qCount = 0;
+    room.players.forEach(p => { p.gotDouble = false; });
     sys(room, "بدأت المباراة! 🏆", "good");
     // فيلم المقدمة يُعرض مرة واحدة في أول المباراة، ثم تبدأ الجولات
     if (room.settings.opening && !room.openingDone) {
@@ -336,10 +339,36 @@ function setupQuiz(io, deps) {
   function startStage(room) {
     const kind = room.stages[room.stageIdx];
     if (kind === "q") beginVote(room);
-    else if (kind === "link") beginLink(room);
-    else if (kind === "sort") beginSort(room);
+    else if (kind === "link") {
+      /* السؤال يُقرأ وحده أوّلًا — كما في لعبة الأسئلة — ثم تبدأ اللعبة */
+      room.pendingLink = qbank.drawLink(room.usedLink);
+      beginTitleRead(room, room.pendingLink.title, () => beginLink(room));
+    }
+    else if (kind === "sort") {
+      room.pendingSort = qbank.drawSort(room.usedSort);
+      beginTitleRead(room, `صنّف: ${room.pendingSort.a} أم ${room.pendingSort.b}؟`, () => beginSort(room));
+    }
     else if (kind === "pyramid") beginPyramid(room);
     else finish(room);
+  }
+
+  /* ── صفحة قراءةٍ عامّة: نصٌّ وحده (عنوان لعبة أو سؤال) ثم ما بعده ── */
+  function readSecs(room, text, vid) {
+    const words = String(text).split(/\s+/).length;
+    let secs = FAST ? 0.3 : Math.min(7, Math.max(3, 1.5 + words * 0.38));
+    if (!FAST && vid) {
+      const t = getTts();
+      const d = t && t.durationOf ? t.durationOf(text) : 0;
+      if (d) secs = Math.min(16, VOICE_LEAD_IN + d + VOICE_TAIL);
+    }
+    return secs;
+  }
+  function beginTitleRead(room, text, next) {
+    const vid = voiceOf(room, text);
+    room.pubQuestion = { text, options: null, reading: true, voice: vid, party: false, titleOnly: true };
+    room.pubLink = null; room.pubSort = null;
+    setPhase(room, "read", readSecs(room, text, vid), next);
+    broadcast(room);
   }
 
   function nextStage(room) {
@@ -452,7 +481,11 @@ function setupQuiz(io, deps) {
   function menuFor(room, p) {
     let pool = room.settings.allowedPowers.filter(x => POWERS.includes(x));
     if (alive(room).length < 3) pool = pool.filter(x => x !== "bet");  // الرهان يحتاج ٣ لاعبين
-    const n = Math.max(1, Math.min(room.settings.powerChoices, pool.length));
+    /* حفلة النقاط ليست بطاقةً عاديّة: لا تظهر قبل السؤال الخامس، وتظهر
+       باحتمال ٢٠٪ فقط، ولمن لم يأخذها من قبل. تُقحَم بعد بناء القائمة. */
+    const doubleOK = pool.includes("double") && (room.qCount || 0) >= 5 && !p.gotDouble;
+    pool = pool.filter(x => x !== "double");
+    const n = Math.max(1, Math.min(room.settings.powerChoices, Math.max(1, pool.length)));
     const chIdx = room.stages.findIndex(k => k === "link" || k === "sort");
     const afterCh = chIdx >= 0 && room.stageIdx > chIdx;
     const w = {};
@@ -465,6 +498,7 @@ function setupQuiz(io, deps) {
       while (k < items.length - 1 && (r -= w[items[k]]) > 0) k++;
       out.push(items.splice(k, 1)[0]);
     }
+    if (doubleOK && Math.random() < 0.20 && out.length) out[Math.floor(Math.random() * out.length)] = "double";
     return out;
   }
 
@@ -498,13 +532,17 @@ function setupQuiz(io, deps) {
     // فيلم التلفزيون يسبق ظهور البطاقات، فنزيده على الطور ليبقى للاعب وقت اختياره كاملًا
     const at = FAST ? room.settings.attackTime
       : Math.max(room.settings.attackTime, room.pubVo ? room.pubVo.dur + 1.5 : 0) + TRAP_INTRO_S;
-    setPhase(room, "attack", at, () => beginAttackReveal(room));
+    setPhase(room, "attack", at, () => {
+      room.pubVo = voc.pick("attack_timeup"); if (room.pubVo) room.pubVo.at = "attackReveal";
+      beginAttackReveal(room);
+    });
     broadcast(room);
   }
 
   // ── شاشة الفضح: خطوة إجبارية قبل السؤال — يعرف كل لاعب من استهدفه وبأي مقلب ──
-  function beginAttackReveal(room) {
-    if (!(room.attacks || []).length) return beginReady(room);
+  function beginAttackReveal(room, next) {
+    next = next || (() => beginReady(room));
+    if (!(room.attacks || []).length) return next();
     // نوع التعليق يتبع المقلب الذي أصاب اللاعب (يختلف بحسب حالته)، أما رقم
     // التسجيل داخل النوع فيختاره الخادم — فمن أصابه المقلب نفسه يسمع التسجيل نفسه.
     const tvo = {};
@@ -519,7 +557,7 @@ function setupQuiz(io, deps) {
     // العميل يختار التعليق حسب المقلب الذي أصاب لاعبه، فنمنح المرحلة أطول احتمال
     const arMs = FAST ? AR_MS : Math.max(AR_MS, voc.maxOf("trap_freeze", "trap_gloop",
       "trap_bombs", "trap_nibble", "trap_double", "trap_bet", "trap_multi") * 1000 + 500);
-    setPhase(room, "attackReveal", arMs / 1000, () => beginReady(room));
+    setPhase(room, "attackReveal", arMs / 1000, next);
     broadcast(room);
   }
 
@@ -541,6 +579,7 @@ function setupQuiz(io, deps) {
     room.partyN = room.party ? (room.partyCount || 1) : 0;
     room.partyCount = 0;
     room.pubQuestion = { text: q.text, options: null, cat: q.cat, diff: q.diff, img: q.img || null, reading: true, voice: vid, party: room.party };
+    room.qCount = (room.qCount || 0) + 1;     /* لعدّ أسئلة الخيارات — تعتمد عليه حفلة النقاط */
     room.answers = {};
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
     // مدة القراءة: ثانية قبل بدء النطق (تحميل المقطع وانتقال المشهد) + مدّة الصوت
@@ -577,12 +616,13 @@ function setupQuiz(io, deps) {
     room.attacks = [];
 
     room.qSentAt = Date.now();
-    setPhase(room, "question", room.settings.questionTime, () => reveal(room));
+    const secs = room.pyMode ? room.settings.pyramidTime : room.settings.questionTime;
+    setPhase(room, "question", secs, () => room.pyMode ? pyramidReveal(room) : reveal(room));
     broadcast(room);
   }
 
   function scoreFor(room, elapsedMs) {
-    const limit = room.settings.questionTime * 1000;
+    const limit = (room.pyMode ? room.settings.pyramidTime : room.settings.questionTime) * 1000;
     const frac = Math.max(0, Math.min(1, 1 - elapsedMs / limit));
     return BASE_POINTS + Math.round(SPEED_POINTS * frac);
   }
@@ -602,12 +642,16 @@ function setupQuiz(io, deps) {
     // إذا أجاب الجميع، ننهي مبكراً
     if (alive(room).every(x => x.answered)) {
       clearTimers(room);
-      setTimeout(() => { if (room.phase === "question") reveal(room); }, 400);
+      setTimeout(() => { if (room.phase === "question") (room.pyMode ? pyramidReveal : reveal)(room); }, 400);
     }
   }
 
   function reveal(room) {
     clearTimers(room);
+    /* انتهى الوقت ولم يُجب الجميع؟ تعليق «انتهى الوقت» الخاصّ بالأسئلة */
+    const timedOut = alive(room).some(p => !p.answered);
+    room.pubVo = timedOut ? voc.pick("question_timeup") : null;
+    if (room.pubVo) room.pubVo.at = "reveal";
     // ── حسم الرهانات: من راهن على أسرع مجيب صحيح يكسب ──
     // الرهان يبقى سرًّا في حالة الخادم طوال الجولة، ويُكشف علنًا هنا فقط —
     // في شريط النتائج، بعد احتساب نقاط الجولة الأساسية.
@@ -665,7 +709,7 @@ function setupQuiz(io, deps) {
       bets: betsOut,
       party: !!room.party,
       partyN: room.partyN || 0,
-      vo: voc.pick("reveal")
+      vo: room.pubVo ? null : voc.pick("reveal")      /* لا يتداخل مع «انتهى الوقت» */
     });
     room.party = false; room.partyN = 0;
     setPhase(room, "reveal", 0, null);
@@ -679,7 +723,8 @@ function setupQuiz(io, deps) {
 
   // ====== جولة الربط ======
   function beginLink(room) {
-    const L = qbank.drawLink(room.usedLink);
+    const L = room.pendingLink || qbank.drawLink(room.usedLink);
+    room.pendingLink = null;
     room.usedLink.add(L.id);
     room.currentLink = L;
     room.pubLink = { title: L.title, total: L.pairs.length };
@@ -789,7 +834,8 @@ function setupQuiz(io, deps) {
 
   // ====== جولة التصنيف ======
   function beginSort(room) {
-    const S = qbank.drawSort(room.usedSort);
+    const S = room.pendingSort || qbank.drawSort(room.usedSort);
+    room.pendingSort = null;
     room.usedSort.add(S.id);
     room.currentSort = S;
     room.pubSort = { a: S.a, b: S.b, items: S.items, total: S.items.length };
@@ -884,16 +930,31 @@ function setupQuiz(io, deps) {
   }
 
   // ====== النهائي: الهرم ======
+  /* الجولة: [عرض الهرم] ← فخاخ الدرجات ← [صفحة السؤال بصوته] ← [الخيارات]
+     ← [الهرم مع القفزات]. الأسئلة تستعمل مشهدَي القراءة والخيارات أنفسهما
+     المستعملَين في لعبة الأسئلة، وpyMode يوجّه نهايتها إلى كشف الهرم. */
+  /* الدرجات: الموضع ٠ هو القاعدة = الدرجة الأولى، … الموضع ٥ = الدرجة السادسة،
+     والموضع ٦ منصّةُ الكأس (الفوز). فالسلاح يتبع الموضع هكذا: */
+  const TIER_POWER = { 0: "gloop", 1: "bombs", 2: "nibble", 3: "freeze" };   /* الدرجات ١–٤ تختار هدفًا */
+  const TIER_AUTO  = { 4: "gloop", 5: "freeze" };                            /* الدرجتان ٥ و٦ تضربان الجميع */
+
   function beginPyramid(room) {
     room.pubQuestion = null; room.pubLink = null; room.pubSort = null;
-    const list = ranked(room);
+    room.pyMode = true;
     const H = room.settings.pyramidHeight;
-    const maxStart = Math.max(0, Math.min(4, Math.floor(H * 0.35)));
+    /* الجميع في الأسفل أوّلًا، ثم يقفز كلٌّ حسب ترتيبه بالنقاط:
+       الأوّل ٣، الثاني والثالث ٢، الباقون ١ — والمتعادلون يأخذون المركز نفسه. */
+    alive(room).forEach(p => { p.pyPos = 0; });
+    const list = ranked(room);
+    const jumps = {};
+    let rank = 0, prev = null;
     list.forEach((p, i) => {
-      p.pyPos = room.settings.headStart
-        ? Math.round(maxStart * (1 - i / Math.max(1, list.length - 1)))
-        : 0;
+      if (p.score !== prev) { rank = i + 1; prev = p.score; }
+      jumps[p.id] = rank === 1 ? 3 : rank <= 3 ? 2 : 1;
     });
+    room.pyStart = jumps;
+    /* ثمّ تُصفَّر النقاط: السباق على الدرجات وحدها من الآن */
+    room.players.forEach(p => { p.score = 0; p.lastGain = 0; });
     room.pyQIndex = 0;
     room.state = "playing";
     sys(room, "🔺 النهائي: تسلّق الهرم! أول من يصل القمة يفوز", "good");
@@ -901,10 +962,16 @@ function setupQuiz(io, deps) {
     room.phaseEndsAt = Date.now() + PY_INTRO_MS;
     room.phaseDur = PY_INTRO_MS / 1000;
     broadcast(room);
-    room.phaseTimer = setTimeout(() => pyramidQuestion(room), PY_INTRO_MS);
+    /* بعد لحظةٍ على الأرض تُطبَّق القفزات الافتتاحية فيراها الجميع */
+    setTimeout(() => {
+      if (room.phase !== "pyramidIntro") return;
+      alive(room).forEach(p => { p.pyPos = Math.min(H, jumps[p.id] || 0); });
+      broadcast(room);
+    }, FAST ? 50 : PY_START_JUMP_MS);
+    room.phaseTimer = setTimeout(() => pyramidRound(room), PY_INTRO_MS);
   }
 
-  function pyramidQuestion(room) {
+  function pyramidRound(room) {
     if (room.pyQIndex >= PY_MAX_Q) return finish(room);
     room.pyQIndex++;
     const cats = room.settings.cats.length ? room.settings.cats : qbank.categories();
@@ -913,76 +980,90 @@ function setupQuiz(io, deps) {
     if (!q) return finish(room);
     room.usedQ.add(q.id);
     room.currentQ = q;
-    room.pubQuestion = { text: q.text, options: q.options, cat: q.cat, diff: q.diff, img: q.img || null, voice: voiceOf(room, q.text) };
     room.answers = {};
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
-
-    /* فخاخ الدرجات: احتمال بسيط لإطلاق قوة عشوائية.
-       تُستثنى الجولة الأولى: الفخّ يُغطّي أزرار الإجابة بطبقةٍ معتمة
-       (وحلٌ أو ثلجٌ أو قنابل)، ولو وقع في أوّل سؤالٍ من النهائي لظنّ
-       اللاعب أنّ الأجوبة لم تظهر أصلًا — والبداية المتقدّمة ترفعه فوق
-       الأرض فورًا فيصير مؤهَّلًا للفخّ من اللحظة الأولى. */
-    if (room.settings.powers && room.pyQIndex > 1) {
-      alive(room).forEach(p => {
-        if (p.pyPos > 0 && Math.random() < 0.16) {
-          const sab = room.settings.allowedPowers.filter(x => SABOTAGE.includes(x));
-          if (!sab.length) return;
-          const pw = sab[Math.floor(Math.random() * sab.length)];
-          p.effects.push(pw);
-          nsp.to(p.id).emit("attacked", { power: pw, from: "فخّ الدرجة", ms: EFFECT_MS });
-        }
-      });
-    }
-
-    room.qSentAt = Date.now();
-    setPhase(room, "pyramid", room.settings.pyramidTime, () => pyramidReveal(room));
-    broadcast(room);
+    room.party = false; room.partyN = 0;
+    if (room.settings.powers) beginPyAttack(room);
+    else beginPyRead(room);
   }
 
-  function submitPyramid(room, p, idx) {
-    if (room.phase !== "pyramid" || p.answered || p.spectator) return;
-    if (!Number.isInteger(idx) || idx < 0 || idx > 3) return;
-    p.answered = true;
-    const elapsed = Math.max(0, Date.now() - room.qSentAt - (p.rtt || 0) / 2);
-    const correct = idx === room.currentQ.correct;
-    room.answers[p.id] = { idx, correct, elapsed };
-    nsp.to(p.id).emit("answerAck", { locked: true });
+  /* ── فخاخ الدرجات: الدرجةُ تحدّد السلاح ──
+     ١ وحل · ٢ قنابل · ٣ أكلة الحروف · ٤ تجميد: يختار صاحبُها هدفًا.
+     ٥ وحلٌ على الجميع · ٦ تجميدٌ على الجميع: تلقائيًّا بلا اختيار. */
+  function beginPyAttack(room) {
+    room.attacks = [];
+    room.players.forEach(p => { p.pendingAttack = null; p.menu = null; });
+    const others = p => alive(room).filter(o => o.id !== p.id);
+    alive(room).forEach(p => {
+      const pos = p.pyPos;
+      if (TIER_AUTO[pos]) {
+        const pw = TIER_AUTO[pos];
+        others(p).forEach(o => room.attacks.push({ from: p.id, fromName: p.name, to: o.id, toName: o.name, power: pw }));
+        p.pendingAttack = { auto: true, power: pw };
+      } else if (TIER_POWER[pos]) {
+        p.menu = [TIER_POWER[pos]];
+        nsp.to(p.id).emit("powerMenu", { menu: p.menu, tier: pos + 1 });
+      }
+    });
+    const choosers = alive(room).filter(p => TIER_POWER[p.pyPos] !== undefined);
+    if (!choosers.length) return beginAttackReveal(room, () => beginPyRead(room));
+    room.pubVo = null;
+    const at = FAST ? room.settings.attackTime : Math.max(8, Math.min(room.settings.attackTime, 20)) + TRAP_INTRO_S;
+    setPhase(room, "attack", at, () => {
+      room.pubVo = voc.pick("attack_timeup"); if (room.pubVo) room.pubVo.at = "attackReveal";
+      beginAttackReveal(room, () => beginPyRead(room));
+    });
     broadcast(room);
-    if (alive(room).every(x => x.answered)) {
-      clearTimers(room);
-      setTimeout(() => { if (room.phase === "pyramid") pyramidReveal(room); }, 400);
-    }
+  }
+  function maybeEndPyAttack(room) {
+    if (room.phase !== "attack" || !room.pyMode) return;
+    const waiting = alive(room).filter(p => TIER_POWER[p.pyPos] !== undefined && !p.pendingAttack);
+    if (waiting.length) return;
+    clearTimers(room);
+    setTimeout(() => { if (room.phase === "attack") beginAttackReveal(room, () => beginPyRead(room)); }, FAST ? 50 : 900);
+  }
+
+  /* صفحة السؤال وحده بصوته — ثم الخيارات (beginQuestion) — ثم كشف الهرم */
+  function beginPyRead(room) {
+    const q = room.currentQ;
+    const vid = voiceOf(room, q.text);
+    room.pubQuestion = { text: q.text, options: null, cat: q.cat, diff: q.diff, img: q.img || null, reading: true, voice: vid, party: false };
+    setPhase(room, "read", readSecs(room, q.text, vid), () => beginQuestion(room));
+    broadcast(room);
   }
 
   function pyramidReveal(room) {
     clearTimers(room);
     const H = room.settings.pyramidHeight;
+    const N = alive(room).length;
+    const timedOut = alive(room).some(p => !p.answered);
     const corrects = alive(room)
       .filter(p => room.answers[p.id] && room.answers[p.id].correct)
       .sort((a, b) => room.answers[a.id].elapsed - room.answers[b.id].elapsed);
     const fastest = corrects[0] ? corrects[0].id : null;
+    /* من يصعد؟ الأسرعُ وحده إن كان اللاعبون أربعةً أو أقلّ، والأسرعان إن كانوا خمسةً أو أكثر */
+    const climbN = N >= 5 ? 2 : 1;
+    const climbers = new Set(corrects.slice(0, climbN).map(p => p.id));
 
     const moves = [];
     alive(room).forEach(p => {
       const a = room.answers[p.id];
       let d = 0;
-      /* درجةٌ واحدة لكل إجابةٍ صحيحة مهما كانت السرعة. كانت القاعدة
-         تمنح الأسرعَ درجتين، فيقفز مسافةَ درجتين على الصورة ويبدو خطأً
-         في الرسم لا قاعدةً في اللعب. الأسرعُ يبقى متقدّمًا بالنقاط. */
-      if (a && a.correct) d = 1;
-      else if (room.settings.pyramidPenalty) d = -1;
+      if (climbers.has(p.id)) d = 1;
+      else if (!(a && a.correct) && room.settings.pyramidPenalty) d = -1;
       const before = p.pyPos;
       p.pyPos = Math.max(0, Math.min(H, p.pyPos + d));
       moves.push({ id: p.id, name: p.name, color: p.color, from: before, to: p.pyPos, d, correct: !!(a && a.correct) });
     });
 
-    // «اقتراب لاعب من القمة»: يقرّره الخادم مرة واحدة لكل مباراة، فيسمعه الجميع معًا
     let nearVo = null;
     const top = Math.max(0, ...alive(room).map(p => p.pyPos || 0));
     if (!room.voDone.near_top && top >= H - 2 && top < H) {
       room.voDone.near_top = true;
       nearVo = voc.pick("near_top");
     }
+    room.pubVo = timedOut ? voc.pick("pyramid_timeup") : null;
+    if (room.pubVo) room.pubVo.at = "pyramid";
     nsp.to(room.id).emit("pyramidReveal", {
       correct: room.currentQ.correct,
       correctText: room.currentQ.options[room.currentQ.correct],
@@ -990,21 +1071,22 @@ function setupQuiz(io, deps) {
     });
 
     const reached = alive(room).filter(p => p.pyPos >= H);
-    setPhase(room, "reveal", 0, null);
-    room.phaseEndsAt = Date.now() + PY_REVEAL_MS;
-    room.phaseDur = PY_REVEAL_MS / 1000;
+    room.pubQuestion = null;
+    setPhase(room, "pyramid", 0, null);          /* عرضُ الهرم والقفزات */
+    const ms = Math.max(PY_REVEAL_MS, room.pubVo ? room.pubVo.dur * 1000 + 600 : 0);
+    room.phaseEndsAt = Date.now() + ms;
+    room.phaseDur = ms / 1000;
     broadcast(room);
 
     if (reached.length) {
-      // إن وصل أكثر من واحد، الأسرع في هذا السؤال يفوز
       let win = reached[0];
       if (reached.length > 1) {
         const f = reached.find(p => p.id === fastest);
-        win = f || reached.sort((a, b) => b.score - a.score)[0];
+        win = f || reached[0];
       }
-      room.phaseTimer = setTimeout(() => finish(room, win), PY_REVEAL_MS);
+      room.phaseTimer = setTimeout(() => finish(room, win), ms);
     } else {
-      room.phaseTimer = setTimeout(() => pyramidQuestion(room), PY_REVEAL_MS);
+      room.phaseTimer = setTimeout(() => pyramidRound(room), ms);
     }
   }
 
@@ -1260,6 +1342,7 @@ function setupQuiz(io, deps) {
       if (!["q", "link", "sort", "pyramid"].includes(kind)) return;
       if (alive(room).length < 2) { sys(room, "نحتاج لاعبَين على الأقل", "warn"); return; }
       clearTimers(room);
+      room.pyMode = false;
       if (room.state !== "playing") {
         room.settings.opening = false;      // لا فيلم افتتاحيّ عند القفز
         startGame(room);
@@ -1285,7 +1368,9 @@ function setupQuiz(io, deps) {
       room.state = "lobby"; room.phase = "lobby";
       room.winner = null; room.finalTable = null;
       room.pubQuestion = null; room.pubLink = null; room.pubSort = null;
-      room.stageIdx = -1; room.stages = []; room.pyQIndex = 0;
+      room.stageIdx = -1; room.stages = []; room.pyQIndex = 0; room.pyMode = false; room.qCount = 0;
+      room.pendingLink = null; room.pendingSort = null; room.pyStart = null; room.attacks = [];
+      room.players.forEach(p => { p.gotDouble = false; });
       room.introDone = {}; room.introKind = null; room.pubIntro = null; room.pubVo = null; room.pubHurry = null; room.voDone = {};
       room.openingDone = false; room.openingSkipped = false;
       // بقايا الجولة السابقة: فخاخ ورهانات وحفلات وأسئلة مستهلكة
@@ -1331,10 +1416,23 @@ function setupQuiz(io, deps) {
 
     socket.on("attack", ({ to, power } = {}) => {
       if (!room || !player || room.phase !== "attack") return;
-      if (!room.settings.powers || player.powersLeft <= 0) return;
+      if (!room.settings.powers) return;
+      if (player.pendingAttack) return;
+      if (room.pyMode) {
+        /* فخّ الدرجة: سلاحٌ واحد تحدّده الدرجة، وهدفٌ واحد، بلا رصيد */
+        if (!player.menu || !player.menu.includes(power)) return;
+        const target = room.players.find(p => p.id === to);
+        if (!target || target.id === player.id || target.spectator) return;
+        player.pendingAttack = { to, power };
+        room.attacks.push({ from: player.id, fromName: player.name, to, toName: target.name, power });
+        nsp.to(player.id).emit("attackAck", { to: target.name, power });
+        broadcast(room);
+        maybeEndPyAttack(room);
+        return;
+      }
+      if (player.powersLeft <= 0) return;
       if (!room.settings.allowedPowers.includes(power)) return;
       if (player.menu && player.menu.length && !player.menu.includes(power)) return;
-      if (player.pendingAttack) return;
 
       // ── قوة تُستعمل على النفس (مضاعفة النقاط) ──
       if (SELF_POWERS.has(power)) {
@@ -1342,6 +1440,7 @@ function setupQuiz(io, deps) {
         player.lastPower = power;
         // حفلة النقاط: السؤال القادم كله بنقاط مضاعفة — لكل من يجيب صح
         if (power === "double") {
+          player.gotDouble = true;              /* مرّةٌ واحدة لكل لاعب */
           room.partyNext = true;
           // كل حفلة تضيف مضاعفة إضافية
           room.partyCount = (room.partyCount || 0) + 1;
@@ -1379,7 +1478,6 @@ function setupQuiz(io, deps) {
     socket.on("answer", (idx) => {
       if (!room || !player) return;
       if (room.phase === "question") submitAnswer(room, player, Number(idx));
-      else if (room.phase === "pyramid") submitPyramid(room, player, Number(idx));
     });
 
     socket.on("sortPick", (d) => { if (room && player) sortPick(room, player, d); });
@@ -1425,7 +1523,7 @@ function setupQuiz(io, deps) {
     });
   }, 30000);
 
-  return { liveStats, publicRooms, rooms };
+  return { liveStats, publicRooms, rooms, _menuFor: menuFor };   /* _menuFor للاختبارات فقط */
 }
 
 module.exports = { setupQuiz, DEFAULTS, POWERS, POWER_AR };

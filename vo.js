@@ -26,6 +26,12 @@ const VO = {
   link_intro:    [13.1],
   sort_timeup:   [7.7],
   link_timeup:   [9.7],
+  /* أصوات انتهاء الوقت المنفصلة — تُملأ المُدد عند رفع الملفّات:
+     question_timeup-1.mp3 … ، pyramid_timeup-1.mp3 … ، attack_timeup-1.mp3 …
+     ما دامت فارغةً لا يُشغَّل شيء (pick يعيد null). */
+  question_timeup: [],
+  pyramid_timeup:  [],
+  attack_timeup:   [],
   pyramid_skip:  [8.4, 5.1, 6.3],
   minigame_skip: [4.8, 4.2, 5.0, 3.0],
   skip:          [7.9, 5.9, 6.6]

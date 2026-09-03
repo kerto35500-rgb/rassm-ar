@@ -112,7 +112,7 @@ const ask = (s, e, d, ms = 400) => new Promise(res => {
   ok(A.last("state").totalStages === 9, `الجدول: ${A.last("state").totalStages} مراحل (٦ أسئلة + ربط + تصنيف + هرم)`);
 
   // محرك اللعب التلقائي
-  let voted = "", answeredAt = "", attacked = false, attackAckSeen = false, doubleAttackBlocked = null;
+  let voted = "", answeredAt = "", attacked = false, attackAckSeen = false, doubleAttackBlocked = null; let pyAttacked = null;
   const driver = setInterval(() => {
     const st = A.last("state");
     if (!st || st.state !== "playing") return;
@@ -122,7 +122,16 @@ const ask = (s, e, d, ms = 400) => new Promise(res => {
       const c = st.catOptions[0];
       A.fire("vote", c); B.fire("vote", c); C.fire("vote", st.catOptions[1] || c);
     }
-    if (st.phase === "attack" && !attacked) {
+    /* فخاخ الهرم: لكل جولةٍ طورُ فخاخٍ يخصّ كل لاعب — الروبوتات تردّ فورًا كي لا
+       تنتظر المهلة كاملةً في كل جولة (وهذا ما كان يجعل المباراة تلامس حدّ الزمن) */
+    if (st.phase === "attack" && st.pyMode && pyAttacked !== key) {
+      pyAttacked = key;
+      [[A, "B"], [B, "C"], [C, "A"]].forEach(([S, tgt]) => {
+        const mm = S.last("powerMenu");
+        if (mm && mm.tier && mm.menu && mm.menu.length) S.fire("attack", { to: tgt, power: mm.menu[0] });
+      });
+    }
+    if (st.phase === "attack" && !st.pyMode && !attacked) {
       /* لكل لاعب قائمته الخاصة تصله برسالة powerMenu — لم تعد في الحالة العامة */
       const mm = A.last("powerMenu");
       const menu = ((mm && mm.menu) || []).filter(p => p !== "double" && p !== "bet");
@@ -173,7 +182,7 @@ const ask = (s, e, d, ms = 400) => new Promise(res => {
   }, 50);
 
   const t0 = Date.now();
-  while (Date.now() - t0 < 60000) {
+  while (Date.now() - t0 < 90000) {
     const st = A.last("state");
     if (st && st.state === "ended") break;
     await sleep(150);
