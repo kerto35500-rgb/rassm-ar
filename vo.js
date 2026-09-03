@@ -26,12 +26,6 @@ const VO = {
   link_intro:    [13.1],
   sort_timeup:   [7.7],
   link_timeup:   [9.7],
-  /* أصوات انتهاء الوقت المنفصلة — تُملأ المُدد عند رفع الملفّات:
-     question_timeup-1.mp3 … ، pyramid_timeup-1.mp3 … ، attack_timeup-1.mp3 …
-     ما دامت فارغةً لا يُشغَّل شيء (pick يعيد null). */
-  question_timeup: [],
-  pyramid_timeup:  [],
-  attack_timeup:   [],
   pyramid_skip:  [8.4, 5.1, 6.3],
   minigame_skip: [4.8, 4.2, 5.0, 3.0],
   skip:          [7.9, 5.9, 6.6]
@@ -42,7 +36,15 @@ const VO = {
      off : مفاتيح مقاطع معطَّلة ("hurry-2")
      db  : مقاطع مرفوعة من الأدمن {"hurry-5": 4.2} تُخدَم من /vo/hurry-5.mp3
    EFF = القائمة الفعّالة لكل حدث: [{i, dur}] — pick وmaxOf يعملان عليها. */
+/* ═══ الاستعجال منفصلٌ لكل مرحلة ═══
+   حدثٌ لكل لعبة: الأسئلة والتصنيف والتوصيل (الهرم بلا استعجالٍ بطلب صاحب
+   اللعبة). الثلاثة تبدأ بمقاطع
+   «hurry» نفسها (لا نُكرّر الملفّات على القرص)، فيُبدّلها المدير أو يعطّلها
+   لكل مرحلةٍ على حدة من صفحة /vo. ALIAS يقول: مقاطع هذا الحدث الأساسية
+   ملفّاتها باسم الحدث الأصل. */
+const ALIAS = { hurry_question: "hurry", hurry_sort: "hurry", hurry_link: "hurry" };
 const BASE = VO;
+Object.keys(ALIAS).forEach(k => { BASE[k] = BASE[ALIAS[k]].slice(); });
 let CFG = { off: [], db: {} };
 let EFF = build(CFG);
 
@@ -54,10 +56,14 @@ function build(cfg) {
   Object.keys(db).forEach(k => { const m = k.match(/^(.+)-(\d+)$/); if (m) keys.add(m[1]); });
   keys.forEach(k => {
     const list = [];
-    (BASE[k] || []).forEach((d, idx) => { const key = k + "-" + (idx + 1); if (!off.has(key)) list.push({ i: idx + 1, dur: d }); });
+    const src = ALIAS[k] || k;      /* اسم الملفّ على القرص للمقاطع الأساسية */
+    (BASE[k] || []).forEach((d, idx) => {
+      const key = k + "-" + (idx + 1);
+      if (!off.has(key)) list.push({ i: idx + 1, dur: d, f: src + "-" + (idx + 1) });
+    });
     Object.keys(db).forEach(key => {
       const m = key.match(/^(.+)-(\d+)$/);
-      if (m && m[1] === k && !off.has(key)) list.push({ i: +m[2], dur: Number(db[key]) || 1 });
+      if (m && m[1] === k && !off.has(key)) list.push({ i: +m[2], dur: Number(db[key]) || 1, f: key });
     });
     list.sort((a, b) => a.i - b.i);
     eff[k] = list;
@@ -67,15 +73,16 @@ function build(cfg) {
 function apply(cfg) { CFG = { off: [].concat(cfg && cfg.off || []), db: { ...(cfg && cfg.db || {}) } }; EFF = build(CFG); return EFF; }
 function effective() { return EFF; }
 function config() { return CFG; }
-/* للعميل: {hurry:[4.4,2.4,...]} بالفهرس الحقيقي — الفجوات (المعطَّل) صفر */
+/* للعميل: المدد بالفهرس الحقيقي (الفجوات = مقاطعُ معطَّلة = صفر)، ومعها
+   خريطةُ الملفّات لأنّ حدثًا قد تكون ملفّاته باسم حدثٍ آخر (ALIAS). */
 function durations() {
-  const out = {};
+  const dur = {}, file = {};
   for (const k in EFF) {
     const arr = [];
-    EFF[k].forEach(e => { arr[e.i - 1] = e.dur; });
-    out[k] = Array.from(arr, v => v || 0);
+    EFF[k].forEach(e => { arr[e.i - 1] = e.dur; if (e.f !== k + "-" + e.i) file[k + "-" + e.i] = e.f; });
+    dur[k] = Array.from(arr, v => v || 0);
   }
-  return out;
+  return { dur, file };
 }
 
 // أطول مقطع في الحدث — يُستعمل حين يختار العميل بنفسه (تعليقات المقالب مثلًا)
@@ -91,7 +98,7 @@ function pick(keys, budget) {
   const list = [];
   for (const k of [].concat(keys)) {
     (EFF[k] || []).forEach(e => {
-      if (!budget || e.dur <= budget) list.push({ key: k, i: e.i, dur: e.dur });
+      if (!budget || e.dur <= budget) list.push({ key: k, i: e.i, dur: e.dur, f: e.f });
     });
   }
   if (!list.length) return null;
@@ -103,4 +110,4 @@ function pick(keys, budget) {
   return list[n];
 }
 
-module.exports = { VO, BASE, pick, maxOf, apply, effective, config, durations };
+module.exports = { VO, BASE, ALIAS, pick, maxOf, apply, effective, config, durations };

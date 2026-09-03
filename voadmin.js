@@ -11,34 +11,34 @@ const MAX_MP3 = 3 * 1024 * 1024;
 
 /* الأحداث: الاسم العربي، أين يُسمَع، وكم يُفضَّل طول المقطع */
 const EVENTS = [
-  ["first_door",    "شرح الأبواب (أول مرّة)",        "عند ظهور أبواب الفئات في أول مباراة للغرفة",                  "١٠–١٥ ث"],
-  ["door",          "التصويت على الباب",             "كل مرّة تظهر الأبواب بعد الأولى",                              "٢–٥ ث"],
-  ["door_enter",    "دخول الباب",                    "بعد فوز فئة بالتصويت",                                         "٤–٦ ث"],
-  ["tie_roulette",  "تعادل الروليت",                 "حين يتعادل التصويت وتُدار الروليت",                            "٥–١٠ ث"],
-  ["first_powers",  "شرح البطاقات (أول مرّة)",       "أول مرحلة فخاخ في المباراة",                                   "١٠–١٥ ث"],
-  ["powers_intro",  "مرحلة البطاقات",                "كل مرحلة فخاخ بعد الأولى",                                     "٢–٦ ث"],
-  ["hurry",         "استعجال (قرب انتهاء الوقت)",    "قبل نهاية وقت السؤال بثوانٍ — الأقصر من ٤.٦ ث فقط يُختار",      "≤ ٤.٦ ث"],
-  ["reveal",        "كشف الإجابة",                   "لحظة إظهار الإجابة الصحيحة في الأسئلة",                        "١–٣ ث"],
-  ["question_timeup","انتهى الوقت — الأسئلة",       "حين ينتهي وقت السؤال ولم يُجب أحد",                            "٢–٥ ث"],
-  ["pyramid_timeup", "انتهى الوقت — الهرم",         "حين ينتهي وقت سؤال الهرم ولم يُجب الجميع",                      "٢–٥ ث"],
-  ["attack_timeup",  "انتهى الوقت — الفخاخ",        "حين ينتهي وقت اختيار الفخّ",                                    "٢–٥ ث"],
-  ["sort_timeup",   "انتهى الوقت — التصنيف",        "نهاية لعبة التصنيف",                                            "٤–٨ ث"],
-  ["link_timeup",   "انتهى الوقت — التوصيل",        "نهاية لعبة التوصيل",                                            "٤–٨ ث"],
-  ["trap_freeze",   "فخّ التجميد",                   "حين يُصاب لاعب بالتجميد",                                       "١–٣ ث"],
-  ["trap_gloop",    "فخّ الوحل",                     "حين يُصاب لاعب بالوحل",                                         "١–٣ ث"],
-  ["trap_bombs",    "فخّ القنابل",                   "حين يُصاب لاعب بالقنابل",                                       "١–٣ ث"],
-  ["trap_nibble",   "فخّ أكلة الحروف",               "حين يُصاب لاعب بأكلة الحروف",                                   "١–٣ ث"],
-  ["trap_double",   "بطاقة المضاعفة",                "حين يلعب أحدٌ بطاقة المضاعفة",                                  "١–٣ ث"],
-  ["trap_bet",      "بطاقة الرهان",                  "حين يراهن أحدٌ على لاعب",                                       "٢–٥ ث"],
-  ["trap_multi",    "عدّة فخاخ معًا",                "حين يُصاب لاعب بأكثر من فخّ في الجولة",                         "١–٣ ث"],
-  ["pyramid_intro", "شرح الهرم",                     "مع فيلم مقدّمة الهرم",                                          "٢٠–٣٠ ث"],
-  ["near_top",      "قرب القمة",                     "حين يقترب لاعب من قمّة الهرم",                                  "٢–٥ ث"],
-  ["winner",        "الفائز",                        "شاشة النهاية",                                                  "٨–١٥ ث"],
-  ["sort_intro",    "شرح التصنيف",                   "مع فيلم مقدّمة التصنيف",                                        "١٠–٢٠ ث"],
-  ["link_intro",    "شرح التوصيل",                   "مع فيلم مقدّمة التوصيل",                                        "١٠–١٥ ث"],
-  ["pyramid_skip",  "تخطّي شرح الهرم",               "حين يضغط المدير «تخطّي» في مقدّمة الهرم",                       "٤–٨ ث"],
-  ["minigame_skip", "تخطّي شرح الألعاب",             "حين يُتخطّى شرح التصنيف أو التوصيل",                            "٣–٥ ث"],
-  ["skip",          "تخطّي عام",                     "احتياطي حين لا يوجد تخطّي خاص",                                 "٥–٨ ث"]
+  ["first_door",     "شرح الأبواب (أوّل مرّة)",        "عند ظهور أبواب الفئات في أوّل مباراة",                    "١٠–١٥ ث"],
+  ["door",           "التصويت على الباب",             "كلّ مرّة تظهر الأبواب بعد الأولى",                        "٢–٥ ث"],
+  ["door_enter",     "دخول الباب",                    "بعد فوز فئةٍ بالتصويت",                                   "٤–٦ ث"],
+  ["tie_roulette",   "تعادل الروليت",                 "حين يتعادل التصويت وتُدار الروليت",                      "٥–١٠ ث"],
+  ["first_powers",   "شرح البطاقات (أوّل مرّة)",       "أوّل مرحلة فخاخ في المباراة",                             "١٠–١٥ ث"],
+  ["powers_intro",   "مرحلة البطاقات",                "كلّ مرحلة فخاخ بعد الأولى",                               "٢–٦ ث"],
+  ["hurry_question", "استعجال — الأسئلة",             "قبل نهاية وقت السؤال بخمس ثوانٍ",                         "≤ ٤.٦ ث"],
+  ["hurry_sort",     "استعجال — التصنيف",             "قبل نهاية وقت لعبة التصنيف بخمس ثوانٍ",                   "≤ ٤.٦ ث"],
+  ["hurry_link",     "استعجال — التوصيل",             "قبل نهاية وقت لعبة التوصيل بخمس ثوانٍ",                   "≤ ٤.٦ ث"],
+  ["reveal",         "كشف الإجابة",                   "لحظة إظهار الإجابة الصحيحة في الأسئلة",                   "١–٣ ث"],
+  ["sort_timeup",    "انتهى وقت التصنيف",             "نهاية لعبة التصنيف",                                      "٤–٨ ث"],
+  ["link_timeup",    "انتهى وقت التوصيل",             "نهاية لعبة التوصيل",                                      "٤–٨ ث"],
+  ["trap_freeze",    "فخّ التجميد",                    "حين يُصاب لاعبٌ بالتجميد",                                "١–٣ ث"],
+  ["trap_gloop",     "فخّ الوحل",                      "حين يُصاب لاعبٌ بالوحل",                                  "١–٣ ث"],
+  ["trap_bombs",     "فخّ القنابل",                    "حين يُصاب لاعبٌ بالقنابل",                                "١–٣ ث"],
+  ["trap_nibble",    "فخّ أكلة الحروف",                "حين يُصاب لاعبٌ بأكلة الحروف",                            "١–٣ ث"],
+  ["trap_double",    "بطاقة المضاعفة",                "حين يلعب أحدٌ بطاقة المضاعفة",                            "١–٣ ث"],
+  ["trap_bet",       "بطاقة الرهان",                  "حين يراهن أحدٌ على لاعب",                                 "٢–٥ ث"],
+  ["trap_multi",     "عدّة فخاخٍ معًا",                "حين يُصاب لاعبٌ بأكثر من فخٍّ في الجولة",                  "١–٣ ث"],
+  ["pyramid_intro",  "شرح الهرم",                     "مع فيلم مقدّمة الهرم",                                    "٢٠–٣٠ ث"],
+  ["near_top",       "قرب القمّة",                     "حين يقترب لاعبٌ من قمّة الهرم",                           "٢–٥ ث"],
+  ["winner",         "الفائز",                        "شاشة النهاية",                                            "٨–١٥ ث"],
+  ["sort_intro",     "شرح التصنيف",                   "مع فيلم مقدّمة التصنيف",                                  "١٠–٢٠ ث"],
+  ["link_intro",     "شرح التوصيل",                   "مع فيلم مقدّمة التوصيل",                                  "١٠–١٥ ث"],
+  ["pyramid_skip",   "تخطّي شرح الهرم",                "حين يضغط المدير «تخطّي» في مقدّمة الهرم",                  "٤–٨ ث"],
+  ["minigame_skip",  "تخطّي شرح الألعاب",              "حين يُتخطّى شرح التصنيف أو التوصيل",                       "٣–٥ ث"],
+  ["skip",           "تخطّي عامّ",                      "احتياطيّ حين لا يوجد تخطٍّ خاصّ",                          "٥–٨ ث"],
+  ["hurry",          "الاستعجال الأصل (المصدر)",       "لا يُشغَّل مباشرةً — منه تبدأ مقاطع استعجال المراحل",       "≤ ٤.٦ ث"]
 ];
 
 function readJson(req, limit = 2e5) {
@@ -95,10 +95,11 @@ function setupVoiceOverAdmin(app, { store }) {
     if (!guard(req, res)) return;
     const off = new Set(cfg.off);
     const events = EVENTS.map(([key, name, where, len]) => {
-      const base = (voc.BASE[key] || []).map((d, i) => ({ n: i + 1, dur: d, src: "base", off: off.has(key + "-" + (i + 1)) }));
-      const db = Object.keys(cfg.db).filter(k => k.startsWith(key + "-")).map(k => ({ n: +k.split("-").pop(), dur: cfg.db[k], src: "db", off: off.has(k) }));
+      const alias = voc.ALIAS[key];
+      const base = (voc.BASE[key] || []).map((d, i) => ({ n: i + 1, dur: d, src: alias ? "shared" : "base", off: off.has(key + "-" + (i + 1)), file: (alias || key) + "-" + (i + 1) }));
+      const db = Object.keys(cfg.db).filter(k => k.startsWith(key + "-")).map(k => ({ n: +k.split("-").pop(), dur: cfg.db[k], src: "db", off: off.has(k), file: k }));
       const clips = base.concat(db).sort((a, b) => a.n - b.n);
-      return { key, name, where, len, clips, active: clips.filter(c => !c.off).length };
+      return { key, name, where, len, clips, alias: alias || null, active: clips.filter(c => !c.off).length };
     });
     json(res, 200, { events });
   });
@@ -166,6 +167,7 @@ h1{font-size:22px;margin-bottom:4px} .sub{color:#8b95ad;font-size:13px;margin-bo
 .head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
 .head h2{font-size:16px} .head .k{font-family:monospace;color:#8fd3ff;font-size:12px;direction:ltr}
 .head .w{color:#8b95ad;font-size:12px;flex:1;min-width:200px} .head .len{font-size:11px;color:#c9d1e6;background:#24304f;border-radius:99px;padding:2px 9px}
+.head .sh{font-size:11px;color:#ffc46b;background:#3a2a12;border:1px solid #6b4a14;border-radius:99px;padding:2px 9px}
 .badge{font-size:11px;border-radius:99px;padding:2px 9px;background:#1f3d2b;color:#9be7b5}
 .badge.zero{background:#4a2a12;color:#ffc46b}
 .clips{display:flex;flex-wrap:wrap;gap:8px}
@@ -181,9 +183,9 @@ input[type=file]{color:#c9d1e6;font-size:12px}
 input.s{background:#0f1729;border:1px solid #243052;color:#e8ecf5;border-radius:8px;padding:7px 10px;font-size:13px;min-width:220px}
 </style></head><body><div class="wrap">
 <h1>🎙️ أصوات المعلّق</h1>
-<div class="sub">كل حدثٍ في اللعبة وله مقاطعه: اسمع، عطّل ما لا يعجبك، أو ارفع mp3 جديدًا فيدخل التدوير فورًا بلا نشر. المقاطع الأساسية (مع الكود) لا تُحذف لكن تُعطَّل. المدّة تُقاس تلقائيًّا من الملف عند الرفع.</div>
+<div class="sub">كل حدثٍ في اللعبة وله مقاطعه: اسمع، عطّل ما لا يعجبك، أو ارفع mp3 جديدًا فيدخل التدوير فورًا بلا نشر. المقاطع الأساسية (مع الكود) لا تُحذف لكن تُعطَّل. المدّة تُقاس تلقائيًّا من الملف عند الرفع.<br>الاستعجال منفصلٌ لكل مرحلة (أسئلة · تصنيف · توصيل — والهرم بلا استعجالٍ بطلبك)، والثلاثة تبدأ بالمقاطع نفسها المكتوب عليها «مشترك» — بدّلها لكل مرحلةٍ كما تشاء.</div>
 <div class="nav"><a href="ADMIN_URL">← لوحة المراقبة</a><a href="ADMIN_URL/q">📚 الأسئلة</a><a href="ADMIN_URL/v">🔊 صوت قراءة الأسئلة</a></div>
-<div class="tools"><input class="s" id="q" placeholder="ابحث في اسم الحدث…" oninput="draw()"><label><input type="checkbox" id="onlyEmpty" onchange="draw()"> الأحداث بلا مقاطع فقط</label><span id="tot" class="msg"></span></div>
+<div class="tools"><input class="s" id="q" placeholder="ابحث في اسم الحدث…" oninput="draw()"><label><input type="checkbox" id="onlyEmpty" onchange="draw()"> الأحداث بلا مقاطع فقط</label><label><input type="checkbox" id="showSrc" onchange="draw()"> أظهر حدث المصدر</label><span id="tot" class="msg"></span></div>
 <div id="list"></div>
 </div>
 <script>
@@ -194,24 +196,27 @@ async function load(){ const d=await (await fetch(B+"/list")).json(); DATA=d.eve
 function draw(){
   const q=$("q").value.trim(), oe=$("onlyEmpty").checked;
   let evs=DATA.filter(e=>!q||e.name.includes(q)||e.key.includes(q)||e.where.includes(q));
+  if(!$("showSrc").checked) evs=evs.filter(e=>e.key!=="hurry");
   if(oe) evs=evs.filter(e=>!e.active);
   const totalClips=DATA.reduce((a,e)=>a+e.clips.length,0), act=DATA.reduce((a,e)=>a+e.active,0), empty=DATA.filter(e=>!e.active).length;
   $("tot").textContent=DATA.length+" حدثًا · "+act+" مقطعًا فعّالًا من "+totalClips+(empty?" · "+empty+" بلا مقاطع":"");
   $("list").innerHTML=evs.map(e=>'<div class="card'+(e.active?'':' warn')+'" id="ev-'+e.key+'">'+
-    '<div class="head"><h2>'+esc(e.name)+'</h2><span class="k">'+e.key+'</span><span class="badge'+(e.active?'':' zero')+'">'+(e.active?e.active+' فعّال':'لا مقاطع — لن يُسمَع شيء')+'</span><span class="len">الطول المفضّل '+esc(e.len)+'</span><span class="w">'+esc(e.where)+'</span></div>'+
+    '<div class="head"><h2>'+esc(e.name)+'</h2><span class="k">'+e.key+'</span>'+
+    (e.alias?'<span class="sh">مقاطعه المشتركة من «'+e.alias+'» — عطّلها أو ارفع بديلها ليصير لهذه المرحلة صوتها الخاصّ</span>':'')+
+    '<span class="badge'+(e.active?'':' zero')+'">'+(e.active?e.active+' فعّال':'لا مقاطع — لن يُسمَع شيء')+'</span><span class="len">الطول المفضّل '+esc(e.len)+'</span><span class="w">'+esc(e.where)+'</span></div>'+
     '<div class="clips">'+e.clips.map(c=>{const key=e.key+"-"+c.n;return '<div class="clip'+(c.off?' off':'')+'" id="c-'+key+'">'+
-      '<span class="n">'+c.n+'</span><span class="d">'+c.dur+' ث</span><span class="src">'+(c.src==="db"?"مرفوع":"أساسي")+'</span>'+
-      '<button class="p" onclick="play(\\''+key+'\\')">▶</button>'+
+      '<span class="n">'+c.n+'</span><span class="d">'+c.dur+' ث</span><span class="src">'+(c.src==="db"?"مرفوع":c.src==="shared"?"مشترك":"أساسي")+'</span>'+
+      '<button class="p" onclick="play(\\''+key+'\\',\\''+c.file+'\\')">▶</button>'+
       '<button onclick="tog(\\''+key+'\\')">'+(c.off?'تفعيل':'تعطيل')+'</button>'+
       (c.src==="db"?'<button class="r" onclick="del(\\''+key+'\\')">حذف</button>':'')+
       '</div>';}).join("")+(e.clips.length?'':'<span class="msg err">ارفع مقطعًا واحدًا على الأقل ليعمل هذا الحدث</span>')+'</div>'+
     '<div class="up"><input type="file" accept="audio/mpeg,.mp3" id="f-'+e.key+'"><button class="g" onclick="up(\\''+e.key+'\\')">⬆ رفع مقطع جديد</button><span class="msg" id="m-'+e.key+'"></span></div>'+
     '</div>').join("");
 }
-function play(key){
+function play(key,file){
   if(A){A.pause();A=null;} document.querySelectorAll(".clip.playing").forEach(x=>x.classList.remove("playing"));
   const el=$("c-"+key); if(AEL===el){AEL=null;return;}
-  A=new Audio("/vo/"+key+".mp3?t="+Date.now()); AEL=el; el.classList.add("playing");
+  A=new Audio("/vo/"+(file||key)+".mp3?t="+Date.now()); AEL=el; el.classList.add("playing");
   A.onended=A.onerror=()=>{el.classList.remove("playing");if(AEL===el)AEL=null;};
   A.play().catch(()=>{});
 }

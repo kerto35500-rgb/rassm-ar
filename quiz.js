@@ -259,13 +259,15 @@ function setupQuiz(io, deps) {
   // مراحل الإجابة التي يُستعجَل فيها اللاعبون قبل انتهاء العدّاد بخمس ثوانٍ.
   // الميزانية 4.6ث = ما يتبقى فعليًا من العدّاد لحظة التشغيل، فلا يُقطع التعليق.
   /* الهرم مستثنى: طلب صاحب اللعبة ألا يُنبَّه المتأخّر فيه */
-  const HURRY_AT = { question: 1, link: 1, sort: 1 };
+  /* حدث الاستعجال لكل مرحلة على حدة — يُبدَّل من صفحة /vo بلا مساس بالباقي */
+  const HURRY_AT = { question: "hurry_question", link: "hurry_link", sort: "hurry_sort" };
 
   function setPhase(room, phase, seconds, next) {
     clearTimers(room);
     room.phase = phase;
     // الخادم يختار تعليق الاستعجال مرة واحدة للمرحلة، فيسمع اللاعبون كلهم التسجيل نفسه
-    if (HURRY_AT[phase] && !room.pyMode) room.pubHurry = voc.pick("hurry", 4.6);
+    /* الهرم مستثنى: طلب صاحب اللعبة ألّا يُنبَّه المتأخّر فيه */
+    if (HURRY_AT[phase] && !room.pyMode) room.pubHurry = voc.pick(HURRY_AT[phase], 4.6);
     room.phaseDur = seconds;
     room.phaseEndsAt = seconds ? Date.now() + seconds * 1000 : 0;
     if (seconds && next) room.phaseTimer = setTimeout(() => { try { next(); } catch (e) { console.error("quiz phase:", e); } }, seconds * 1000 + 250);
@@ -539,7 +541,6 @@ function setupQuiz(io, deps) {
     const at = FAST ? room.settings.attackTime
       : Math.max(room.settings.attackTime, room.pubVo ? room.pubVo.dur + 1.5 : 0) + TRAP_INTRO_S;
     setPhase(room, "attack", at, () => {
-      room.pubVo = voc.pick("attack_timeup"); if (room.pubVo) room.pubVo.at = "attackReveal";
       beginAttackReveal(room);
     });
     broadcast(room);
@@ -655,8 +656,8 @@ function setupQuiz(io, deps) {
   function reveal(room) {
     clearTimers(room);
     /* انتهى الوقت ولم يُجب الجميع؟ تعليق «انتهى الوقت» الخاصّ بالأسئلة */
-    const timedOut = alive(room).some(p => !p.answered);
-    room.pubVo = timedOut ? voc.pick("question_timeup") : null;
+    /* لم يعد يُستعمل تعليقٌ خاصّ لانتهاء الوقت هنا — الاستعجال يسبقه */
+    room.pubVo = null;
     if (room.pubVo) room.pubVo.at = "reveal";
     // ── حسم الرهانات: من راهن على أسرع مجيب صحيح يكسب ──
     // الرهان يبقى سرًّا في حالة الخادم طوال الجولة، ويُكشف علنًا هنا فقط —
@@ -1032,7 +1033,6 @@ function setupQuiz(io, deps) {
     /* لا فيلمَ في فخاخ الهرم: اللاعب يختار هدفه مباشرةً، فالمهلة قصيرة */
     const at = FAST ? room.settings.attackTime : Math.max(8, Math.min(room.settings.attackTime, 12));
     setPhase(room, "attack", at, () => {
-      room.pubVo = voc.pick("attack_timeup"); if (room.pubVo) room.pubVo.at = "attackReveal";
       beginAttackReveal(room, () => beginPyRead(room));
     });
     broadcast(room);
@@ -1058,7 +1058,7 @@ function setupQuiz(io, deps) {
     clearTimers(room);
     const H = room.settings.pyramidHeight;
     const N = alive(room).length;
-    const timedOut = alive(room).some(p => !p.answered);
+    /* لم يعد يُستعمل تعليقٌ خاصّ لانتهاء الوقت هنا — الاستعجال يسبقه */
     const corrects = alive(room)
       .filter(p => room.answers[p.id] && room.answers[p.id].correct)
       .sort((a, b) => room.answers[a.id].elapsed - room.answers[b.id].elapsed);
@@ -1079,8 +1079,7 @@ function setupQuiz(io, deps) {
     });
 
     /* ١) الإجابة الصحيحة أوّلًا على شاشة الخيارات نفسها — المواضع لم تتغيّر بعد */
-    room.pubVo = timedOut ? voc.pick("pyramid_timeup") : null;
-    if (room.pubVo) room.pubVo.at = "pyReveal";
+    room.pubVo = null;
     nsp.to(room.id).emit("pyramidReveal", {
       correct: room.currentQ.correct,
       correctText: room.currentQ.options[room.currentQ.correct],
