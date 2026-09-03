@@ -19,9 +19,12 @@ const TRAP_INTRO_S = 7.8;   // أطول نسختي فيلم الفخاخ (الج
 function rankPoints(playersN, rank) { return Math.max(0, (playersN - rank + 1) * RANK_UNIT); }
 const CHALLENGE_POINTS = 25;  // نقاط كل عنصر صحيح في جولات التحدي
 const REVEAL_MS = FAST ? 300 : 7500;        // مدة الكشف: اصطفاف الأيقونات + الإنارة + النقاط + الجدول
-const PY_INTRO_MS = FAST ? 300 : 6000;      // مقدمة الهرم: وقوفٌ ثم قفزاتٌ افتتاحية
-const PY_START_JUMP_MS = 1500;              // لحظة القفزات الافتتاحية داخل المقدمة
-const PY_REVEAL_MS = FAST ? 300 : 3200;     // كشف حركة الهرم
+const PY_INTRO_MS = FAST ? 300 : 9500;      // مقدمة الهرم: عدّ النقاط تنازليًّا (~٥ث) ثم القفزات
+const PY_COUNT_MS = 5000;                   // مدّة عدّ النقاط: صاحب أعلى نقاطٍ ينتهي عندها
+const PY_START_JUMP_MS = PY_COUNT_MS + 200; // تُثبَّت المواضع في الحالة بعد انتهاء العدّ
+const PY_ANS_MS    = FAST ? 200 : 2600;     // كشف الإجابة الصحيحة على شاشة الخيارات أوّلًا
+const PY_JUMP_MS   = 1400;                  // أطول قفزةٍ في المقاطع (تحفّز ٣٤٠ + وثبٌ ≤ ١٠٠٠)
+const PY_REVEAL_MS = FAST ? 300 : PY_JUMP_MS + 1000;   // عرض الهرم: القفزة ثم ثانيةٌ — قفز أحدٌ أم لا
 const EFFECT_MS = FAST ? 400 : 4000;        // أقصى مدة لتأثير القوة
 const RECONNECT_MS = 180000;   // ٣ دقائق: تبديل التطبيقات في الجوال لا يطرد اللاعب
 // تُضبط لتصل المرحلة التالية للاعب لحظة وميض العبور تماماً (لا فراغ بعد الزوم)
@@ -237,6 +240,7 @@ function setupQuiz(io, deps) {
       pyramidHeight: room.settings.pyramidHeight,
       pyramidQ: room.pyQIndex,
       pyMode: !!room.pyMode,          /* أسئلة الهرم تستعمل مشاهد الأسئلة — العميل يميّزها بهذا */
+      pyStart: room.phase === "pyramidIntro" ? room.pubPyStart : null,
       powerMenu: room.powerMenu || [],
       winner: room.winner,
       bankSize: qbank.countAll()
@@ -739,7 +743,7 @@ function setupQuiz(io, deps) {
     });
     room.players.forEach(p => { p.answered = false; p.lastGain = 0; p.effects = []; });
     room.qSentAt = Date.now();
-    const t = Math.max(45, Math.round(L.pairs.length * 4.5));
+    const t = 40;                                  /* طلب صاحب اللعبة: ٤٠ ثانية */
     setPhase(room, "link", t, () => revealChallenge(room, "link"));
     broadcast(room);
     // اللوحات تُرسل بعد البثّ: العميل يرفض أي لوحة تصله قبل أن تصير مرحلته "link"
@@ -748,7 +752,7 @@ function setupQuiz(io, deps) {
 
   // ملء الخانات الفارغة عشوائيًا بشرط حتمي: توصيلة صحيحة واحدة على الأقل
   // واثنتان كحدّ أقصى معروضتان في اللوحة الحالية (ما دام ذلك ممكنًا رياضيًا)
-  function linkFill(room, st) {
+  function linkFill(room, st, keep) {
     const total = room.currentLink.pairs.length;
     const remain = [];
     for (let i = 0; i < total; i++) if (!st.done.has(i)) remain.push(i);
@@ -757,9 +761,16 @@ function setupQuiz(io, deps) {
     let capR, capL;
     do { capR = 1 + Math.floor(Math.random() * 3); capL = 1 + Math.floor(Math.random() * 3); }
     while (capR === 1 && capL === 1);
-    // ما زاد عن نمط اللوحة الجديدة يُشذَّب عشوائيًا
-    const trim = (side, cap) => { while (st[side].length > cap) st[side].splice(Math.floor(Math.random() * st[side].length), 1); };
-    trim("r", capR); trim("l", capL);
+    if (keep) {
+      /* بعد إصابةٍ صحيحة: الأقراص الباقية لا تُمسّ ولا تُشذَّب — يختفي الثنائي
+         المُصاب وحده، وتُضاف أقراصٌ جديدة (أو لا تُضاف) حسب النمط العشوائي.
+         إعادةُ ترتيب اللوحة كلّها مع كل توصيلةٍ كانت مزعجةً للعين. */
+      capR = Math.max(capR, st.r.length); capL = Math.max(capL, st.l.length);
+    } else {
+      // ما زاد عن نمط اللوحة الجديدة يُشذَّب عشوائيًا
+      const trim = (side, cap) => { while (st[side].length > cap) st[side].splice(Math.floor(Math.random() * st[side].length), 1); };
+      trim("r", capR); trim("l", capL);
+    }
     const draw = (side, other, CAP) => {
       while (st[side].length < Math.min(CAP, remain.length ? CAP : 0)) {
         const cand = remain.filter(i => !st[side].includes(i));
@@ -784,10 +795,13 @@ function setupQuiz(io, deps) {
       const swap = st.l.findIndex(i => !st.r.includes(i));
       if (swap >= 0) st.l[swap] = pick; else if (st.l.length < capL) st.l.push(pick);
     }
-    // رموز عشوائية لكل خانة: العميل لا يرى أرقام الأزواج فلا يطابقها غشًّا
+    // رموز عشوائية لكل خانة: العميل لا يرى أرقام الأزواج فلا يطابقها غشًّا.
+    // مع keep تبقى رموزُ الأقراص الباقية كما هي — فيعرف العميل ما بقي وما جاء.
+    const oldR = keep ? (st.tokR || {}) : {}, oldL = keep ? (st.tokL || {}) : {};
     st.tokR = {}; st.tokL = {};
-    st.r.forEach(i => st.tokR[crypto.randomBytes(4).toString("hex")] = i);
-    st.l.forEach(i => st.tokL[crypto.randomBytes(4).toString("hex")] = i);
+    const tokOf = (old, i) => { for (const k in old) if (old[k] === i) return k; return null; };
+    st.r.forEach(i => st.tokR[tokOf(oldR, i) || crypto.randomBytes(4).toString("hex")] = i);
+    st.l.forEach(i => st.tokL[tokOf(oldL, i) || crypto.randomBytes(4).toString("hex")] = i);
   }
 
   function sendBoard(room, p, st) {
@@ -827,7 +841,7 @@ function setupQuiz(io, deps) {
       }
       return;
     }
-    linkFill(room, st);
+    linkFill(room, st, true);
     sendBoard(room, p, st);
   }
 
@@ -942,17 +956,22 @@ function setupQuiz(io, deps) {
     room.pubQuestion = null; room.pubLink = null; room.pubSort = null;
     room.pyMode = true;
     const H = room.settings.pyramidHeight;
-    /* الجميع في الأسفل أوّلًا، ثم يقفز كلٌّ حسب ترتيبه بالنقاط:
-       الأوّل ٣، الثاني والثالث ٢، الباقون ١ — والمتعادلون يأخذون المركز نفسه. */
+    /* الجميع على الدرجة الأولى (الموضع ٠ — وهي درجةٌ من اللعبة)، ثم يقفز كلٌّ
+       حسب ترتيبه بالنقاط: الأوّل درجتين (إلى الثالثة)، الثاني والثالث درجةً
+       (إلى الثانية)، والباقون يبقون. المتعادلون يأخذون المركز نفسه.
+       العميل يعرض النقاط تنقص إلى الصفر — الأقلُّ ينتهي أوّلًا فيأخذ مكانه —
+       فنرسل النقاطَ قبل تصفيرها وترتيبَ الانتهاء. */
     alive(room).forEach(p => { p.pyPos = 0; });
     const list = ranked(room);
-    const jumps = {};
+    const jumps = {}, scores = {}, ranks = {};
     let rank = 0, prev = null;
     list.forEach((p, i) => {
       if (p.score !== prev) { rank = i + 1; prev = p.score; }
-      jumps[p.id] = rank === 1 ? 3 : rank <= 3 ? 2 : 1;
+      ranks[p.id] = rank; scores[p.id] = p.score;
+      jumps[p.id] = rank === 1 ? 2 : rank <= 3 ? 1 : 0;
     });
     room.pyStart = jumps;
+    room.pubPyStart = { jumps, scores, ranks, max: Math.max(1, ...list.map(p => p.score)) };
     /* ثمّ تُصفَّر النقاط: السباق على الدرجات وحدها من الآن */
     room.players.forEach(p => { p.score = 0; p.lastGain = 0; });
     room.pyQIndex = 0;
@@ -1008,7 +1027,8 @@ function setupQuiz(io, deps) {
     const choosers = alive(room).filter(p => TIER_POWER[p.pyPos] !== undefined);
     if (!choosers.length) return beginAttackReveal(room, () => beginPyRead(room));
     room.pubVo = null;
-    const at = FAST ? room.settings.attackTime : Math.max(8, Math.min(room.settings.attackTime, 20)) + TRAP_INTRO_S;
+    /* لا فيلمَ في فخاخ الهرم: اللاعب يختار هدفه مباشرةً، فالمهلة قصيرة */
+    const at = FAST ? room.settings.attackTime : Math.max(8, Math.min(room.settings.attackTime, 12));
     setPhase(room, "attack", at, () => {
       room.pubVo = voc.pick("attack_timeup"); if (room.pubVo) room.pubVo.at = "attackReveal";
       beginAttackReveal(room, () => beginPyRead(room));
@@ -1052,42 +1072,56 @@ function setupQuiz(io, deps) {
       if (climbers.has(p.id)) d = 1;
       else if (!(a && a.correct) && room.settings.pyramidPenalty) d = -1;
       const before = p.pyPos;
-      p.pyPos = Math.max(0, Math.min(H, p.pyPos + d));
-      moves.push({ id: p.id, name: p.name, color: p.color, from: before, to: p.pyPos, d, correct: !!(a && a.correct) });
+      const after = Math.max(0, Math.min(H, p.pyPos + d));
+      moves.push({ id: p.id, name: p.name, color: p.color, from: before, to: after, d, correct: !!(a && a.correct) });
     });
 
-    let nearVo = null;
-    const top = Math.max(0, ...alive(room).map(p => p.pyPos || 0));
-    if (!room.voDone.near_top && top >= H - 2 && top < H) {
-      room.voDone.near_top = true;
-      nearVo = voc.pick("near_top");
-    }
+    /* ١) الإجابة الصحيحة أوّلًا على شاشة الخيارات نفسها — المواضع لم تتغيّر بعد */
     room.pubVo = timedOut ? voc.pick("pyramid_timeup") : null;
-    if (room.pubVo) room.pubVo.at = "pyramid";
+    if (room.pubVo) room.pubVo.at = "pyReveal";
     nsp.to(room.id).emit("pyramidReveal", {
       correct: room.currentQ.correct,
       correctText: room.currentQ.options[room.currentQ.correct],
-      fastest, moves, nearVo
+      picks: alive(room).map(p => ({ id: p.id, name: p.name, color: p.color, charId: p.charId || null,
+                                     idx: room.answers[p.id] ? room.answers[p.id].idx : -1,
+                                     correct: !!(room.answers[p.id] && room.answers[p.id].correct) })),
+      fastest, moves
     });
-
-    const reached = alive(room).filter(p => p.pyPos >= H);
-    room.pubQuestion = null;
-    setPhase(room, "pyramid", 0, null);          /* عرضُ الهرم والقفزات */
-    const ms = Math.max(PY_REVEAL_MS, room.pubVo ? room.pubVo.dur * 1000 + 600 : 0);
-    room.phaseEndsAt = Date.now() + ms;
-    room.phaseDur = ms / 1000;
+    const ansMs = Math.max(PY_ANS_MS, room.pubVo ? room.pubVo.dur * 1000 + 400 : 0);
+    setPhase(room, "pyReveal", 0, null);
+    room.phaseEndsAt = Date.now() + ansMs;
+    room.phaseDur = ansMs / 1000;
     broadcast(room);
 
-    if (reached.length) {
-      let win = reached[0];
-      if (reached.length > 1) {
-        const f = reached.find(p => p.id === fastest);
-        win = f || reached[0];
+    room.phaseTimer = setTimeout(() => {
+      /* ٢) ثم الهرم: تُطبَّق المواضع فتقفز الشخصيات، وننتظر بعد القفزة ثانيةً */
+      moves.forEach(m => { const p = room.players.find(x => x.id === m.id); if (p) p.pyPos = m.to; });
+      let nearVo = null;
+      const top = Math.max(0, ...alive(room).map(p => p.pyPos || 0));
+      if (!room.voDone.near_top && top >= H - 2 && top < H) {
+        room.voDone.near_top = true;
+        nearVo = voc.pick("near_top");
       }
-      room.phaseTimer = setTimeout(() => finish(room, win), ms);
-    } else {
-      room.phaseTimer = setTimeout(() => pyramidRound(room), ms);
-    }
+      room.pubVo = nearVo; if (room.pubVo) room.pubVo.at = "pyramid";
+      const reached = alive(room).filter(p => p.pyPos >= H);
+      room.pubQuestion = null;
+      setPhase(room, "pyramid", 0, null);          /* عرضُ الهرم والقفزات */
+      const ms = Math.max(PY_REVEAL_MS, room.pubVo ? room.pubVo.dur * 1000 + 600 : 0);
+      room.phaseEndsAt = Date.now() + ms;
+      room.phaseDur = ms / 1000;
+      broadcast(room);
+
+      if (reached.length) {
+        let win = reached[0];
+        if (reached.length > 1) {
+          const f = reached.find(p => p.id === fastest);
+          win = f || reached[0];
+        }
+        room.phaseTimer = setTimeout(() => finish(room, win), ms);
+      } else {
+        room.phaseTimer = setTimeout(() => pyramidRound(room), ms);
+      }
+    }, ansMs);
   }
 
   // ====== النهاية ======

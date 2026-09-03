@@ -62,11 +62,16 @@ async function playAttack(room,socks){
   socks.forEach(s=>s.clear());
   socks[0].fire("skipIntro"); await until(room,["pyramidIntro"],3000);
   const first=socks[0].all("state").find(x=>x.phase==="pyramidIntro");
-  ok(!!first&&first.players.every(p=>p.pyPos===0),"أوّل حالةِ هرم: الجميع في الأسفل",first&&JSON.stringify(first.players.map(p=>p.pyPos)));
+  ok(!!first&&first.players.every(p=>p.pyPos===0),"أوّل حالةِ هرم: الجميع على الدرجة الأولى (الموضع ٠)",first&&JSON.stringify(first.players.map(p=>p.pyPos)));
+  ok(!!first&&first.pyStart&&first.pyStart.scores&&first.pyStart.max===500,
+     "حالة المقدّمة تحمل النقاط قبل التصفير لعدّها تنازليًّا",first&&JSON.stringify(first.pyStart));
+  const byName=Object.fromEntries(first.players.map(p=>[p.name,p.id]));
+  ok(first.pyStart.jumps[byName["ل0"]]===2&&first.pyStart.jumps[byName["ل1"]]===1&&first.pyStart.jumps[byName["ل4"]]===0,
+     "قفزات المقدّمة المُعلَنة: ٢/١/٠");
   await sleep(250);
   const pos=Object.fromEntries(room.players.map(p=>[p.name,p.pyPos]));
-  ok(pos["ل0"]===3&&pos["ل1"]===2&&pos["ل2"]===2&&pos["ل3"]===1&&pos["ل4"]===1,
-     "القفزات: الأوّل ٣، المتعادلان في الثاني ٢، الباقون ١",JSON.stringify(pos));
+  ok(pos["ل0"]===2&&pos["ل1"]===1&&pos["ل2"]===1&&pos["ل3"]===0&&pos["ل4"]===0,
+     "القفزات: الأوّل إلى الثالثة (٢)، المتعادلان في الثاني إلى الثانية (١)، الباقون يبقون",JSON.stringify(pos));
   ok(room.players.every(p=>p.score===0),"النقاط صُفِّرت بعد القفزات");
 }
 
@@ -74,35 +79,40 @@ async function playAttack(room,socks){
 { const {room,socks}=await makeRoom(4);
   room.settings.attackTime=1;
   socks[0].fire("devJump","pyramid"); await sleep(60);
-  room.players.forEach((p,i)=>{ p.score=[900,600,300,0][i]; });   // → ٣،٢،١،١
+  room.players.forEach((p,i)=>{ p.score=[900,600,300,0][i]; });   // → ٢،١،١،٠
   socks.forEach(s=>s.clear());
   socks[0].fire("skipIntro"); await until(room,["attack"],4000);
   const seq=phaseSeq(socks[0],0);
   ok(room.phase==="attack"&&seq.includes("pyramidIntro"),"بعد عرض الهرم تأتي مرحلة الفخاخ",seq.join("→"));
   const M=socks.map(s=>s.last("powerMenu"));
-  /* المواضع ٣،٢،٢،١ = الدرجات ٤،٣،٣،٢ */
-  ok(M[0]&&M[0].menu[0]==="freeze"&&M[0].tier===4,"الموضع ٣ = الدرجة ٤ → تجميد",M[0]&&M[0].menu);
-  ok(M[1]&&M[1].menu[0]==="nibble"&&M[1].tier===3,"الموضع ٢ = الدرجة ٣ → أكلة الحروف",M[1]&&M[1].menu);
-  ok(M[2]&&M[2].menu[0]==="nibble","المركز الثالث (موضع ٢) → أكلة الحروف أيضًا",M[2]&&M[2].menu);
-  ok(M[3]&&M[3].menu[0]==="bombs"&&M[3].tier===2,"الموضع ١ = الدرجة ٢ → قنابل",M[3]&&M[3].menu);
-  socks[0].fire("attack",{to:"P1",power:"freeze"});
-  socks[1].fire("attack",{to:"P0",power:"nibble"});
-  socks[2].fire("attack",{to:"P0",power:"gloop"});    // سلاحٌ ليس من درجته → يُرفض
-  socks[3].fire("attack",{to:"P2",power:"bombs"});
+  /* المواضع ٢،١،١،٠ = الدرجات ٣،٢،٢،١ */
+  ok(M[0]&&M[0].menu[0]==="nibble"&&M[0].tier===3,"الموضع ٢ = الدرجة ٣ → أكلة الحروف",M[0]&&M[0].menu);
+  ok(M[1]&&M[1].menu[0]==="bombs"&&M[1].tier===2,"الموضع ١ = الدرجة ٢ → قنابل",M[1]&&M[1].menu);
+  ok(M[2]&&M[2].menu[0]==="bombs"&&M[2].tier===2,"المركز الثالث (موضع ١) → قنابل أيضًا",M[2]&&M[2].menu);
+  ok(M[3]&&M[3].menu[0]==="gloop"&&M[3].tier===1,"الموضع ٠ = الدرجة ١ → وحل",M[3]&&M[3].menu);
+  socks[0].fire("attack",{to:"P1",power:"nibble"});
+  socks[1].fire("attack",{to:"P0",power:"bombs"});
+  socks[2].fire("attack",{to:"P0",power:"freeze"});    // سلاحٌ ليس من درجته → يُرفض
+  socks[3].fire("attack",{to:"P2",power:"gloop"});
   await sleep(150);
   ok(room.attacks.length===3,"ثلاث هجماتٍ صحيحة قُبلت والرابعة (سلاح غير درجته) رُفضت",room.attacks.length);
-  socks[2].fire("attack",{to:"P0",power:"nibble"});
+  socks[2].fire("attack",{to:"P3",power:"bombs"});
   await until(room,["question"],4000);
   const seq2=phaseSeq(socks[0],0);
   const iA=seq2.lastIndexOf("attack"), iR=seq2.indexOf("read",iA), iQ=seq2.indexOf("question",iR);
   ok(iA>=0&&iR>iA&&iQ>iR,"بعد الفخاخ: قراءة السؤال ثم الخيارات",seq2.join("→"));
   const eff=Object.fromEntries(room.players.map(p=>[p.name,p.effects.slice()]));
-  ok(eff["ل0"].filter(x=>x==="nibble").length===2&&eff["ل1"].includes("freeze")&&eff["ل2"].includes("bombs"),
+  ok(eff["ل0"].includes("bombs")&&eff["ل1"].includes("nibble")&&eff["ل2"].includes("gloop")&&eff["ل3"].includes("bombs"),
      "الفخاخ طُبّقت على أهدافها عند ظهور الخيارات",JSON.stringify(eff));
   ok(room.players.every(p=>p.powersLeft===room.settings.powerUses),"فخاخ الهرم لا تستهلك رصيد البطاقات");
   ok(socks[0].all("state").every(x=>x.phase!=="question"||!x.hurry),"لا تعليق استعجال في أسئلة الهرم");
   const c=room.currentQ.correct; const before=room.players.map(p=>p.pyPos);
+  socks.forEach(s=>s.clear());
   for(const s of socks){ s.fire("answer",c); await sleep(30); }
+  await until(room,["pyReveal"],3000);
+  ok(room.phase==="pyReveal"&&room.players.every((p,i)=>p.pyPos===before[i]),"أوّلًا كشف الإجابة الصحيحة على شاشة الخيارات — المواضع لم تتغيّر بعد",room.phase);
+  const pr=socks[0].last("pyramidReveal");
+  ok(pr&&pr.correct===c&&pr.picks&&pr.picks.length===4&&pr.moves.every(m=>m.from===before[room.players.findIndex(p=>p.id===m.id)]),"رسالة الكشف تحمل الإجابة الصحيحة واختيارات اللاعبين والحركات المرتقبة");
   await until(room,["pyramid"],3000);
   const d=room.players.map((p,i)=>p.pyPos-before[i]);
   ok(d.filter(x=>x===1).length===1&&d.every(x=>x===0||x===1),"٤ لاعبين: الأسرع وحده صعد درجة",JSON.stringify(d));
@@ -133,7 +143,7 @@ async function playAttack(room,socks){
   const wrong=(room.currentQ.correct+1)%4;
   socks.forEach(s=>s.clear());
   for(const s of socks){ s.fire("answer",wrong); await sleep(20); }
-  await until(room,["pyramid"],3000); await until(room,["attack"],5000);
+  await until(room,["pyReveal"],3000); await until(room,["pyramid"],3000); await until(room,["attack"],5000);
   const hits=room.attacks.map(a=>a.fromName+"→"+a.toName+":"+a.power);
   ok(hits.includes("ل0→ل1:gloop")&&hits.includes("ل0→ل2:gloop"),"درجة ٥: وحلٌ على الجميع تلقائيًّا",hits.join(" "));
   ok(hits.includes("ل1→ل0:freeze")&&hits.includes("ل1→ل2:freeze"),"درجة ٦: تجميدٌ على الجميع تلقائيًّا");
