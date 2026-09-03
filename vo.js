@@ -37,10 +37,51 @@ const VO = {
   skip:          [7.9, 5.9, 6.6]
 };
 
+/* ═══ الإعدادات الديناميكية (صفحة الأدمن /vo) ═══
+   BASE = المقاطع المرفوعة مع الكود (أعلاه). فوقها طبقةٌ من قاعدة البيانات:
+     off : مفاتيح مقاطع معطَّلة ("hurry-2")
+     db  : مقاطع مرفوعة من الأدمن {"hurry-5": 4.2} تُخدَم من /vo/hurry-5.mp3
+   EFF = القائمة الفعّالة لكل حدث: [{i, dur}] — pick وmaxOf يعملان عليها. */
+const BASE = VO;
+let CFG = { off: [], db: {} };
+let EFF = build(CFG);
+
+function build(cfg) {
+  const off = new Set(cfg.off || []);
+  const db = cfg.db || {};
+  const eff = {};
+  const keys = new Set(Object.keys(BASE));
+  Object.keys(db).forEach(k => { const m = k.match(/^(.+)-(\d+)$/); if (m) keys.add(m[1]); });
+  keys.forEach(k => {
+    const list = [];
+    (BASE[k] || []).forEach((d, idx) => { const key = k + "-" + (idx + 1); if (!off.has(key)) list.push({ i: idx + 1, dur: d }); });
+    Object.keys(db).forEach(key => {
+      const m = key.match(/^(.+)-(\d+)$/);
+      if (m && m[1] === k && !off.has(key)) list.push({ i: +m[2], dur: Number(db[key]) || 1 });
+    });
+    list.sort((a, b) => a.i - b.i);
+    eff[k] = list;
+  });
+  return eff;
+}
+function apply(cfg) { CFG = { off: [].concat(cfg && cfg.off || []), db: { ...(cfg && cfg.db || {}) } }; EFF = build(CFG); return EFF; }
+function effective() { return EFF; }
+function config() { return CFG; }
+/* للعميل: {hurry:[4.4,2.4,...]} بالفهرس الحقيقي — الفجوات (المعطَّل) صفر */
+function durations() {
+  const out = {};
+  for (const k in EFF) {
+    const arr = [];
+    EFF[k].forEach(e => { arr[e.i - 1] = e.dur; });
+    out[k] = Array.from(arr, v => v || 0);
+  }
+  return out;
+}
+
 // أطول مقطع في الحدث — يُستعمل حين يختار العميل بنفسه (تعليقات المقالب مثلًا)
 function maxOf(...keys) {
   let m = 0;
-  for (const k of keys) for (const d of (VO[k] || [])) if (d > m) m = d;
+  for (const k of keys) for (const e of (EFF[k] || [])) if (e.dur > m) m = e.dur;
   return m;
 }
 
@@ -49,8 +90,8 @@ const last = {};
 function pick(keys, budget) {
   const list = [];
   for (const k of [].concat(keys)) {
-    (VO[k] || []).forEach((d, i) => {
-      if (!budget || d <= budget) list.push({ key: k, i: i + 1, dur: d });
+    (EFF[k] || []).forEach(e => {
+      if (!budget || e.dur <= budget) list.push({ key: k, i: e.i, dur: e.dur });
     });
   }
   if (!list.length) return null;
@@ -62,4 +103,4 @@ function pick(keys, budget) {
   return list[n];
 }
 
-module.exports = { VO, pick, maxOf };
+module.exports = { VO, BASE, pick, maxOf, apply, effective, config, durations };

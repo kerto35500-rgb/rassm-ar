@@ -162,7 +162,7 @@ label{font-size:13px;color:var(--dim)}
 <h1>🔊 أصوات الأسئلة</h1>
 <div class="sub">
   الصوت: <b id="vVoice">—</b> · الموديل: <b id="vModel">—</b> · الصيغة: <b id="vFmt">—</b>
-  · <a href="ADMIN_URL/q">إدارة الأسئلة</a>
+  · <a href="ADMIN_URL/q">إدارة الأسئلة</a> · <a href="ADMIN_URL/vo">🎙️ أصوات المعلّق</a>
 </div>
 
 <div class="card">

@@ -207,6 +207,8 @@ th{color:#9fb3c8;font-weight:600}
 <div class="head"><h1>🎨 لوحة مراقبة ارسمها <span class="dot"></span></h1>
 <div style="display:flex;gap:8px;align-items:center">
 <a class="logout" href="ADMIN_URL/q" style="background:#1668c7">📚 الأسئلة</a>
+<a class="logout" href="ADMIN_URL/v" style="background:#7a3fb3">🔊 صوت الأسئلة</a>
+<a class="logout" href="ADMIN_URL/vo" style="background:#1e8e5a">🎙️ أصوات المعلّق</a>
 <a class="logout" href="ADMIN_URL/w" style="background:#e07b39">💬 كلمات القنبلة</a>
 <a class="logout" href="LOGOUT">خروج</a></div></div>
 <div class="grid">

@@ -24,6 +24,7 @@ const DEFAULTS = {
   speed: num(process.env.ELEVEN_SPEED, 1.08)
 };
 let CFG = { ...DEFAULTS };
+let STORE = null;   // يُضبط في setupTts — لحفظ هبوط الصيغة تلقائيًّا
 
 const PREFIX = "tts_";
 const MIME = "audio/mpeg";
@@ -56,7 +57,7 @@ async function synth(text, over) {
   if (t.length > 4800) throw new Error("النص أطول من حدّ الموديل");
 
   const c = { ...CFG, ...(over || {}) };
-  const res = await fetch(API + c.voice + "?output_format=" + c.format, {
+  const call = fmt => fetch(API + c.voice + "?output_format=" + fmt, {
     method: "POST",
     headers: { "xi-api-key": key, "Content-Type": "application/json", Accept: "audio/mpeg" },
     body: JSON.stringify({
@@ -70,6 +71,17 @@ async function synth(text, over) {
       }
     })
   });
+  let res = await call(c.format);
+  /* 192kbps متاحٌ من فئة Creator فقط؛ على الفئات الأدنى تردّ ElevenLabs 403
+     output_format_not_allowed. نهبط تلقائيًّا إلى 128kbps (متاحٌ للجميع) ونثبّته
+     كي لا يتكرّر النداء الفاشل مع كل سؤال. */
+  if (res.status === 403 && /output_format_not_allowed|Output format/i.test(await res.clone().text().catch(() => ""))
+      && c.format !== "mp3_44100_128") {
+    console.warn("🔊 صيغة " + c.format + " غير متاحة لهذه الفئة — التحويل إلى mp3_44100_128");
+    CFG.format = "mp3_44100_128"; c.format = "mp3_44100_128";
+    if (STORE) STORE.saveKV("ttsCfg", CFG).catch(() => {});
+    res = await call(c.format);
+  }
 
   if (!res.ok) {
     let msg = "";
@@ -138,6 +150,7 @@ function setupTts(app, deps) {
     await store.saveKV("ttsDur", DUR).catch(() => {});
     console.log("🔊 أُعيد بناء فهرس مدد الصوت: " + have.size + " مقطعًا (مدد تقديرية)");
   }).catch(() => {});
+  STORE = store;
   store.getKV("ttsCfg").then(v => {
     if (v && typeof v === "object") {
       CFG = { ...DEFAULTS, ...v };

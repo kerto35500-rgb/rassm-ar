@@ -114,8 +114,10 @@ async function playAttack(room,socks){
   const pr=socks[0].last("pyramidReveal");
   ok(pr&&pr.correct===c&&pr.picks&&pr.picks.length===4&&pr.moves.every(m=>m.from===before[room.players.findIndex(p=>p.id===m.id)]),"رسالة الكشف تحمل الإجابة الصحيحة واختيارات اللاعبين والحركات المرتقبة");
   await until(room,["pyramid"],3000);
+  ok(room.players.every((p,i)=>p.pyPos===before[i]),"عند العودة للهرم: سكونٌ أوّلًا — المواضع لم تتغيّر بعد");
+  await sleep(120);
   const d=room.players.map((p,i)=>p.pyPos-before[i]);
-  ok(d.filter(x=>x===1).length===1&&d.every(x=>x===0||x===1),"٤ لاعبين: الأسرع وحده صعد درجة",JSON.stringify(d));
+  ok(d.filter(x=>x===1).length===1&&d.every(x=>x===0||x===1),"٤ لاعبين: ثم الأسرع وحده صعد درجة",JSON.stringify(d));
   ok(d[0]===1,"والأسرع هو أوّل من أجاب");
   ok(room.phase==="pyramid","ثم العودة إلى عرض الهرم",room.phase);
 }
@@ -128,7 +130,7 @@ async function playAttack(room,socks){
   ok(room.phase==="question","وصلنا للخيارات بلا فخاخ (القوى مطفأة)",room.phase);
   const c=room.currentQ.correct; const before=room.players.map(p=>p.pyPos);
   for(const s of socks){ s.fire("answer",c); await sleep(25); }
-  await until(room,["pyramid"],3000);
+  await until(room,["pyramid"],3000); await sleep(120);
   const d=room.players.map((p,i)=>p.pyPos-before[i]);
   ok(d.filter(x=>x===1).length===2&&d[0]===1&&d[1]===1,"٦ لاعبين: الأسرعان صعدا درجةً واحدة",JSON.stringify(d));
 }

@@ -399,6 +399,7 @@ label{font-size:12.5px;color:#8ea6c0;display:block;margin-bottom:3px}
 .ok{color:#7fd4a8}.err{color:#ff8a80}
 </style></head><body><div class="wrap">
 <h1>📚 إدارة أسئلة قمّة الهرم</h1>
+<div style="margin:4px 0 10px;font-size:13px"><a href="ADMIN_URL" style="color:#8fd3ff;text-decoration:none;margin-inline-end:14px">← لوحة المراقبة</a><a href="ADMIN_URL/v" style="color:#8fd3ff;text-decoration:none;margin-inline-end:14px">🔊 صوت قراءة الأسئلة</a><a href="ADMIN_URL/vo" style="color:#8fd3ff;text-decoration:none">🎙️ أصوات المعلّق</a></div>
 <div class="sub" id="tot">…</div>
 
 <div class="card" id="rpCard" style="display:none">
@@ -569,9 +570,9 @@ async function loadReports(){
       (r.n>1?'<span class="tag x">بلّغ عنه '+r.n+'</span>':'')+
       (r.cat?'<span class="tag">'+esc(r.cat)+'</span>':'')+
       (r.room?'<span class="tag">غرفة '+esc(r.room)+'</span>':'')+
-      (r.row?'<button class="s" onclick="rpEdit(\''+r.id+'\')">✏ فتح في المحرّر</button>'+
-             '<button class="s" onclick="rpOff(\''+r.id+'\')">⛔ تعطيل السؤال</button>':'')+
-      '<button class="s r" onclick="rpDel(\''+r.id+'\')">تمّت المعالجة ✓</button>'+
+      (r.row?'<button class="s" onclick="rpEdit(\\''+r.id+'\\')">✏ فتح في المحرّر</button>'+
+             '<button class="s" onclick="rpOff(\\''+r.id+'\\')">⛔ تعطيل السؤال</button>':'')+
+      '<button class="s r" onclick="rpDel(\\''+r.id+'\\')">تمّت المعالجة ✓</button>'+
       '</div></div>';
   }).join("");
 }

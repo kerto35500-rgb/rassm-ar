@@ -23,8 +23,10 @@ const PY_INTRO_MS = FAST ? 300 : 9500;      // مقدمة الهرم: عدّ ا�
 const PY_COUNT_MS = 5000;                   // مدّة عدّ النقاط: صاحب أعلى نقاطٍ ينتهي عندها
 const PY_START_JUMP_MS = PY_COUNT_MS + 200; // تُثبَّت المواضع في الحالة بعد انتهاء العدّ
 const PY_ANS_MS    = FAST ? 200 : 2600;     // كشف الإجابة الصحيحة على شاشة الخيارات أوّلًا
-const PY_JUMP_MS   = 1400;                  // أطول قفزةٍ في المقاطع (تحفّز ٣٤٠ + وثبٌ ≤ ١٠٠٠)
-const PY_REVEAL_MS = FAST ? 300 : PY_JUMP_MS + 1000;   // عرض الهرم: القفزة ثم ثانيةٌ — قفز أحدٌ أم لا
+const PY_JUMP_MS   = FAST ? 100 : 1400;                  // أطول قفزةٍ في المقاطع (تحفّز ٣٤٠ + وثبٌ ≤ ١٠٠٠)
+const PY_HOLD_MS   = FAST ? 50 : 1000;      // عند العودة إلى الهرم: ثانيةُ سكونٍ قبل الحركة
+const PY_AFTER_MS  = FAST ? 100 : 2000;     // بعد الحركة: ثانيتان ثم السؤال التالي
+const PY_REVEAL_MS = PY_HOLD_MS + PY_JUMP_MS + PY_AFTER_MS;   // عرض الهرم كاملًا — قفز أحدٌ أم لا
 const EFFECT_MS = FAST ? 400 : 4000;        // أقصى مدة لتأثير القوة
 const RECONNECT_MS = 180000;   // ٣ دقائق: تبديل التطبيقات في الجوال لا يطرد اللاعب
 // تُضبط لتصل المرحلة التالية للاعب لحظة وميض العبور تماماً (لا فراغ بعد الزوم)
@@ -1094,22 +1096,27 @@ function setupQuiz(io, deps) {
     broadcast(room);
 
     room.phaseTimer = setTimeout(() => {
-      /* ٢) ثم الهرم: تُطبَّق المواضع فتقفز الشخصيات، وننتظر بعد القفزة ثانيةً */
-      moves.forEach(m => { const p = room.players.find(x => x.id === m.id); if (p) p.pyPos = m.to; });
+      /* ٢) ثم الهرم: ثانيةُ سكون، ثم تُطبَّق المواضع فتقفز الشخصيات، ثم ثانيتان */
       let nearVo = null;
-      const top = Math.max(0, ...alive(room).map(p => p.pyPos || 0));
+      const top = Math.max(0, ...moves.map(m => m.to || 0));
       if (!room.voDone.near_top && top >= H - 2 && top < H) {
         room.voDone.near_top = true;
         nearVo = voc.pick("near_top");
       }
       room.pubVo = nearVo; if (room.pubVo) room.pubVo.at = "pyramid";
-      const reached = alive(room).filter(p => p.pyPos >= H);
+      const reached = alive(room).filter(p => moves.find(m => m.id === p.id && m.to >= H));
       room.pubQuestion = null;
       setPhase(room, "pyramid", 0, null);          /* عرضُ الهرم والقفزات */
       const ms = Math.max(PY_REVEAL_MS, room.pubVo ? room.pubVo.dur * 1000 + 600 : 0);
       room.phaseEndsAt = Date.now() + ms;
       room.phaseDur = ms / 1000;
       broadcast(room);
+      /* الحركة بعد ثانية السكون — العميل يقفز حين تصله المواضع الجديدة */
+      setTimeout(() => {
+        if (room.phase !== "pyramid") return;
+        moves.forEach(m => { const p = room.players.find(x => x.id === m.id); if (p) p.pyPos = m.to; });
+        broadcast(room);
+      }, PY_HOLD_MS);
 
       if (reached.length) {
         let win = reached[0];

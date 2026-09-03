@@ -1180,6 +1180,9 @@ createStore()
       const saved = await store.getKV("quizBank");
       if (saved) { qbank.setExtra(saved.extra || {}); qbank.setRemoved(saved.removed || []); }
       require("./qadmin").setupQuestionAdmin(app, { store });
+      // 🎙️ أصوات المعلّق: استماع/تعطيل/رفع من الأدمن (<ADMIN_PATH>/vo)
+      try { require("./voadmin").setupVoiceOverAdmin(app, { store }); }
+      catch (e) { console.error("voadmin setup:", e.message); }
       // 🔊 صوت قراءة الأسئلة (ElevenLabs) — يُخزَّن مرة واحدة ويُقدَّم من /tts/<id>
       try {
         ttsApi = require("./tts").setupTts(app, { store });
