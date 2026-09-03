@@ -1216,8 +1216,8 @@ body.pyOn #stage{border-radius:24px}
 /* شارات الفخاخ: بطاقةٌ صغيرة بجانب كل درجةٍ تُظهر فخَّها. الخامسة والسادسة
    ذهبيّتان لأنّ فخَّيهما يصيبان الجميع. */
 .pyBadge{position:absolute;transform:translate(-50%,-50%);z-index:3;pointer-events:none;
-  display:flex;align-items:center;gap:.35em;white-space:nowrap;
-  padding:.22em .6em .22em .45em;border-radius:999px;font-weight:900;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  width:1.9em;height:1.9em;border-radius:50%;font-weight:900;color:#fff;
   background:rgba(7,11,32,.78);border:1px solid rgba(255,255,255,.22);
   box-shadow:0 4px 14px rgba(0,0,0,.4);opacity:0;transition:opacity .5s var(--ease)}
 .pyBadge.on{opacity:1}
@@ -2899,7 +2899,7 @@ $("vBtn") && ($("vBtn").oncontextmenu=e=>{   /* ضغطة يمين/مطوّلة =
    الأحداث المشتركة (الأبواب، القدرات، انتهاء الوقت) يختارها الخادم ويمدّ
    المرحلة بقدرها، فيسمع الجميع نفس الجملة ولا تنقطع. وما يختاره العميل
    (تعليق المقلب الذي أصابه، والاستعجال) نقصره على ما يسع الوقت المتبقي. */
-const VO_DUR={first_door:[13.6],door:[4.4,2.4,3.9],door_enter:[5.3,4.4,5.4,4.2],
+let VO_DUR={first_door:[13.6],door:[4.4,2.4,3.9],door_enter:[5.3,4.4,5.4,4.2],
   tie_roulette:[7.4,9.7,5.8,6.4],first_powers:[13.3],powers_intro:[4.8,5.7,2.4,2.7],
   hurry:[7.0,6.3,4.1,6.0],reveal:[2.3,2.5,1.6,2.8,3.2,2.3],
   trap_freeze:[1.9,2.1,1.3],trap_gloop:[1.9,2.4,1.6],trap_bombs:[1.5,1.2,2.4],
@@ -2909,6 +2909,9 @@ const VO_DUR={first_door:[13.6],door:[4.4,2.4,3.9],door_enter:[5.3,4.4,5.4,4.2],
   question_timeup:[],pyramid_timeup:[],attack_timeup:[],
   pyramid_skip:[8.4,5.1,6.3],minigame_skip:[4.8,4.2,5.0,3.0],skip:[7.9,5.9,6.6]};
 let VOA=null, hurryKey="", prevPhase="", voSig=""; const voLast={}, voDone={};
+/* القائمة الفعّالة من الخادم (صفحة الأدمن /vo: تعطيل/رفع مقاطع) — الفهارس
+   الصفرية مقاطعٌ معطَّلة فتُستثنى من الاختيار المحلّي. */
+fetch("/vo/dur.json",{cache:"no-store"}).then(r=>r.json()).then(d=>{ if(d&&typeof d==="object") VO_DUR=d; }).catch(()=>{});
 function voStop(){ if(VOA){ try{VOA.pause();}catch(e){} VOA=null; } }
 /* تشغيل مقطع بعينه (ما اختاره الخادم) */
 function voFile(key,i){
@@ -2924,7 +2927,7 @@ function vo(key,alt,budget){
   if(vMute)return;
   const keys=[key].concat(alt||[]).filter(k=>VO_DUR[k]);
   const all=[];
-  keys.forEach(k=>VO_DUR[k].forEach((d,idx)=>{ if(!budget||d<=budget) all.push(k+"|"+(idx+1)); }));
+  keys.forEach(k=>VO_DUR[k].forEach((d,idx)=>{ if(d>0&&(!budget||d<=budget)) all.push(k+"|"+(idx+1)); }));
   if(!all.length)return;
   const tag=keys.join("+");
   let n=Math.floor(Math.random()*all.length);
@@ -3828,18 +3831,21 @@ function pyBadges(st,box,dev){
       el=document.createElement("div"); el.className="pyBadge"+(i>=4?" all":"");
       el.dataset.i=i;
       const pw=PY_TIER_TRAP[i];
-      el.innerHTML='<span class="ic">'+PW_EM[pw]+'</span><span>'+PW_NM[pw]+
-        (i>=4?' · على الجميع':'')+'</span><span class="tn">'+["١","٢","٣","٤","٥","٦"][i]+'</span>';
+      /* الأيقونة وحدها — الاسم والرقم والشرح حُذفت بطلب المستخدم */
+      el.innerHTML='<span class="ic">'+PW_EM[pw]+'</span>';
+      el.title=PW_NM[pw]+(i>=4?" — على الجميع":"");
       st.appendChild(el);
       requestAnimationFrame(()=>el.classList.add("on"));
     }
     let minX=100, sy=0, n=0;
     for(const k in PY_CH0){ const A=PY_CH0[k][dev].anch[i]; if(A[0]<minX) minX=A[0]; sy+=A[1]; n++; }
-    const y=sy/n, fs=box.h*(dev==="m"?0.017:0.026);
-    const x=Math.max(2,minX-(dev==="m"?9:7));
+    /* على حافّة الهرم اليسرى، أعلى وأبعد من مواقف الشخصيات (الدائرة الحمراء
+       في طلب المستخدم): إزاحةٌ يسارًا وإلى الأعلى بنسبةٍ من المسرح. */
+    const y=sy/n, fs=box.h*(dev==="m"?0.02:0.03);
+    const x=Math.max(2,minX-(dev==="m"?12:11));
     el.style.fontSize=fs+"px";
     el.style.left=(x/100*box.w)+"px";
-    el.style.top=((y-(dev==="m"?1.2:2.2))/100*box.h)+"px";
+    el.style.top=((y-(dev==="m"?6:11))/100*box.h)+"px";
   }
 }
 let pyRetry=0;
@@ -4655,8 +4661,10 @@ function resetClient(){
   const row=$("cardRow"); if(row){ row.innerHTML=""; row.dataset.key=""; }
   const sa=$("sAtk"); if(sa){ sa.classList.remove("tv","open"); }
   const hq=$("hudQ"); if(hq) hq.textContent="";
+  /* نُفرغ المحتوى ونمسح مفتاح التخزين معه: renderRoster وrenderChars لا يعيدان
+     البناء ما دام المفتاح نفسه — فكانت القائمة والشخصيات تختفي بعد «إعادة لعب». */
   ["revBody","votes","charGrid","roster"].forEach(id=>{
-    const e=$(id); if(e)e.innerHTML="";
+    const e=$(id); if(e){ e.innerHTML=""; delete e.dataset.k; }
   });
   document.querySelectorAll(".door").forEach(d=>{d.style.visibility="";});
   /* ── ما أُضيف مع الهرم ثنائيّ الأبعاد والتوصيل الجديد ──
