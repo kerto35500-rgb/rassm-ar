@@ -1123,7 +1123,11 @@ body.lkOn #aurora,body.lkOn #bgFx,body.lkOn #grid{display:none!important}
    والنصّ فوقه. المربّع الأبيض كان يحجب الزجاج ويقطع جوّ التلفزيون. */
 /* المواضع بالبكسل من lkFit، فالعمودان مجرّد حاويتين لا تخطيطًا مرنًا */
 body.lkOn #lkBoard{position:absolute;inset:0;display:block;gap:0;padding:0}
-body.lkOn #lkBoard .col{position:absolute;inset:0;display:block;gap:0;max-width:none}
+/* العمودان طبقتان مطلقتان بحجم اللوحة كلّها، فالثاني يغطّي الأوّل ويبتلع
+   نقراته — لذلك تعطّل السحب. الطبقةُ شفّافة للمؤشّر، والأقراصُ وحدها تلتقطه. */
+body.lkOn #lkBoard .col{position:absolute;inset:0;display:block;gap:0;max-width:none;
+  pointer-events:none}
+body.lkOn .node{pointer-events:auto}
 body.lkOn .node{
   position:absolute;
   background:url("sort3d/disc.webp") center/100% 100% no-repeat!important;
@@ -3147,7 +3151,7 @@ let lkPlayed=false;
    المختبر ثم تُنسخ. المرجع في كل شيء هو مستطيل زجاج الشاشة:
    gl/gr/gt/gb نِسبٌ من الصورة، وما بعدها نِسبٌ من الزجاج نفسه. */
 const LK={
- d:{gl:17.5,gr:72,gt:7.5,gb:87, dS:21.5,cA:25,cB:75,rT:26,rG:30,fS:15,
+ d:{gl:15,gr:69.5,gt:7.5,gb:87, dS:21.5,cA:25,cB:75,rT:26,rG:30,fS:15,
     tY:6,tS:20,mY:96,mS:14, kS:11,kX:6.1,kY:13.3, w:1280,h:720},
  m:{gl:5.5,gr:94.5,gt:13.5,gb:81.5, dS:18.5,cA:19.5,cB:81.5,rT:24,rG:29,fS:19.5,
     tY:5,tS:16,mY:96,mS:11.5, kS:9,kX:2.5,kY:10.7, w:720,h:1280}
