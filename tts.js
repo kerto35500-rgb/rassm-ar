@@ -113,12 +113,22 @@ function jobSnapshot() {
 }
 
 // كل نصوص الأسئلة (اختياريًا لفئات محدّدة)
+/* نصوص التحديات (التوصيل والتصنيف) تُقرأ في صفحة القراءة قبل اللعبة بالصيغة
+   نفسها التي يبنيها quiz.js — فتُولَّد مسبقًا هنا تحت فئةٍ وهمية «تحديات». */
+const CHALLENGE_CAT = "تحديات";
+function challengeTexts() {
+  const out = [];
+  (qbank.LINKS || []).forEach(l => { if (l && l.t) out.push(l.t); });
+  (qbank.SORTS || []).forEach(s => { if (s && s.a && s.b) out.push(`صنّف: ${s.a} أم ${s.b}؟`); });
+  return out;
+}
 function allTexts(cats) {
-  const list = (cats && cats.length ? cats : qbank.categories());
+  const list = (cats && cats.length ? cats : qbank.categories().concat(CHALLENGE_CAT));
   const out = [];
   const seen = new Set();
   for (const c of list) {
-    for (const row of qbank.poolOf(c)) {
+    const rows = c === CHALLENGE_CAT ? challengeTexts().map(t => [t]) : qbank.poolOf(c);
+    for (const row of rows) {
       const id = idOf(row[0]);
       if (!id || seen.has(id)) continue;
       seen.add(id);

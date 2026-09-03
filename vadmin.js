@@ -43,7 +43,7 @@ function setupVoiceAdmin(app, deps) {
     if (!tts.hasKey()) return json(res, 400, { error: "ELEVEN_KEY غير مضبوط في إعدادات الخادم" });
     if (tts.job().running) return json(res, 400, { error: "هناك مهمة تعمل بالفعل" });
     const v = await readJson(req) || {};
-    const cats = Array.isArray(v.cats) ? v.cats.filter(c => qbank.categories().includes(c)) : [];
+    const cats = Array.isArray(v.cats) ? v.cats.filter(c => qbank.categories().includes(c) || c === "تحديات") : [];
     tts.startBuild({
       cats,
       limit: Math.max(0, Math.min(6000, Number(v.limit) || 0)),
