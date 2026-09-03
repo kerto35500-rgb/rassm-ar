@@ -2906,18 +2906,22 @@ let VO_DUR={first_door:[13.6],door:[4.4,2.4,3.9],door_enter:[5.3,4.4,5.4,4.2],
   trap_nibble:[2.4,2.1,2.4],trap_double:[2.9,1.8],trap_bet:[4.4,2.0],
   trap_multi:[2.4,2.8,1.3,2.5,2.1,2.8,1.5],near_top:[2.4,4.7,3.2],winner:[13.5,14.0,8.0,8.6],
   pyramid_intro:[26.8],sort_intro:[15.6],link_intro:[13.1],sort_timeup:[7.7],link_timeup:[9.7],
-  question_timeup:[],pyramid_timeup:[],attack_timeup:[],
   pyramid_skip:[8.4,5.1,6.3],minigame_skip:[4.8,4.2,5.0,3.0],skip:[7.9,5.9,6.6]};
 let VOA=null, hurryKey="", prevPhase="", voSig=""; const voLast={}, voDone={};
 /* القائمة الفعّالة من الخادم (صفحة الأدمن /vo: تعطيل/رفع مقاطع) — الفهارس
    الصفرية مقاطعٌ معطَّلة فتُستثنى من الاختيار المحلّي. */
-fetch("/vo/dur.json",{cache:"no-store"}).then(r=>r.json()).then(d=>{ if(d&&typeof d==="object") VO_DUR=d; }).catch(()=>{});
+/* VO_FILE: حدثٌ قد تكون ملفّاته باسم حدثٍ آخر (استعجال كل مرحلة يبدأ
+   بمقاطع «hurry» نفسها)، فنترجم المفتاح إلى اسم الملفّ قبل التشغيل. */
+let VO_FILE={};
+fetch("/vo/dur.json",{cache:"no-store"}).then(r=>r.json()).then(d=>{
+  if(d&&d.dur){ VO_DUR=d.dur; VO_FILE=d.file||{}; }
+}).catch(()=>{});
 function voStop(){ if(VOA){ try{VOA.pause();}catch(e){} VOA=null; } }
 /* تشغيل مقطع بعينه (ما اختاره الخادم) */
 function voFile(key,i){
   if(vMute||!key||!i)return;
   vStop(); voStop();                 /* لا يتداخل التعليق مع قراءة السؤال */
-  const a=new Audio("/vo/"+key+"-"+i+".mp3");
+  const a=new Audio("/vo/"+(VO_FILE[key+"-"+i]||key+"-"+i)+".mp3");
   a.volume=.92; VOA=a;
   a.onended=a.onerror=()=>{ if(VOA===a)VOA=null; };
   a.play().catch(()=>{});
@@ -4162,8 +4166,9 @@ function clockTick(){
     $("cNum").textContent=s;
     wrap.classList.toggle("hot",left<3600);
     if(s!==last&&s<=3&&s>0&&!ST.pyMode){last=s;sTick();}
-    /* استعجال اللاعبين: مرة واحدة لكل مرحلة إجابة، قبل النهاية بخمس ثوانٍ.
-       الهرم مستثنى — لا نقر عدّاد ولا تعليق استعجال. */
+    /* استعجال اللاعبين: مرّةً واحدة لكل مرحلة، قبل النهاية بخمس ثوانٍ.
+       المقطع يختاره الخادم من حدث المرحلة نفسها (استعجال الأسئلة/التصنيف/
+       التوصيل/الهرم)، فلكلٍّ صوته الخاصّ من صفحة /vo. */
     if(left<=5000&&left>3800&&hurryKey!==phaseKey&&
        (ST.phase==="question"||ST.phase==="link"||ST.phase==="sort")){
       hurryKey=phaseKey;
