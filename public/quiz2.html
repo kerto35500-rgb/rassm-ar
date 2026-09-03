@@ -1147,6 +1147,9 @@ body.lkOn .node.hot {filter:drop-shadow(0 0 14px var(--gold)) drop-shadow(0 8px 
 body.lkOn .node.tied{filter:drop-shadow(0 0 10px var(--violet)) drop-shadow(0 8px 16px rgba(0,0,0,.55))}
 body.lkOn .node.good{filter:drop-shadow(0 0 12px var(--lime)) drop-shadow(0 8px 16px rgba(0,0,0,.55))}
 body.lkOn .node.bad {filter:drop-shadow(0 0 12px var(--red)) drop-shadow(0 8px 16px rgba(0,0,0,.55))}
+/* خروج القرص المُصاب: انكماشٌ وتلاشٍ قصيران — يملك transform فيُلغي أنيميشن الدخول */
+body.lkOn .node.lkOut{animation:lkOut .4s var(--ease) both!important;pointer-events:none}
+@keyframes lkOut{to{transform:scale(.3);opacity:0;filter:blur(2px)}}
 /* الحشو على النصّ داخل القرص لا على القرص: النسبة المئوية على عنصرٍ
    مطلق تُحسب من عرض الحاوية — أي عرض الزجاج كلّه — فتصير ٩٨ بكسل لكل
    جهةٍ على قرصٍ عرضه ١٣٢. المختبر يضعها على الـspan فتُحسب من القرص. */
@@ -1210,6 +1213,21 @@ body.pyOn #stage{border-radius:24px}
 .pyActor.vid video:nth-of-type(1){opacity:1}
 .pyActor.vid.j video:nth-of-type(1){opacity:0}
 .pyActor.vid.j video:nth-of-type(2){opacity:1}
+/* شارات الفخاخ: بطاقةٌ صغيرة بجانب كل درجةٍ تُظهر فخَّها. الخامسة والسادسة
+   ذهبيّتان لأنّ فخَّيهما يصيبان الجميع. */
+.pyBadge{position:absolute;transform:translate(-50%,-50%);z-index:3;pointer-events:none;
+  display:flex;align-items:center;gap:.35em;white-space:nowrap;
+  padding:.22em .6em .22em .45em;border-radius:999px;font-weight:900;color:#fff;
+  background:rgba(7,11,32,.78);border:1px solid rgba(255,255,255,.22);
+  box-shadow:0 4px 14px rgba(0,0,0,.4);opacity:0;transition:opacity .5s var(--ease)}
+.pyBadge.on{opacity:1}
+.pyBadge .ic{font-size:1.25em;line-height:1}
+.pyBadge .tn{font-size:.72em;opacity:.7;font-weight:800}
+.pyBadge.all{color:#2a1c00;background:linear-gradient(90deg,#ffe58a,#ffb930);border-color:#fff3c2;
+  box-shadow:0 0 0 2px rgba(255,200,60,.35),0 0 22px rgba(255,190,50,.55);animation:pyBadgeGlow 1.6s ease-in-out infinite alternate}
+.pyBadge.all .tn{opacity:.85}
+@keyframes pyBadgeGlow{from{box-shadow:0 0 0 2px rgba(255,200,60,.3),0 0 14px rgba(255,190,50,.4)}
+  to{box-shadow:0 0 0 2px rgba(255,220,120,.6),0 0 30px rgba(255,200,80,.85)}}
 .pyTag{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);
   margin-bottom:3px;font-size:10px;font-weight:900;white-space:nowrap;
   padding:1px 7px;border-radius:8px;background:rgba(6,8,22,.72);
@@ -1224,6 +1242,31 @@ body.pyOn #stage{border-radius:24px}
   z-index:10;margin:0;width:70px;height:70px;
   filter:drop-shadow(0 4px 16px rgba(0,0,0,.85))}
 #sPy>#clock #cNum{font-size:24px}
+/* عدّ النقاط الافتتاحيّ: لوحة صغيرة أسفل المشهد، فوق الأرض لا فوق الهرم */
+#pyCount{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:9;
+  width:min(92%,520px);background:rgba(7,11,32,.82);border:1px solid rgba(255,255,255,.14);
+  border-radius:18px;padding:10px 14px 8px;color:#fff;backdrop-filter:none;
+  box-shadow:0 12px 40px rgba(0,0,0,.45);animation:fadeIn .4s var(--ease) both}
+#pyCount.hide{display:none}
+#pyCount .ttl{font-size:13px;opacity:.8;text-align:center;margin-bottom:6px}
+#pyCount .rows{display:grid;gap:4px}
+#pyCount .row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;
+  padding:5px 10px;border-radius:12px;background:rgba(255,255,255,.06);transition:background .3s}
+#pyCount .row.me{outline:1px solid rgba(255,214,102,.55)}
+#pyCount .row .nm{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#pyCount .row .sc{font-variant-numeric:tabular-nums;font-weight:900;font-size:20px;min-width:64px;text-align:left;
+  color:#ffd666;text-shadow:0 0 12px rgba(255,214,102,.35)}
+#pyCount .row .jp{font-size:12px;font-weight:800;opacity:0;min-width:72px;text-align:center;
+  padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.1);transition:opacity .25s}
+#pyCount .row.done{background:rgba(60,200,120,.14)}
+#pyCount .row.done .sc{color:#9be7b5}
+#pyCount .row.done .jp{opacity:1}
+#pyCount .row.done .jp.up{background:rgba(60,200,120,.28)}
+@media (max-width:640px){
+  #pyCount{bottom:6px;padding:8px 10px 6px;border-radius:14px}
+  #pyCount .row{padding:4px 8px;gap:8px} #pyCount .row .nm{font-size:13px}
+  #pyCount .row .sc{font-size:17px;min-width:52px} #pyCount .row .jp{font-size:11px;min-width:60px}
+}
 #pyBrow{position:absolute;top:0;left:0;right:0;z-index:8;padding:9px 12px 22px;
   text-align:center;font-size:11.5px;font-weight:800;letter-spacing:2.2px;color:#bff6ff;
   text-shadow:0 2px 10px rgba(0,0,0,.9);pointer-events:none;
@@ -1351,9 +1394,12 @@ body.pyOn #stage{border-radius:24px}
   animation:penIn .35s var(--spring);pointer-events:none}
 @keyframes penIn{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 
-.nib{position:absolute;font-size:22px;z-index:28;pointer-events:none;
-  filter:drop-shadow(0 3px 7px rgba(0,0,0,.6));
+/* أكلة الحروف: كانت ٢٢px فتضيع على الزرّ — تكبر مع عرض الشاشة ولا تصغر
+   عن ٣٠، وعلى الجوال أكبر نسبيًّا لأن الأزرار أضيق فتُرى بوضوح. */
+.nib{position:absolute;font-size:clamp(30px,3.2vw,44px);z-index:28;pointer-events:none;
+  filter:drop-shadow(0 4px 9px rgba(0,0,0,.65));
   animation:crawl 2.2s ease-in-out forwards}
+@media (max-width:699px){ .nib{font-size:clamp(32px,8.4vw,44px)} }
 @keyframes crawl{
   0%{transform:translateX(0) scale(0) rotate(0)}
   12%{transform:translateX(0) scale(1.15) rotate(-8deg)}
@@ -1644,6 +1690,7 @@ body.pyOn #stage{border-radius:24px}
     <div class="scene" id="sPy">
       <div id="pyScene"><img id="pyBgBlur" alt=""><div id="pyStage"><img id="pyBg" alt=""></div></div>
       <div id="pyBrow">🔺 أول من يصل القمة يفوز</div>
+      <div id="pyCount" class="hide"><div class="ttl">النقاط تُصفَّر… ومن ينتهي أوّلًا يأخذ مكانه</div><div class="rows"></div></div>
       <div id="pyQ" class="hide"><div id="pyText"></div><div id="pyAns"></div></div>
     </div>
 
@@ -2191,18 +2238,33 @@ socket.on("revealChallenge",d=>{
   (m&&m.hits>0)?sWin():sLose();
   setTimeout(()=>showRevCh(d),800);
 });
+/* كشف الهرم على فصلين: الإجابة الصحيحة على شاشة الخيارات أوّلًا (هذه
+   الرسالة)، ثم يأتي طور «pyramid» من الخادم بالمواضع الجديدة فتقفز الشخصيات
+   في rPyDraw. */
 socket.on("pyramidReveal",d=>{
-  if(d.nearVo) voFile(d.nearVo.key,d.nearVo.i);
-  [...document.querySelectorAll("#pyAns .ans")].forEach((o,i)=>{
-    if(i===d.correct){o.classList.add("win");burst(o,"#39e08a");}else o.classList.add("fade");});
+  FXM.stop();
+  const A=[...document.querySelectorAll("#answers .ans")];
+  A.forEach(o=>{o.style.pointerEvents="none";});
+  /* رقاقة لكل لاعب فوق خياره — كما في كشف الأسئلة */
+  A.forEach(o=>{ if(!o.querySelector(".chipRow")){ const r=document.createElement("div");r.className="chipRow";o.appendChild(r);} });
+  (d.picks||[]).forEach((r,ri)=>{
+    if(r.idx<0||!A[r.idx])return;
+    const chip=document.createElement("div");
+    chip.className="revChip"+(r.correct?" won":" lost");chip.dataset.pid=r.id;
+    chip.style.animationDelay=(ri*.08)+"s";
+    chip.innerHTML=(r.charId?'<img src="'+charImg(r.charId)+'" alt="">':avatar(r.name,r.color));
+    A[r.idx].querySelector(".chipRow").appendChild(chip);
+  });
+  A.forEach((o,i)=>{
+    if(i===d.correct){o.classList.add("win");burst(o,"#39e08a");}
+    else{o.classList.add("fade");if(i===picked)o.classList.add("lose");}
+  });
   const mine=d.moves.find(m=>m.id===ME);
   (mine&&mine.correct)?sWin():sLose();
-  d.moves.forEach(m=>{
-    /* القفزة نفسها يشغّلها rPyDraw حين يصل الموضع الجديد من الخادم؛
-       هنا نُصدر نغمة الصعود فقط كي لا تُشغَّل القفزة مرّتين. */
-    if(m.d>0) tone(700+m.to*40,.14,"sine",.045);
-  });
+  /* نغمة الصعود تُصدَر مع القفزة حين يصل طور الهرم */
+  pyPendingTones=d.moves.filter(m=>m.d>0).map(m=>m.to);
 });
+let pyPendingTones=[];
 // الهجمات تصل قبل أن تُبنى شاشة السؤال — نخزّنها كلها ونطبّقها فور جاهزية الأزرار
 let pendingFx=[];
 socket.on("attacked",d=>{
@@ -2261,7 +2323,7 @@ function render(){
     phaseKey=key;picked=-1;
     // نُنهي الفخ فقط عند الانتقال لمرحلة غير التي بدأ فيها
     FXM.sweep(key);
-    if(ST.phase!=="question"&&ST.phase!=="pyramid")pendingFx=[];
+    if(ST.phase!=="question"&&ST.phase!=="pyReveal"&&ST.phase!=="pyramid")pendingFx=[];
     if(ST.phase!=="attack"){closeTg();cancelAnimationFrame(atkArcRaf);MYMENU=[];atkPlayed=false;}
     if(ST.phase!=="attackReveal")AR=null;
     if(ST.phase!=="link")lkLast=null;
@@ -2294,7 +2356,14 @@ function render(){
     else if(ST.phase==="question")rQ(fresh);
     else if(ST.phase==="link")rLink(fresh);
     else if(ST.phase==="sort")rSort(fresh);
-    else if(ST.phase==="pyramidIntro"||ST.phase==="pyramid")rPy(fresh);
+    else if(ST.phase==="pyReveal"){/* نبقى على شاشة الخيارات: الإجابة الصحيحة مُظهَرة من pyramidReveal */}
+    else if(ST.phase==="pyramidIntro"||ST.phase==="pyramid"){
+      if(fresh&&ST.phase==="pyramid"&&pyPendingTones.length){
+        pyPendingTones.forEach((to,i)=>setTimeout(()=>tone(700+to*40,.14,"sine",.045),PY_LEAD+i*90));
+        pyPendingTones=[];
+      }
+      rPy(fresh);
+    }
     lastState="playing";
   }
   /* تعليق يختاره الخادم لمرحلة بعينها — يُشغَّل مرة واحدة عند وصوله */
@@ -2615,9 +2684,18 @@ function atkPlay(){
   atkSceneT=setTimeout(atkOpen, Math.min(wait, ATK_OPEN_MS+500));
 }
 
+/* فخاخ الهرم: لا فيلمَ كلَّ جولة — الإطارُ الأخير خلفيّةً والبطاقات مفتوحةٌ فورًا */
+function atkStillOnly(){
+  const host=$("sAtk"),v=$("atkVid"),im=$("atkStill"),M=ATK_MEDIA[atkDev()];
+  clearTimeout(atkSceneT); atkPlayed=true;
+  host.classList.add("tv","open");
+  v.classList.add("done"); try{ v.pause(); }catch(e){}
+  if(!im.src.endsWith(M.i)) im.src=M.i;
+}
 function rAtk(fresh){
   scene("sAtk");mountClock("sAtk");buildSparks();
-  if(fresh)atkPlay(); else $("sAtk").classList.add("tv");
+  if(ST.pyMode) atkStillOnly();
+  else if(fresh) atkPlay(); else $("sAtk").classList.add("tv");
   /* تعليق القدرات يختاره الخادم (ST.vo) */
   const me=ST.players.find(p=>p.id===ME);
   const left=me?me.powersLeft:0,tot=ST.settings.powerUses||0;
@@ -2648,7 +2726,13 @@ function rAtk(fresh){
       return;
     }
     menu=(MYMENU&&MYMENU.length)?MYMENU:[];
-    $("atkTitle").textContent="الدرجة "+tier+": اختر من تضرب بـ"+(NM[menu[0]]||"فخّك");
+    row.innerHTML="";row.dataset.key="";
+    if(!menu.length){ $("atkTitle").textContent="الدرجة "+tier; $("atkNote").innerHTML=""; return; }
+    $("atkTitle").textContent="الدرجة "+tier+": فخّك "+(NM[menu[0]]||"");
+    $("atkNote").innerHTML="اختر من تضرب";
+    /* الهدف يُختار مباشرةً: لا بطاقةَ تُقلب ولا فيلم */
+    if(!$("tgModal").classList.contains("on")) openTargets(null,menu[0],PW_CL[menu[0]]||["#22e6ff","#8b5cf6"],foes);
+    return;
   }else{
     menu=(MYMENU&&MYMENU.length)?MYMENU:(ST.settings.allowedPowers||[]);
     $("atkTitle").textContent="اختر بطاقتك الهجومية";
@@ -2722,7 +2806,7 @@ function openTargets(card,power,cl,foes){
       :avatar(p.name,p.color);
     b.innerHTML='<span class="av">'+face+'</span>'+
                 '<span class="nm">'+esc(p.name)+'</span>'+
-                '<span class="sc">'+(p.score||0)+'</span>';
+                '<span class="sc">'+(ST.pyMode?('الدرجة '+((p.pyPos||0)+1)):(p.score||0))+'</span>';
     b.onclick=()=>{
       if(atkSent)return;
       atkT=p.id;atkSent=true;
@@ -2739,6 +2823,7 @@ function openTargets(card,power,cl,foes){
 
 /* البطاقة تطير من مكانها نحو بطاقة اللاعب في الشريط الجانبي */
 function flyTo(card,targetId,cl){
+  if(!card) return;
   card.style.visibility="hidden";
   if(RM){card.style.visibility="";return;}
   const r=card.getBoundingClientRect();
@@ -3198,9 +3283,10 @@ function lkFit(){
     if(!col) return;
     const x=cx/100*sw;
     [...col.children].forEach((b,i)=>{
+      const row=b.dataset.row!==undefined?+b.dataset.row:i;
       b.style.width=D+"px"; b.style.height=D+"px";
       b.style.left=(x-D/2)+"px";
-      b.style.top=((P.rT+P.rG*i)/100*sh-D/2)+"px";
+      b.style.top=((P.rT+P.rG*row)/100*sh-D/2)+"px";
       b.style.fontSize=(P.fS/100*D)+"px";
     });
   });
@@ -3232,25 +3318,39 @@ function lkPaint(d){
   $("lkTitle").textContent=d.title;
   $("lkMeta").textContent=d.hits+" / "+d.total;
   /* في صفحة RTL العمود الأول (lkL) يقع بصريًا على اليمين — وهو المطلوب:
-     عناصر المصدر يمينًا تُسحب نحو أهدافها يسارًا */
-  const R=$("lkL"), L=$("lkR");
-  R.innerHTML="";L.innerHTML="";
-  d.r.forEach(o=>{
-    const b=document.createElement("button");
-    b.className="node ring src";b.innerHTML="<span></span>";
-    b.firstChild.textContent=o.txt;b.dataset.k=o.k;
-    R.appendChild(b);lkRingIn(b);
-    b.onpointerdown=e=>lkDragStart(e,b);
-  });
-  d.l.forEach(o=>{
-    const b=document.createElement("button");
-    b.className="node ring dst";b.innerHTML="<span></span>";
-    b.firstChild.textContent=o.txt;b.dataset.k=o.k;
-    L.appendChild(b);lkRingIn(b);
+     عناصر المصدر يمينًا تُسحب نحو أهدافها يسارًا.
+     التحديث تزايديّ: الخادم يُبقي رموزَ الأقراص الباقية، فنحذف ما غاب
+     بحركةٍ صغيرة، ونُدخل الجديدَ في الخانات الشاغرة، ولا نلمس الباقي. */
+  const cols=[[$("lkL"),d.r,"src"],[$("lkR"),d.l,"dst"]];
+  cols.forEach(([col,items,cls])=>{
+    const have={}; [...col.querySelectorAll(".node")].forEach(b=>{ if(!b.classList.contains("lkOut")&&!b.dataset.gone) have[b.dataset.k]=b; });
+    const want=new Set(items.map(o=>o.k));
+    /* ١) خروج ما غاب */
+    Object.keys(have).forEach(k=>{ if(!want.has(k)) lkOut(have[k]); });
+    /* ٢) الخانات الشاغرة (٠،١،٢) بعد استبعاد المشغولة بالباقين */
+    const used=new Set(Object.keys(have).filter(k=>want.has(k)).map(k=>+have[k].dataset.row));
+    const free=[0,1,2,3,4].filter(r=>!used.has(r));
+    /* ٣) دخول الجديد */
+    items.forEach(o=>{
+      if(have[o.k]) return;
+      const b=document.createElement("button");
+      b.className="node ring "+cls; b.innerHTML="<span></span>";
+      b.firstChild.textContent=o.txt; b.dataset.k=o.k;
+      b.dataset.row=String(free.length?free.shift():used.size);
+      col.appendChild(b); lkRingIn(b);
+      if(cls==="src") b.onpointerdown=e=>lkDragStart(e,b);
+    });
   });
   /* اكتمال القائمة: الخادم يرسل لوحة فارغة برصيد كامل */
   $("lkDone").classList.toggle("gone",!(d.hits>=d.total));
   lkFit();   /* المواضع تُضبط بعد بناء العقد */
+}
+/* خروج القرص: ينكمش ويتلاشى ثم يُحذف — والخانة تُحرَّر فورًا للجديد */
+function lkOut(b){
+  b.dataset.gone="1"; b.onpointerdown=null; b.style.pointerEvents="none";
+  /* الثنائيّ المُصاب يبقى مضاءً بالأخضر لحظةً مع خطّ التوصيل، ثم يخرج */
+  const wait=b.classList.contains("good")?380:0;
+  setTimeout(()=>{ b.classList.add("lkOut"); setTimeout(()=>b.remove(),420); },wait);
 }
 function lkRingIn(b){b.classList.remove("popIn");void b.offsetWidth;b.classList.add("popIn");}
 function lkCenter(el){
@@ -3660,15 +3760,94 @@ function pyLeap(el,p,from,to,box,dev,S){
       pyPlace(el,p,box,dev,S); }
   })(performance.now());
 }
+/* ═══ عدّ النقاط الافتتاحيّ ═══
+   تنقص نقاط الجميع بمعدّلٍ واحد: صاحب الأقلّ يبلغ الصفر أوّلًا فيأخذ مكانه
+   (قفزةً أو بقاءً) فورًا، وصاحبُ الأعلى ينتهي آخرًا عند PY_COUNT_MS.
+   نُثبّت الموضع محلّيًّا (pyIntroPos) كي تقفز الشخصية لحظةَ الصفر لا لحظةَ
+   وصول حالة الخادم بعدها. */
+const PY_COUNT_MS=5000;
+let pyIntroPos={}, pyCountRun=null;
+function pyCountStart(d){
+  if(!d||pyCountRun) return;
+  const box=$("pyCount"), rows=box.querySelector(".rows");
+  const alive=ST.players.filter(p=>!p.spectator && d.scores[p.id]!=null);
+  const max=Math.max(1,d.max||1);
+  rows.innerHTML=alive.map(p=>{
+    const j=d.jumps[p.id]||0;
+    return '<div class="row'+(p.id===ME?' me':'')+'" data-id="'+p.id+'"><span class="nm">'+esc(p.name)+
+      '</span><span class="sc">'+d.scores[p.id]+'</span><span class="jp'+(j?' up':'')+'">'+
+      (j===2?'⬆ درجتان':j===1?'⬆ درجة':'يبقى')+'</span></div>';
+  }).join("");
+  box.classList.remove("hide");
+  const t0=performance.now(), done={};
+  pyCountRun={};
+  const tick=()=>{
+    if(!ST||ST.phase!=="pyramidIntro"||!pyCountRun){ return; }
+    const el=performance.now()-t0, drop=el/PY_COUNT_MS*max;
+    let all=true;
+    alive.forEach(p=>{
+      const r=rows.querySelector('.row[data-id="'+p.id+'"]'); if(!r) return;
+      const v=Math.max(0,d.scores[p.id]-drop);
+      r.querySelector(".sc").textContent=Math.ceil(v);
+      if(v<=0 && !done[p.id]){
+        done[p.id]=1; r.classList.add("done");
+        pyIntroPos[p.id]=d.jumps[p.id]||0;
+        rPyDraw();
+      }
+      if(!done[p.id]) all=false;
+    });
+    if(!all) requestAnimationFrame(tick);
+    else setTimeout(()=>{ if(ST&&ST.phase==="pyramidIntro") box.classList.add("hide"); },1800);
+  };
+  requestAnimationFrame(tick);
+}
+function pyCountStop(){
+  pyCountRun=null; pyIntroPos={};
+  const b=$("pyCount"); if(b){ b.classList.add("hide"); b.querySelector(".rows").innerHTML=""; }
+}
 function rPy(fresh){
   scene("sPy");mountClock("sPy");
+  if(ST.phase==="pyramidIntro"&&ST.pyStart) pyCountStart(ST.pyStart);
+  else if(ST.phase!=="pyramidIntro") pyCountStop();
   /* مشهد الهرم صار عرضًا فقط: المواضع والقفزات. السؤالُ وخياراته في
      مشهدَي القراءة والخيارات كما في لعبة الأسئلة. */
   $("pyQ").classList.add("hide");
   pyAlphaOK().then(()=>{ if(ST&&(ST.phase==="pyramid"||ST.phase==="pyramidIntro")) rPyDraw(); });
   rPyDraw();
 }
+/* ═══ شارات الفخاخ بجانب الدرجات ═══
+   الدرجة ن = الموضع ن−١. الأولى وحل، الثانية قنابل، الثالثة أكلة، الرابعة تجميد،
+   والخامسة وحلٌ على الجميع، والسادسة تجميدٌ على الجميع. تُوضع يسار الهرم
+   عند أقصى يسارِ مراسي الشخصيات في تلك الدرجة. */
+const PY_TIER_TRAP=["gloop","bombs","nibble","freeze","gloop","freeze"];
+function pyBadges(st,box,dev){
+  const H=6;
+  for(let i=0;i<H;i++){
+    let el=st.querySelector('.pyBadge[data-i="'+i+'"]');
+    if(!el){
+      el=document.createElement("div"); el.className="pyBadge"+(i>=4?" all":"");
+      el.dataset.i=i;
+      const pw=PY_TIER_TRAP[i];
+      el.innerHTML='<span class="ic">'+PW_EM[pw]+'</span><span>'+PW_NM[pw]+
+        (i>=4?' · على الجميع':'')+'</span><span class="tn">'+["١","٢","٣","٤","٥","٦"][i]+'</span>';
+      st.appendChild(el);
+      requestAnimationFrame(()=>el.classList.add("on"));
+    }
+    let minX=100, sy=0, n=0;
+    for(const k in PY_CH0){ const A=PY_CH0[k][dev].anch[i]; if(A[0]<minX) minX=A[0]; sy+=A[1]; n++; }
+    const y=sy/n, fs=box.h*(dev==="m"?0.017:0.026);
+    const x=Math.max(2,minX-(dev==="m"?9:7));
+    el.style.fontSize=fs+"px";
+    el.style.left=(x/100*box.w)+"px";
+    el.style.top=((y-(dev==="m"?1.2:2.2))/100*box.h)+"px";
+  }
+}
 let pyRetry=0;
+/* في المقدّمة: مَن لم يبلغ صفرَه بعدُ يبقى على الدرجة الأولى مهما قال الخادم */
+function pyPosOf(p){
+  if(ST&&ST.phase==="pyramidIntro"&&ST.pyStart) return pyIntroPos[p.id]!=null?pyIntroPos[p.id]:0;
+  return p.pyPos||0;
+}
 function rPyDraw(){
   const box=pyFit();
   /* المشهد قد يُقاس قبل أن يأخذ أبعاده عند أول ظهور — نعيد المحاولة
@@ -3682,7 +3861,7 @@ function rPyDraw(){
   const alive=ST.players.filter(p=>!p.spectator);
 
   /* هالة الدرجة التي بلغها المتصدّر — إشارةُ السباق */
-  const best=Math.max(0,...alive.map(p=>Math.min(H,p.pyPos||0)));
+  const best=Math.max(0,...alive.map(p=>Math.min(H,pyPosOf(p))));
   const gi=pyAnchIdx(best,H);
   let g=st.querySelector(".pyGlow");
   if(!g){ g=document.createElement("img"); g.className="pyGlow"; g.alt="";
@@ -3691,6 +3870,7 @@ function rPyDraw(){
   if(!g.src.endsWith(gs)) g.src=gs;
   g.classList.toggle("on",best>0);
 
+  pyBadges(st,box,dev);
   const seen={};
   alive.forEach((p,idx)=>{
     seen[p.id]=1;
@@ -3711,7 +3891,7 @@ function rPyDraw(){
         '<span class="pyTag">'+esc(p.name)+'</span>';
       const vs=el.querySelectorAll("video");
       el._v=vs[0]; el._vj=vs[1]; el._shadow=sh;
-      el._from=el._to=pyAnchIdx(Math.min(H,p.pyPos||0),H);
+      el._from=el._to=pyAnchIdx(Math.min(H,pyPosOf(p)),H);
       st.appendChild(el);
     }
     /* فحص الشفافية غير متزامن: قد يصل بعد إنشاء العنصر. فنَصِل المقاطع
@@ -3742,7 +3922,7 @@ function rPyDraw(){
         } },2500);
       }));
     }
-    const want=pyAnchIdx(Math.min(H,p.pyPos||0),H);
+    const want=pyAnchIdx(Math.min(H,pyPosOf(p)),H);
     if(want!==el._to && !pyJump[p.id]) pyLeap(el,p,el._to,want,box,dev,S);
     else if(!pyJump[p.id]) pyPlace(el,p,box,dev,S);
   });
@@ -3967,7 +4147,7 @@ function clockTick(){
   arc.style.strokeDasharray=C;
   let last=-1;
   (function f(){
-    if(!ST||!ST.phaseEndsAt||["reveal","finished","lobby"].includes(ST.phase)){
+    if(!ST||!ST.phaseEndsAt||["reveal","pyReveal","finished","lobby"].includes(ST.phase)){
       arc.style.strokeDashoffset=C;$("cNum").textContent="";wrap.classList.remove("hot");return;}
     const end=ST.phaseEndsAt-OFF,tot=Math.max(1000,(ST.phaseDur||10)*1000);
     const left=Math.max(0,end-Date.now()),fr=Math.max(0,Math.min(1,left/tot));
@@ -4261,7 +4441,11 @@ const FX={
       const self=this;
       let last=null,moves=0,done=false;
       /* فرشاة أعرض: المسح كان يطول أكثر ممّا ينبغي */
-      const BRUSH=Math.max(46,Math.min(74,h*.85));
+      /* فرشاة الوحل: كانت تُحسب من ارتفاع الزرّ وحده فتخرج نحيلةً على
+         الحاسوب حيث الأزرار عريضة ومنخفضة. صارت تأخذ العرض في حسبانها. */
+      const wide=innerWidth>699;
+      const BRUSH=wide ? Math.max(74,Math.min(132,Math.max(h*1.25,w*.16)))
+                       : Math.max(46,Math.min(74,h*.85));
       /* عدّ البكسلات الشفافة من قناع الألفا — «كشف البكسلات» حرفيًا */
       function pct(){
         const d=cx.getImageData(0,0,cv.width,cv.height).data;
@@ -4480,9 +4664,9 @@ function resetClient(){
      بقيت من المباراة السابقة، فتظهر في المباراة الجديدة بمواضعٍ قديمة وقفزاتٍ
      من مكانٍ خاطئ. نُزيلها كلّها ليُعاد بناؤها من الحالة الجديدة. */
   const st=$("pyStage");
-  if(st){ st.querySelectorAll(".pyActor,.pyShadow,.pyGlow").forEach(e=>e.remove()); }
+  if(st){ st.querySelectorAll(".pyActor,.pyShadow,.pyGlow,.pyBadge").forEach(e=>e.remove()); }
   for(const k in pyJump) delete pyJump[k];
-  pyRetry=0;
+  pyRetry=0; pyCountStop();
   const pq=$("pyQ"); if(pq) pq.classList.add("hide");
   /* لوحة التوصيل: العقد والخطوط */
   ["lkL","lkR","lkSvg"].forEach(id=>{ const e=$(id); if(e)e.innerHTML=""; });
