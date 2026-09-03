@@ -333,6 +333,25 @@ function setupTts(app, deps) {
       };
     },
 
+    /* إدخال مقطعٍ جاهز (مولَّد من موقع ElevenLabs يدويًّا) بالمفتاح نفسه الذي
+       يستعمله التوليد الآليّ — فيُقدَّم من /tts/<id> كأيّ مقطعٍ آخر. */
+    async putClip(text, buf, secs) {
+      const id = idOf(text);
+      if (!id) throw new Error("نص فارغ");
+      await store.putBlob(keyOf(id), MIME, buf);
+      noteDur(id, secs > 0 ? secs : Math.round((buf.length / bpsOf("mp3_44100_128")) * 10) / 10);
+      return id;
+    },
+    async missing(cats) {
+      const items = allTexts(cats);
+      const have = new Set();
+      for (let i = 0; i < items.length; i += 400) {
+        const chunk = items.slice(i, i + 400).map(x => keyOf(x.id));
+        (await store.hasBlobs(chunk)).forEach(k => have.add(k));
+      }
+      return items.filter(x => !have.has(keyOf(x.id)));
+    },
+
     async previewOne(text) {
       const { buf, cost, chars, secs } = await synth(text);
       const id = idOf(text);

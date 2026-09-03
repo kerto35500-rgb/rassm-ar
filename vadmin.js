@@ -86,6 +86,45 @@ function setupVoiceAdmin(app, deps) {
     catch (e) { json(res, 500, { error: e.message }); }
   });
 
+  /* ═══ إدخال يدويّ من موقع ElevenLabs ═══
+     الخطة المجانية تمنع أصوات المكتبة عبر الـAPI لكنها تسمح بها من الموقع.
+     فيُولَّد الصوت من صفحة الموقع في متصفّح المدير ويُرسَل إلى هنا برمز
+     مؤقّت (ساعتان) لا يُعطى إلا لصاحب جلسة الأدمن. CORS لأصل elevenlabs.io فقط. */
+  const INGEST = { token: "", exp: 0 };
+  const ingestOk = t => t && t === INGEST.token && Date.now() < INGEST.exp;
+  app.get(ADMIN_PATH + "/v/ingest-token", async (req, res) => {
+    if (!guard(req, res)) return;
+    INGEST.token = require("crypto").randomBytes(24).toString("hex");
+    INGEST.exp = Date.now() + 2 * 3600e3;
+    const cats = String(req.query.cats || "").split(",").map(c => c.trim()).filter(Boolean);
+    const missing = await tts.missing(cats.length ? cats : null);
+    json(res, 200, { token: INGEST.token, exp: INGEST.exp, missing: missing.map(m => ({ id: m.id, cat: m.cat, text: m.text })) });
+  });
+  const cors = (req, res) => {
+    const o = req.headers.origin || "";
+    if (!/^https:\/\/([a-z0-9-]+\.)*elevenlabs\.io$/.test(o)) return false;
+    res.setHeader("Access-Control-Allow-Origin", o);
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Ingest-Token");
+    res.setHeader("Access-Control-Max-Age", "600");
+    return true;
+  };
+  app.options("/tts-ingest", (req, res) => { cors(req, res); res.writeHead(204); res.end(); });
+  app.post("/tts-ingest", async (req, res) => {
+    if (!cors(req, res)) { res.writeHead(403); return res.end("origin"); }
+    if (!ingestOk(req.headers["x-ingest-token"])) return json(res, 403, { error: "رمز الإدخال منتهٍ أو خاطئ" });
+    const v = await readJson(req, 4e6);
+    if (!v || !v.text || !v.b64) return json(res, 400, { error: "طلب ناقص" });
+    let buf; try { buf = Buffer.from(String(v.b64).replace(/^data:[^,]*,/, ""), "base64"); } catch (e) { buf = null; }
+    if (!buf || buf.length < 800) return json(res, 400, { error: "ملف فارغ" });
+    const isMp3 = (buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) || (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0);
+    if (!isMp3) return json(res, 400, { error: "ليس mp3" });
+    try {
+      const id = await tts.putClip(String(v.text), buf, Number(v.secs) || 0);
+      json(res, 200, { ok: true, id, bytes: buf.length });
+    } catch (e) { json(res, 500, { error: e.message }); }
+  });
+
   app.get(ADMIN_PATH + "/v/list", (req, res) => {
     if (!guard(req, res)) return;
     try {
