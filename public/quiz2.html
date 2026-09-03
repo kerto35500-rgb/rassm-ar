@@ -3152,7 +3152,7 @@ let lkPlayed=false;
    gl/gr/gt/gb نِسبٌ من الصورة، وما بعدها نِسبٌ من الزجاج نفسه. */
 const LK={
  d:{gl:15,gr:69.5,gt:7.5,gb:87, dS:21.5,cA:25,cB:75,rT:26,rG:30,fS:15,
-    tY:6,tS:20,mY:96,mS:14, kS:11,kX:6.1,kY:13.3, w:1280,h:720},
+    tY:6,tS:20,mY:96,mS:14, kS:11,kX:11.2,kY:12.1, w:1280,h:720},
  m:{gl:5.5,gr:94.5,gt:13.5,gb:81.5, dS:18.5,cA:19.5,cB:81.5,rT:24,rG:29,fS:19.5,
     tY:5,tS:16,mY:96,mS:11.5, kS:9,kX:2.5,kY:10.7, w:720,h:1280}
 };
@@ -3161,31 +3161,33 @@ const LK={
    مهما كان شكل النافذة. */
 function lkFit(){
   const host=$("sLink"), scr=$("lkScreen"); if(!host||!scr) return;
-  const W=host.clientWidth, H=host.clientHeight; if(W<40||H<40) return;
+  const HW=host.clientWidth, HH=host.clientHeight; if(HW<40||HH<40) return;
   const P=LK[atkDev()];
+  /* المسرح صندوقٌ بنسبة الصورة يُحتوى داخل المشهد ويُوسَّط — وهذا بالضبط
+     ما يفعله المختبر. من غيره تتساوى النِّسَب ويختلف الشكل، لأنّ الصورة
+     تُقصّ وتتموضع على نافذةٍ عريضة غير ما تفعل على مسرحٍ بنسبتها. */
+  const ar=P.w/P.h;
+  let W=HW, H=W/ar; if(H>HH){ H=HH; W=H*ar; }
+  const SX=(HW-W)/2, SY=(HH-H)/2;
   const gl=P.gl/100, gr=P.gr/100, gt=P.gt/100, gb=P.gb/100;
   const gw=gr-gl, gh=gb-gt;
-  /* نكبّر بقدر ما يملأ الصورةُ الشاشة، لكن لا نتجاوز ما يُبقي الزجاج
-     كاملًا داخلها — ثمّ نُوسّط على مركز الزجاج لا على مركز الصورة. */
   const s=Math.min(Math.max(W/P.w,H/P.h), Math.min(W/(gw*P.w), H/(gh*P.h)));
   const rw=P.w*s, rh=P.h*s;
   const ox=W/2-((gl+gr)/2)*rw, oy=H/2-((gt+gb)/2)*rh;
   const im=$("lkStill");
   if(im){ im.style.width=rw+"px"; im.style.height=rh+"px";
-          im.style.left=ox+"px"; im.style.top=oy+"px"; im.style.inset="auto"; }
-  const l=gl*rw+ox, t=gt*rh+oy, sw=gw*rw, sh=gh*rh;
+          im.style.left=(SX+ox)+"px"; im.style.top=(SY+oy)+"px"; im.style.inset="auto"; }
+  const l=SX+gl*rw+ox, t=SY+gt*rh+oy, sw=gw*rw, sh=gh*rh;
   scr.style.left=l+"px"; scr.style.top=t+"px";
   scr.style.width=sw+"px"; scr.style.height=sh+"px";
 
-  /* الأقراص: قطرٌ ومواضعُ من قياسات المختبر لا من تخطيط مرن */
+  /* الأقراص: المصادر (ما يُسحب) في العمود الأيمن cB، والأهداف في الأيسر cA —
+     فالتوصيل من اليمين إلى اليسار كاتّجاه القراءة. */
   const D=P.dS/100*sh;
-  [[$("lkL"),P.cA],[$("lkR"),P.cB]].forEach(([col,cx])=>{
+  [[$("lkL"),P.cB],[$("lkR"),P.cA]].forEach(([col,cx])=>{
     if(!col) return;
     const x=cx/100*sw;
     [...col.children].forEach((b,i)=>{
-      /* نطرح نصف القطر بأنفسنا بدل translate(-50%,-50%): أنيميشن
-         الدخول orbIn ينتهي عند transform:scale(1) بـboth، فيمحو أيّ
-         إزاحةٍ في transform ويترك القرص مزاحًا بنصف قطره. */
       b.style.width=D+"px"; b.style.height=D+"px";
       b.style.left=(x-D/2)+"px";
       b.style.top=((P.rT+P.rG*i)/100*sh-D/2)+"px";

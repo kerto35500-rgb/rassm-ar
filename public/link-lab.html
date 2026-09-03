@@ -121,8 +121,8 @@ body{background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,"Segoe UI",Ta
   <div class="grp">
     <h2>الأقراص</h2>
     <div class="f"><label>القطر</label><div class="vv"><input type="range" id="dS" min="8" max="60" step=".5"><output id="dSo"></output></div></div>
-    <div class="f"><label>عمود اليمين</label><div class="vv"><input type="range" id="cA" min="0" max="100" step=".5"><output id="cAo"></output></div></div>
-    <div class="f"><label>عمود اليسار</label><div class="vv"><input type="range" id="cB" min="0" max="100" step=".5"><output id="cBo"></output></div></div>
+    <div class="f"><label>العمود الأيسر (الأهداف)</label><div class="vv"><input type="range" id="cA" min="0" max="100" step=".5"><output id="cAo"></output></div></div>
+    <div class="f"><label>العمود الأيمن (المصادر)</label><div class="vv"><input type="range" id="cB" min="0" max="100" step=".5"><output id="cBo"></output></div></div>
     <div class="f"><label>أول صفّ</label><div class="vv"><input type="range" id="rT" min="0" max="100" step=".5"><output id="rTo"></output></div></div>
     <div class="f"><label>المسافة</label><div class="vv"><input type="range" id="rG" min="4" max="60" step=".5"><output id="rGo"></output></div></div>
     <div class="f"><label>حجم الخط</label><div class="vv"><input type="range" id="fS" min="6" max="30" step=".5"><output id="fSo"></output></div></div>
@@ -163,11 +163,11 @@ const IMG={d:{f:"/traps/end.webp",w:1280,h:720,ar:16/9},
 /* الافتراضي — نقطةُ بدءٍ لا أكثر، أنت تضبطها */
 const DEF={
   d:{gl:15.0,gr:69.5,gt:7.5,gb:87.0, dS:21.5,cA:25,cB:75,rT:26,rG:30,fS:15,
-     tY:6,tS:20,mY:96,mS:14, kS:11,kX:6.1,kY:13.3},
+     tY:6,tS:20,mY:96,mS:14, kS:11,kX:11.2,kY:12.1},
   m:{gl:5.5,gr:94.5,gt:13.5,gb:81.5, dS:18.5,cA:19.5,cB:81.5,rT:24,rG:29,fS:19.5,
      tY:5,tS:16,mY:96,mS:11.5, kS:9,kX:2.5,kY:10.7}
 };
-const LS="linkLab2";
+const LS="linkLab3";
 let DEV="d", ROWS=3;
 let S=JSON.parse(JSON.stringify(DEF));
 try{ const v=JSON.parse(localStorage.getItem(LS)||"null");
