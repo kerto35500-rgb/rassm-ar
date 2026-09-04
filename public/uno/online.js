@@ -24,35 +24,50 @@ const PHYS = { 2: [0, 2], 3: [0, 1, 3], 4: [0, 1, 2, 3] };
 /* ── الهويّة ── */
 function olFreeAvatars() { return AVATARS.filter(a => a[3] === 0); }
 function olFreeFrames()  { return FRAMES.filter(f => f[3] === 0); }
-function olOwnedAvatars(){ return UNOACC.on ? AVATARS.filter(a => owns('avatars', a[0])) : olFreeAvatars(); }
-function olOwnedFrames() { return UNOACC.on ? FRAMES.filter(f => owns('frames', f[0]))  : olFreeFrames(); }
 
 let olPick = { name: '', av: 'Adult_1', frame: 'Classic' };
 
 function olRenderIdentity() {
   olPick.name = P.name || 'لاعب';
   olPick.av = P.avatar; olPick.frame = P.frame;
-  const avs = olOwnedAvatars(), frs = olOwnedFrames();
   const box = $('#ol-id');
+
+  /* المسجَّل لا يُسأل عن شخصيّته: اختارها في «الملف» وهي محفوظةٌ في حسابه.
+     سؤالُه مرّتين عن الشيء نفسه إزعاجٌ لا خيار — فنعرضها ونمضي.
+     أمّا الضيف فلا ملفَّ له، فهنا مكان اختياره الوحيد. */
+  if (UNOACC.on) {
+    box.innerHTML =
+      '<div class="olme">' +
+        '<div class="avbox"><img class="a" src="' + avSrc(P.avatar) + '">' +
+        (P.frame ? '<img class="f" src="' + frSrc(P.frame) + '">' : '') + '</div>' +
+        '<div class="t"><b>' + olEsc(P.name) + '</b>' +
+          '<small>حسابك المسجَّل — تلعب باسمه وشخصيّته</small></div>' +
+      '</div>' +
+      '<button class="play-btn sm" style="width:100%;margin-top:12px" onclick="openScreen(\'profile\')">غيّر شخصيّتك من الملف</button>';
+    fitFrames(box);
+    return;
+  }
+
+  const avs = olFreeAvatars(), frs = olFreeFrames();
   box.innerHTML =
-    '<div class="opt"><div class="lbl">اسمك' +
-      (UNOACC.on ? '<small>مسجَّل — تلعب باسم حسابك</small>' : '<small>يراه بقيّة اللاعبين</small>') + '</div>' +
-      '<input id="ol-name" maxlength="16" value="' + olEsc(olPick.name) + '"' + (UNOACC.on ? ' disabled' : '') + '></div>' +
-    '<div class="olsec">اختر شخصيّتك' + (UNOACC.on ? '' : ' <small>(المجّانيّة — سجّل حسابك لتفتح الباقي)</small>') + '</div>' +
+    '<div class="opt"><div class="lbl">اسمك<small>يراه بقيّة اللاعبين</small></div>' +
+      '<input id="ol-name" maxlength="16" value="' + olEsc(olPick.name) + '"></div>' +
+    '<div class="olsec">اختر شخصيّتك <small>(سجّل حسابك لتفتح الباقي)</small></div>' +
     '<div class="olgrid" id="ol-avs">' + avs.map(a =>
       '<div class="olpick' + (a[0] === olPick.av ? ' on' : '') + '" data-av="' + a[0] + '" title="' + olEsc(a[1]) + '">' +
       '<img src="' + avSrc(a[0]) + '"></div>').join('') + '</div>' +
-    '<div class="olsec">الإطار</div>' +
-    '<div class="olgrid" id="ol-frs">' + frs.map(f =>
-      '<div class="olpick fr' + (f[0] === olPick.frame ? ' on' : '') + '" data-fr="' + f[0] + '" title="' + olEsc(f[1]) + '">' +
-      '<img src="' + frSrc(f[0]) + '"></div>').join('') + '</div>';
+    (frs.length > 1 ? '<div class="olsec">الإطار</div>' +
+      '<div class="olgrid" id="ol-frs">' + frs.map(f =>
+        '<div class="olpick fr' + (f[0] === olPick.frame ? ' on' : '') + '" data-fr="' + f[0] + '" title="' + olEsc(f[1]) + '">' +
+        '<img src="' + frSrc(f[0]) + '"></div>').join('') + '</div>' : '');
 
   $('#ol-avs').onclick = e => { const d = e.target.closest('[data-av]'); if (!d) return;
-    olPick.av = d.dataset.av; snd('click'); olRenderIdentity(); };
-  $('#ol-frs').onclick = e => { const d = e.target.closest('[data-fr]'); if (!d) return;
-    olPick.frame = d.dataset.fr; snd('click'); olRenderIdentity(); };
+    olPick.av = d.dataset.av; P.avatar = d.dataset.av; saveP(); snd('click'); olRenderIdentity(); };
+  const fr = $('#ol-frs');
+  if (fr) fr.onclick = e => { const d = e.target.closest('[data-fr]'); if (!d) return;
+    olPick.frame = d.dataset.fr; P.frame = d.dataset.fr; saveP(); snd('click'); olRenderIdentity(); };
   const ni = $('#ol-name');
-  if (ni) ni.oninput = () => { olPick.name = ni.value.trim().slice(0, 16); };
+  if (ni) ni.oninput = () => { olPick.name = ni.value.trim().slice(0, 16); P.name = olPick.name || 'لاعب'; saveP(); };
 }
 const olEsc = s => { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; };
 const olMsg = (t, bad) => { const e = $('#ol-msg'); if (!e) return; e.textContent = t || ''; e.className = 'olmsg' + (bad ? ' bad' : ''); };
