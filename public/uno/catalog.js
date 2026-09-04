@@ -40,10 +40,31 @@ const CARDSETS=[
 ];
 const AVATAR_LIST=["AC15_1", "ACK_1_DLC", "ACK_2_DLC", "Adult_1", "Adult_2", "Adult_3", "Adult_4", "Adult_5", "Adult_6", "Adult_7", "Adult_8", "Adult_9", "Animal_1", "Animal_10", "Animal_2", "Animal_3", "Animal_4", "Animal_5", "Animal_6", "Animal_7", "Animal_8", "Animal_9", "AnimeCatCafe_1", "AnimeCatCafe_2", "AnimeCatCafe_3", "AnimeCatCafe_4", "Brawlhalla_1", "Brawlhalla_2", "Brawlhalla_3", "Brawlhalla_4", "CG_Mummy", "CG_Popcorn", "CG_TRex", "Cosy_1", "Cosy_2", "Cosy_3", "Cosy_4", "Creature_1", "Creature_2", "Creature_3", "Creature_4", "IFR_1_DLC", "IFR_2_DLC", "JD_1_DLC", "JD_2_DLC", "Kid_1", "Kid_2", "Kid_3", "LAPool_1", "LAPool_2", "LAPool_3", "LAPool_4", "LNY_1", "LNY_2", "LNY_3", "LNY_4", "NoMercy_1", "NoMercy_2", "Party_01_DLC", "Party_02_DLC", "Rabbids_1_DLC", "Rabbids_2_DLC", "Rayman_1_DLC", "Rayman_2_DLC", "RetroAutumn_1", "RetroAutumn_2", "RetroAutumn_3", "RetroAutumn_4", "Senior_1", "Senior_2", "ShovelKnight_1", "ShovelKnight_2", "ShovelKnight_3", "ShovelKnight_4", "SteampunkCity_1", "SteampunkCity_2", "SteampunkCity_3", "SteampunkCity_4", "Tetra_1_DLC", "Tetra_2_DLC", "TwitchDrop_1", "TwitchDrop_2", "UnderwaterBio_1", "UnderwaterBio_2", "UnderwaterBio_3", "UnderwaterBio_4"];
 const FRAME_LIST=["AC15","AnimeCatCafe","Balloon","Bee","Biscuit","Brawlhalla","Brunch","CGChains","CGCircus","CGTheater","Cake","Carp","Castle","Cat","Classic","Cloud","Cosy1","Cosy2","Fabric","Flowers","IceCream","IceCubes","Island","LAPool","LNY1","LNY2","Light","Luxury","NoMercy","Princess","RetroAutumn","Roses","ShovelKnight","Space","SteampunkCity","Temple","TwitchDrop1","TwitchDrop2","UnderwaterBio","Wizard","WWAttackParticipated","WWAttackRanked","WWAttackWinner","WWBigHandsParticipated","WWBigHandsRanked","WWBigHandsWinner","WWFlippedParticipated","WWFlippedRanked","WWFlippedWinner","WWFogOfWarParticipated","WWFogOfWarRanked","WWFogOfWarWinner","WWTinyHandsParticipated","WWTinyHandsRanked","WWTinyHandsWinner","WWWhirlpoolParticipated","WWWhirlpoolRanked","WWWhirlpoolWinner"];
-const AVN={CG_Mummy:'مومياء',CG_Popcorn:'فشار',CG_TRex:'ديناصور',Creature:'مخلوق',IFR:'إيموتال فينيكس',Party:'حفلة',Tetra:'تترا',TwitchDrop:'تويتش',AC15:'أساسنز',ACK:'أساسنز',Adult:'شخصية',Animal:'حيوان',AnimeCatCafe:'مقهى القطط',Brawlhalla:'براولهالا',CG:'كوميك',Cosy:'شتاء',Dev:'المطورون',FC6:'فار كراي',Fenyx:'فينيكس',JD:'جست دانس',Kid:'طفل',LAPool:'المسبح',LNY:'السنة القمرية',NoMercy:'بلا رحمة',Rabbids:'رابيدز',Rayman:'رايمان',RetroAutumn:'خريف',Senior:'كبار',ShovelKnight:'شوفل نايت',SteampunkCity:'ستيم بانك',UnderwaterBio:'الأعماق'};
+const AVN={CG_Mummy:'مومياء',CG_Popcorn:'فشار',CG_TRex:'ديناصور',Creature:'مخلوق',IFR:'إيموتال فينيكس',Party:'حفلة',Tetra:'تترا',TwitchDrop:'تويتش',AC15:'أساسنز',ACK:'الأخويّة',Adult:'شخصية',Animal:'حيوان',AnimeCatCafe:'مقهى القطط',Brawlhalla:'براولهالا',CG:'كوميك',Cosy:'شتاء',Dev:'المطورون',FC6:'فار كراي',Fenyx:'فينيكس',JD:'جست دانس',Kid:'طفل',LAPool:'المسبح',LNY:'السنة القمرية',NoMercy:'بلا رحمة',Rabbids:'رابيدز',Rayman:'رايمان',RetroAutumn:'خريف',Senior:'كبار',ShovelKnight:'شوفل نايت',SteampunkCity:'ستيم بانك',UnderwaterBio:'الأعماق'};
 function avName(a){ if(AVN[a]) return AVN[a]; const m=a.match(/^([A-Za-z0-9]+?)_(\d+)/); return m?`${AVN[m[1]]||m[1]} ${m[2]}`:a; }
 function avPrice(a){ return /Adult_[1-3]|Kid_1|Animal_[12]$/.test(a)?0:(/DLC|NoMercy|AC15|ACK|Dev/.test(a)?900:600); }
-function frName(f){ return f.replace(/^WW/,'أسبوع جامح: ').replace(/([a-z])([A-Z])/g,'$1 $2'); }
+/* أسماء الإطارات عربيّةً. كانت تُشتقّ من المفتاح اللاتينيّ بفصل الحروف
+   الكبيرة، فتخرج «Anime Cat Cafe» في متجرٍ عربيّ كلُّه. */
+const FRN={AC15:'أساسنز كريد',AnimeCatCafe:'مقهى القطط',Balloon:'البالونات',Bee:'النحلة',
+ Biscuit:'البسكويت',Brawlhalla:'براولهالا',Brunch:'فطورٌ متأخّر',CGChains:'السلاسل',
+ CGCircus:'السيرك',CGTheater:'المسرح',Cake:'الكعكة',Carp:'سمكة الكارب',Castle:'القلعة',
+ Cat:'القطّة',Classic:'الكلاسيكيّ',Cloud:'السحابة',Cosy1:'دفءٌ ١',Cosy2:'دفءٌ ٢',
+ Fabric:'القماش',Flowers:'الزهور',IceCream:'المثلّجات',IceCubes:'مكعّبات الثلج',
+ Island:'الجزيرة',LAPool:'المسبح',LNY1:'السنة القمريّة ١',LNY2:'السنة القمريّة ٢',
+ Light:'الضوء',Luxury:'الفخامة',NoMercy:'بلا رحمة',Princess:'الأميرة',
+ RetroAutumn:'خريف ريترو',Roses:'الورود',ShovelKnight:'شوفل نايت',Space:'الفضاء',
+ SteampunkCity:'ستيم بانك',Temple:'المعبد',TwitchDrop1:'تويتش ١',TwitchDrop2:'تويتش ٢',
+ UnderwaterBio:'الأعماق',Wizard:'الساحر'};
+/* إطارات «الأسبوع الجامح» اسمُها نمطٌ ثابت: الوضع ثم المرتبة */
+const WWM={Attack:'الهجوم',BigHands:'الأيدي الكبيرة',Flipped:'المقلوب',FogOfWar:'ضباب الحرب',
+ TinyHands:'الأيدي الصغيرة',Whirlpool:'الدوّامة'};
+const WWT={Participated:'مشاركة',Ranked:'مرتَّب',Winner:'فائز'};
+function frName(f){
+  if(FRN[f]) return FRN[f];
+  const m=f.match(/^WW(.+?)(Participated|Ranked|Winner)$/);
+  if(m) return `أسبوع جامح · ${WWM[m[1]]||m[1]} — ${WWT[m[2]]}`;
+  return f.replace(/^WW/,'أسبوع جامح: ').replace(/([a-z])([A-Z])/g,'$1 $2');
+}
 function frPrice(f){ return f==='Classic'?0:(/^WW/.test(f)?400:700); }
 const AVATARS=AVATAR_LIST.map(a=>[a,avName(a),'',avPrice(a)]);
 const FRAMES=FRAME_LIST.map(f=>[f,frName(f),'',frPrice(f)]);

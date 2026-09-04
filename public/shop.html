@@ -165,10 +165,37 @@ function draw(){
 
   const worn=(DATA.loadout[GAME]||{})[KIND];
   $('#grid').innerHTML=mine.filter(i=>i.kind===KIND).map(i=>card(i,i.key===worn)).join('');
+  watchImages();
+}
+
+/* تحميل الصور عند الاقتراب فقط.
+   القسم الواحد فيه ٨٦ صورة؛ لو طلبناها دفعةً واحدة فتحَ المتصفّح ثمانين
+   اتّصالًا على خادمٍ صغير، فتتعطّل وتنتهي مهلتُها ويبقى المتجر فارغًا —
+   وهذا ما حدث فعلًا. loading="lazy" وحده لم يكفِ لأنه يتساهل في التقدير،
+   فنُمسك القرار بأيدينا: لا تُطلَب صورةٌ إلا وهي على بُعد شاشةٍ من العين. */
+let IO=null;
+function watchImages(){
+  if(IO) IO.disconnect();   /* تبديلُ التبويب يُلغي ما لم يُطلَب بعد */
+  if(!('IntersectionObserver' in window)){
+    document.querySelectorAll('#grid img[data-src]').forEach(im=>{im.src=im.dataset.src;});
+    return;
+  }
+  IO=new IntersectionObserver(es=>{
+    for(const e of es){
+      if(!e.isIntersecting) continue;
+      const im=e.target;
+      im.src=im.dataset.src; delete im.dataset.src;
+      IO.unobserve(im);
+    }
+  },{rootMargin:'600px 0px'});
+  document.querySelectorAll('#grid img[data-src]').forEach(im=>IO.observe(im));
 }
 
 function card(i,worn){
+  /* الضيف يملك المجّانيّ لكنه لا يستطيع تجهيزه (لا حساب يُحفَظ فيه)، فلا
+     نعرض له زرًّا يردّه الخادم بـ٤٠١ — نقول له ما هو الحال ونكتفي. */
   const b = worn      ? '<button class="sh-buy sh-worn" disabled>✓ مُجهَّز</button>'
+          : i.owned && DATA.guest ? '<button class="sh-buy sh-worn" disabled>مجّانيّ للجميع</button>'
           : i.owned   ? `<button class="sh-buy sh-eq" data-eq="${i.id}">تجهيز</button>`
           : DATA.guest? `<button class="sh-buy sh-poor" disabled>🪙 ${num(i.price)}</button>`
           : (DATA.wallet[i.currency]||0) < i.price
@@ -176,7 +203,7 @@ function card(i,worn){
                       : `<button class="sh-buy" data-buy="${i.id}">${i.currency==='gems'?'💎':'🪙'} ${num(i.price)}</button>`;
   return `<div class="sh-it" data-kind="${i.kind}">
       <div class="sh-pv">
-        <img src="${i.preview}" alt="" loading="lazy" onerror="this.style.display='none'">
+        <img data-src="${i.preview}" alt="" decoding="async" onerror="this.style.visibility='hidden'">
         <span class="sh-rar" data-r="${i.rarity}">${RAR[i.rarity]||''}</span>
         ${i.owned?'<span class="sh-tick">✓</span>':''}
       </div>
