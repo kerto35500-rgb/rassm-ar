@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
-<title>UNO Show 'em No Mercy — نسخة الويب</title>
+<title>وحدة! — بلا رحمة</title>
 <link rel="icon" href="cards/nomercy/back.webp">
 <style>
 :root{ --red:#e3242b; --blue:#0a5cc2; --green:#3aa93c; --yellow:#f5d20a; --cw:126px; --ch:195px; --sky:#2ea6e6; --org:#f6a02b; }
@@ -391,7 +391,7 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 </div>
 
 <!-- ============ SPLASH ============ -->
-<div id="splash" class="screen show"><div class="press">اضغط في أي مكان للبدء</div><div class="ver">UNO Web Remake — نسخة عربية</div></div>
+<div id="splash" class="screen show"><div class="press">اضغط في أي مكان للبدء</div><div class="ver">وحدة! — نسخة الويب العربية</div></div>
 
 <!-- ============ MAIN MENU ============ -->
 <div id="main" class="fe"><div class="mbg" id="mbg"></div>
@@ -422,7 +422,7 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 <div id="themes-s" class="fe"><div class="mbg"></div><div class="content">
   <h1 class="title">اختر النمط</h1>
   <div id="themes">
-    <div class="tcard" onclick="pickTheme('classic')"><img src="ui/theme_classic.webp"><div class="nm">UNO الكلاسيكي</div><div class="ds">108 كرت — نقاط تراكمية حتى حد الفوز — يستخدم طاولتك وكروتك من "تصميمي"</div></div>
+    <div class="tcard" onclick="pickTheme('classic')"><img src="ui/theme_classic.webp"><div class="nm">الكلاسيكي</div><div class="ds">108 كرت — نقاط تراكمية حتى حد الفوز — يستخدم طاولتك وكروتك من "تصميمي"</div></div>
     <div class="tcard" onclick="pickTheme('nomercy')"><img src="ui/theme_senm.webp"><div class="nm">بلا رحمة</div><div class="ds">168 كرت — كروت +6 و+10 وروليت الألوان — قاعدة الرحمة: 25 كرت = خروج</div></div>
   </div>
   <div class="backbtn" onclick="openScreen('main')">◀ رجوع</div>
@@ -511,9 +511,9 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
     <div class="opt"><div class="lbl">الأصوات</div><div class="switch on" data-rule="sound"></div></div>
     <div class="opt"><div class="lbl">مؤقت الدور</div><div class="seg" data-opt="timer"><button data-v="0">بدون</button><button data-v="15">15</button><button data-v="30" class="on">30</button></div></div>
     <div class="opt"><div class="lbl">مستوى الخصوم</div><div class="seg" data-opt="diff"><button data-v="easy">سهل</button><button data-v="normal" class="on">عادي</button><button data-v="hard">صعب</button></div></div>
-    <div class="opt"><div class="lbl">اختصارات لوحة المفاتيح<small>مسافة = UNO، D = سحب كرت، Esc = إيقاف</small></div><img src="ui/tab_keyboard.webp" style="height:50px"></div>
+    <div class="opt"><div class="lbl">اختصارات لوحة المفاتيح<small>مسافة = وحدة!، D = سحب كرت، Esc = إيقاف</small></div><img src="ui/tab_keyboard.webp" style="height:50px"></div>
     <div class="opt"><div class="lbl">إعادة ضبط التقدم<small>يحذف العملات والمشتريات والإحصائيات</small></div><button class="btn k" onclick="resetProfile()">إعادة ضبط</button></div>
-    <div class="opt"><div class="lbl">الاعتمادات<small>نسخة ويب تعليمية مبنية من أصول اللعبة الأصلية — UNO © Mattel، اللعبة © Ubisoft</small></div><img src="ui/tab_credits.webp" style="height:50px"></div>
+    <div class="opt"><div class="lbl">الاعتمادات<small>«وحدة!» لعبةُ ورقٍ عربية من ألعابنا — القواعد مستوحاة من ألعاب الورق الكلاسيكية</small></div><img src="ui/tab_credits.webp" style="height:50px"></div>
   </div>
   <div class="backbtn" onclick="openScreen('main')">◀ رجوع</div>
 </div></div>
@@ -548,7 +548,7 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
     <div class="seat" id="seat-right"><div class="plate"><span></span></div><div class="avw"><div class="burst"></div><div class="av"><img class="a"></div><img class="fr"><div class="timer"></div><div class="cc"><b></b></div><div class="bubble"></div></div></div>
     <div class="seat" id="seat-me"><div class="plate"><span></span></div><div class="avw"><div class="burst"></div><div class="av"><img class="a"></div><img class="fr"><div class="timer"></div><div class="cc"><b></b></div><div class="bubble"></div></div></div>
     <div id="hand"></div>
-    <button id="unobtn"><img src="img/uno_logo.png" alt="UNO"><span></span></button>
+    <button id="unobtn"><img src="img/uno_logo.png" alt="وحدة!"><span></span></button>
     <div id="msg"><div></div></div>
     <div id="splat"></div><div id="banner"></div>
     <button class="icon-btn q" id="helpbtn">?</button>
@@ -573,7 +573,7 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 
 <script>
 /* ==========================================================
-   UNO Show 'em No Mercy — web remake (Arabic). Player vs 3 bots.
+   وحدة! — بلا رحمة (نسخة الويب العربية). لاعب ضدّ ثلاثة بوتات.
    ========================================================== */
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 /* ---------- stage scaling (desktop + mobile) ---------- */
@@ -600,7 +600,7 @@ const NAMES={d2:'+2',d4:'+4',skip:'حظر',rev:'عكس',skipall:'حظر الجم
 const BOARDS=[
  ['classic','الكلاسيكية','الطاولة الحمراء الأصلية — بداية كل شيء.',0],
  ['nomercy','بلا رحمة','طاولة وضع بلا رحمة: نار وسواد ولا مكان للرحماء.',0],
- ['abstractgraphic','عالم الهافتون','لوحة من الأشكال الحرة تشكّل كون UNO.',1500],
+ ['abstractgraphic','عالم الهافتون','لوحة من الأشكال الحرة تشكّل عالم اللعبة.',1500],
  ['triangles','المثلثات','هندسة زجاجية تتوهج فوق الظلام.',1500],
  ['luminescentstars','النجوم المضيئة','نجمة تسبح في سماء الليل.',1500],
  ['cube','المكعب','منصة نيون فوق مكعبات متدرجة.',1800],
@@ -1119,30 +1119,30 @@ async function doZero(){
   await sleep(900); renderAll();
 }
 
-/* ---------- UNO ---------- */
+/* ---------- نداء «وحدة!» ---------- */
 async function handleUnoCall(pi){
   const p=G.players[pi], my=token;
   if(p.human){
-    if(p.uno){ seatBubble(0,'UNO!','',1200); snd('uno'); return; }
+    if(p.uno){ seatBubble(0,'وحدة!','',1200); snd('uno'); return; }
     showUnoBtn(true);
     const caught=await new Promise(res=>{ let done=false; const forgiving={easy:.55,normal:.8,hard:.95}[S.diff];
       G.unoTimer={ok:()=>{if(done)return;done=true;clearTimeout(t);res(false)}};
       const t=setTimeout(()=>{if(done)return;done=true;res(Math.random()<forgiving)},1400+Math.random()*1600); });
     G.unoTimer=null; showUnoBtn(false); if(my!==token) return;
-    if(caught){ const c=[1,2,3].filter(i=>!G.players[i].out)[0]||1; seatBubble(c,'نسيت تقول UNO!','bad',1400); snd('bad'); await sleep(700); await drawCards(0,2); }
-    else { p.uno=true; seatBubble(0,'UNO!','',1200); snd('uno'); P.stats.unoCalls++; }
+    if(caught){ const c=[1,2,3].filter(i=>!G.players[i].out)[0]||1; seatBubble(c,'نسيت تقول وحدة!','bad',1400); snd('bad'); await sleep(700); await drawCards(0,2); }
+    else { p.uno=true; seatBubble(0,'وحدة!','',1200); snd('uno'); P.stats.unoCalls++; }
   } else {
     const forget=Math.random()<{easy:.35,normal:.2,hard:.08}[S.diff];
-    if(!forget){ await sleep(250+Math.random()*500); seatBubble(pi,'UNO!','',1200); snd('uno'); p.uno=true; return; }
+    if(!forget){ await sleep(250+Math.random()*500); seatBubble(pi,'وحدة!','',1200); snd('uno'); p.uno=true; return; }
     p.forgot=true; showUnoBtn(true,pi);
     const caught=await new Promise(res=>{ let done=false; G.unoTimer={ok:()=>{if(done)return;done=true;clearTimeout(t);res(true)}}; const t=setTimeout(()=>{if(done)return;done=true;res(false)},2500+Math.random()*1500); });
     G.unoTimer=null; showUnoBtn(false); p.forgot=false; if(my!==token) return;
     if(caught){ seatBubble(pi,'مسكتك! +2','bad',1400); snd('bad'); await sleep(500); await drawCards(pi,2); }
-    else { seatBubble(pi,'UNO!','',1000); snd('uno'); p.uno=true; }
+    else { seatBubble(pi,'وحدة!','',1000); snd('uno'); p.uno=true; }
   }
 }
 function showUnoBtn(show,catchPi){ const b=$('#unobtn'); b.classList.toggle('show',show); b.classList.toggle('hot',show); b.classList.toggle('catch',catchPi!=null); b.querySelector('span').textContent=catchPi!=null?'امسكه!':''; }
-$('#unobtn').onclick=()=>{ snd('click'); if(G&&G.unoTimer){ G.unoTimer.ok(); return; } if(G && G.players[0].hand.length===2 && G.turn===0){ G.players[0].uno=true; seatBubble(0,'UNO!','',900); snd('uno'); showUnoBtn(false); } };
+$('#unobtn').onclick=()=>{ snd('click'); if(G&&G.unoTimer){ G.unoTimer.ok(); return; } if(G && G.players[0].hand.length===2 && G.turn===0){ G.players[0].uno=true; seatBubble(0,'وحدة!','',900); snd('uno'); showUnoBtn(false); } };
 
 /* ---------- challenge (classic) ---------- */
 function offerChallenge(pi,canStack){
@@ -1323,7 +1323,7 @@ $('#helpbtn').onclick=()=>{ const d='cards/nomercy'; $('#rules-body').innerHTML=
 <div class="rc"><img src="${d}/g_d4.webp"><div><b>+4 ملوّن</b>: اللاعب التالي يسحب 4، وتُلعب على نفس اللون فقط.</div></div>
 <div class="rc"><div><b>التكديس</b>: أي كرت سحب يمكن الرد عليه بكرت سحب آخر وتتراكم السحبات على اللاعب التالي.</div></div>
 <div class="rc"><div><b>قاعدة الرحمة</b>: من يصل إلى 25 كرتًا أو أكثر يخرج من الجولة فورًا. آخر لاعب متبقٍ أو أول من يفرغ يده يفوز.</div></div>
-<div class="rc"><div><b>UNO</b>: اضغط زر UNO عندما يبقى لك كرت واحد وإلا ستسحب كرتين.</div></div>`; $('#ov-help').classList.add('show'); };
+<div class="rc"><div><b>وحدة!</b>: اضغط زرّ «وحدة!» عندما يبقى لك كرتٌ واحد وإلا ستسحب كرتين.</div></div>`; $('#ov-help').classList.add('show'); };
 $('#help-close').onclick=()=>$('#ov-help').classList.remove('show');
 window.addEventListener('resize',()=>{ if(G) renderHand(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&G) $('#pausebtn').click(); if(e.key===' '&&G) $('#unobtn').click(); if(e.key==='d'&&G) $('#deck').click(); });
