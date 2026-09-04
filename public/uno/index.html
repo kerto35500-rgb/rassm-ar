@@ -1416,11 +1416,16 @@ function trailTick(){
   if(trails.length) trailRaf=requestAnimationFrame(trailTick); else trailRaf=null;
 }
 const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+/* opts.flipTo: وجهُ الورقة. حين يُمرَّر تنقلب الورقة في منتصف الطريق —
+   تضيق حتى تختفي على حرفها، ثم تنفتح بوجهها. بدونه كانت تصل بظهرها ثم
+   ينكشف وجهُها بعد أن تستقرّ، فيرى اللاعب ومضةَ ظهرٍ في يده. */
 function flyCard(from,to,src,opts={}){
   return new Promise(res=>{
     const f=document.createElement('div'); f.className='fly'; f.innerHTML=`<img src="${src}">`;
+    const fimg=f.querySelector('img');
+    let flipped=false;
     $('#app').appendChild(f);
-    const dur=opts.small?240:opts.dur||480, arc=opts.arc??Math.min(220,Math.hypot(to.x-from.x,to.y-from.y)*.35);
+    const dur=opts.dur||(opts.small?240:480), arc=opts.arc??Math.min(220,Math.hypot(to.x-from.x,to.y-from.y)*.35);
     const rotEnd=opts.rot?(Math.random()*30-15):0, tiltFrom=opts.tiltFrom||0, tiltTo=opts.tiltTo||0;
     const tr={pts:[],w:opts.small?10:16,live:true}; trails.push(tr); if(!trailRaf) trailRaf=requestAnimationFrame(trailTick);
     const t0=performance.now();
@@ -1436,8 +1441,16 @@ function flyCard(from,to,src,opts={}){
       const u=Math.min(1,(performance.now()-t0)/dur), e=ease(u);
       const cx=from.x+from.w/2+(to.x+to.w/2-from.x-from.w/2)*e, cy=from.y+from.h/2+(to.y+to.h/2-from.y-from.h/2)*e - Math.sin(u*Math.PI)*arc;
       const w=from.w+(to.w-from.w)*e, h=from.h+(to.h-from.h)*e, sc=1+Math.sin(u*Math.PI)*.22;
+      /* الانقلاب: عرضٌ يضيق إلى الصفر عند المنتصف ثم يتّسع، والوجه يُبدَّل
+         في اللحظة التي تكون فيها الورقة على حرفها فلا تُرى عمليّة التبديل. */
+      let flip=1;
+      if(opts.flipTo){
+        flip=Math.abs(Math.cos(Math.min(u,1)*Math.PI));
+        if(!flipped && u>=0.5){ flipped=true; fimg.src=opts.flipTo; }
+        flip=Math.max(flip,0.04);
+      }
       f.style.width=w+'px'; f.style.height=h+'px';
-      f.style.transform=`translate(${cx-w/2}px,${cy-h/2}px) perspective(900px) rotateX(${tiltFrom+(tiltTo-tiltFrom)*e}deg) scale(${sc}) rotate(${rotEnd*e}deg)`;
+      f.style.transform=`translate(${cx-w/2}px,${cy-h/2}px) perspective(900px) rotateX(${tiltFrom+(tiltTo-tiltFrom)*e}deg) scale(${sc}) scaleX(${flip}) rotate(${rotEnd*e}deg)`;
       tr.pts.push({x:cx,y:cy,t:performance.now()});
       if(u<1) requestAnimationFrame(step); else { clearTimeout(guard); finish(); }
     };
@@ -1446,7 +1459,10 @@ function flyCard(from,to,src,opts={}){
 }
 async function flyDeal(pi,k,ms){
   const from=rect($('#deck'));
-  if(pi===0){ renderHand(k.id); const el=handCardEl(k); const to=el?rect(el):from; await flyCard(from,to,backImg(),{small:true,tiltFrom:50,tiltTo:0}); renderHand(); renderSeat(0); renderDeck(); }
+  if(pi===0){ renderHand(k.id); const el=handCardEl(k); const to=el?rect(el):from;
+    /* وجهُها معروفٌ لي وحدي، فتنقلب وهي في الهواء وتصل مكشوفة */
+    await flyCard(from,to,backImg(),{small:true,tiltFrom:50,tiltTo:0,flipTo:cardImg(k),dur:420});
+    renderHand(); renderSeat(0); renderDeck(); }
   else { renderSeat(pi); const cards=$('#'+ohandId(pi)).children; const el=cards[cards.length-1]; let to; if(el){ el.style.visibility='hidden'; to=rect(el); } else to=rect($('#'+seatIds[pi]+' .av')); await flyCard(from,to,backImg(),{small:true}); if(el) el.style.visibility=''; renderDeck(); }
   if(ms) await sleep(ms);
 }
