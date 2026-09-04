@@ -617,7 +617,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-blue   { background:linear
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-fire   { background:linear-gradient(180deg,#F8B152 0%,#F09B2B 100%); }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-violet { background:linear-gradient(180deg,#AC8EE9 0%,#9070D6 100%); }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-green  { background:linear-gradient(180deg,#90E0B0 0%,#6CCB93 100%); }
-body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sky    { background:linear-gradient(180deg,#7FCFF2 0%,#4FAEE2 100%); }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    { background:linear-gradient(180deg,#EF6B63 0%,#D33F3B 100%); }
 /* الأيقونة: كبيرة حرة على البطاقة */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g .ic {
   background:transparent !important; border:none !important;
@@ -644,7 +644,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-blue   .go { background:#6
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-fire   .go { background:#DE8B17 !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-violet .go { background:#C4A9F2 !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-green  .go { background:#2FA666 !important; }
-body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sky    .go { background:#2F92C9 !important; }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    .go { background:#C1332E !important; }
 /* شارة عدد اللاعبين: كبسولة بيضاء */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .now {
   background:#fff; color:#3E6E8C; padding:4px 10px; border-radius:999px;
@@ -757,11 +757,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-blue   .ic { background-im
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-fire   .ic { background-image:url("/kw-g-bomb.webp") !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-violet .ic { background-image:url("/kw-g-quiz.webp") !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-green  .ic { background-image:url("/kw-g-salfa.webp") !important; }
-/* لعبة الورق: لا أيقونة مرسومة بعد — نُعيد الإيموجي بحجمٍ يليق بدل مربّعٍ فارغ */
-body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sky .ic {
-  font-size:74px !important; width:auto; height:112px; line-height:118px;
-  background-image:none !important;
-}
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    .ic { background-image:url("/kw-g-uno.svg") !important; }
 /* العناوين: أبيض عريض كبير بستروك بني حول الحروف */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g h2 {
   font-size:27px; letter-spacing:.5px;
@@ -780,7 +776,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-blue   .go { box-shadow: i
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-fire   .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #A96410, 0 9px 14px rgba(0,0,0,.2) !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-violet .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #8F72C8, 0 9px 14px rgba(0,0,0,.2) !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-green  .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #1F7A48, 0 9px 14px rgba(0,0,0,.2) !important; }
-body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sky    .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #21719F, 0 9px 14px rgba(0,0,0,.2) !important; }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #97231E, 0 9px 14px rgba(0,0,0,.2) !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .now { color:#8A5A3E; box-shadow:0 2px 0 #E3D5C2; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .badge { color:#8A5A3E; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) #accPop { color:#6B4632; }

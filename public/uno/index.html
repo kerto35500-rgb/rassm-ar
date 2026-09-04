@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
-<title>وحدة! — بلا رحمة</title>
+<title>وحدة</title>
 <link rel="icon" href="cards/nomercy/back.webp">
 <style>
 :root{ --red:#e3242b; --blue:#0a5cc2; --green:#3aa93c; --yellow:#f5d20a; --cw:126px; --ch:195px; --sky:#2ea6e6; --org:#f6a02b; }
@@ -215,8 +215,9 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 #toast.show{opacity:1}
 .shake{animation:shake .4s}
 @keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
-.rules{ text-align:right;font-size:15px;line-height:1.7;max-width:720px;max-height:520px;overflow:auto;padding-left:6px}
+.rules{ text-align:right;font-size:15px;line-height:1.7;max-width:760px;max-height:60vh;overflow:auto;padding-left:6px}
 .rules b{color:#ffd400}
+.rules .rsec{margin:14px 0 6px;font-size:17px;font-weight:900;color:#ffd400;text-shadow:2px 2px 0 #000;border-bottom:2px solid rgba(255,212,0,.35);padding-bottom:4px}
 .rules .rc{display:flex;gap:12px;align-items:center;margin:6px 0;background:rgba(0,0,0,.3);padding:6px 10px;border-radius:10px}
 .rules .rc img{width:44px;border-radius:5px}
 @media (max-width:1300px){:root{--cw:98px;--ch:152px} #center{width:540px;height:540px} #deck{left:calc(50% - 240px)} #banner{font-size:80px} .seat{width:190px} .seat .av,.seat .avw{width:96px;height:96px} #seat-top{left:calc(50% + 250px)} #seat-top .ohand{left:-380px;width:360px}}
@@ -248,6 +249,13 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 #pcard .xp i{display:block;height:100%;background:linear-gradient(90deg,#ffd400,#ff9f1a);border-radius:10px;width:20%}
 #pcard .xp b{position:absolute;right:-12px;top:-8px;background:#e3242b;color:#fff;border:2px solid #fff;border-radius:8px;padding:2px 8px;font-size:14px}
 .avbox{position:relative;width:100px;height:100px}
+/* ── الإطار يقصّ الصورة: تُوضَع الصورةُ داخل نافذة الإطار المقيسة من الملفّ نفسه،
+   فلا يظهر منها شيءٌ خلف الزخرفة (FRWIN في السكربت). ── */
+.framed>img.a,.framed>.av,.framed>img.th,.framed>img:not(.f):not(.fr){
+  position:absolute!important;margin:0!important;border:0!important;box-shadow:none!important;
+  border-radius:10%!important;object-fit:cover;background:#2a2a30;overflow:hidden;z-index:1
+}
+.framed>.av>img.a{width:100%;height:100%;border-radius:inherit}
 .avbox img.a{width:100%;height:100%;border-radius:12px;border:4px solid #fff;object-fit:cover;background:#333}
 .avbox img.f{position:absolute;inset:-18%;width:136%;height:136%;pointer-events:none}
 
@@ -307,7 +315,7 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 .item{position:relative;border-radius:16px;border:4px solid #fff;overflow:hidden;cursor:pointer;aspect-ratio:940/500;background:#222;transition:.15s;box-shadow:0 6px 14px rgba(0,0,0,.4)}
 .items.sq .item{aspect-ratio:1}
 .item img.th{width:100%;height:100%;object-fit:cover;display:block}
-.item img.fr{position:absolute;inset:-14%;width:128%;height:128%;pointer-events:none}
+.item img.fr{position:absolute;inset:-18%;width:136%;height:136%;pointer-events:none;z-index:3}
 .item:hover{transform:scale(1.04)}
 .item.sel{border-color:#ffd400;box-shadow:0 0 0 3px #ffd400,0 0 26px #ffd400}
 .item.locked img.th{filter:brightness(.45) saturate(.6)}
@@ -320,7 +328,7 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 .preview .pv{border-radius:18px;border:4px solid #fff;overflow:hidden;background:#111;aspect-ratio:940/500;position:relative;box-shadow:0 10px 30px rgba(0,0,0,.5)}
 .preview .pv img{width:100%;height:100%;object-fit:cover}
 .preview .pv.sq{aspect-ratio:1;width:300px;margin:0 auto}
-.preview .pv img.fr{position:absolute;inset:-14%;width:128%;height:128%}
+.preview .pv img.fr{position:absolute;inset:-18%;width:136%;height:136%;z-index:3}
 .preview .dbox{background:rgba(0,0,0,.6);border-radius:16px;padding:14px 20px;flex:1;text-align:center}
 .preview .dbox h3{color:#ffd400;font-size:26px;font-weight:900;text-shadow:2px 2px 0 #000;margin-bottom:8px}
 .preview .dbox p{font-size:16px;line-height:1.6;opacity:.95}
@@ -331,11 +339,18 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 .big.k{background:linear-gradient(#777,#333);color:#fff}
 .big img{width:24px}
 /* theme picker */
-#themes{display:flex;gap:60px;justify-content:center;margin-top:60px;direction:ltr}
+#themes{display:flex;gap:40px;justify-content:center;margin-top:26px;direction:ltr;align-items:stretch}
 .tcard{width:380px;cursor:pointer;text-align:center;transition:.18s;position:relative}
-.tcard img{width:100%;filter:drop-shadow(0 16px 24px rgba(0,0,0,.5))}
+.tcard{background:rgba(0,0,0,.34);border:3px solid rgba(255,255,255,.22);border-radius:22px;padding:14px 16px 18px}
+.tcard:hover{border-color:rgba(255,212,0,.85)}
+.tcard .ticon{display:flex;justify-content:center;filter:drop-shadow(0 10px 16px rgba(0,0,0,.5))}
+.tcard .tfeat{list-style:none;margin:12px 0 0;padding:0;text-align:right;direction:rtl;font-size:14.5px;line-height:1.65}
+.tcard .tfeat li{position:relative;padding:5px 22px 5px 8px;margin:5px 0;background:rgba(0,0,0,.28);border-radius:9px;text-shadow:1px 1px 0 #000}
+.tcard .tfeat li::before{content:"◆";position:absolute;right:7px;color:#ffd400;font-size:11px;top:7px}
+.tcard .tfeat b{color:#ffd400}
+.thelp{margin-top:26px;text-align:center}
 .tcard:hover{transform:translateY(-12px) scale(1.04)}
-.tcard .nm{font-size:34px;font-weight:900;-webkit-text-stroke:4px #111;paint-order:stroke fill;text-shadow:4px 4px 0 #111;margin-top:8px}
+.tcard .nm{font-size:30px;font-weight:900;-webkit-text-stroke:4px #111;paint-order:stroke fill;text-shadow:4px 4px 0 #111;margin-top:8px}
 .tcard .ds{opacity:.9;font-size:15px;margin-top:4px;text-shadow:1px 1px 0 #000}
 /* match setup */
 .setup{display:flex;gap:26px;direction:rtl;margin-top:20px}
@@ -391,7 +406,7 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 </div>
 
 <!-- ============ SPLASH ============ -->
-<div id="splash" class="screen show"><div class="press">اضغط في أي مكان للبدء</div><div class="ver">وحدة! — نسخة الويب العربية</div></div>
+<div id="splash" class="screen show"><div class="press">اضغط في أي مكان للبدء</div><div class="ver">وحدة — نسخة الويب العربية</div></div>
 
 <!-- ============ MAIN MENU ============ -->
 <div id="main" class="fe"><div class="mbg" id="mbg"></div>
@@ -422,9 +437,38 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 <div id="themes-s" class="fe"><div class="mbg"></div><div class="content">
   <h1 class="title">اختر النمط</h1>
   <div id="themes">
-    <div class="tcard" onclick="pickTheme('classic')"><img src="ui/theme_classic.webp"><div class="nm">الكلاسيكي</div><div class="ds">108 كرت — نقاط تراكمية حتى حد الفوز — يستخدم طاولتك وكروتك من "تصميمي"</div></div>
-    <div class="tcard" onclick="pickTheme('nomercy')"><img src="ui/theme_senm.webp"><div class="nm">بلا رحمة</div><div class="ds">168 كرت — كروت +6 و+10 وروليت الألوان — قاعدة الرحمة: 25 كرت = خروج</div></div>
+    <div class="tcard" onclick="pickTheme('classic')">
+      <div class="ticon"><svg viewBox="0 0 140 140" width="150" height="150" aria-hidden="true">
+        <g transform="rotate(-16 70 82)"><rect x="26" y="30" width="46" height="68" rx="9" fill="#3F9FD8" stroke="#fff" stroke-width="5"/><text x="49" y="70" text-anchor="middle" dominant-baseline="central" font-size="26" font-weight="900" fill="#fff">٥</text></g>
+        <g><rect x="47" y="24" width="46" height="68" rx="9" fill="#F2B72E" stroke="#fff" stroke-width="5"/><text x="70" y="60" text-anchor="middle" dominant-baseline="central" font-size="26" font-weight="900" fill="#7a5200">٢</text></g>
+        <g transform="rotate(16 70 82)"><rect x="68" y="30" width="46" height="68" rx="9" fill="#D93F3C" stroke="#fff" stroke-width="5"/><text x="91" y="70" text-anchor="middle" dominant-baseline="central" font-size="26" font-weight="900" fill="#fff">٩</text></g>
+      </svg></div>
+      <div class="nm">الكلاسيكي</div>
+      <div class="ds">١٠٨ كروت — اللعبة المعروفة، إيقاعٌ متوازن</div>
+      <ul class="tfeat">
+        <li>الكروت: أرقام ٠–٩ · حظر · عكس · <b>+٢</b> · جوكر · <b>+٤</b></li>
+        <li>الفوز بالنقاط: تتجمّع كلّ جولة حتى تبلغ حدّ النقاط</li>
+        <li>يستعمل طاولتك وكروتك المختارة من «تصميمي»</li>
+        <li>مناسبٌ للمبتدئ ولمن يحبّ اللعب الهادئ</li>
+      </ul>
+    </div>
+    <div class="tcard" onclick="pickTheme('nomercy')">
+      <div class="ticon"><svg viewBox="0 0 140 140" width="150" height="150" aria-hidden="true">
+        <g transform="rotate(-14 70 82)"><rect x="30" y="30" width="46" height="68" rx="9" fill="#2B2B33" stroke="#fff" stroke-width="5"/><text x="53" y="70" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="900" fill="#FFD400">+٦</text></g>
+        <g transform="rotate(14 70 82)"><rect x="64" y="26" width="46" height="68" rx="9" fill="#D93F3C" stroke="#fff" stroke-width="5"/><text x="87" y="66" text-anchor="middle" dominant-baseline="central" font-size="20" font-weight="900" fill="#fff">+١٠</text></g>
+        <path d="M74 8 L58 46 L72 46 L62 76 L92 38 L76 38 Z" fill="#FFD400" stroke="#fff" stroke-width="3.5" stroke-linejoin="round"/>
+      </svg></div>
+      <div class="nm">بلا رحمة</div>
+      <div class="ds">١٦٨ كرتًا — أقسى وأسرع وأكثر انقلابًا</div>
+      <ul class="tfeat">
+        <li>كروتٌ إضافية: <b>+٦</b> · <b>+١٠</b> · عكس+٤ · +٤ ملوّن · حظر الجميع · ارمِ الكل</li>
+        <li><b>روليت الألوان</b>: الخصم يسحب حتى يخرج له لونك</li>
+        <li><b>قاعدة الرحمة</b>: من بلغ ٢٥ كرتًا خرج من الجولة</li>
+        <li>الفوز بالبقاء لا بالنقاط — آخر من يصمد أو أوّل من يُفرغ يده</li>
+      </ul>
+    </div>
   </div>
+  <div class="thelp"><button class="btn" id="modehelp">📖 التعليمات والفرق بين النمطين</button></div>
   <div class="backbtn" onclick="openScreen('main')">◀ رجوع</div>
 </div></div>
 
@@ -513,7 +557,7 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
     <div class="opt"><div class="lbl">مستوى الخصوم</div><div class="seg" data-opt="diff"><button data-v="easy">سهل</button><button data-v="normal" class="on">عادي</button><button data-v="hard">صعب</button></div></div>
     <div class="opt"><div class="lbl">اختصارات لوحة المفاتيح<small>مسافة = وحدة!، D = سحب كرت، Esc = إيقاف</small></div><img src="ui/tab_keyboard.webp" style="height:50px"></div>
     <div class="opt"><div class="lbl">إعادة ضبط التقدم<small>يحذف العملات والمشتريات والإحصائيات</small></div><button class="btn k" onclick="resetProfile()">إعادة ضبط</button></div>
-    <div class="opt"><div class="lbl">الاعتمادات<small>«وحدة!» لعبةُ ورقٍ عربية من ألعابنا — القواعد مستوحاة من ألعاب الورق الكلاسيكية</small></div><img src="ui/tab_credits.webp" style="height:50px"></div>
+    <div class="opt"><div class="lbl">الاعتمادات<small>«وحدة» لعبةُ ورقٍ عربية من ألعابنا — القواعد مستوحاة من ألعاب الورق الكلاسيكية</small></div><img src="ui/tab_credits.webp" style="height:50px"></div>
   </div>
   <div class="backbtn" onclick="openScreen('main')">◀ رجوع</div>
 </div></div>
@@ -573,7 +617,7 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 
 <script>
 /* ==========================================================
-   وحدة! — بلا رحمة (نسخة الويب العربية). لاعب ضدّ ثلاثة بوتات.
+   وحدة (نسخة الويب العربية). لاعب ضدّ ثلاثة بوتات.
    ========================================================== */
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 /* ---------- stage scaling (desktop + mobile) ---------- */
@@ -654,6 +698,24 @@ function saveP(){ try{localStorage.setItem('uno-profile',JSON.stringify(P))}catc
 const lvl=()=>Math.floor(Math.sqrt(P.xp/100))+1, lvlProg=()=>{const l=lvl()-1; const a=l*l*100,b=(l+1)*(l+1)*100; return (P.xp-a)/(b-a)};
 function owns(t,k){ return P.owned[t].includes(k); }
 const avSrc=a=>`avatars/${a}.webp`, frSrc=f=>f?`frames/${f}.webp`:'';
+/* نوافذ الإطارات: [يسار، أعلى، عرض، ارتفاع] كنِسَبٍ من صورة الإطار — مقيسةٌ آليًّا من قناة الشفافية */
+const FRWIN={"AC15":[0.2253,0.2253,0.546,0.546],"AnimeCatCafe":[0.222,0.2687,0.546,0.4693],"Balloon":[0.2353,0.192,0.5327,0.5993],"Bee":[0.2553,0.222,0.526,0.556],"Biscuit":[0.262,0.2687,0.4727,0.4493],"Brawlhalla":[0.2387,0.262,0.5227,0.4827],"Brunch":[0.252,0.3153,0.5027,0.4293],"CGChains":[0.2353,0.2287,0.5293,0.536],"CGCircus":[0.242,0.2387,0.5127,0.536],"CGTheater":[0.242,0.2253,0.5327,0.546],"Cake":[0.222,0.2987,0.5127,0.4727],"Carp":[0.222,0.222,0.5527,0.556],"Castle":[0.2653,0.3287,0.4693,0.4327],"Cat":[0.2387,0.2887,0.516,0.436],"Classic":[0.252,0.252,0.4927,0.4927],"Cloud":[0.2853,0.2753,0.4627,0.426],"Cosy1":[0.242,0.2653,0.4993,0.4327],"Cosy2":[0.242,0.2553,0.506,0.5193],"Fabric":[0.242,0.2553,0.506,0.5127],"Flowers":[0.232,0.2353,0.536,0.5327],"IceCream":[0.252,0.3153,0.5227,0.4393],"IceCubes":[0.2587,0.2453,0.466,0.4427],"Island":[0.2553,0.252,0.486,0.446],"LAPool":[0.2587,0.2487,0.486,0.4927],"LNY1":[0.2787,0.2253,0.4927,0.5293],"LNY2":[0.2787,0.3087,0.4393,0.4327],"Light":[0.232,0.212,0.5527,0.566],"Luxury":[0.2387,0.242,0.5227,0.5227],"NoMercy":[0.332,0.2853,0.4327,0.4293],"Princess":[0.2253,0.2253,0.5193,0.5527],"RetroAutumn":[0.242,0.2387,0.5293,0.5327],"Roses":[0.252,0.2887,0.4927,0.4527],"ShovelKnight":[0.2453,0.232,0.5193,0.5193],"Space":[0.222,0.232,0.526,0.5427],"SteampunkCity":[0.2753,0.272,0.4693,0.4693],"Temple":[0.2553,0.2353,0.506,0.5427],"TwitchDrop1":[0.2553,0.2387,0.536,0.5493],"TwitchDrop2":[0.2287,0.2253,0.5627,0.5627],"UnderwaterBio":[0.282,0.292,0.446,0.4393],"WWAttackParticipated":[0.2387,0.272,0.5093,0.506],"WWAttackRanked":[0.2353,0.2753,0.5227,0.5027],"WWAttackWinner":[0.2387,0.2787,0.5193,0.4993],"WWBigHandsParticipated":[0.2387,0.272,0.5093,0.506],"WWBigHandsRanked":[0.2353,0.2753,0.5227,0.5027],"WWBigHandsWinner":[0.2387,0.2787,0.5193,0.4993],"WWFlippedParticipated":[0.2387,0.272,0.5093,0.506],"WWFlippedRanked":[0.2353,0.2753,0.5227,0.5027],"WWFlippedWinner":[0.2387,0.2787,0.5193,0.4993],"WWFogOfWarParticipated":[0.2387,0.272,0.5093,0.506],"WWFogOfWarRanked":[0.2353,0.2753,0.5227,0.5027],"WWFogOfWarWinner":[0.2387,0.2787,0.5193,0.4993],"WWTinyHandsParticipated":[0.2387,0.272,0.5093,0.506],"WWTinyHandsRanked":[0.2353,0.2753,0.5227,0.5027],"WWTinyHandsWinner":[0.2387,0.2787,0.5193,0.4993],"WWWhirlpoolParticipated":[0.2387,0.272,0.5093,0.506],"WWWhirlpoolRanked":[0.2353,0.2753,0.5227,0.5027],"WWWhirlpoolWinner":[0.2387,0.2787,0.5193,0.4993],"Wizard":[0.222,0.2287,0.506,0.536]};
+const FR_S=1.36, FR_O=-0.18;   /* الإطار يُرسم من ‎-18%‎ بعرض ‎136%‎ من الصندوق */
+function fitFrame(box){
+  const f=box.querySelector(':scope>img.f, :scope>img.fr');
+  const av=box.querySelector(':scope>img.a, :scope>.av, :scope>img.th, :scope>img:not(.f):not(.fr)');
+  if(!av) return;
+  const src=f?(f.getAttribute('src')||''):'';
+  const key=(f && f.style.display!=='none' && src) ? src.split('/').pop().replace(/\.webp$/,'') : null;
+  const w=key?FRWIN[key]:null;
+  if(!w){ box.classList.remove('framed'); av.style.left=av.style.top=av.style.width=av.style.height=''; return; }
+  box.classList.add('framed');
+  av.style.left  =((FR_O+w[0]*FR_S)*100).toFixed(2)+'%';
+  av.style.top   =((FR_O+w[1]*FR_S)*100).toFixed(2)+'%';
+  av.style.width =((w[2]*FR_S)*100).toFixed(2)+'%';
+  av.style.height=((w[3]*FR_S)*100).toFixed(2)+'%';
+}
+function fitFrames(root){ (root||document).querySelectorAll('.avbox,.avw,.item,.pv').forEach(fitFrame); }
 function resetProfile(){ if(confirm('هل تريد حذف كل التقدم؟')){ localStorage.removeItem('uno-profile'); location.reload(); } }
 
 /* ---------- settings ---------- */
@@ -690,7 +752,7 @@ function openScreen(name,arg){
 function pickTheme(m){ S.mode=m; saveS(); openScreen('setup'); }
 function renderMain(){
   $('#pc-name').textContent=P.name; $('#pc-coins').textContent=P.coins.toLocaleString('en'); $('#pc-lvl').textContent=lvl(); $('#pc-xp').style.width=(lvlProg()*100)+'%';
-  $('#pc-av').src=avSrc(P.avatar); $('#pc-fr').src=frSrc(P.frame); $('#pc-fr').style.display=P.frame?'':'none';
+  $('#pc-av').src=avSrc(P.avatar); $('#pc-fr').src=frSrc(P.frame); $('#pc-fr').style.display=P.frame?'':'none'; fitFrames($('#pcard'));
   $('#cal-day').textContent=new Date().getDate();
   const bg=$('#mbg'); if(!bg.children.length){ for(let i=0;i<18;i++){ const c=document.createElement('div'); c.className='cf'; c.style.left=(Math.random()*100)+'%'; c.style.animationDelay=(-Math.random()*12)+'s'; c.style.animationDuration=(9+Math.random()*8)+'s'; c.style.transform=`scale(${.6+Math.random()*1.2})`; bg.appendChild(c);} }
 }
@@ -714,6 +776,7 @@ function showCatalog(kind,tab){
   const cur=list.find(x=>x[0]===selKey)||items[0]; if(!cur) return;
   const pv=$(`#${kind}-pv`); pv.className='pv'+(tab==='avatars'||tab==='frames'?' sq':'');
   pv.innerHTML=tab==='frames'?`<img src="${avSrc(P.avatar)}"><img class="fr" src="${IMG.frames(cur[0])}">`:`<img src="${IMG[tab](cur[0])}">`;
+  fitFrames($(`#${kind}-s`));
   $(`#${kind}-name`).textContent=cur[1]; $(`#${kind}-desc`).textContent=cur[2]||(tab==='avatars'?'صورة رمزية تظهر للخصوم في المباراة.':'إطار يزيّن صورتك الرمزية.');
   const act=$(`#${kind}-act`); act.innerHTML='';
   const own=owns(tab,cur[0]);
@@ -734,9 +797,9 @@ function showProfile(tab){
   const tabsEl=$('#profile-tabs'); tabsEl.querySelectorAll('.tab').forEach(t=>{ const on=t.dataset.t===tab; t.classList.toggle('on',on); const im=t.querySelector('img'); if(im&&t.dataset.t) im.src=im.src.replace(/(_on)?\.webp$/, on?'_on.webp':'.webp'); t.onclick=()=>{ if(t.classList.contains('dis')||!t.dataset.t) return; snd('click'); showProfile(t.dataset.t); }; });
   $('#profile-overview').style.display=tab==='overview'?'':'none'; $('#profile-cust').style.display=tab==='overview'?'none':'flex';
   if(tab==='overview'){
-    $('#pf-av').src=avSrc(P.avatar); $('#pf-fr').src=frSrc(P.frame); $('#pf-name').value=P.name; $('#pf-name').oninput=e=>{P.name=e.target.value.trim()||'أنا';saveP()};
+    $('#pf-av').src=avSrc(P.avatar); $('#pf-fr').src=frSrc(P.frame); $('#pf-fr').style.display=P.frame?'':'none'; fitFrames($('#profile-s')); $('#pf-name').value=P.name; $('#pf-name').oninput=e=>{P.name=e.target.value.trim()||'أنا';saveP()};
     $('#pf-lvl').textContent=lvl(); $('#pf-xp').textContent=P.xp;
-    const st=P.stats; $('#pf-stats').innerHTML=[[st.matches,'مباريات'],[st.first,'مراكز أولى'],[st.matches?Math.round(100*st.first/st.matches)+'%':'0%','نسبة الفوز'],[st.cardsPlayed,'كروت لعبتها'],[st.unoCalls,'نداءات UNO'],[P.owned.boards.length+P.owned.cards.length,'تصاميم مملوكة'],[P.owned.avatars.length,'صور رمزية'],[P.owned.frames.length,'إطارات']].map(([v,l])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
+    const st=P.stats; $('#pf-stats').innerHTML=[[st.matches,'مباريات'],[st.first,'مراكز أولى'],[st.matches?Math.round(100*st.first/st.matches)+'%':'0%','نسبة الفوز'],[st.cardsPlayed,'كروت لعبتها'],[st.unoCalls,'نداءات وحدة!'],[P.owned.boards.length+P.owned.cards.length,'تصاميم مملوكة'],[P.owned.avatars.length,'صور رمزية'],[P.owned.frames.length,'إطارات']].map(([v,l])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
   } else {
     // reuse catalog renderer with kind=profile
     const list=CAT[tab], box=$('#profile-items'); const selKey=catSel['profile'+tab]||(tab==='avatars'?P.avatar:P.frame);
@@ -766,7 +829,7 @@ function showMatchEnd(){
   order.forEach(({p,i},r)=>{
     const d=document.createElement('div'); d.className='pod'+(r===0?' win':''); d.style.animationDelay=(r*.15)+'s';
     d.innerHTML=`<div class="rk"><img src="ui/rank${r+1}.webp"></div><div class="pn">${p.name}</div><div class="card"><div class="avbox"><img class="a" src="${avSrc(p.av)}">${p.frame?`<img class="f" src="${frSrc(p.frame)}">`:''}</div><div class="sc">${p.out?'خرج':p.hand.length+' 🂠'}</div><div class="pts">${p.score}</div></div><div class="rw">+ <img src="ui/coin2.webp"> ${rewards[r]}</div>`;
-    pod.appendChild(d);
+    pod.appendChild(d); fitFrame(d.querySelector('.avbox'));
     if(p.human){ P.coins+=rewards[r]; P.xp+=xps[r]; P.stats.matches++; if(r===0){P.stats.first++;P.stats.wins++} P.stats.best=Math.max(P.stats.best||0,p.score); }
     else { const b=P.bots[p.name]||(P.bots[p.name]={matches:0,first:0,best:0,av:p.av}); b.matches++; if(r===0)b.first++; b.best=Math.max(b.best,p.score); b.av=p.av; }
   });
@@ -831,7 +894,7 @@ function newMatch(){
   token++;
   const pool=shuffle(AVATAR_LIST.filter(a=>a!==P.avatar && !/DLC|Dev/.test(a))).slice(0,3), names=shuffle([...BOTNAMES]).slice(0,3), frs=shuffle([...FRAME_LIST]);
   G={players:[{name:P.name,av:P.avatar,frame:P.frame,human:true,hand:[],score:0,uno:false,out:false},...pool.map((a,i)=>({name:names[i],av:a,frame:Math.random()<.6?frs[i]:'',human:false,hand:[],score:0,uno:false,out:false}))],round:0,busy:false};
-  G.players.forEach((p,i)=>{const s=$('#'+seatIds[i]);s.querySelector('.plate span').textContent=p.name;s.querySelector('.av img.a').src=avSrc(p.av);const f=s.querySelector('.avw>img.fr');f.src=frSrc(p.frame);f.style.display=p.frame?'':'none';});
+  G.players.forEach((p,i)=>{const s=$('#'+seatIds[i]);s.querySelector('.plate span').textContent=p.name;s.querySelector('.av img.a').src=avSrc(p.av);const f=s.querySelector('.avw>img.fr');f.src=frSrc(p.frame);f.style.display=p.frame?'':'none';fitFrame(s.querySelector('.avw'));});
   applyBoard();
   $$('.fe').forEach(e=>e.classList.remove('show')); $('#mend').classList.remove('show');
   showVS().then(()=>{ $('#game').classList.add('show'); startRound(); });
@@ -845,7 +908,7 @@ function applyBoard(){
 function showVS(){
   return new Promise(res=>{
     const PL=G.players, mk=p=>`<div class="vsp"><div class="avbox"><img class="a" src="${avSrc(p.av)}">${p.frame?`<img class="f" src="${frSrc(p.frame)}">`:''}</div><span>${p.name}</span></div>`;
-    $('#vsa').innerHTML=mk(PL[0])+mk(PL[2]); $('#vsb').innerHTML=mk(PL[1])+mk(PL[3]);
+    $('#vsa').innerHTML=mk(PL[0])+mk(PL[2]); $('#vsb').innerHTML=mk(PL[1])+mk(PL[3]); fitFrames($('#vs'));
     const v=$('#vs'); v.classList.add('show'); snd('boom');
     setTimeout(()=>{v.classList.remove('show');res()},2300);
   });
@@ -1314,7 +1377,7 @@ $('#pausebtn').onclick=()=>{ $('#ov-pause').classList.add('show'); };
 $('#resume').onclick=()=>$('#ov-pause').classList.remove('show');
 function toMenu(){ $('#vs').classList.remove('show'); openScreen('main'); }
 $('#quit').onclick=toMenu; $('#round-menu').onclick=toMenu;
-$('#helpbtn').onclick=()=>{ const d='cards/nomercy'; $('#rules-body').innerHTML=`
+$('#helpbtn').onclick=()=>{ const d='cards/nomercy'; $('#ov-help').querySelector('h2').textContent='قواعد بلا رحمة'; $('#rules-body').innerHTML=`
 <div class="rc"><img src="${d}/d6.webp"><img src="${d}/d10.webp"><div><b>+6 و +10</b> كروت جوكر: اللاعب التالي يسحب 6 أو 10 وتختار اللون.</div></div>
 <div class="rc"><img src="${d}/revd4.webp"><div><b>عكس +4</b>: يعكس الاتجاه، واللاعب الذي أصبح التالي يسحب 4.</div></div>
 <div class="rc"><img src="${d}/roulette.webp"><div><b>روليت الألوان</b>: اختر لونًا، واللاعب التالي يسحب حتى يخرج له كرت بهذا اللون.</div></div>
@@ -1325,6 +1388,36 @@ $('#helpbtn').onclick=()=>{ const d='cards/nomercy'; $('#rules-body').innerHTML=
 <div class="rc"><div><b>قاعدة الرحمة</b>: من يصل إلى 25 كرتًا أو أكثر يخرج من الجولة فورًا. آخر لاعب متبقٍ أو أول من يفرغ يده يفوز.</div></div>
 <div class="rc"><div><b>وحدة!</b>: اضغط زرّ «وحدة!» عندما يبقى لك كرتٌ واحد وإلا ستسحب كرتين.</div></div>`; $('#ov-help').classList.add('show'); };
 $('#help-close').onclick=()=>$('#ov-help').classList.remove('show');
+/* ── تعليمات النمطين والفرق بينهما (من شاشة اختيار النمط) ── */
+$('#modehelp').onclick=(e)=>{ e.stopPropagation(); snd('click');
+  $('#ov-help').querySelector('h2').textContent='كيف تلعب «وحدة»؟ والفرق بين النمطين';
+  $('#rules-body').innerHTML=`
+<div class="rsec">الهدف</div>
+<div class="rc"><div>تخلّص من كلّ كروتك. تلعب كرتًا يطابق <b>اللون</b> أو <b>الرقم/الرمز</b> الظاهر على الطاولة، وإن لم تجد سحبتَ كرتًا. وحين يبقى في يدك كرتٌ واحد اضغط زرّ <b>«وحدة!»</b> وإلّا سحبتَ كرتين عقوبة.</div></div>
+<div class="rc"><div><b>الرموز المشتركة بين النمطين</b> — <b>حظر</b>: يتخطّى دور التالي · <b>عكس</b>: يقلب اتجاه اللعب · <b>+٢</b>: التالي يسحب كرتين · <b>جوكر</b>: تختار اللون · <b>+٤</b>: التالي يسحب أربعة وتختار اللون.</div></div>
+
+<div class="rsec">١ · النمط الكلاسيكي</div>
+<div class="rc"><div><b>١٠٨ كروت</b> — الطقم المعروف بلا إضافات.</div></div>
+<div class="rc"><div><b>الفوز بالنقاط</b>: من يُفرغ يده تنتهي الجولة، فتُحسب له نقاط كروت الباقين (الأرقام بقيمتها، الرموز ٢٠، الجوكر و+٤ خمسون). تتكرّر الجولات حتى يبلغ أحدهم <b>حدّ النقاط</b> الذي اخترته (٢٠٠ / ٣٠٠ / ٥٠٠).</div></div>
+<div class="rc"><div><b>مظهرك يظهر</b>: يستعمل الطاولة وطقم الكروت اللذين اخترتهما في «تصميمي».</div></div>
+
+<div class="rsec">٢ · نمط «بلا رحمة»</div>
+<div class="rc"><div><b>١٦٨ كرتًا</b> — كلّ كروت الكلاسيكي وفوقها كروتٌ قاسية تقلب الطاولة.</div></div>
+<div class="rc"><div><b>+٦ و +١٠</b>: جوكر يجعل التالي يسحب ستّة أو عشرة وتختار اللون.</div></div>
+<div class="rc"><div><b>عكس +٤</b>: يعكس الاتجاه، ومن صار التالي يسحب أربعة.</div></div>
+<div class="rc"><div><b>+٤ ملوّن</b>: يسحب التالي أربعة، لكنه يُلعب على لونه فقط.</div></div>
+<div class="rc"><div><b>روليت الألوان</b>: تختار لونًا، والتالي يسحب كرتًا بعد كرت حتى يخرج له ذلك اللون.</div></div>
+<div class="rc"><div><b>حظر الجميع</b>: يُحظر كلّ اللاعبين وتلعب دورًا آخر مباشرة.</div></div>
+<div class="rc"><div><b>ارمِ الكل</b>: ترمي كلّ كروتك التي بلون واحدٍ دفعةً واحدة.</div></div>
+<div class="rc"><div><b>قاعدة الرحمة</b>: من بلغت يده <b>٢٥ كرتًا</b> خرج من الجولة فورًا.</div></div>
+<div class="rc"><div><b>الفوز بالبقاء</b> لا بالنقاط: أوّل من يُفرغ يده أو آخر من يصمد.</div></div>
+
+<div class="rsec">٣ · قواعد البيت (تُضبط قبل المباراة)</div>
+<div class="rc"><div><b>التكديس</b>: يمكن الردّ على كرت سحبٍ بكرت سحبٍ آخر فتتراكم على من بعدك · <b>٧-٠</b>: السبعة تبدّل يدك مع لاعب، والصفر يُدوّر الأيدي · <b>القفز</b>: العب كرتًا مطابقًا تمامًا خارج دورك · <b>اللعب الإجباريّ</b>: إن سحبتَ كرتًا صالحًا لعبتَه فورًا · <b>تحدّي +٤</b> (كلاسيك): اتّهم من لعبها بأنه كان يملك اللون.</div></div>
+
+<div class="rsec">باختصار</div>
+<div class="rc"><div><b>الكلاسيكي</b> = جولاتٌ ونقاطٌ تتراكم، إيقاعٌ هادئ ومتوقَّع. &nbsp;·&nbsp; <b>بلا رحمة</b> = سحباتٌ ضخمة وانقلاباتٌ مفاجئة وخروجٌ عند ٢٥ كرتًا — أسرع وأقسى.</div></div>`;
+  $('#ov-help').classList.add('show'); };
 window.addEventListener('resize',()=>{ if(G) renderHand(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&G) $('#pausebtn').click(); if(e.key===' '&&G) $('#unobtn').click(); if(e.key==='d'&&G) $('#deck').click(); });
 // preload
