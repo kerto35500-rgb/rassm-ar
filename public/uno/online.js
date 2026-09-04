@@ -277,6 +277,14 @@ async function olApplyOne(v) {
   const next = olBuild(v);
   const phys = next._phys;
 
+  /* ما زاد في يدي بين الحالتين: هذه هي الأوراق التي سُحبت لي فعلًا، بوجوهها
+     الحقيقيّة. كنتُ أُطيّر «أوراقًا وهميّة» ثم أحذفها فورًا، فلا يتراكم شيء —
+     ثم تظهر الخمس دفعةً واحدة عند رسم الحالة. لهذا لم يكن فيه سلاسة. */
+  const oldHand = (G && G.online && G.players && G.players[0] && Array.isArray(G.players[0].hand))
+                  ? G.players[0].hand : [];
+  const oldIds = new Set(oldHand.map(k => k.id));
+  const myAdded = (v.me.hand || []).filter(k => !oldIds.has(k.id));
+
   /* المقاعد غير المستعملة تُخفى؛ والأسماء والصور تُثبَّت مرّةً */
   ['seat-me', 'seat-right', 'seat-top', 'seat-left'].forEach((id, i) => {
     const el = $('#' + id); if (!el) return;
@@ -321,7 +329,7 @@ async function olApplyOne(v) {
       G.discard = next.discard; G.color = next.color;
     } else {
       /* انتقالٌ عاديّ: نُحرّك بالطاولة القديمة ثم نستبدل */
-      for (const e of evs) await olAnimate(e, v, phys);
+      for (const e of evs) await olAnimate(e, v, phys, myAdded);
       G = next;
     }
   } catch (err) { G = next; }
@@ -338,7 +346,7 @@ async function olApplyOne(v) {
 }
 
 /** حركةُ حدثٍ واحد على الطاولة القديمة. */
-async function olAnimate(e, v, phys) {
+async function olAnimate(e, v, phys, myAdded) {
   const pi = e.seat != null ? phys(e.seat) : null;
   switch (e.t) {
     case 'play': {
@@ -380,13 +388,17 @@ async function olAnimate(e, v, phys) {
     }
     case 'draw': {
       if (!G || pi == null) return;
-      const n = Math.min(e.n || 0, 8);
+      const n = Math.min(e.n || 0, 12);
       for (let i = 0; i < n; i++) {
-        const ghost = { c: 'x', v: 'x', id: -9000 - i };
-        G.players[pi].hand.push(ghost);
+        /* لي: الورقة الحقيقيّة تُضاف وتبقى، فترى يدك تكبر ورقةً ورقة.
+           لغيري: ظهرُ ورقةٍ يكفي — لا أعرف وجهها ولا يحقّ لي. */
+        const k = pi === 0 ? (myAdded && myAdded.shift()) : null;
+        const card = k || { c: 'x', v: 'x', id: -9000 - i - Math.floor(Math.random() * 1e6) };
+        G.players[pi].hand.push(card);
         snd('draw');
-        await flyDeal(pi, ghost, n > 1 ? 70 : 0);
-        if (pi === 0) { G.players[0].hand.pop(); }   /* يدي الحقيقيّة تأتي مع الحالة */
+        await flyDeal(pi, card, n > 1 ? 90 : 0);
+        renderSeat(pi); renderDeck();
+        if (pi === 0) renderHand();
       }
       if (n > 1) seatBubble(pi, 'سحب ' + e.n, 'bad', 1000);
       break;
