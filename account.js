@@ -277,6 +277,30 @@ function setupAccounts(app, deps) {
     } catch (e) { res.status(500).json({ ok: false, error: "خطأ في الخادم" }); }
   });
 
+  /* ربط بريدٍ اختياريّ — لا يُطلب عند التسجيل كي لا نُتعب أحدًا، ويُطلب
+     هنا لمن أراد أن يستطيع استرجاع حسابه. التأكيد يأتي في خطوةٍ لاحقة. */
+  app.post("/api/account/email",
+    rateLimit({ name: "mail", windowMs: 3600000, max: 10 }), json, async (req, res) => {
+    try {
+      const u = await currentUser(req, null);
+      if (!u) return res.status(401).json({ ok: false, error: "لست مسجّلًا" });
+      const email = String(req.body?.email || "").trim().toLowerCase().slice(0, 120);
+      /* فحصٌ عمليّ لا معياريّ كامل: يمنع الأخطاء الشائعة ولا يرفض بريدًا صحيحًا */
+      if (!/^[^@\s]+@[^@\s.]+\.[a-z]{2,}$/i.test(email))
+        return res.status(400).json({ ok: false, error: "صيغة البريد غير صحيحة" });
+      const taken = await st().getUserByEmail(email);
+      if (taken && taken.id !== u.id)
+        return res.status(409).json({ ok: false, error: "هذا البريد مرتبطٌ بحسابٍ آخر" });
+      if ((u.email || "").toLowerCase() === email)
+        return res.json({ ok: true, unchanged: true });
+      await st().updateUser(u.id, { email, emailVerifiedAt: null });
+      res.json({ ok: true });
+    } catch (e) {
+      console.error("account email:", e.message);
+      res.status(500).json({ ok: false, error: "خطأ في الخادم" });
+    }
+  });
+
   app.get("/api/account/top", async (req, res) => {
     try { res.json({ ok: true, top: await st().top(10) }); }
     catch (e) { res.json({ ok: true, top: [] }); }
