@@ -15,8 +15,14 @@
 
 const ONL = {
   on: false, sock: null, code: null, me: null, seatN: 0, mySeat: 0,
-  lobby: null, view: null, phys: [0, 1, 2, 3], started: false
+  lobby: null, view: null, phys: [0, 1, 2, 3], started: false,
+  /* كومةُ العرض: الخادم يُرسل الورقة العليا وحدها (وهذا صحيح — لا داعي
+     لأن يعرف العميل تاريخ الكومة). لكن الطاولة في الوضع المحلّيّ تُظهر آخر
+     ستّ أوراقٍ متراكمةً بميلٍ عشوائيّ، فبورقةٍ واحدةٍ يبدو الوسط فارغًا
+     كأن ما لُعب اختفى. فنُراكم العُليا عندنا كلّما تغيّرت. */
+  pile: []
 };
+const PILE_SHOW = 6;
 
 /* توزيع المقاعد على الطاولة حسب العدد: أنا أسفل، والخصم الواحد أمامي. */
 const PHYS = { 2: [0, 2], 3: [0, 1, 3], 4: [0, 1, 2, 3] };
@@ -84,7 +90,7 @@ function olConnect() {
   s.on('kicked', () => { olQuit(); toastC('أخرجك المضيف من الغرفة'); });
   /* شاشة «ضدّ» قبل الطاولة كما في المحلّيّ — واللوبي يحمل الأسماء والصور */
   s.on('started', () => {
-    ONL.started = true;
+    ONL.started = true; ONL.pile = [];
     olEnterBoard();
     const l = ONL.lobby;
     if (l && l.players.length >= 2) {
@@ -122,7 +128,7 @@ function olJoin(code) {
 }
 function olQuit() {
   if (ONL.sock && ONL.on) ONL.sock.emit('leaveRoom');
-  ONL.on = false; ONL.code = null; ONL.started = false; ONL.view = null;
+  ONL.on = false; ONL.code = null; ONL.started = false; ONL.view = null; ONL.pile = [];
   G = null;
   openScreen('main');
 }
@@ -233,7 +239,7 @@ function olBuild(v) {
   });
   for (let i = 0; i < 4; i++) if (!slots[i]) slots[i] = { name: '', av: 'Adult_1', frame: '', human: false, score: 0, uno: false, out: true, hand: [], _empty: true };
   return {
-    players: slots, deck: new Array(v.deckN).fill(0), discard: v.top ? [v.top] : [],
+    players: slots, deck: new Array(v.deckN).fill(0), discard: ONL.pile.slice(),
     color: v.color, dir: v.dir, turn: v.turn == null ? 0 : phys(v.turn),
     pending: v.pending, pendingType: v.pendingType, round: v.round,
     over: !!v.over, busy: false, anim: false, online: true, _phys: phys
@@ -259,10 +265,17 @@ async function olApplyOne(v) {
   if (ONL.vsDone) { await ONL.vsDone; ONL.vsDone = null; }
   Object.assign(S, v.S);
 
-  const next = olBuild(v);
-  const phys = next._phys;
   const evs = v.events || [];
   const dealing = evs.some(e => e.t === 'round');
+  /* الكومة تُبنى قبل الحالة: جولةٌ جديدة تبدأ بكومةٍ فارغة، وكل ورقةٍ عليا
+     جديدة تُضاف فوق ما قبلها. نُبقي الستّ الأخيرة فقط — وهو ما يرسمه
+     المحلّيّ أصلًا، فلا نُراكم ذاكرةً بلا فائدة. */
+  if (dealing) ONL.pile = [];
+  if (v.top && (!ONL.pile.length || ONL.pile[ONL.pile.length - 1].id !== v.top.id)) ONL.pile.push(v.top);
+  if (ONL.pile.length > PILE_SHOW) ONL.pile = ONL.pile.slice(-PILE_SHOW);
+
+  const next = olBuild(v);
+  const phys = next._phys;
 
   /* المقاعد غير المستعملة تُخفى؛ والأسماء والصور تُثبَّت مرّةً */
   ['seat-me', 'seat-right', 'seat-top', 'seat-left'].forEach((id, i) => {
@@ -287,7 +300,7 @@ async function olApplyOne(v) {
       G = next;
       const full = next.players.map(p => p.hand);
       G.players.forEach(p => { p.hand = []; });
-      G.discard = []; G.color = null;
+      G.discard = []; G.color = null;   /* الوسط فارغٌ حتى تهبط الورقة الأولى */
       humanResolve = null; showUnoBtn(false);
       $$('.ashpile').forEach(a => a.classList.remove('show'));
       renderAll();
@@ -345,7 +358,10 @@ async function olAnimate(e, v, phys) {
       await flyCard(from, rect($('#discard')), cardImg(k, k.chosen),
                     { rot: true, tiltFrom: pi === 0 ? 0 : 50, tiltTo: 50 });
       snd(k.c === 'w' ? 'wild' : 'card');
-      G.discard.push(k); G.color = e.color || G.color;
+      /* لا نُكرّرها إن كانت الكومة تحملها أصلًا (بُنيت قبل الحركة) */
+      const last = G.discard[G.discard.length - 1];
+      if (!last || last.id !== k.id) G.discard.push(k);
+      G.color = e.color || G.color;
       renderCenter();
       if (pi !== 0) { G.players[pi].hand.pop(); renderSeat(pi); seatBubble(pi, e.name || '', 'info', 900); }
       else { const i = G.players[0].hand.findIndex(x => x.id === k.id); if (i >= 0) G.players[0].hand.splice(i, 1); renderHand(); }
@@ -357,6 +373,8 @@ async function olAnimate(e, v, phys) {
         await flyCard(rect($('#' + (pi === 0 ? 'hand' : seatIds[pi] + ' .av'))), rect($('#discard')),
                       backImg(), { rot: true, small: true });
         snd('card');
+        /* لا نُراكم أوراقًا وهميّة: لا نعرف وجوهها (الخادم يُرسل العليا وحدها)
+           وأيّ وجهٍ نخترعه يطلب صورةً غير موجودة. الطيران يكفي للإحساس. */
       }
       break;
     }
