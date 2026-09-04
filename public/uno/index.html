@@ -984,7 +984,8 @@ function applyBoard(){
 }
 function showVS(){
   return new Promise(res=>{
-    const PL=G.players, mk=p=>`<div class="vsp"><div class="avbox"><img class="a" src="${avSrc(p.av)}">${p.frame?`<img class="f" src="${frSrc(p.frame)}">`:''}</div><span>${p.name}</span></div>`;
+    /* المقعد الفارغ (غرفةُ اثنين أو ثلاثة أونلاين) لا يُرسَم */
+    const PL=G.players, mk=p=>!p||!p.name?'':`<div class="vsp"><div class="avbox"><img class="a" src="${avSrc(p.av)}">${p.frame?`<img class="f" src="${frSrc(p.frame)}">`:''}</div><span>${p.name}</span></div>`;
     $('#vsa').innerHTML=mk(PL[0])+mk(PL[2]); $('#vsb').innerHTML=mk(PL[1])+mk(PL[3]); fitFrames($('#vs'));
     const v=$('#vs'); v.classList.add('show'); snd('boom');
     setTimeout(()=>{v.classList.remove('show');res()},2300);
@@ -1449,7 +1450,7 @@ let bannerT=null; function banner(t,sub,ms){ const b=$('#banner'); b.innerHTML=t
 let splatT=null; function splat(y){ const s=$('#splat'); s.classList.toggle('y',!!y); s.style.transform=`translate(-50%,-50%) scale(1) rotate(${Math.random()*360}deg)`; s.classList.add('show'); clearTimeout(splatT); splatT=setTimeout(()=>{s.classList.remove('show');s.style.transform=''},1600); }
 function seatBubble(pi,t,cls='',ms=1500){ const b=$('#'+seatIds[pi]+' .bubble'); b.textContent=t; b.className='bubble show '+cls; setTimeout(()=>b.classList.remove('show'),ms); }
 
-$('#deck').onclick=()=>{ if(typeof ONL!=='undefined' && ONL.on){ if(ONL.view && ONL.view.phase==='turn' && ONL.view.turn===ONL.mySeat){ snd('click'); ONL.sock.emit('draw'); } return; }
+$('#deck').onclick=()=>{ if(typeof ONL!=='undefined' && ONL.on){ if(!ONL.animating && ONL.view && ONL.view.phase==='turn' && ONL.view.turn===ONL.mySeat){ snd('click'); ONL.sock.emit('draw'); } return; }
   if(!G||G.turn!==0||!humanResolve||G.busy) return; snd('click'); if(G.pending>0) humanDrawPenalty(); else humanDraw(); };
 $('#startbtn').onclick=()=>{snd('click');newMatch()};
 

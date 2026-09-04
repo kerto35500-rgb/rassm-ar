@@ -82,7 +82,18 @@ function olConnect() {
   s.on('lobby', l => { ONL.lobby = l; olRenderRoom(); });
   s.on('err', e => { toastC(e.msg || 'تعذّر'); olMsg(e.msg || '', true); });
   s.on('kicked', () => { olQuit(); toastC('أخرجك المضيف من الغرفة'); });
-  s.on('started', () => { ONL.started = true; olEnterBoard(); });
+  /* شاشة «ضدّ» قبل الطاولة كما في المحلّيّ — واللوبي يحمل الأسماء والصور */
+  s.on('started', () => {
+    ONL.started = true;
+    olEnterBoard();
+    const l = ONL.lobby;
+    if (l && l.players.length >= 2) {
+      const ps = l.players.map(p => ({ name: p.name, av: p.av, frame: p.frame || '' }));
+      while (ps.length < 4) ps.push({ name: '', av: 'Adult_1', frame: '' });
+      G = { players: ps, online: true, deck: [], discard: [], round: 0, busy: true };
+      ONL.vsDone = new Promise(res => { showVS().then(res); });
+    } else ONL.vsDone = Promise.resolve();
+  });
   s.on('state', v => olApply(v));
   s.on('matchEnd', e => olMatchEnd(e));
   s.on('disconnect', () => { if (ONL.on) toastC('انقطع الاتّصال…'); });
@@ -205,21 +216,14 @@ function olEnterBoard() {
   curScreen = 'game';
 }
 
-/** يُحوّل منظور الخادم إلى `G` التي تفهمها دوالُّ الرسم. */
-function olApply(v) {
-  ONL.view = v;
+/** يُحوّل منظور الخادم إلى `G` التي تفهمها دوالُّ الرسم — بلا رسم. */
+function olBuild(v) {
   ONL.mySeat = v.me.seat; ONL.seatN = v.players.length;
   ONL.phys = PHYS[v.players.length] || [0, 1, 2, 3];
-  if (!ONL.started) { ONL.started = true; olEnterBoard(); }
-
-  /* إعدادات اللعبة تأتي من الخادم: canPlay المحلّيّة تقرأها لتلوين ما يجوز */
-  Object.assign(S, v.S);
-
   const phys = i => ONL.phys[(i - ONL.mySeat + ONL.seatN) % ONL.seatN];
   const slots = new Array(4).fill(null);
   v.players.forEach(p => {
-    const pi = phys(p.seat);
-    slots[pi] = {
+    slots[phys(p.seat)] = {
       name: p.name, av: p.av, frame: p.frame, human: p.seat === ONL.mySeat,
       score: p.score, uno: p.uno, out: p.out || p.left, _seat: p.seat, _id: p.id,
       _catchable: p.catchable,
@@ -228,68 +232,164 @@ function olApply(v) {
     };
   });
   for (let i = 0; i < 4; i++) if (!slots[i]) slots[i] = { name: '', av: 'Adult_1', frame: '', human: false, score: 0, uno: false, out: true, hand: [], _empty: true };
-
-  const myTurn = v.phase === 'turn' && v.turn === ONL.mySeat;
-  G = {
+  return {
     players: slots, deck: new Array(v.deckN).fill(0), discard: v.top ? [v.top] : [],
     color: v.color, dir: v.dir, turn: v.turn == null ? 0 : phys(v.turn),
     pending: v.pending, pendingType: v.pendingType, round: v.round,
-    over: !!v.over, busy: false, anim: false, online: true
+    over: !!v.over, busy: false, anim: false, online: true, _phys: phys
   };
-  /* renderHand تسأل عن humanResolve لتعرف «هل هو دوري الآن؟» */
-  humanResolve = myTurn ? function () {} : null;
+}
 
-  /* المقاعد غير المستعملة تُخفى، وإلا ظهرت لوحاتٌ فارغة حول الطاولة */
+/* الحالات تأتي أسرع من الحركة: نصفّها ونُشغّل واحدةً واحدة. كل حالةٍ تحمل
+   أحداثَ الانتقال إليها، فنُحرّك بالطاولة القديمة ثم نرسم الجديدة. هذا ما
+   يجعل الأونلاين يتحرّك كالمحلّيّ حرفًا بحرف: الدوالّ نفسها، والرسم نفسه —
+   والفارق الوحيد أن القاعدة نُفّذت على الخادم قبل أن تصل. */
+const olQ = [];
+let olBusy = false;
+function olApply(v) { olQ.push(v); if (!olBusy) olDrain(); }
+async function olDrain() {
+  olBusy = true;
+  try { while (olQ.length) await olApplyOne(olQ.shift()); }
+  finally { olBusy = false; }
+}
+
+async function olApplyOne(v) {
+  ONL.view = v;
+  if (!ONL.started) { ONL.started = true; olEnterBoard(); }
+  if (ONL.vsDone) { await ONL.vsDone; ONL.vsDone = null; }
+  Object.assign(S, v.S);
+
+  const next = olBuild(v);
+  const phys = next._phys;
+  const evs = v.events || [];
+  const dealing = evs.some(e => e.t === 'round');
+
+  /* المقاعد غير المستعملة تُخفى؛ والأسماء والصور تُثبَّت مرّةً */
   ['seat-me', 'seat-right', 'seat-top', 'seat-left'].forEach((id, i) => {
     const el = $('#' + id); if (!el) return;
-    el.style.display = slots[i]._empty ? 'none' : '';
-    if (slots[i]._empty) { const oh = $('#' + ohandId(i)); if (oh) oh.innerHTML = ''; }
-    else {
-      el.querySelector('.plate span').textContent = slots[i].name;
-      el.querySelector('.av img.a').src = avSrc(slots[i].av);
-      const f = el.querySelector('.avw>img.fr');
-      f.src = frSrc(slots[i].frame); f.style.display = slots[i].frame ? '' : 'none';
-      fitFrame(el.querySelector('.avw'));
-    }
+    const p = next.players[i];
+    el.style.display = p._empty ? 'none' : '';
+    if (p._empty) { const oh = $('#' + ohandId(i)); if (oh) oh.innerHTML = ''; return; }
+    el.querySelector('.plate span').textContent = p.name;
+    el.querySelector('.av img.a').src = avSrc(p.av);
+    const f = el.querySelector('.avw>img.fr');
+    f.src = frSrc(p.frame); f.style.display = p.frame ? '' : 'none';
+    fitFrame(el.querySelector('.avw'));
   });
   applyBoard();
+
+  ONL.animating = true;
+  try {
+    if (dealing || !G || !G.online) {
+      /* جولةٌ جديدة: نبدأ بأيدٍ فارغة ثم نوزّع كما يوزّع المحلّيّ */
+      G = next;
+      const full = next.players.map(p => p.hand);
+      G.players.forEach(p => { p.hand = []; });
+      G.discard = []; G.color = null;
+      humanResolve = null; showUnoBtn(false);
+      $$('.ashpile').forEach(a => a.classList.remove('show'));
+      renderAll();
+      banner('الجولة ' + v.round, '', 900);
+      await sleep(600);
+      const order = [];
+      for (let k = 0; k < ONL.seatN; k++) order.push(phys((v.turn + k) % ONL.seatN));
+      for (let i = 0; i < 7; i++) for (const pi of order) {
+        const src = full[pi][i]; if (!src) continue;
+        G.players[pi].hand.push(src);
+        await flyDeal(pi, src, 0);
+        if (ONL.view !== v && olQ.length > 2) break;   /* تأخّرنا كثيرًا: نُسرع */
+      }
+      if (v.top) {
+        await flyCard(rect($('#deck')), rect($('#discard')), cardImg(v.top));
+        snd('card');
+      }
+      G.discard = next.discard; G.color = next.color;
+    } else {
+      /* انتقالٌ عاديّ: نُحرّك بالطاولة القديمة ثم نستبدل */
+      for (const e of evs) await olAnimate(e, v, phys);
+      G = next;
+    }
+  } catch (err) { G = next; }
+  ONL.animating = false;
+
+  const myTurn = v.phase === 'turn' && v.turn === ONL.mySeat;
+  humanResolve = myTurn ? function () {} : null;
   renderAll();
-  /* شريط النقاط يُبنى من كل المقاعد الأربعة، فالفارغة تظهر «: 0».
-     نكتبه من لاعبي الخادم وحدهم. */
   $('#score').innerHTML = v.players.map(p =>
     '<span>' + olEsc(p.name) + ': <b>' + p.score + '</b></span>').join('') +
     '<span>جولة ' + v.round + '</span>';
-  olEvents(v.events || []);
   olTimer(v.deadline);
   olExtras(v);
 }
 
-/** أحداثٌ للعرض فقط — القاعدة نُفّذت على الخادم، هذه لافتاتها. */
-function olEvents(evs) {
-  const phys = i => ONL.phys[(i - ONL.mySeat + ONL.seatN) % ONL.seatN];
-  for (const e of evs) {
-    switch (e.t) {
-      case 'round':     banner('جولة ' + e.round, '', 1000); break;
-      case 'play':      snd(e.card && e.card.c === 'w' ? 'wild' : 'card');
-                        if (e.seat !== ONL.mySeat) seatBubble(phys(e.seat), e.name || '', 'info', 900); break;
-      case 'draw':      if (e.n > 1) seatBubble(phys(e.seat), 'سحب ' + e.n, 'bad', 1000); break;
-      case 'reverse':   banner('عكس', '', 700); break;
-      case 'skip':      seatBubble(phys(e.seat), 'محظور ⛔', 'bad', 1000); break;
-      case 'skipall':   banner('حظر الجميع!', '', 900); break;
-      case 'pending':   banner('+' + e.n, '', 800); break;
-      case 'roulette':  seatBubble(phys(e.seat), 'روليت — سحب ' + e.n, 'bad', 1300); break;
-      case 'swap':      banner('تبديل الأيدي', '', 900); break;
-      case 'rotate':    banner('تدوير الأيدي', '', 900); break;
-      case 'discardAll':banner('ارمِ الكل!', e.n + ' كرت', 1000); break;
-      case 'eliminate': splat(); banner('بلا رحمة!', '', 1400); snd('boom'); break;
-      case 'uno':       seatBubble(phys(e.seat), 'اونو!', '', 1000); snd('uno'); break;
-      case 'caught':    banner('مُسك!', '', 1000); snd('bad'); break;
-      case 'missCatch': banner('مسكٌ خاطئ', '', 900); snd('bad'); break;
-      case 'left':      toastC(e.name + ' غادر'); break;
-      case 'timeout':   seatBubble(phys(e.seat), 'انتهى وقته', 'bad', 1100); break;
-      case 'reshuffle': toastC('أعيد خلط الكومة'); break;
-      case 'roundEnd':  banner('انتهت الجولة', '', 1600); snd('win'); break;
+/** حركةُ حدثٍ واحد على الطاولة القديمة. */
+async function olAnimate(e, v, phys) {
+  const pi = e.seat != null ? phys(e.seat) : null;
+  switch (e.t) {
+    case 'play': {
+      if (!G) return;
+      const k = e.card; if (!k) return;
+      let from;
+      if (pi === 0) {
+        const el = handCardEl(k);
+        from = rect(el || $('#hand') || $('#deck'));
+        renderHand(k.id);
+      } else {
+        const cards = $('#' + ohandId(pi)).children;
+        const el = cards[cards.length - 1];
+        from = rect(el || $('#' + seatIds[pi] + ' .av'));
+        if (el) el.style.visibility = 'hidden';
+      }
+      await flyCard(from, rect($('#discard')), cardImg(k, k.chosen),
+                    { rot: true, tiltFrom: pi === 0 ? 0 : 50, tiltTo: 50 });
+      snd(k.c === 'w' ? 'wild' : 'card');
+      G.discard.push(k); G.color = e.color || G.color;
+      renderCenter();
+      if (pi !== 0) { G.players[pi].hand.pop(); renderSeat(pi); seatBubble(pi, e.name || '', 'info', 900); }
+      else { const i = G.players[0].hand.findIndex(x => x.id === k.id); if (i >= 0) G.players[0].hand.splice(i, 1); renderHand(); }
+      break;
     }
+    case 'discardAll': {
+      banner('ارمِ الكل!', e.n + ' كرت', 1000);
+      for (let i = 0; i < Math.min(e.n, 6); i++) {
+        await flyCard(rect($('#' + (pi === 0 ? 'hand' : seatIds[pi] + ' .av'))), rect($('#discard')),
+                      backImg(), { rot: true, small: true });
+        snd('card');
+      }
+      break;
+    }
+    case 'draw': {
+      if (!G || pi == null) return;
+      const n = Math.min(e.n || 0, 8);
+      for (let i = 0; i < n; i++) {
+        const ghost = { c: 'x', v: 'x', id: -9000 - i };
+        G.players[pi].hand.push(ghost);
+        snd('draw');
+        await flyDeal(pi, ghost, n > 1 ? 70 : 0);
+        if (pi === 0) { G.players[0].hand.pop(); }   /* يدي الحقيقيّة تأتي مع الحالة */
+      }
+      if (n > 1) seatBubble(pi, 'سحب ' + e.n, 'bad', 1000);
+      break;
+    }
+    case 'roulette':  seatBubble(pi, 'روليت — سحب ' + e.n, 'bad', 1300); break;
+    case 'reverse':   banner('عكس', '', 700); await sleep(350); break;
+    case 'skip':      seatBubble(pi, 'محظور ⛔', 'bad', 1000); banner('حظر', '', 700); await sleep(350); break;
+    case 'skipall':   banner('حظر الجميع!', '', 900); await sleep(400); break;
+    case 'pending':   banner('+' + e.n, '', 800); await sleep(300); break;
+    case 'swap':      banner('تبديل الأيدي', '', 900); await sleep(500); break;
+    case 'rotate':    banner('تدوير الأيدي', '', 900); await sleep(500); break;
+    case 'eliminate': splat(); banner('بلا رحمة!', '', 1400); snd('boom'); await sleep(800); break;
+    case 'uno':       seatBubble(pi, 'اونو!', '', 1000); snd('uno'); break;
+    case 'oneLeft':   break;
+    case 'caught':    banner('مُسك!', '', 1000); snd('bad'); await sleep(400); break;
+    case 'missCatch': banner('مسكٌ خاطئ', '', 900); snd('bad'); break;
+    case 'jumpin':    banner('قفز!', '', 700); snd('uno'); break;
+    case 'left':      toastC(e.name + ' غادر'); break;
+    case 'timeout':   seatBubble(pi, 'انتهى وقته', 'bad', 1100); break;
+    case 'reshuffle': toastC('أعيد خلط الكومة'); break;
+    case 'challengeWon':  banner('التحدّي نجح!', '', 1100); snd('win'); await sleep(500); break;
+    case 'challengeLost': banner('التحدّي فشل', '', 1100); snd('bad'); await sleep(500); break;
+    case 'roundEnd':  banner('انتهت الجولة', '', 1600); snd('win'); await sleep(900); break;
   }
 }
 
@@ -372,6 +472,7 @@ async function olMatchEnd(e) {
 /* ── اعتراض المداخل الثلاثة ── */
 function olPlay(k) {
   if (!ONL.on || !ONL.view) return false;
+  if (ONL.animating) return true;              /* الحركة أوّلًا، ثم النيّة */
   const v = ONL.view;
   const mine = v.me.hand.some(x => x.id === k.id);
   if (!mine) return true;

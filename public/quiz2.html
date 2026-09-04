@@ -2319,7 +2319,13 @@ function render(){
   const key=ST.phase+"|"+ST.stage+"|"+(ST.pyramidQ||0);
   const fresh=key!==phaseKey;
   if(fresh){
+    /* prevPhase كان يُعلَن ولا يُسنَد إليه شيءٌ قطّ — فبقي "" إلى الأبد،
+       وهذا الشرط لم يصدق مرّةً واحدة منذ كُتب. النتيجة: opEnd لا تُنادى إلا
+       من opBail، وopBail للمضيف وحده. فبقيّة اللاعبين لا يُغلَق عندهم فيلم
+       الافتتاح إغلاقًا صحيحًا أبدًا، وتبقى أعلامه مرفوعةً حتى المباراة
+       التالية — فيتجمّدون هم بالذات عند إعادة اللعب. */
     if(prevPhase==="opening"&&ST.phase!=="opening")opEnd();
+    prevPhase=ST.phase;
     phaseKey=key;picked=-1;
     // نُنهي الفخ فقط عند الانتقال لمرحلة غير التي بدأ فيها
     FXM.sweep(key);
@@ -3092,6 +3098,13 @@ function opKill(){                       /* يوقف الفيديو ويحرّر
 }
 function opEnd(){
   clearTimeout(opBailT); opBailT=null;
+  /* الجذر الحقيقيّ لتعليق «إعادة اللعب»:
+     opStarted وopSkipped كانا يُرفعان في أوّل مباراة ولا يُنزَّلان أبدًا.
+     فعند إعادة اللعب: rOpen ترى opStarted فلا تشغّل الفيلم لأحد، وopSkipped
+     يُخفي زرّ التخطّي حتى عن المضيف — فيتجمّد الجميع أمام شاشةٍ صامتة حتى
+     ينقضي مؤقّت الخادم (نحو ٥٠ ثانية). كل إصلاحٍ سابق لمس الهرم والبطاقات
+     ولم يلمس هذين الحرفين. نُنزّلهما هنا حيث تنتهي المرحلة فعلًا. */
+  opStarted=false; opSkipped=false; opStartAt=0;
   opKill();
   $("sOpen").classList.remove("on");
   $("opWait").classList.add("gone");
@@ -4684,6 +4697,9 @@ function resetClient(){
   /* لوحة التوصيل: العقد والخطوط */
   ["lkL","lkR","lkSvg"].forEach(id=>{ const e=$(id); if(e)e.innerHTML=""; });
   document.querySelectorAll(".dragGhost").forEach(e=>e.remove());
+  /* فيلم الافتتاح: أعلامه لا تنجو إلى مباراةٍ تالية (انظر opEnd) */
+  opStarted=false; opSkipped=false; opStartAt=0;
+  try{ opEnd(); }catch(e){}
   /* فيلم الشرح: نُوقفه ونُفرغ مصدره كي لا يبدأ من منتصفه في المباراة القادمة */
   const iv=$("inVid"); if(iv){ try{iv.pause();}catch(e){} iv.removeAttribute("src"); try{iv.load();}catch(e){} }
   $("sIntro").classList.remove("film");
