@@ -33,14 +33,29 @@ const REASONS = {
   cheat:"غش أو استخدام بوت"
 };
 
-/* بنك البلاغات — تقرأه لوحة الأدمن */
-const reports = [];
+/* بنك البلاغات — تقرأه لوحة الأدمن.
+   كان في الذاكرة وحدها: يُجمَع البلاغ ثم يضيع مع أوّل إعادة تشغيل، ولا
+   يقرؤه أحد. الآن يُسلَّم لِـsink يحفظه، ويُحمَّل عند الإقلاع. */
+let reports = [];
+let sink = null;
+function setSink(fn) { sink = typeof fn === "function" ? fn : null; }
+function loadReports(arr) {
+  if (Array.isArray(arr)) reports = arr.slice(0, REPORTS_MAX);
+  return reports.length;
+}
 function addReport(rec) {
   reports.unshift(rec);
   if (reports.length > REPORTS_MAX) reports.length = REPORTS_MAX;
+  if (sink) { try { sink(reports); } catch (e) { /* الحفظ لا يُسقط الإشراف */ } }
 }
 function listReports() { return reports.slice(); }
-function clearReports() { reports.length = 0; }
+function clearReports() { reports.length = 0; if (sink) { try { sink(reports); } catch (e) {} } }
+function removeReport(id) {
+  const n = reports.length;
+  reports = reports.filter(r => String(r.id) !== String(id));
+  if (reports.length !== n && sink) { try { sink(reports); } catch (e) {} }
+  return n - reports.length;
+}
 
 /* المحظورون محفوظون داخل الغرفة نفسها: تنتهي الغرفة ⇒ ينتهي الحظر */
 function banList(room) {
@@ -197,6 +212,8 @@ function attach(nsp, socket, ctx) {
     const list = (Array.isArray(reasons) ? reasons : []).filter(k => REASONS[k]);
     if (!list.length) return cb && cb({ ok:false, error:"اختر سبباً واحداً على الأقل" });
     addReport({
+      /* معرّفٌ يكفي لحذف بلاغٍ بعينه من اللوحة */
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       at: Date.now(),
       game: nsp.name.replace("/", "") || "—",
       room: r.id,
@@ -208,4 +225,5 @@ function attach(nsp, socket, ctx) {
   });
 }
 
-module.exports = { attach, isBanned, banList, listReports, clearReports, REASONS };
+module.exports = { attach, isBanned, banList, listReports, clearReports,
+                   setSink, loadReports, removeReport, REASONS };

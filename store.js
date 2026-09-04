@@ -258,6 +258,80 @@ class JsonStore {
       .sort((a, b) => (b.createdAt - a.createdAt) || (b.id - a.id))
       .slice(0, limit);
   }
+  /* حذفٌ نهائيّ لحساب: كل أثرٍ يخصّه يذهب معه. التذاكر تبقى بلا صاحب
+     (فيها بلاغاتٌ عن آخرين قد تلزم)، وسجلّ التدقيق يبقى — فهو دليلُ أنّ
+     الحذف حدث ومن فعله. يُرجع ملخّصًا لتسجيله. */
+  async deleteUser(id) {
+    const uid = Number(id);
+    const entry = Object.entries(this.db.users).find(([, u]) => u.id === uid);
+    if (!entry) return null;
+    const [name] = entry;
+    const w = (this.db.wallets || {})[uid] || { gold: 0, gems: 0 };
+    const summary = { id: uid, name, gold: w.gold, gems: w.gems,
+                      items: (this.db.inventory || []).filter(x => x.userId === uid).length };
+    delete this.db.users[name];
+    delete (this.db.wallets || {})[uid];
+    this.db.sessions  = (this.db.sessions  || []).filter(x => x.userId !== uid);
+    this.db.ledger    = (this.db.ledger    || []).filter(x => x.userId !== uid);
+    this.db.inventory = (this.db.inventory || []).filter(x => x.userId !== uid);
+    this.db.purchases = (this.db.purchases || []).filter(x => x.userId !== uid);
+    this.db.loadout   = (this.db.loadout   || []).filter(x => x.userId !== uid);
+    Object.keys(this.db.gameStats || {}).forEach(k => {
+      if (this.db.gameStats[k].userId === uid) delete this.db.gameStats[k];
+    });
+    (this.db.tickets || []).forEach(t => { if (t.userId === uid) t.userId = null; });
+    this._save();
+    return summary;
+  }
+
+  /* ── الدعم: التذاكر ورسائلها ── */
+  async createTicket({ userId = null, name = null, kind = "help", subject, ip = null }) {
+    this.db.tickets = this.db.tickets || [];
+    const now = Date.now();
+    const t = { id: (this.db.ticketSeq = (this.db.ticketSeq || 0) + 1),
+                userId: userId ? Number(userId) : null, name, kind, subject,
+                status: "open", ip, createdAt: now, updatedAt: now,
+                lastAdminAt: null, seenByUserAt: null };
+    this.db.tickets.push(t);
+    this._save();
+    return t.id;
+  }
+  async addTicketMessage(ticketId, { fromAdmin = false, body = "", images = [] }) {
+    this.db.tmsgs = this.db.tmsgs || [];
+    const now = Date.now();
+    this.db.tmsgs.push({ id: (this.db.tmsgSeq = (this.db.tmsgSeq || 0) + 1),
+                         ticketId: Number(ticketId), fromAdmin: !!fromAdmin,
+                         body, images, createdAt: now });
+    const t = (this.db.tickets || []).find(x => x.id === Number(ticketId));
+    if (t) {
+      t.updatedAt = now;
+      /* حالةُ التذكرة تتبع آخر متكلّم: ردُّنا «مُجاب»، وردُّه يُعيدها «مفتوحة»
+         حتى لو كنّا أغلقناها — فإغلاقٌ يُسكِت صاحب المشكلة ليس إغلاقًا. */
+      if (fromAdmin) { t.lastAdminAt = now; if (t.status !== "closed") t.status = "answered"; }
+      else t.status = "open";
+    }
+    this._save();
+  }
+  async getTicket(id) {
+    const t = (this.db.tickets || []).find(x => x.id === Number(id));
+    if (!t) return null;
+    return { ...t, messages: (this.db.tmsgs || []).filter(m => m.ticketId === t.id).sort((a, b) => a.id - b.id) };
+  }
+  async listTickets({ userId = null, status = null, limit = 60 } = {}) {
+    return (this.db.tickets || [])
+      .filter(t => (userId == null || t.userId === Number(userId)) && (!status || t.status === status))
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .slice(0, limit);
+  }
+  async setTicketStatus(id, status) {
+    const t = (this.db.tickets || []).find(x => x.id === Number(id));
+    if (!t) return false;
+    t.status = status; t.updatedAt = Date.now(); this._save(); return true;
+  }
+  async countTickets(status = "open") {
+    return (this.db.tickets || []).filter(t => t.status === status).length;
+  }
+
   /* بحثٌ بالاسم للوحة الإدارة — تطابقٌ جزئيّ، والنتائج مختصرة */
   async searchUsers(q, limit = 25) {
     const s = String(q || "").trim();
@@ -315,18 +389,31 @@ class JsonStore {
     try {
       const p = this._blobPath(key);
       if (!fs.existsSync(p)) return null;
-      return { mime: "audio/mpeg", data: fs.readFileSync(p) };
+      /* النوع محفوظٌ بجانب الملفّ. كان ثابتًا "audio/mpeg" لأن أوّل مستعمِلٍ
+         للـblobs كان صوت الأسئلة وحده — فلمّا صارت التذاكر تحفظ صورًا خرجت
+         كأنها ملفّاتُ صوت. الافتراضيّ يبقى الصوت لأجل ما حُفظ قبل اليوم. */
+      const mime = (this.db.blobMimes || {})[key] || "audio/mpeg";
+      return { mime, data: fs.readFileSync(p) };
     } catch (e) { return null; }
   }
   async putBlob(key, mime, buf) {
-    try { fs.writeFileSync(this._blobPath(key), buf); } catch (e) { console.error("blob save:", e.message); }
+    try {
+      fs.writeFileSync(this._blobPath(key), buf);
+      this.db.blobMimes = this.db.blobMimes || {};
+      this.db.blobMimes[key] = mime || "application/octet-stream";
+      this._save();
+    } catch (e) { console.error("blob save:", e.message); }
   }
   async hasBlobs(keys) {
     return (keys || []).filter(k => { try { return fs.existsSync(this._blobPath(k)); } catch (e) { return false; } });
   }
   async delBlobs(keys) {
     let n = 0;
-    for (const k of keys || []) { try { fs.unlinkSync(this._blobPath(k)); n++; } catch (e) {} }
+    for (const k of keys || []) {
+      try { fs.unlinkSync(this._blobPath(k)); n++; } catch (e) {}
+      if (this.db.blobMimes) delete this.db.blobMimes[k];
+    }
+    if (n) this._save();
     return n;
   }
   async blobStats(prefix = "") {
@@ -697,6 +784,96 @@ class PgStore {
        ${target ? "WHERE target = $1" : ""} ORDER BY id DESC LIMIT $${a.length}`, a);
     return r.rows;
   }
+  /* حذفٌ نهائيّ لحساب — معاملةٌ واحدة، فلا يبقى نصفُ حسابٍ لو تعثّرت. */
+  async deleteUser(id) {
+    const uid = Number(id);
+    const c = await this.pool.connect();
+    try {
+      await c.query("BEGIN");
+      const u = await c.query("SELECT name FROM users WHERE id = $1 FOR UPDATE", [uid]);
+      if (!u.rowCount) { await c.query("ROLLBACK"); return null; }
+      const w = await c.query("SELECT gold, gems FROM wallets WHERE user_id = $1", [uid]);
+      const inv = await c.query("SELECT COUNT(*)::int AS n FROM inventory WHERE user_id = $1", [uid]);
+      const summary = { id: uid, name: u.rows[0].name,
+                        gold: Number(w.rows[0]?.gold || 0), gems: Number(w.rows[0]?.gems || 0),
+                        items: inv.rows[0].n };
+      /* التذاكر تبقى بلا صاحب: قد تحمل بلاغًا عن لاعبٍ آخر لا يزال يلعب. */
+      await c.query("UPDATE tickets SET user_id = NULL WHERE user_id = $1", [uid]);
+      for (const t of ["sessions", "ledger", "inventory", "purchases", "loadout", "game_stats", "wallets"])
+        await c.query(`DELETE FROM ${t} WHERE user_id = $1`, [uid]);
+      await c.query("DELETE FROM users WHERE id = $1", [uid]);
+      await c.query("COMMIT");
+      return summary;
+    } catch (e) { await c.query("ROLLBACK").catch(() => {}); throw e; }
+    finally { c.release(); }
+  }
+
+  /* ── الدعم: التذاكر ورسائلها ── */
+  async createTicket({ userId = null, name = null, kind = "help", subject, ip = null }) {
+    const now = Date.now();
+    const r = await this.pool.query(
+      `INSERT INTO tickets (user_id, name, kind, subject, ip, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$6) RETURNING id`,
+      [userId ? Number(userId) : null, name, kind, subject, ip, now]);
+    return Number(r.rows[0].id);
+  }
+  async addTicketMessage(ticketId, { fromAdmin = false, body = "", images = [] }) {
+    const now = Date.now();
+    const c = await this.pool.connect();
+    try {
+      await c.query("BEGIN");
+      await c.query(
+        `INSERT INTO ticket_messages (ticket_id, from_admin, body, images, created_at)
+         VALUES ($1,$2,$3,$4,$5)`,
+        [Number(ticketId), !!fromAdmin, body, JSON.stringify(images || []), now]);
+      /* حالةُ التذكرة تتبع آخر متكلّم: ردُّنا «مُجاب»، وردُّه يُعيدها «مفتوحة»
+         حتى لو كنّا أغلقناها — فإغلاقٌ يُسكِت صاحب المشكلة ليس إغلاقًا. */
+      await c.query(
+        fromAdmin
+          ? `UPDATE tickets SET updated_at = $2, last_admin_at = $2,
+                 status = CASE WHEN status = 'closed' THEN 'closed' ELSE 'answered' END WHERE id = $1`
+          : `UPDATE tickets SET updated_at = $2, status = 'open' WHERE id = $1`,
+        [Number(ticketId), now]);
+      await c.query("COMMIT");
+    } catch (e) { await c.query("ROLLBACK").catch(() => {}); throw e; }
+    finally { c.release(); }
+  }
+  async getTicket(id) {
+    const t = await this.pool.query(
+      `SELECT id, user_id AS "userId", name, kind, subject, status, ip,
+              created_at AS "createdAt", updated_at AS "updatedAt",
+              last_admin_at AS "lastAdminAt", seen_by_user_at AS "seenByUserAt"
+       FROM tickets WHERE id = $1`, [Number(id)]);
+    if (!t.rowCount) return null;
+    const m = await this.pool.query(
+      `SELECT id, from_admin AS "fromAdmin", body, images, created_at AS "createdAt"
+       FROM ticket_messages WHERE ticket_id = $1 ORDER BY id`, [Number(id)]);
+    const row = t.rows[0];
+    return { ...row, id: Number(row.id), userId: row.userId == null ? null : Number(row.userId),
+             messages: m.rows.map(x => ({ ...x, id: Number(x.id) })) };
+  }
+  async listTickets({ userId = null, status = null, limit = 60 } = {}) {
+    const w = [], a = [];
+    if (userId != null) { a.push(Number(userId)); w.push(`user_id = $${a.length}`); }
+    if (status) { a.push(status); w.push(`status = $${a.length}`); }
+    a.push(limit);
+    const r = await this.pool.query(
+      `SELECT id, user_id AS "userId", name, kind, subject, status,
+              created_at AS "createdAt", updated_at AS "updatedAt"
+       FROM tickets ${w.length ? "WHERE " + w.join(" AND ") : ""}
+       ORDER BY updated_at DESC LIMIT $${a.length}`, a);
+    return r.rows.map(x => ({ ...x, id: Number(x.id), userId: x.userId == null ? null : Number(x.userId) }));
+  }
+  async setTicketStatus(id, status) {
+    const r = await this.pool.query(
+      "UPDATE tickets SET status = $2, updated_at = $3 WHERE id = $1", [Number(id), status, Date.now()]);
+    return !!r.rowCount;
+  }
+  async countTickets(status = "open") {
+    const r = await this.pool.query("SELECT COUNT(*)::int AS n FROM tickets WHERE status = $1", [status]);
+    return r.rows[0].n;
+  }
+
   async searchUsers(q, limit = 25) {
     const s = String(q || "").trim();
     const r = await this.pool.query(

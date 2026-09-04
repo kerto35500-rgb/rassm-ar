@@ -212,6 +212,40 @@ const STEPS = [
       await q(`CREATE INDEX IF NOT EXISTS audit_time_idx ON audit_log (created_at DESC)`);
       await q(`CREATE INDEX IF NOT EXISTS audit_target_idx ON audit_log (target, created_at DESC)`);
     }
+  },
+  {
+    id: 9,
+    name: "الدعم: تذاكر ورسائل ومرفقات",
+    async pg(q) {
+      /* التذكرة محادثةٌ لا نموذج. من فتحها يكمل فيها، ومن ردّ عليه يقرأ.
+         ولذلك جدولان: رأسٌ للحالة، وسطورٌ للرسائل. */
+      await q(`CREATE TABLE IF NOT EXISTS tickets (
+                 id BIGSERIAL PRIMARY KEY,
+                 user_id BIGINT,
+                 name TEXT,
+                 kind TEXT NOT NULL DEFAULT 'help',
+                 subject TEXT NOT NULL,
+                 status TEXT NOT NULL DEFAULT 'open',
+                 ip TEXT,
+                 created_at BIGINT NOT NULL,
+                 updated_at BIGINT NOT NULL,
+                 /* آخر ردٍّ من الإدارة: منه نعرف «بانتظار ردّنا» بلا استعلامٍ ثانٍ */
+                 last_admin_at BIGINT,
+                 seen_by_user_at BIGINT)`);
+      await q(`CREATE INDEX IF NOT EXISTS tickets_status_idx ON tickets (status, updated_at DESC)`);
+      await q(`CREATE INDEX IF NOT EXISTS tickets_user_idx ON tickets (user_id, updated_at DESC)`);
+
+      /* المرفقات مفاتيحُ في jsonb لا بايتات هنا: الصور في جدول blobs
+         الموجود أصلًا، فلا ينتفخ جدول الرسائل ولا يبطؤ استعلامُ محادثة. */
+      await q(`CREATE TABLE IF NOT EXISTS ticket_messages (
+                 id BIGSERIAL PRIMARY KEY,
+                 ticket_id BIGINT NOT NULL,
+                 from_admin BOOLEAN NOT NULL DEFAULT FALSE,
+                 body TEXT NOT NULL DEFAULT '',
+                 images JSONB NOT NULL DEFAULT '[]'::jsonb,
+                 created_at BIGINT NOT NULL)`);
+      await q(`CREATE INDEX IF NOT EXISTS tmsg_ticket_idx ON ticket_messages (ticket_id, id)`);
+    }
   }
 ];
 

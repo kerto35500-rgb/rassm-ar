@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>الدعم — ألعابنا</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/kawaii.css">
+<script src="/theme.js" defer></script>
+<style>
+  /* أصنافٌ بادئتها sp- : kawaii.css يملك .card و.btn تستعملها الألعاب */
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{min-height:100vh;padding:16px 12px 60px;color:var(--kw-ink,#4A2E2B);
+       font-family:'Baloo Bhaijaan 2','Segoe UI',Tahoma,Arial,sans-serif}
+  .sp-wrap{max-width:760px;margin:0 auto;position:relative;z-index:1}
+
+  .sp-top{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .sp-back{background:#fff;border:2.5px solid var(--kw-line,#9C5A4C);border-radius:999px;
+        padding:7px 15px;font-weight:800;font-size:14px;color:inherit;text-decoration:none;
+        box-shadow:var(--kw-3d-sm,0 2px 0 #9C5A4C)}
+  .sp-back:active{transform:translateY(2px);box-shadow:none}
+  .sp-top h1{font-size:22px}
+
+  .sp-card{background:var(--kw-g-white,#fff);border:3px solid var(--kw-line,#9C5A4C);
+        border-radius:20px;padding:16px;margin-bottom:13px;box-shadow:var(--kw-3d,0 3px 0 #9C5A4C)}
+  .sp-card h2{font-size:17px;margin-bottom:4px}
+  .sp-hint{font-size:13px;opacity:.75;line-height:1.7;margin-bottom:11px}
+
+  label{display:block;font-size:13.5px;font-weight:700;margin:9px 0 5px}
+  input,textarea,select{width:100%;padding:11px 13px;border:2.5px solid var(--kw-line,#9C5A4C);
+        border-radius:13px;font:inherit;font-size:15px;background:#fff;color:inherit}
+  textarea{min-height:110px;resize:vertical;line-height:1.7}
+  input:focus,textarea:focus,select:focus{outline:none;box-shadow:0 0 0 3px rgba(248,165,158,.55)}
+
+  .sp-kinds{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px}
+  .sp-kind{background:var(--kw-g-players,#FDF0DA);border:2.5px solid var(--kw-line,#9C5A4C);
+        border-radius:14px;padding:10px 8px;text-align:center;font-weight:800;font-size:13.5px;
+        cursor:pointer;box-shadow:var(--kw-3d-sm,0 2px 0 #9C5A4C)}
+  .sp-kind.sp-on{background:var(--kw-g-pink,#FFDDD5)}
+  .sp-kind:active{transform:translateY(2px);box-shadow:none}
+
+  .sp-btn{background:var(--kw-g-pink,#FFDDD5);border:2.5px solid var(--kw-line,#9C5A4C);
+       border-radius:999px;padding:10px 22px;font:inherit;font-weight:800;font-size:14.5px;
+       color:inherit;cursor:pointer;box-shadow:var(--kw-3d-sm,0 2px 0 #9C5A4C);margin-top:12px}
+  .sp-btn:active{transform:translateY(2px);box-shadow:none}
+  .sp-btn:disabled{opacity:.55;cursor:default;transform:none}
+  .sp-btn.sp-ghost{background:#fff}
+
+  /* الصور */
+  .sp-pics{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+  .sp-pic{position:relative;width:76px;height:76px;border-radius:12px;overflow:hidden;
+       border:2.5px solid var(--kw-line,#9C5A4C);background:var(--kw-g-players,#FDF0DA)}
+  .sp-pic img{width:100%;height:100%;object-fit:cover;display:block}
+  .sp-pic button{position:absolute;inset-block-start:2px;inset-inline-end:2px;width:21px;height:21px;
+       border-radius:50%;border:2px solid var(--kw-line,#9C5A4C);background:#fff;
+       font:inherit;font-size:12px;font-weight:800;line-height:1;cursor:pointer;padding:0}
+  .sp-add{width:76px;height:76px;border-radius:12px;border:2.5px dashed var(--kw-line,#9C5A4C);
+       background:#fff;font-size:24px;cursor:pointer;color:inherit}
+  .sp-add:disabled{opacity:.4;cursor:default}
+
+  /* المحادثة */
+  .sp-msg{border:2.5px solid var(--kw-line,#9C5A4C);border-radius:15px;padding:11px 13px;margin-bottom:9px}
+  .sp-msg.sp-me{background:var(--kw-g-players,#FDF0DA)}
+  .sp-msg.sp-them{background:#E8F3FF}
+  .sp-msg .sp-w{font-size:12px;font-weight:800;opacity:.8;margin-bottom:4px}
+  .sp-msg .sp-b{font-size:14.5px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+  .sp-msg .sp-t{font-size:11.5px;opacity:.6;margin-top:5px}
+
+  .sp-row{display:flex;justify-content:space-between;align-items:center;gap:10px;
+       background:var(--kw-g-players,#FDF0DA);border:2.5px solid var(--kw-line,#9C5A4C);
+       border-radius:14px;padding:10px 13px;margin-top:8px;cursor:pointer}
+  .sp-row:active{transform:translateY(1px)}
+  .sp-row .sp-s{font-weight:800;font-size:14px}
+  .sp-row .sp-d{font-size:12px;opacity:.7}
+  .sp-tag{background:#fff;border:2px solid var(--kw-line,#9C5A4C);border-radius:999px;
+       padding:2px 10px;font-size:11.5px;font-weight:800;white-space:nowrap}
+  .sp-tag.sp-ans{background:#DCF6E3} .sp-tag.sp-shut{background:#EFEFEF;opacity:.8}
+
+  .sp-note{background:#FFF6E5;border:2.5px dashed #E2A93B;border-radius:14px;
+       padding:11px 14px;font-size:13.5px;line-height:1.75;margin-bottom:12px}
+  .sp-note a{color:inherit;font-weight:800}
+  .sp-m{font-size:13.5px;margin-top:9px;font-weight:700;min-height:18px}
+  .sp-m.sp-ok{color:#1e7a44} .sp-m.sp-err{color:#b3302c}
+  @media(max-width:520px){ .sp-top h1{font-size:19px} }
+</style>
+</head>
+<body>
+<div class="sp-wrap">
+  <div class="sp-top">
+    <a class="sp-back" href="/">← الألعاب</a>
+    <h1>💬 الدعم</h1>
+  </div>
+  <div id="note"></div>
+  <div id="view">جارٍ التحميل…</div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>{const d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML};
+const when=t=>t?new Date(+t).toLocaleString("ar-EG",{dateStyle:"short",timeStyle:"short"}):"";
+const j=(u,o)=>fetch(u,Object.assign({credentials:"same-origin"},o||{})).then(r=>r.json());
+const post=(u,b)=>j(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});
+
+let KINDS={}, GUEST=true, KIND="help", PICS=[], MAX=5;
+const STATUS={open:["بانتظار الردّ",""],answered:["فيه ردّ","sp-ans"],closed:["مغلقة","sp-shut"]};
+
+/* ── ضغط الصور في المتصفّح ──
+   الصورة من الجوّال قد تبلغ خمسة ميغا، وخمسٌ منها تُغرق أيّ خادم. نُصغّرها
+   هنا إلى ١٢٨٠ بكسل وجودةٍ معقولة: تبقى واضحةً لقراءة لقطة شاشة، ويصير
+   حجمها عُشر ما كان — قبل أن تلمس الشبكة أصلًا. */
+function shrink(file){
+  return new Promise((ok,no)=>{
+    const fr=new FileReader();
+    fr.onerror=()=>no(new Error("قراءة"));
+    fr.onload=()=>{
+      const im=new Image();
+      im.onerror=()=>no(new Error("صورة"));
+      im.onload=()=>{
+        const M=1280, s=Math.min(1,M/Math.max(im.width,im.height));
+        const c=document.createElement("canvas");
+        c.width=Math.max(1,Math.round(im.width*s)); c.height=Math.max(1,Math.round(im.height*s));
+        c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+        ok(c.toDataURL("image/jpeg",0.72));
+      };
+      im.src=fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+async function pickPics(){
+  const inp=document.createElement("input");
+  inp.type="file"; inp.accept="image/*"; inp.multiple=true;
+  inp.onchange=async()=>{
+    for(const f of [...inp.files].slice(0,MAX-PICS.length)){
+      if(!/^image\//.test(f.type)) continue;
+      try{ PICS.push(await shrink(f)); }catch(e){}
+    }
+    drawPics();
+  };
+  inp.click();
+}
+function drawPics(){
+  const box=$("#pics"); if(!box) return;
+  box.innerHTML=PICS.map((p,i)=>'<div class="sp-pic"><img src="'+p+'" alt="">'+
+      '<button onclick="PICS.splice('+i+',1);drawPics()" title="إزالة">×</button></div>').join('')+
+    '<button class="sp-add" onclick="pickPics()" '+(PICS.length>=MAX?'disabled':'')+' title="أضف صورة">＋</button>';
+  const c=$("#piccount"); if(c) c.textContent=PICS.length+" من "+MAX;
+}
+
+/* ── الشاشات ── */
+async function boot(){
+  KINDS=(await j("/api/support/kinds")).kinds||{};
+  const mine=await j("/api/support/mine");
+  GUEST=mine.guest;
+  if(GUEST) $("#note").innerHTML='<div class="sp-note">تقدر ترسل بلاغك كضيف وسنقرأه. '+
+    'لكن لمتابعة الردّ ومحادثتنا تحتاج حسابًا — <a href="/">سجّل من الصفحة الرئيسية</a>.</div>';
+  render(mine.tickets||[]);
+}
+
+function render(tickets){
+  $("#view").innerHTML=
+    '<div class="sp-card"><h2>أرسل لنا</h2>'+
+      '<div class="sp-hint">اختر نوع الرسالة، واشرح ما حصل. تقدر ترفق حتى ٥ صور.</div>'+
+      '<div class="sp-kinds" id="kinds">'+Object.entries(KINDS).map(([k,v])=>
+        '<div class="sp-kind'+(k===KIND?' sp-on':'')+'" data-k="'+k+'">'+esc(v)+'</div>').join('')+'</div>'+
+      '<label for="subj">العنوان</label><input id="subj" maxlength="120" placeholder="بكلماتٍ قليلة…">'+
+      '<label for="body">التفاصيل</label><textarea id="body" maxlength="4000" placeholder="متى حصل؟ في أيّ لعبة؟ ماذا توقّعت؟"></textarea>'+
+      '<label>الصور <span class="sp-d" id="piccount" style="font-weight:400;opacity:.7"></span></label>'+
+      '<div class="sp-pics" id="pics"></div>'+
+      '<button class="sp-btn" id="send">إرسال</button>'+
+      '<div class="sp-m" id="msg"></div></div>'+
+    (GUEST?'':'<div class="sp-card"><h2>رسائلي</h2>'+
+      (tickets.length?'<div id="list"></div>':'<div class="sp-hint">لا رسائل بعد.</div>')+'</div>');
+
+  $("#kinds").onclick=e=>{const d=e.target.closest("[data-k]"); if(!d) return;
+    KIND=d.dataset.k; document.querySelectorAll(".sp-kind").forEach(x=>x.classList.toggle("sp-on",x===d));};
+  $("#send").onclick=send;
+  drawPics();
+  if(!GUEST&&tickets.length) $("#list").innerHTML=tickets.map(t=>{
+    const s=STATUS[t.status]||STATUS.open;
+    return '<div class="sp-row" onclick="openT('+t.id+')"><div><div class="sp-s">'+esc(t.subject)+'</div>'+
+      '<div class="sp-d">'+esc(KINDS[t.kind]||t.kind)+' · '+when(t.updatedAt)+'</div></div>'+
+      '<span class="sp-tag '+s[1]+'">'+s[0]+'</span></div>';
+  }).join('');
+}
+
+async function send(){
+  const b=$("#send"); b.disabled=true; b.textContent="جارٍ الإرسال…";
+  const r=await post("/api/support/new",{kind:KIND,subject:$("#subj").value,body:$("#body").value,images:PICS})
+    .catch(()=>({ok:false,error:"انقطع الاتصال"}));
+  b.disabled=false; b.textContent="إرسال";
+  const m=$("#msg"); m.className="sp-m "+(r.ok?"sp-ok":"sp-err");
+  if(!r.ok) return m.textContent=r.error||"تعذّر الإرسال";
+  m.textContent=GUEST?"وصلتنا رسالتك ✔ شكرًا لك.":"أُرسلت ✔ نردّ عليك هنا.";
+  PICS=[]; $("#subj").value=""; $("#body").value="";
+  if(!GUEST) setTimeout(boot,700); else drawPics();
+}
+
+async function openT(id){
+  const r=await j("/api/support/t/"+id);
+  if(!r.ok) return alert(r.error||"تعذّر الفتح");
+  const t=r.ticket, s=STATUS[t.status]||STATUS.open;
+  PICS=[];
+  $("#view").innerHTML=
+    '<div class="sp-card"><h2>'+esc(t.subject)+'</h2>'+
+      '<div class="sp-hint">'+esc(KINDS[t.kind]||t.kind)+' · فُتحت '+when(t.createdAt)+
+      ' · <span class="sp-tag '+s[1]+'">'+s[0]+'</span></div>'+
+      t.messages.map(m=>'<div class="sp-msg '+(m.fromAdmin?"sp-them":"sp-me")+'">'+
+        '<div class="sp-w">'+(m.fromAdmin?"الإدارة":"أنت")+'</div>'+
+        (m.body?'<div class="sp-b">'+esc(m.body)+'</div>':'')+
+        ((m.images||[]).length?'<div class="sp-pics">'+m.images.map(k=>
+          '<a class="sp-pic" href="/api/support/img/'+encodeURIComponent(k)+'" target="_blank" rel="noopener">'+
+          '<img src="/api/support/img/'+encodeURIComponent(k)+'" alt="" loading="lazy"></a>').join('')+'</div>':'')+
+        '<div class="sp-t">'+when(m.createdAt)+'</div></div>').join('')+
+    '</div>'+
+    '<div class="sp-card"><h2>ردّك</h2>'+
+      '<textarea id="rbody" maxlength="4000" placeholder="اكتب هنا…"></textarea>'+
+      '<label>الصور <span id="piccount" style="font-weight:400;opacity:.7"></span></label>'+
+      '<div class="sp-pics" id="pics"></div>'+
+      '<div><button class="sp-btn" id="rsend">إرسال الردّ</button> '+
+      '<button class="sp-btn sp-ghost" onclick="boot()">← رجوع</button></div>'+
+      '<div class="sp-m" id="msg"></div></div>';
+  drawPics();
+  $("#rsend").onclick=async()=>{
+    const b=$("#rsend"); b.disabled=true;
+    const x=await post("/api/support/t/"+id+"/reply",{body:$("#rbody").value,images:PICS})
+      .catch(()=>({ok:false,error:"انقطع الاتصال"}));
+    b.disabled=false;
+    const m=$("#msg"); m.className="sp-m "+(x.ok?"sp-ok":"sp-err");
+    m.textContent=x.ok?"أُرسل ✔":(x.error||"تعذّر");
+    if(x.ok){ PICS=[]; setTimeout(()=>openT(id),600); }
+  };
+}
+
+boot();
+</script>
+</body>
+</html>

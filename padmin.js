@@ -12,6 +12,7 @@
 const { ADMIN_PATH, adminEnabled, verifySession, parseCookies } = require("./admin");
 const SET = require("./settings");
 const { allItems } = require("./shopseed");
+const { KINDS } = require("./support");
 
 /* حدود الأفعال الإداريّة نفسها. الهديّة الكبيرة ليست ممنوعةً لأنها ضارّة،
    بل لأن صفرًا زائدًا سهوًا أسهل من أن نعتمد على الانتباه. */
@@ -210,6 +211,94 @@ function setupPanel(app, deps) {
     } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
   });
 
+  // ═══════════════ الدعم والبلاغات ═══════════════
+
+  app.get(ADMIN_PATH + "/p/tickets", async (req, res) => {
+    if (!guard(req, res)) return;
+    try {
+      const status = req.query.status && req.query.status !== "all" ? req.query.status : null;
+      res.json({ ok: true, kinds: KINDS,
+                 tickets: await st().listTickets({ status, limit: 80 }),
+                 open: await st().countTickets("open") });
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  });
+
+  app.get(ADMIN_PATH + "/p/ticket/:id", async (req, res) => {
+    if (!guard(req, res)) return;
+    try {
+      const t = await st().getTicket(req.params.id);
+      if (!t) return res.status(404).json({ ok: false, error: "لا توجد" });
+      res.json({ ok: true, ticket: t, kinds: KINDS });
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  });
+
+  app.post(ADMIN_PATH + "/p/ticket/:id/reply", json, async (req, res) => {
+    if (!guard(req, res)) return;
+    try {
+      const t = await st().getTicket(req.params.id);
+      if (!t) return res.status(404).json({ ok: false, error: "لا توجد" });
+      const body = String(req.body?.body || "").trim().slice(0, 4000);
+      if (!body) return res.status(400).json({ ok: false, error: "اكتب ردًّا" });
+      await st().addTicketMessage(t.id, { fromAdmin: true, body, images: [] });
+      if (req.body?.close) await st().setTicketStatus(t.id, "closed");
+      note(req, "ticket-reply", "t" + t.id, { close: !!req.body?.close, len: body.length });
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  });
+
+  app.post(ADMIN_PATH + "/p/ticket/:id/status", json, async (req, res) => {
+    if (!guard(req, res)) return;
+    const s = ["open", "answered", "closed"].includes(req.body?.status) ? req.body.status : null;
+    if (!s) return res.status(400).json({ ok: false, error: "حالة غير معروفة" });
+    try {
+      const okk = await st().setTicketStatus(req.params.id, s);
+      note(req, "ticket-status", "t" + req.params.id, { status: s });
+      res.json({ ok: okk });
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  });
+
+  /** بلاغات الإشراف داخل الغرف — كانت تُجمَع ولا يقرؤها أحد. */
+  app.get(ADMIN_PATH + "/p/reports", (req, res) => {
+    if (!guard(req, res)) return;
+    try {
+      const mod = require("./moderation");
+      res.json({ ok: true, reports: mod.listReports() });
+    } catch (e) { res.json({ ok: true, reports: [] }); }
+  });
+
+  app.post(ADMIN_PATH + "/p/report-del", json, (req, res) => {
+    if (!guard(req, res)) return;
+    try {
+      const mod = require("./moderation");
+      const id = String(req.body?.id || "");
+      if (id === "*") { mod.clearReports(); note(req, "reports-clear", null, {}); }
+      else { mod.removeReport(id); note(req, "report-del", id, {}); }
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  });
+
+  /** حذفٌ نهائيّ لحساب. لا رجعة فيه، فنشترط كتابة الاسم كاملًا — والفعل
+   *  يُسجَّل بملخّصه (ماذا كان يملك) لأنّ الحساب نفسه لن يبقى ليُسأل. */
+  app.post(ADMIN_PATH + "/p/delete-user", json, async (req, res) => {
+    if (!guard(req, res)) return;
+    const id = Number(req.body?.id);
+    const typed = String(req.body?.confirm || "").trim();
+    try {
+      const u = await st().getUserById(id);
+      if (!u) return res.status(404).json({ ok: false, error: "لا يوجد" });
+      if (typed !== u.name) {
+        note(req, "delete-blocked", id, { name: u.name, typed });
+        return res.status(400).json({ ok: false, error: "اكتب اسم الحساب بالضبط للتأكيد" });
+      }
+      const summary = await st().deleteUser(id);
+      note(req, "delete-user", id, summary || { name: u.name });
+      res.json({ ok: true, summary });
+    } catch (e) {
+      note(req, "delete-failed", id, { error: e.message });
+      res.status(500).json({ ok: false, error: e.message });
+    }
+  });
+
   // ═══════════════ سجلّ التدقيق ═══════════════
 
   app.get(ADMIN_PATH + "/p/audit", async (req, res) => {
@@ -285,6 +374,7 @@ code{background:#0f1826;padding:1px 5px;border-radius:4px;font-size:12px}
 <h1>🎛️ الإدارة <a href="ADMIN_URL" style="font-size:13px;font-weight:400">← المراقبة</a></h1>
 <div class="tabs">
   <button class="tab on" data-p="users">👥 اللاعبون</button>
+  <button class="tab" data-p="sup">💬 الدعم <span id="supBadge"></span></button>
   <button class="tab" data-p="shop">🛍️ المتجر</button>
   <button class="tab" data-p="set">⚙️ الإعدادات</button>
   <button class="tab" data-p="audit">📜 السجلّ</button>
@@ -307,6 +397,23 @@ code{background:#0f1826;padding:1px 5px;border-radius:4px;font-size:12px}
   </div>
 </div>
 
+<div class="pane" id="p-sup">
+  <div class="card">
+    <div class="row">
+      <select id="tstat"><option value="open">المفتوحة</option><option value="answered">المُجابة</option>
+        <option value="closed">المغلقة</option><option value="all">الكلّ</option></select>
+      <button class="s" onclick="loadTickets()">تحديث</button>
+      <span class="muted" id="tcount"></span></div>
+    <div id="tlist"></div>
+  </div>
+  <div id="tview"></div>
+  <div class="card"><h2>🚩 بلاغات داخل الغرف</h2>
+    <div class="muted">من زرّ الإبلاغ في اللعبة. لا تُخبر اللاعب بشيء — للمراجعة فقط.</div>
+    <div class="row"><button class="s" onclick="loadReports()">تحديث</button>
+      <button class="r" onclick="delReport('*')">امسح الكلّ</button></div>
+    <div id="rlist"></div></div>
+</div>
+
 <div class="pane" id="p-set"><div id="sets"></div></div>
 <div class="pane" id="p-audit"><div class="card"><h2>آخر ١٥٠ فعلًا</h2><div id="alog"></div></div></div>
 
@@ -324,6 +431,7 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   if(t.dataset.p==="shop"&&!ITEMS.length) loadItems();
   if(t.dataset.p==="set") loadSets();
   if(t.dataset.p==="audit") loadAudit();
+  if(t.dataset.p==="sup"){ loadTickets(); loadReports(); }
 });
 
 /* ── اللاعبون ── */
@@ -371,6 +479,12 @@ async function openUser(id){
        '<button class="g" onclick="doGrant()">امنح</button></div>'+
      '<div class="msg" id="grMsg"></div></div>'+
    '<div class="card"><h2>الدفتر</h2>'+ledgerTable(r.ledger)+'</div>'+
+   '<div class="card" style="border-color:#7f1d1d"><h2 style="color:#fca5a5">حذف نهائيّ</h2>'+
+     '<div class="muted">يمحو الحساب ومحفظته ومخزونه وإحصاءاته ودفتره. لا رجعة. '+
+       'تذاكره تبقى بلا صاحب لأنها قد تحمل بلاغًا عن غيره، وسطرُ الحذف يبقى في السجلّ.</div>'+
+     '<div class="row"><input id="dName" placeholder="اكتب «'+esc(u.name)+'» للتأكيد" style="flex:1;min-width:160px">'+
+       '<button class="r" onclick="doDelete()">احذف</button></div>'+
+     '<div class="msg" id="dMsg"></div></div>'+
    (r.stats.length?'<div class="card"><h2>الإحصاءات</h2><table><tr><th>اللعبة</th><th>مباريات</th><th>فوز</th><th>نقاط</th></tr>'+
      r.stats.map(s=>'<tr><td>'+esc(s.game)+'</td><td>'+num(s.games)+'</td><td>'+num(s.wins)+'</td><td>'+num(s.score)+'</td></tr>').join('')+'</table></div>':'')+
    (r.audit.length?'<div class="card"><h2>ما فُعل به</h2>'+auditTable(r.audit)+'</div>':'');
@@ -404,6 +518,17 @@ async function doLogout(){
 async function doGrant(){
   const r=await post("/grant",{id:CUR.user.id,item:$("#grItem").value.trim()});
   say("#grMsg",r,()=>openUser(CUR.user.id));
+}
+async function doDelete(){
+  const name=$("#dName").value.trim();
+  if(name!==CUR.user.name) return say("#dMsg",{ok:false,error:"اكتب الاسم بالضبط"});
+  if(!confirm("حذف «"+CUR.user.name+"» نهائيًّا؟ لا رجعة.")) return;
+  const r=await post("/delete-user",{id:CUR.user.id,confirm:name});
+  if(!r.ok) return say("#dMsg",r);
+  $("#udetail").innerHTML='<div class="card"><h2>حُذف</h2><div class="muted">'+
+    esc(CUR.user.name)+' — كان معه '+num(r.summary?r.summary.gold:0)+' ذهبًا و'+
+    num(r.summary?r.summary.items:0)+' عنصرًا. السطر محفوظٌ في السجلّ.</div></div>';
+  CUR=null; findUsers();
 }
 function say(sel,r,then){
   const e=$(sel); e.className="msg "+(r.ok?"ok":"err"); e.textContent=r.ok?"تمّ ✔":(r.error||"تعذّر");
@@ -462,6 +587,77 @@ async function setVal(scope,key,value){
   const r=await post("/settings",{scope,key,value});
   if(!r.ok) alert(r.error);
   loadSets();
+}
+
+/* ── الدعم ── */
+let KINDS={};
+const TST={open:["مفتوحة",""],answered:["أجبنا",""],closed:["مغلقة",""]};
+async function loadTickets(){
+  const r=await j("/tickets?status="+$("#tstat").value);
+  if(!r.ok) return;
+  KINDS=r.kinds||{};
+  $("#supBadge").textContent=r.open?"("+num(r.open)+")":"";
+  $("#tcount").textContent=num(r.tickets.length)+" تذكرة";
+  $("#tlist").innerHTML=r.tickets.length?'<table><tr><th>الموضوع</th><th>النوع</th><th>من</th><th>الحالة</th><th>آخر تحديث</th><th></th></tr>'+
+    r.tickets.map(t=>'<tr><td>'+esc(t.subject)+'</td><td class="muted">'+esc(KINDS[t.kind]||t.kind)+'</td>'+
+      '<td>'+esc(t.name||"ضيف")+(t.userId?' <span class="muted">#'+t.userId+'</span>':'')+'</td>'+
+      '<td><span class="pill">'+((TST[t.status]||["?"])[0])+'</span></td>'+
+      '<td class="muted">'+when(t.updatedAt)+'</td>'+
+      '<td><button class="s" onclick="openTicket('+t.id+')">فتح</button></td></tr>').join('')+'</table>'
+    :'<div class="muted">لا تذاكر.</div>';
+}
+async function openTicket(id){
+  const r=await j("/ticket/"+id);
+  if(!r.ok) return alert(r.error);
+  const t=r.ticket;
+  $("#tview").innerHTML='<div class="card"><h2>'+esc(t.subject)+' <span class="muted">#'+t.id+'</span></h2>'+
+    '<div class="muted">'+esc(KINDS[t.kind]||t.kind)+' · '+esc(t.name||"ضيف")+
+      (t.userId?' · <a href="#" onclick="gotoUser('+t.userId+');return false">ملفّه</a>':' · بلا حساب')+
+      ' · '+esc(t.ip||"")+' · '+when(t.createdAt)+'</div>'+
+    '<div style="margin-top:10px">'+t.messages.map(m=>
+      '<div class="set" style="margin-bottom:7px;border-color:'+(m.fromAdmin?"#1f6f45":"#2d4160")+'">'+
+      '<b>'+(m.fromAdmin?"نحن":"هو")+' <span class="muted" style="font-weight:400">'+when(m.createdAt)+'</span></b>'+
+      (m.body?'<div style="white-space:pre-wrap;line-height:1.8">'+esc(m.body)+'</div>':'')+
+      ((m.images||[]).length?'<div class="row">'+m.images.map(k=>
+        '<a href="/api/support/img/'+encodeURIComponent(k)+'" target="_blank" rel="noopener">'+
+        '<img src="/api/support/img/'+encodeURIComponent(k)+'" style="width:84px;height:84px;object-fit:cover;'+
+        'border-radius:8px;border:1px solid #2d4160"></a>').join('')+'</div>':'')+
+      '</div>').join('')+'</div>'+
+    '<textarea id="treply" rows="4" style="width:100%;margin-top:8px" placeholder="ردّك…"></textarea>'+
+    '<div class="row"><button class="g" onclick="replyTicket('+t.id+',false)">أرسل</button>'+
+      '<button onclick="replyTicket('+t.id+',true)">أرسل وأغلق</button>'+
+      '<button class="s" onclick="setTicket('+t.id+',\\'closed\\')">أغلق بلا ردّ</button>'+
+      '<button class="s" onclick="setTicket('+t.id+',\\'open\\')">أعِد فتحها</button></div>'+
+    '<div class="msg" id="tmsg"></div></div>';
+  $("#tview").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+async function replyTicket(id,close){
+  const b=$("#treply").value.trim();
+  if(!b) return say("#tmsg",{ok:false,error:"اكتب ردًّا"});
+  const r=await post("/ticket/"+id+"/reply",{body:b,close:!!close});
+  say("#tmsg",r,()=>{loadTickets();openTicket(id)});
+}
+async function setTicket(id,status){
+  const r=await post("/ticket/"+id+"/status",{status});
+  say("#tmsg",r,()=>{loadTickets();openTicket(id)});
+}
+function gotoUser(id){
+  document.querySelector('.tab[data-p=users]').click();
+  openUser(id);
+}
+async function loadReports(){
+  const r=await j("/reports");
+  const l=(r&&r.reports)||[];
+  $("#rlist").innerHTML=l.length?'<table><tr><th>على</th><th>من</th><th>الأسباب</th><th>اللعبة</th><th>متى</th><th></th></tr>'+
+    l.map(x=>'<tr><td>'+esc(x.onName)+(x.onUser?' <span class="muted">('+esc(x.onUser)+')</span>':'')+'</td>'+
+      '<td class="muted">'+esc(x.byName)+'</td><td>'+esc((x.reasons||[]).join(" · "))+'</td>'+
+      '<td class="muted">'+esc(x.game)+'/'+esc(x.room)+'</td><td class="muted">'+when(x.at)+'</td>'+
+      '<td><button class="s" onclick="delReport(\\''+esc(x.id)+'\\')">×</button></td></tr>').join('')+'</table>'
+    :'<div class="muted">لا بلاغات.</div>';
+}
+async function delReport(id){
+  if(id==="*"&&!confirm("مسح كل البلاغات؟")) return;
+  await post("/report-del",{id}); loadReports();
 }
 
 /* ── السجلّ ── */

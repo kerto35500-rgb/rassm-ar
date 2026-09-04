@@ -144,6 +144,10 @@ require("./shop").setupShop(app, {
   get store() { return store; },
   currentUser: accounts.currentUser
 });
+require("./support").setupSupport(app, {
+  get store() { return store; },
+  currentUser: accounts.currentUser, pubDir
+});
 /* ═══ صفحات المختبرات ═══
    *-lab.html و_doors_preview.html أدواتُ ضبطٍ داخلية (إحداثيات، فخاخ، أقراص).
    تبقى متاحةً محلّيًّا للتطوير، وتُحجَب في الإنتاج إلا لصاحب جلسة الأدمن. */
@@ -1285,6 +1289,18 @@ createStore()
       await require("./padmin").applyPriceOverrides(store);
       require("./padmin").setupPanel(app, { store, currentUser: accounts.currentUser });
     } catch (e) { console.error("settings/panel:", e.message); }
+
+    /* بلاغات الإشراف: كانت تُجمَع في الذاكرة ولا يقرؤها أحد ولا تنجو من
+       إعادة تشغيل. نُحمّلها ونحفظها بتأخيرٍ قصير — البلاغ نادر، والحفظ
+       الفوريّ مع كل واحدٍ إسرافٌ بلا فائدة. */
+    try {
+      mod.loadReports(await store.getKV("modReports"));
+      let t = null;
+      mod.setSink(list => {
+        clearTimeout(t);
+        t = setTimeout(() => store.saveKV("modReports", list).catch(() => {}), 800);
+      });
+    } catch (e) { console.error("mod reports:", e.message); }
 
     /* هويّة موحّدة لكل مساحات الأسماء: تُحلّ الجلسة قبل أن يصل الاتصال إلى
        منطق أي لعبة، فتعرف اللعبةُ صاحبَها بلا أن تسأل عن كوكي. تُركَّب بعد
