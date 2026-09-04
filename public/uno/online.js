@@ -306,6 +306,11 @@ async function olApplyOne(v) {
     else if (dealing || !G || !G.online) {
       /* جولةٌ جديدة: نبدأ بأيدٍ فارغة ثم نوزّع كما يوزّع المحلّيّ */
       G = next;
+      /* G وnext الكائنُ نفسه. كنتُ أُفرّغ G.discard وG.color للتوزيع ثم «أُعيدهما»
+         من next — فأُعيد الفراغ نفسه. النتيجة: لا ورقةٌ في الوسط بعد التوزيع،
+         وcanPlay تنكسر على top.v فلا تُضاء أوراقي ولا أستطيع اللعب في دوري
+         الأوّل، حتى تأتي الحالة التالية. نحفظ النهائيّ قبل التفريغ. */
+      const finalDiscard = next.discard.slice(), finalColor = next.color;
       const full = next.players.map(p => p.hand);
       G.players.forEach(p => { p.hand = []; });
       G.discard = []; G.color = null;   /* الوسط فارغٌ حتى تهبط الورقة الأولى */
@@ -326,7 +331,7 @@ async function olApplyOne(v) {
         await flyCard(rect($('#deck')), rect($('#discard')), cardImg(v.top));
         snd('card');
       }
-      G.discard = next.discard; G.color = next.color;
+      G.discard = finalDiscard; G.color = finalColor;
     } else {
       /* انتقالٌ عاديّ: نُحرّك بالطاولة القديمة ثم نستبدل */
       for (const e of evs) await olAnimate(e, v, phys, myAdded);
@@ -410,7 +415,17 @@ async function olAnimate(e, v, phys, myAdded) {
     case 'pending':   banner('+' + e.n, '', 800); await sleep(300); break;
     case 'swap':      banner('تبديل الأيدي', '', 900); await sleep(500); break;
     case 'rotate':    banner('تدوير الأيدي', '', 900); await sleep(500); break;
-    case 'eliminate': splat(); banner('بلا رحمة!', '', 1400); snd('boom'); await sleep(800); break;
+    case 'eliminate': {
+      splat(); banner('بلا رحمة!', (G && G.players[pi] ? G.players[pi].name + ' خرج من الجولة' : ''), 2000); snd('boom');
+      await sleep(1500);
+      if (pi != null && pi !== 0 && G) {
+        /* رماده يبقى مكان يده — كما يفعل المحلّيّ */
+        const oh = $('#' + ohandId(pi)), a = $('#' + ohandId(pi).replace('ohand', 'ash'));
+        if (oh && a) { a.style.left = oh.style.left || getComputedStyle(oh).left; a.style.top = getComputedStyle(oh).top; a.classList.add('show'); }
+        G.players[pi].hand = []; G.players[pi].out = true; renderSeat(pi);
+      } else if (pi === 0 && G) { G.players[0].hand = []; G.players[0].out = true; renderHand(); renderSeat(0); }
+      break;
+    }
     case 'uno':       seatBubble(pi, 'اونو!', '', 1000); snd('uno'); break;
     case 'oneLeft':   break;
     case 'caught':    banner('مُسك!', '', 1000); snd('bad'); await sleep(400); break;
@@ -478,6 +493,11 @@ function olExtras(v) {
 }
 
 async function olMatchEnd(e) {
+  /* الانفجار والإقصاء يصلان مع آخر حالة، وشاشة النتائج تصل بعدها بلحظة —
+     فكانت تُغطّيهما قبل أن يُرى شيء. ننتظر طابور الحركة ثم نُظهر النتائج. */
+  let guard = 0;
+  while ((olBusy || olQ.length) && guard++ < 200) await sleep(50);
+  await sleep(600);
   const names = e.scores || [];
   $('#mend').classList.add('show');
   $('#game').classList.remove('show');
@@ -487,11 +507,15 @@ async function olMatchEnd(e) {
     const d = document.createElement('div');
     d.className = 'pod' + (o.i === e.winner ? ' win' : '');
     d.style.animationDelay = (r * .15) + 's';
+    const lp = (ONL.lobby && ONL.lobby.players[o.i]) || (ONL.view && ONL.view.players[o.i]) || {};
     d.innerHTML = '<div class="rk"><img src="ui/rank' + Math.min(4, r + 1) + '.webp"></div>' +
       '<div class="pn">' + olEsc(o.x.name) + '</div>' +
-      '<div class="card"><div class="pts">' + o.x.score + '</div></div>' +
+      '<div class="card"><div class="avbox"><img class="a" src="' + avSrc(lp.av || 'Adult_1') + '">' +
+        (lp.frame ? '<img class="f" src="' + frSrc(lp.frame) + '">' : '') + '</div>' +
+        '<div class="sc">' + (o.i === e.winner ? 'فاز' : '') + '</div>' +
+        '<div class="pts">' + o.x.score + '</div></div>' +
       (o.i === e.winner && e.gold ? '<div class="rw">+ <img src="ui/coin2.webp"> ' + e.gold + '</div>' : '');
-    pod.appendChild(d);
+    pod.appendChild(d); fitFrame(d.querySelector('.avbox'));
   });
   if (e.gold) { P.coins = (UNOACC.wallet.gold = UNOACC.wallet.gold + 0) || P.coins; toastC('كسبتَ ' + e.gold + ' ذهبًا'); }
   else if (e.reason) toastC(e.reason);

@@ -1461,7 +1461,7 @@ async function flyDeal(pi,k,ms){
   const from=rect($('#deck'));
   if(pi===0){ renderHand(k.id); const el=handCardEl(k); const to=el?rect(el):from;
     /* وجهُها معروفٌ لي وحدي، فتنقلب وهي في الهواء وتصل مكشوفة */
-    await flyCard(from,to,backImg(),{small:true,tiltFrom:50,tiltTo:0,flipTo:cardImg(k),dur:420});
+    await flyCard(from,to,backImg(),{small:true,tiltFrom:50,tiltTo:0});
     renderHand(); renderSeat(0); renderDeck(); }
   else { renderSeat(pi); const cards=$('#'+ohandId(pi)).children; const el=cards[cards.length-1]; let to; if(el){ el.style.visibility='hidden'; to=rect(el); } else to=rect($('#'+seatIds[pi]+' .av')); await flyCard(from,to,backImg(),{small:true}); if(el) el.style.visibility=''; renderDeck(); }
   if(ms) await sleep(ms);
