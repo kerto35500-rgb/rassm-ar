@@ -615,6 +615,8 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 <div class="ov" id="ov-help"><div class="box"><h2>قواعد بلا رحمة</h2><div class="rules" id="rules-body"></div><button class="btn" id="help-close">فهمت</button></div></div>
 <div id="toast"></div>
 
+<script src="catalog.js"></script>
+<script src="unoacc.js"></script>
 <script>
 /* ==========================================================
    وحدة (نسخة الويب العربية). لاعب ضدّ ثلاثة بوتات.
@@ -641,52 +643,7 @@ const DRAWV={d2:2,d4:4,d6:6,d10:10,revd4:4,draw4:4};
 const NAMES={d2:'+2',d4:'+4',skip:'حظر',rev:'عكس',skipall:'حظر الجميع',discard:'ارمِ الكل',d6:'+6',d10:'+10',revd4:'عكس +4',roulette:'روليت الألوان',wild:'تغيير لون',draw4:'+4'};
 
 /* ================= CATALOG ================= */
-const BOARDS=[
- ['classic','الكلاسيكية','الطاولة الحمراء الأصلية — بداية كل شيء.',0],
- ['nomercy','بلا رحمة','طاولة وضع بلا رحمة: نار وسواد ولا مكان للرحماء.',0],
- ['abstractgraphic','عالم الهافتون','لوحة من الأشكال الحرة تشكّل عالم اللعبة.',1500],
- ['triangles','المثلثات','هندسة زجاجية تتوهج فوق الظلام.',1500],
- ['luminescentstars','النجوم المضيئة','نجمة تسبح في سماء الليل.',1500],
- ['cube','المكعب','منصة نيون فوق مكعبات متدرجة.',1800],
- ['flowers','الزهور','حديقة هادئة وحلقة ماء وسط الأزهار.',1800],
- ['cosy','الكوخ الشتوي','تعال من البرد والعب جولة دافئة.',2200],
- ['zenroom','غرفة الزن','هدوء ياباني وحبر يسيل فوق الطاولة.',2200],
- ['lapool','مسبح لوس أنجلوس','شمس وماء وبطة عوّامة.',1800],
- ['oasis','الواحة','بحيرة صحراوية بين النخيل.',2000],
- ['drawroom','غرفة الرسم','مرسم فنان مليء بالألوان.',2000],
- ['painterworkshop','ورشة الرسام','قماش ولوحات وريشة على الطاولة.',2000],
- ['wizard','الساحر','خريطة سحرية وجرعات متوهجة.',2400],
- ['fairytalecastle','قلعة الحكايات','قلعة الأميرات في سماء زرقاء.',2400],
- ['candyworld','عالم الحلوى','مثلجات وسكاكر حول بحيرة زرقاء.',2000],
- ['origami','أوريغامي','جزر ورقية وبالونات معلقة.',2200],
- ['universe','الكون','كواكب ومحطة فضائية وسط النجوم.',2600],
- ['retroautumn','خريف السبعينات','ألوان الخريف بلمسة ريترو.',1800],
- ['steampunkcity','مدينة الستيم بانك','جزر عائمة وتروس نحاسية.',2200],
- ['underwaterbio','أعماق مضيئة','كائنات بحرية تتلألأ في الظلام.',2200],
- ['animecatcafe','مقهى القطط','مقهى أنمي لطيف مع قطط نائمة.',2000],
- ['ac15','أساسنز كريد','طاولة ذهبية بشعار الأخوية.',2600],
- ['ac15event','حدث الأساسنز','نسخة الحدث بألعاب نارية ذهبية.',2600],
-];
-const CARDSETS=[
- ['classic','الكلاسيكية','الكروت الأصلية.',0],['nomercy','بلا رحمة','كروت وضع بلا رحمة (تُستخدم في هذا الوضع فقط).',0],
- ['abstracta','تجريدي 1','أنماط تجريدية ملوّنة.',1200],['abstractb','تجريدي 2','خطوط وأشكال حديثة.',1200],['abstractc','تجريدي 3','دوائر ومنحنيات.',1200],
- ['gold','ذهبية','كروت ذهبية فاخرة.',2000],['silver','فضية','لمعان فضي أنيق.',1800],['gems','الجواهر','أحجار كريمة لامعة.',1800],['hologram','هولوغرام','كروت قوس قزح ثلاثية الأبعاد.',1800],
- ['pets','الحيوانات الأليفة','دمى محبوبة على كل كرت.',1600],['cosy','حيوانات القطب','دببة وبطاريق شتوية.',1600],['animecatcafe','مقهى القطط','قطط أنمي لطيفة.',1600],
- ['candy','الحلوى','سكاكر وكعك ملوّن.',1500],['balloon','البالونات','بالونات احتفالية.',1400],['clay','الصلصال','كروت من الطين المصبوغ.',1500],['fabric','القماش','خيوط ونسيج.',1500],['feather','الريش','ريش ناعم ملوّن.',1500],
- ['flowers','الزهور','أزهار الربيع.',1500],['origami','أوريغامي','طي الورق الياباني.',1600],['planets','الكواكب','رحلة في المجموعة الشمسية.',1700],['popart','بوب آرت','أسلوب الكوميكس الصاخب.',1600],
- ['seashells','الأصداف','كنوز الشاطئ.',1500],['lapool','المسبح','صيف وشمس.',1500],['lny','السنة القمرية','فوانيس وتنانين.',1800],['retroautumn','خريف ريترو','أوراق وشخصيات كرتونية.',1600],
- ['steampunkcity','ستيم بانك','جزر عائمة وتروس.',1700],['underwaterbio','الأعماق','مخلوقات بحرية مضيئة.',1700],['decupdate1','شتاء دافئ','مجموعة تحديث الشتاء 1.',1500],['decupdate2','عيد الشتاء','مجموعة تحديث الشتاء 2.',1500],
- ['ac15','أساسنز كريد','كروت الأخوية.',2000],['ac15event','حدث الأساسنز','نسخة الحدث.',2000],
-];
-const AVATAR_LIST=["AC15_1", "ACK_1_DLC", "ACK_2_DLC", "Adult_1", "Adult_2", "Adult_3", "Adult_4", "Adult_5", "Adult_6", "Adult_7", "Adult_8", "Adult_9", "Animal_1", "Animal_10", "Animal_2", "Animal_3", "Animal_4", "Animal_5", "Animal_6", "Animal_7", "Animal_8", "Animal_9", "AnimeCatCafe_1", "AnimeCatCafe_2", "AnimeCatCafe_3", "AnimeCatCafe_4", "Brawlhalla_1", "Brawlhalla_2", "Brawlhalla_3", "Brawlhalla_4", "CG_Mummy", "CG_Popcorn", "CG_TRex", "Cosy_1", "Cosy_2", "Cosy_3", "Cosy_4", "Creature_1", "Creature_2", "Creature_3", "Creature_4", "IFR_1_DLC", "IFR_2_DLC", "JD_1_DLC", "JD_2_DLC", "Kid_1", "Kid_2", "Kid_3", "LAPool_1", "LAPool_2", "LAPool_3", "LAPool_4", "LNY_1", "LNY_2", "LNY_3", "LNY_4", "NoMercy_1", "NoMercy_2", "Party_01_DLC", "Party_02_DLC", "Rabbids_1_DLC", "Rabbids_2_DLC", "Rayman_1_DLC", "Rayman_2_DLC", "RetroAutumn_1", "RetroAutumn_2", "RetroAutumn_3", "RetroAutumn_4", "Senior_1", "Senior_2", "ShovelKnight_1", "ShovelKnight_2", "ShovelKnight_3", "ShovelKnight_4", "SteampunkCity_1", "SteampunkCity_2", "SteampunkCity_3", "SteampunkCity_4", "Tetra_1_DLC", "Tetra_2_DLC", "TwitchDrop_1", "TwitchDrop_2", "UnderwaterBio_1", "UnderwaterBio_2", "UnderwaterBio_3", "UnderwaterBio_4"];
-const FRAME_LIST=["AC15","AnimeCatCafe","Balloon","Bee","Biscuit","Brawlhalla","Brunch","CGChains","CGCircus","CGTheater","Cake","Carp","Castle","Cat","Classic","Cloud","Cosy1","Cosy2","Fabric","Flowers","IceCream","IceCubes","Island","LAPool","LNY1","LNY2","Light","Luxury","NoMercy","Princess","RetroAutumn","Roses","ShovelKnight","Space","SteampunkCity","Temple","TwitchDrop1","TwitchDrop2","UnderwaterBio","Wizard","WWAttackParticipated","WWAttackRanked","WWAttackWinner","WWBigHandsParticipated","WWBigHandsRanked","WWBigHandsWinner","WWFlippedParticipated","WWFlippedRanked","WWFlippedWinner","WWFogOfWarParticipated","WWFogOfWarRanked","WWFogOfWarWinner","WWTinyHandsParticipated","WWTinyHandsRanked","WWTinyHandsWinner","WWWhirlpoolParticipated","WWWhirlpoolRanked","WWWhirlpoolWinner"];
-const AVN={CG_Mummy:'مومياء',CG_Popcorn:'فشار',CG_TRex:'ديناصور',Creature:'مخلوق',IFR:'إيموتال فينيكس',Party:'حفلة',Tetra:'تترا',TwitchDrop:'تويتش',AC15:'أساسنز',ACK:'أساسنز',Adult:'شخصية',Animal:'حيوان',AnimeCatCafe:'مقهى القطط',Brawlhalla:'براولهالا',CG:'كوميك',Cosy:'شتاء',Dev:'المطورون',FC6:'فار كراي',Fenyx:'فينيكس',JD:'جست دانس',Kid:'طفل',LAPool:'المسبح',LNY:'السنة القمرية',NoMercy:'بلا رحمة',Rabbids:'رابيدز',Rayman:'رايمان',RetroAutumn:'خريف',Senior:'كبار',ShovelKnight:'شوفل نايت',SteampunkCity:'ستيم بانك',UnderwaterBio:'الأعماق'};
-function avName(a){ if(AVN[a]) return AVN[a]; const m=a.match(/^([A-Za-z0-9]+?)_(\d+)/); return m?`${AVN[m[1]]||m[1]} ${m[2]}`:a; }
-function avPrice(a){ return /Adult_[1-3]|Kid_1|Animal_[12]$/.test(a)?0:(/DLC|NoMercy|AC15|ACK|Dev/.test(a)?900:600); }
-function frName(f){ return f.replace(/^WW/,'أسبوع جامح: ').replace(/([a-z])([A-Z])/g,'$1 $2'); }
-function frPrice(f){ return f==='Classic'?0:(/^WW/.test(f)?400:700); }
-const AVATARS=AVATAR_LIST.map(a=>[a,avName(a),'',avPrice(a)]);
-const FRAMES=FRAME_LIST.map(f=>[f,frName(f),'',frPrice(f)]);
+/* القوائم والأسعار في catalog.js — يشاركها الخادم عند بذر المتجر */
 const CAT={boards:BOARDS,cards:CARDSETS,avatars:AVATARS,frames:FRAMES};
 const IMG={boards:k=>`thumbs/boards/${k}.webp`,cards:k=>`thumbs/cards/${k}.webp`,avatars:k=>`avatars/${k}.webp`,frames:k=>`frames/${k}.webp`};
 const BOTNAMES=['جود','أليكس','آش','داني','روبي','ماكس','ليو','ميا','سام','زوي','نورة','فهد','لين','عمر'];
@@ -783,13 +740,26 @@ function showCatalog(kind,tab){
   if(own){
     const isSel=(tab==='boards'||tab==='cards')?P.sel[tab]===cur[0]:(tab==='avatars'?P.avatar===cur[0]:P.frame===cur[0]);
     const b=document.createElement('button'); b.className='big g'; b.textContent=isSel?'✔ مُختار':'استخدام';
-    b.onclick=()=>{ snd('uno'); if(tab==='boards'||tab==='cards') P.sel[tab]=cur[0]; else if(tab==='avatars') P.avatar=cur[0]; else P.frame=cur[0]; saveP(); showCatalog(kind,tab); toastC('تم التجهيز ✔'); };
+    b.onclick=()=>{ snd('uno'); if(tab==='boards'||tab==='cards') P.sel[tab]=cur[0]; else if(tab==='avatars') P.avatar=cur[0]; else P.frame=cur[0]; saveP(); UNOACC.equip(tab,cur[0]); showCatalog(kind,tab); toastC('تم التجهيز ✔'); };
     act.appendChild(b);
   } else {
     const b=document.createElement('button'); b.className='big'; b.innerHTML=`شراء <img src="ui/coin2.webp"> ${cur[3]}`;
-    b.onclick=()=>{ if(P.coins<cur[3]){ snd('bad'); toastC('عملاتك لا تكفي — العب مباريات لتكسب المزيد'); return; } P.coins-=cur[3]; P.owned[tab].push(cur[0]); saveP(); snd('win'); toastC(`اشتريت ${cur[1]}!`); renderMain(); showCatalog(kind,tab); };
+    b.onclick=async()=>{
+      if(P.coins<cur[3]){ snd('bad'); toastC('عملاتك لا تكفي — العب مباريات لتكسب المزيد'); return; }
+      /* المسجَّل يشتري بذهب الموقع عبر الخادم؛ الضيف يشتري محلّيًّا كما كان */
+      if(UNOACC.on){
+        b.disabled=true;
+        const j=await UNOACC.buy(tab,cur[0]).catch(()=>({ok:false,error:'انقطع الاتصال'}));
+        b.disabled=false;
+        if(!j.ok){ snd('bad'); toastC(j.error||'تعذّر الشراء'); return; }
+        P.coins=UNOACC.wallet.gold;
+      } else P.coins-=cur[3];
+      P.owned[tab].push(cur[0]); saveP(); snd('win'); toastC(`اشتريت ${cur[1]}!`); renderMain(); showCatalog(kind,tab);
+    };
     act.appendChild(b);
-    const hint=document.createElement('div'); hint.style.cssText='margin-top:8px;font-size:14px;opacity:.85'; hint.innerHTML=`رصيدك: <b style="color:#ffd400">${P.coins}</b>`; act.appendChild(hint);
+    const hint=document.createElement('div'); hint.style.cssText='margin-top:8px;font-size:14px;opacity:.85';
+    hint.innerHTML=`رصيدك: <b style="color:#ffd400">${P.coins}</b>`+(UNOACC.on?' <span style="opacity:.7">— ذهب حسابك في الموقع</span>':'');
+    act.appendChild(hint);
   }
 }
 /* ---- profile ---- */
@@ -811,7 +781,7 @@ function showProfile(tab){
     $('#profile-pv').innerHTML=tab==='frames'?`<img src="${avSrc(P.avatar)}"><img class="fr" src="${IMG.frames(cur[0])}">`:`<img src="${IMG[tab](cur[0])}">`;
     $('#profile-iname').textContent=cur[1]; const own=owns(tab,cur[0]); $('#profile-idesc').textContent=own?(tab==='avatars'?'صورة رمزية تظهر للخصوم في المباراة.':'إطار يزيّن صورتك الرمزية.'):`غير مملوك — متوفر في المتجر بـ ${cur[3]} عملة.`;
     const act=$('#profile-act'); act.innerHTML=''; const b=document.createElement('button');
-    if(own){ const isSel=tab==='avatars'?P.avatar===cur[0]:P.frame===cur[0]; b.className='big g'; b.textContent=isSel?'✔ مُختار':'استخدام'; b.onclick=()=>{snd('uno'); if(tab==='avatars')P.avatar=cur[0]; else P.frame=cur[0]; saveP(); showProfile(tab);}; }
+    if(own){ const isSel=tab==='avatars'?P.avatar===cur[0]:P.frame===cur[0]; b.className='big g'; b.textContent=isSel?'✔ مُختار':'استخدام'; b.onclick=()=>{snd('uno'); if(tab==='avatars')P.avatar=cur[0]; else P.frame=cur[0]; saveP(); UNOACC.equip(tab,cur[0]); showProfile(tab);}; }
     else { b.className='big'; b.textContent='اذهب إلى المتجر'; b.onclick=()=>openScreen('store',tab); }
     act.appendChild(b);
   }
@@ -824,13 +794,25 @@ function renderLeader(){
 /* ---- match end ---- */
 function showMatchEnd(){
   const order=[...G.players].map((p,i)=>({p,i})).sort((a,b)=>b.p.score-a.p.score || a.p.hand.length-b.p.hand.length);
-  const rewards=[500,100,75,50], xps=[300,120,80,50];
+  /* الضيف يكسب بعملة اللعبة، والمسجَّل بذهب الموقع — والمبالغ تختلف لأن
+     الذهب يُشترى به في كل الألعاب لا في هذه وحدها. */
+  const rewards=UNOACC.on?[20,10,6,4]:[500,100,75,50], xps=[300,120,80,50];
   const pod=$('#podium'); pod.innerHTML='';
   order.forEach(({p,i},r)=>{
     const d=document.createElement('div'); d.className='pod'+(r===0?' win':''); d.style.animationDelay=(r*.15)+'s';
     d.innerHTML=`<div class="rk"><img src="ui/rank${r+1}.webp"></div><div class="pn">${p.name}</div><div class="card"><div class="avbox"><img class="a" src="${avSrc(p.av)}">${p.frame?`<img class="f" src="${frSrc(p.frame)}">`:''}</div><div class="sc">${p.out?'خرج':p.hand.length+' 🂠'}</div><div class="pts">${p.score}</div></div><div class="rw">+ <img src="ui/coin2.webp"> ${rewards[r]}</div>`;
     pod.appendChild(d); fitFrame(d.querySelector('.avbox'));
-    if(p.human){ P.coins+=rewards[r]; P.xp+=xps[r]; P.stats.matches++; if(r===0){P.stats.first++;P.stats.wins++} P.stats.best=Math.max(P.stats.best||0,p.score); }
+    if(p.human){
+      P.xp+=xps[r]; P.stats.matches++; if(r===0){P.stats.first++;P.stats.wins++} P.stats.best=Math.max(P.stats.best||0,p.score);
+      /* المسجَّل: الخادم يقرّر المقدار ويطبّق السقف اليوميّ، فنعرض ما قرّره */
+      if(UNOACC.on) UNOACC.reward(r).then(j=>{
+        if(!j||!j.ok) return;
+        P.coins=UNOACC.wallet.gold; saveP(); renderMain();
+        const rw=d.querySelector('.rw');
+        if(rw) rw.innerHTML=j.amount?`+ <img src="ui/coin2.webp"> ${j.amount}`:'بلغتَ سقف اليوم';
+      });
+      else P.coins+=rewards[r];
+    }
     else { const b=P.bots[p.name]||(P.bots[p.name]={matches:0,first:0,best:0,av:p.av}); b.matches++; if(r===0)b.first++; b.best=Math.max(b.best,p.score); b.av=p.av; }
   });
   saveP();
@@ -1418,6 +1400,10 @@ $('#modehelp').onclick=(e)=>{ e.stopPropagation(); snd('click');
 <div class="rsec">باختصار</div>
 <div class="rc"><div><b>الكلاسيكي</b> = جولاتٌ ونقاطٌ تتراكم، إيقاعٌ هادئ ومتوقَّع. &nbsp;·&nbsp; <b>بلا رحمة</b> = سحباتٌ ضخمة وانقلاباتٌ مفاجئة وخروجٌ عند ٢٥ كرتًا — أسرع وأقسى.</div></div>`;
   $('#ov-help').classList.add('show'); };
+/* ربطُ الحساب: يجري بعد رسم الشاشة لا قبله، فالضيف يرى اللعبة فورًا ولا
+   ينتظر شبكةً لا تلزمه. ومَن كان مسجَّلًا تُحدَّث أرقامه بعد لحظةٍ بصمت. */
+UNOACC.load(P,saveP).then(on=>{ if(on){ renderMain(); if($('#store-s')?.classList.contains('show')) showCatalog('store','boards'); } });
+
 window.addEventListener('resize',()=>{ if(G) renderHand(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&G) $('#pausebtn').click(); if(e.key===' '&&G) $('#unobtn').click(); if(e.key==='d'&&G) $('#deck').click(); });
 // preload

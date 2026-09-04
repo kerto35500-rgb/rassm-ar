@@ -159,6 +159,79 @@ class JsonStore {
       .reduce((a, x) => a + x.delta, 0);
   }
 
+  /* ── المتجر: كتالوج ومخزون وتجهيز ── */
+  async upsertItems(rows) {
+    this.db.items = this.db.items || {};
+    for (const r of rows || []) {
+      const old = this.db.items[r.id];
+      /* السعر والاسم يُحدَّثان من البذرة، لكن `active` قرارُ إدارةٍ فلا نلغيه */
+      this.db.items[r.id] = { ...r, active: old ? old.active : (r.active !== false) };
+    }
+    this._save();
+    return (rows || []).length;
+  }
+  async listItems({ game = null, kind = null, all = false } = {}) {
+    return Object.values(this.db.items || {})
+      .filter(i => (!game || i.game === game) && (!kind || i.kind === kind) && (all || i.active !== false))
+      .sort((a, b) => a.game.localeCompare(b.game) || a.kind.localeCompare(b.kind) ||
+                      (a.sort || 0) - (b.sort || 0) || a.price - b.price);
+  }
+  async getItem(id) { return (this.db.items || {})[id] || null; }
+  async setItemActive(id, on) {
+    const it = (this.db.items || {})[id];
+    if (!it) return false;
+    it.active = !!on; this._save(); return true;
+  }
+  async inventoryOf(userId) {
+    return (this.db.inventory || []).filter(x => x.userId === Number(userId));
+  }
+  async ownsItem(userId, itemId) {
+    return (this.db.inventory || []).some(x => x.userId === Number(userId) && x.itemId === itemId);
+  }
+  async grantItem(userId, itemId, source = "grant") {
+    const uid = Number(userId);
+    this.db.inventory = this.db.inventory || [];
+    if (await this.ownsItem(uid, itemId)) return { ok: false, owned: true };
+    this.db.inventory.push({ userId: uid, itemId, source, acquiredAt: Date.now() });
+    this._save();
+    return { ok: true };
+  }
+  /* الشراء: تملّكٌ وخصمٌ وإيصالٌ معًا. في الملفّ لا معاملات، لكن العقدة
+     أحاديّة الخيط فلا يتخلّل هذه الأسطرَ شيء. */
+  async buyItem(userId, item) {
+    const uid = Number(userId);
+    if (!uid || !item) return { ok: false, error: "عنصر غير معروف" };
+    if (await this.ownsItem(uid, item.id)) return { ok: false, error: "تملكه بالفعل", owned: true };
+    if (item.price > 0) {
+      const res = await this.move(uid, item.currency, -item.price, {
+        reason: "شراء:" + item.id, refType: "item", refId: item.id
+      });
+      if (!res.ok) return { ok: false, error: res.error || "تعذّر الخصم" };
+    }
+    this.db.inventory = this.db.inventory || [];
+    this.db.purchases = this.db.purchases || [];
+    this.db.inventory.push({ userId: uid, itemId: item.id, source: "buy", acquiredAt: Date.now() });
+    this.db.purchases.push({ id: this.db.purchases.length + 1, userId: uid, itemId: item.id,
+                             currency: item.currency, price: item.price, createdAt: Date.now() });
+    this._save();
+    return { ok: true, wallet: await this.getWallet(uid) };
+  }
+  async getLoadout(userId, game = null) {
+    const out = {};
+    (this.db.loadout || [])
+      .filter(x => x.userId === Number(userId) && (!game || x.game === game))
+      .forEach(x => { (out[x.game] = out[x.game] || {})[x.kind] = x.itemKey; });
+    return game ? (out[game] || {}) : out;
+  }
+  async setLoadout(userId, game, kind, itemKey) {
+    const uid = Number(userId);
+    this.db.loadout = this.db.loadout || [];
+    const row = this.db.loadout.find(x => x.userId === uid && x.game === game && x.kind === kind);
+    if (row) { row.itemKey = itemKey; row.updatedAt = Date.now(); }
+    else this.db.loadout.push({ userId: uid, game, kind, itemKey, updatedAt: Date.now() });
+    this._save();
+  }
+
   async topByGame(game, n = 10) {
     const users = Object.entries(this.db.users);
     return Object.values(this.db.gameStats || {})
@@ -445,6 +518,120 @@ class PgStore {
        WHERE user_id = $1 AND created_at >= $2 AND delta > 0 AND reason LIKE $3`,
       [Number(userId), since, (reasonPrefix || "") + "%"]);
     return Number(r.rows[0].s);
+  }
+
+  /* ── المتجر: كتالوج ومخزون وتجهيز ── */
+  async upsertItems(rows) {
+    if (!rows || !rows.length) return 0;
+    const c = await this.pool.connect();
+    try {
+      await c.query("BEGIN");
+      for (const r of rows) {
+        /* لا نلمس `active`: إخفاءُ عنصرٍ قرارُ إدارةٍ لا تُلغيه إعادةُ البذر */
+        await c.query(
+          `INSERT INTO items (id, game, kind, item_key, name, descr, currency, price, rarity, preview, sort, created_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+           ON CONFLICT (id) DO UPDATE SET
+             name = $5, descr = $6, currency = $7, price = $8, rarity = $9, preview = $10, sort = $11`,
+          [r.id, r.game, r.kind, r.key, r.name, r.descr || null, r.currency || "gold",
+           r.price || 0, r.rarity || null, r.preview || null, r.sort || 0, Date.now()]);
+      }
+      await c.query("COMMIT");
+      return rows.length;
+    } catch (e) { await c.query("ROLLBACK").catch(() => {}); throw e; }
+    finally { c.release(); }
+  }
+  async listItems({ game = null, kind = null, all = false } = {}) {
+    const w = [], a = [];
+    if (game) { a.push(game); w.push(`game = $${a.length}`); }
+    if (kind) { a.push(kind); w.push(`kind = $${a.length}`); }
+    if (!all) w.push("active");
+    const r = await this.pool.query(
+      `SELECT id, game, kind, item_key AS key, name, descr, currency, price, rarity, preview, sort, active
+       FROM items ${w.length ? "WHERE " + w.join(" AND ") : ""}
+       ORDER BY game, kind, sort, price`, a);
+    return r.rows.map(x => ({ ...x, price: Number(x.price) }));
+  }
+  async getItem(id) {
+    const r = await this.pool.query(
+      `SELECT id, game, kind, item_key AS key, name, descr, currency, price, rarity, preview, sort, active
+       FROM items WHERE id = $1`, [id]);
+    return r.rows[0] ? { ...r.rows[0], price: Number(r.rows[0].price) } : null;
+  }
+  async setItemActive(id, on) {
+    const r = await this.pool.query("UPDATE items SET active = $2 WHERE id = $1", [id, !!on]);
+    return !!r.rowCount;
+  }
+  async inventoryOf(userId) {
+    const r = await this.pool.query(
+      `SELECT item_id AS "itemId", source, acquired_at AS "acquiredAt"
+       FROM inventory WHERE user_id = $1`, [Number(userId)]);
+    return r.rows;
+  }
+  async ownsItem(userId, itemId) {
+    const r = await this.pool.query(
+      "SELECT 1 FROM inventory WHERE user_id = $1 AND item_id = $2", [Number(userId), itemId]);
+    return !!r.rowCount;
+  }
+  async grantItem(userId, itemId, source = "grant") {
+    const r = await this.pool.query(
+      `INSERT INTO inventory (user_id, item_id, source, acquired_at) VALUES ($1,$2,$3,$4)
+       ON CONFLICT (user_id, item_id) DO NOTHING`, [Number(userId), itemId, source, Date.now()]);
+    return r.rowCount ? { ok: true } : { ok: false, owned: true };
+  }
+  /* الشراء كلّه معاملةٌ واحدة: التملّك أوّلًا (فالمفتاح المركّب يردّ الضغطة
+     الثانية)، ثم الخصم بقفل صفّ المحفظة، ثم الدفتر والإيصال. لو فشل شيء
+     رجع كلّ شيء — فلا عنصرٌ بلا دفعٍ ولا دفعٌ بلا عنصر. */
+  async buyItem(userId, item) {
+    const uid = Number(userId);
+    if (!uid || !item) return { ok: false, error: "عنصر غير معروف" };
+    const cur = item.currency === "gems" ? "gems" : "gold";
+    const c = await this.pool.connect();
+    try {
+      await c.query("BEGIN");
+      const ins = await c.query(
+        `INSERT INTO inventory (user_id, item_id, source, acquired_at) VALUES ($1,$2,'buy',$3)
+         ON CONFLICT (user_id, item_id) DO NOTHING`, [uid, item.id, Date.now()]);
+      if (!ins.rowCount) { await c.query("ROLLBACK"); return { ok: false, error: "تملكه بالفعل", owned: true }; }
+
+      if (item.price > 0) {
+        await c.query(`INSERT INTO wallets (user_id, gold, gems, updated_at) VALUES ($1,0,0,$2)
+                       ON CONFLICT (user_id) DO NOTHING`, [uid, Date.now()]);
+        const w = await c.query(`SELECT ${cur} AS v FROM wallets WHERE user_id = $1 FOR UPDATE`, [uid]);
+        const before = Number(w.rows[0].v);
+        const next = before - item.price;
+        if (next < 0) { await c.query("ROLLBACK"); return { ok: false, error: "الرصيد لا يكفي", balance: before }; }
+        await c.query(`UPDATE wallets SET ${cur} = $2, updated_at = $3 WHERE user_id = $1`, [uid, next, Date.now()]);
+        await c.query(
+          `INSERT INTO ledger (user_id, currency, delta, balance_after, reason, ref_type, ref_id, created_at)
+           VALUES ($1,$2,$3,$4,$5,'item',$6,$7)`,
+          [uid, cur, -item.price, next, "شراء:" + item.id, item.id, Date.now()]);
+      }
+      await c.query(
+        `INSERT INTO purchases (user_id, item_id, currency, price, created_at) VALUES ($1,$2,$3,$4,$5)`,
+        [uid, item.id, cur, item.price || 0, Date.now()]);
+      await c.query("COMMIT");
+      return { ok: true, wallet: await this.getWallet(uid) };
+    } catch (e) {
+      await c.query("ROLLBACK").catch(() => {});
+      throw e;
+    } finally { c.release(); }
+  }
+  async getLoadout(userId, game = null) {
+    const a = [Number(userId)];
+    if (game) a.push(game);
+    const r = await this.pool.query(
+      `SELECT game, kind, item_key AS "itemKey" FROM loadout
+       WHERE user_id = $1 ${game ? "AND game = $2" : ""}`, a);
+    const out = {};
+    r.rows.forEach(x => { (out[x.game] = out[x.game] || {})[x.kind] = x.itemKey; });
+    return game ? (out[game] || {}) : out;
+  }
+  async setLoadout(userId, game, kind, itemKey) {
+    await this.pool.query(
+      `INSERT INTO loadout (user_id, game, kind, item_key, updated_at) VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (user_id, game, kind) DO UPDATE SET item_key = $4, updated_at = $5`,
+      [Number(userId), game, kind, itemKey, Date.now()]);
   }
 
   async topByGame(game, n = 10) {

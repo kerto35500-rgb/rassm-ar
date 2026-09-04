@@ -126,6 +126,62 @@ const STEPS = [
       await q(`ALTER TABLE ledger ADD COLUMN IF NOT EXISTS idem TEXT`);
       await q(`CREATE UNIQUE INDEX IF NOT EXISTS ledger_idem_uq ON ledger (idem) WHERE idem IS NOT NULL`);
     }
+  },
+  {
+    id: 7,
+    name: "المتجر: العناصر والمخزون والمشتريات والتجهيز",
+    async pg(q) {
+      /* العناصر: كتالوجٌ واحدٌ لكل الألعاب. المفتاح النصّيّ `game:kind:key`
+         مقروءٌ في الدفتر والسجلّات ("شراء:uno:cards:gold") فلا نحتاج ربطًا
+         لنفهم ماذا اشترى اللاعب بعد سنة. */
+      await q(`CREATE TABLE IF NOT EXISTS items (
+                 id TEXT PRIMARY KEY,
+                 game TEXT NOT NULL,
+                 kind TEXT NOT NULL,
+                 item_key TEXT NOT NULL,
+                 name TEXT NOT NULL,
+                 descr TEXT,
+                 currency TEXT NOT NULL DEFAULT 'gold',
+                 price BIGINT NOT NULL DEFAULT 0,
+                 rarity TEXT,
+                 preview TEXT,
+                 sort INT NOT NULL DEFAULT 0,
+                 active BOOLEAN NOT NULL DEFAULT TRUE,
+                 created_at BIGINT,
+                 CONSTRAINT items_price_ok CHECK (price >= 0))`);
+      await q(`CREATE UNIQUE INDEX IF NOT EXISTS items_gkk_uq ON items (game, kind, item_key)`);
+      await q(`CREATE INDEX IF NOT EXISTS items_browse_idx ON items (game, kind, sort)`);
+
+      /* المخزون: ما يملكه اللاعب. المفتاح المركّب يمنع الشراء مرّتين بنيويًّا
+         لا بشرطٍ في الكود — فحتى ضغطتان متزامنتان لا تُنقصان الرصيد مرّتين. */
+      await q(`CREATE TABLE IF NOT EXISTS inventory (
+                 user_id BIGINT NOT NULL,
+                 item_id TEXT NOT NULL,
+                 source TEXT NOT NULL DEFAULT 'buy',
+                 acquired_at BIGINT NOT NULL,
+                 PRIMARY KEY (user_id, item_id))`);
+
+      /* المشتريات: إيصالٌ بالسعر وقت الشراء. الدفتر يقول كم خُصم، وهذا يقول
+         مقابل ماذا وبأيّ سعرٍ كان معروضًا يومها (فالأسعار تتغيّر). */
+      await q(`CREATE TABLE IF NOT EXISTS purchases (
+                 id BIGSERIAL PRIMARY KEY,
+                 user_id BIGINT NOT NULL,
+                 item_id TEXT NOT NULL,
+                 currency TEXT NOT NULL,
+                 price BIGINT NOT NULL,
+                 created_at BIGINT NOT NULL)`);
+      await q(`CREATE INDEX IF NOT EXISTS purchases_user_idx ON purchases (user_id, created_at DESC)`);
+
+      /* التجهيز: ما هو مُفعَّلٌ الآن لكل (لاعب، لعبة، نوع). صفٌّ واحدٌ لا أكثر،
+         فلا يلبس أحدٌ إطارَين. ومَن لم يجهّز شيئًا يأخذ الافتراضيّ من اللعبة. */
+      await q(`CREATE TABLE IF NOT EXISTS loadout (
+                 user_id BIGINT NOT NULL,
+                 game TEXT NOT NULL,
+                 kind TEXT NOT NULL,
+                 item_key TEXT NOT NULL,
+                 updated_at BIGINT,
+                 PRIMARY KEY (user_id, game, kind))`);
+    }
   }
 ];
 

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>المتجر — ألعابنا</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/kawaii.css">
+<script src="/theme.js" defer></script>
+<style>
+  /* كل الأصناف هنا تبدأ بـsh- عمدًا: kawaii.css يملك أسماءً عامّة مثل
+     .card و.btn تستعملها الألعاب، فأيّ اسمٍ عامٍّ هنا يصطدم بها. */
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{min-height:100vh;padding:16px 12px 70px;color:var(--kw-ink,#4A2E2B);
+       font-family:'Baloo Bhaijaan 2','Segoe UI',Tahoma,Arial,sans-serif}
+  .sh-wrap{max-width:1000px;margin:0 auto;position:relative;z-index:1}
+
+  .sh-top{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .sh-back{background:#fff;border:2.5px solid var(--kw-line,#9C5A4C);border-radius:999px;
+        padding:7px 15px;font-weight:800;font-size:14px;color:inherit;text-decoration:none;
+        box-shadow:var(--kw-3d-sm,0 2px 0 #9C5A4C)}
+  .sh-back:active{transform:translateY(2px);box-shadow:none}
+  .sh-top h1{font-size:22px;font-weight:800}
+  .sh-purse{margin-inline-start:auto;display:flex;gap:7px}
+  .sh-coin{background:var(--kw-g-players,#FDF0DA);border:2.5px solid var(--kw-line,#9C5A4C);
+        border-radius:999px;padding:6px 13px;font-weight:800;font-size:14.5px;
+        box-shadow:var(--kw-3d-sm,0 2px 0 #9C5A4C);white-space:nowrap}
+
+  /* أشرطة التنقّل: لعبةٌ ثم نوع */
+  .sh-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .sh-tab{background:#fff;border:2.5px solid var(--kw-line,#9C5A4C);border-radius:999px;
+       padding:8px 16px;font:inherit;font-weight:800;font-size:14px;color:inherit;cursor:pointer;
+       box-shadow:var(--kw-3d-sm,0 2px 0 #9C5A4C)}
+  .sh-tab.sh-on{background:var(--kw-g-pink,#FFDDD5)}
+  .sh-tab:active{transform:translateY(2px);box-shadow:none}
+  .sh-kinds{margin-bottom:14px}
+  .sh-kinds .sh-tab{font-size:13.5px;padding:6px 14px}
+
+  /* شبكة العناصر */
+  .sh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px}
+  .sh-it{background:var(--kw-g-white,#fff);border:3px solid var(--kw-line,#9C5A4C);border-radius:18px;
+      padding:9px;box-shadow:var(--kw-3d,0 3px 0 #9C5A4C);display:flex;flex-direction:column;gap:7px}
+  .sh-pv{position:relative;aspect-ratio:1;border-radius:13px;overflow:hidden;
+      background:var(--kw-g-players,#FDF0DA);border:2.5px solid var(--kw-line,#9C5A4C);
+      display:grid;place-items:center}
+  .sh-pv img{width:100%;height:100%;object-fit:cover;display:block}
+  /* الإطارات شفافةٌ حول نافذتها، فتُعرَض كاملةً بلا قصّ */
+  .sh-it[data-kind=frames] .sh-pv img{object-fit:contain;padding:4px}
+  .sh-nm{font-size:14px;font-weight:800;line-height:1.35;text-align:center;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:38px}
+  .sh-rar{position:absolute;inset-inline-start:5px;inset-block-start:5px;border-radius:999px;
+       padding:1px 8px;font-size:10.5px;font-weight:800;border:2px solid var(--kw-line,#9C5A4C);background:#fff}
+  .sh-rar[data-r=rare]{background:#DCEBFF} .sh-rar[data-r=epic]{background:#EDDCFF}
+  .sh-rar[data-r=legend]{background:#FFE9B8} .sh-rar[data-r=free]{background:#DCF6E3}
+  .sh-tick{position:absolute;inset-inline-end:5px;inset-block-start:5px;width:24px;height:24px;
+       border-radius:50%;background:#DCF6E3;border:2px solid var(--kw-line,#9C5A4C);
+       display:grid;place-items:center;font-size:13px;font-weight:800}
+
+  .sh-buy{width:100%;background:var(--kw-g-pink,#FFDDD5);border:2.5px solid var(--kw-line,#9C5A4C);
+       border-radius:999px;padding:8px;font:inherit;font-weight:800;font-size:13.5px;color:inherit;
+       cursor:pointer;box-shadow:var(--kw-3d-sm,0 2px 0 #9C5A4C)}
+  .sh-buy:active{transform:translateY(2px);box-shadow:none}
+  .sh-buy:disabled{opacity:.5;cursor:default;transform:none}
+  .sh-buy.sh-eq{background:#DCF6E3}
+  .sh-buy.sh-worn{background:#fff;opacity:.75;cursor:default}
+  .sh-buy.sh-poor{background:#fff;opacity:.6}
+
+  .sh-note{background:#FFF6E5;border:2.5px dashed #E2A93B;border-radius:14px;
+       padding:11px 14px;font-size:13.5px;line-height:1.75;margin-bottom:14px}
+  .sh-note a{color:inherit;font-weight:800}
+  .sh-center{text-align:center;padding:40px 10px;font-size:15px;opacity:.8}
+
+  /* شريطُ خبرٍ عابر: أرخص من نافذةٍ منبثقة وأقلّ إزعاجًا */
+  .sh-toast{position:fixed;inset-block-end:18px;inset-inline:0;margin:auto;width:max-content;max-width:88vw;
+       background:#fff;border:3px solid var(--kw-line,#9C5A4C);border-radius:999px;padding:10px 20px;
+       font-weight:800;font-size:14.5px;box-shadow:var(--kw-3d,0 3px 0 #9C5A4C);z-index:50;
+       opacity:0;transform:translateY(12px);transition:.22s;pointer-events:none}
+  .sh-toast.sh-show{opacity:1;transform:none}
+  .sh-toast.sh-bad{background:#FFE3E1}
+  @media(max-width:520px){
+    .sh-top h1{font-size:19px}
+    .sh-grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:9px}
+    .sh-nm{font-size:13px;min-height:35px}
+  }
+</style>
+</head>
+<body>
+<div class="sh-wrap">
+  <div class="sh-top">
+    <a class="sh-back" href="/">← الألعاب</a>
+    <h1>🛍️ المتجر</h1>
+    <div class="sh-purse" id="purse" style="display:none">
+      <span class="sh-coin" id="cGold">🪙 0</span>
+      <span class="sh-coin" id="cGems">💎 0</span>
+    </div>
+  </div>
+
+  <div id="note"></div>
+  <div class="sh-tabs" id="games"></div>
+  <div class="sh-tabs sh-kinds" id="kinds"></div>
+  <div class="sh-grid" id="grid"></div>
+  <div class="sh-center" id="msg">جارٍ فتح المتجر…</div>
+</div>
+<div class="sh-toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+let DATA=null, GAME=null, KIND=null, BUSY=false;
+
+const RAR={free:'مجّانيّ',common:'عاديّ',rare:'نادر',epic:'ملحميّ',legend:'أسطوريّ'};
+const num=n=>Number(n||0).toLocaleString('ar-EG');
+
+let tt;
+function toast(m,bad){
+  const t=$('#toast'); t.textContent=m; t.classList.toggle('sh-bad',!!bad); t.classList.add('sh-show');
+  clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('sh-show'),2600);
+}
+
+async function load(){
+  try{
+    const r=await fetch('/api/shop/catalog',{credentials:'same-origin'});
+    DATA=await r.json();
+    if(!DATA.ok) throw new Error(DATA.error||'تعذّر الفتح');
+  }catch(e){ $('#msg').textContent='تعذّر فتح المتجر — جرّب التحديث.'; return; }
+
+  $('#msg').style.display='none';
+  if(DATA.guest){
+    $('#note').innerHTML='<div class="sh-note">أنت تتصفّح كضيف — تقدر تشوف كل شيء، لكن الشراء يحتاج حسابًا. '+
+                         '<a href="/">سجّل من الصفحة الرئيسية</a> ثم ارجع.</div>';
+  }else{
+    $('#purse').style.display='flex';
+    purse();
+  }
+  /* الألعاب المتاحة تأتي من الخادم: لو أضفنا لعبةً غدًا ظهر تبويبها بلا لمس هذا الملف */
+  const games=[...new Set(DATA.items.map(i=>i.game))];
+  GAME=games[0]||null;
+  $('#games').innerHTML=games.map(g=>{
+    const s=DATA.sections[g]||{};
+    return `<button class="sh-tab" data-g="${g}">${s.icon||'🎮'} ${s.name||g}</button>`;
+  }).join('');
+  $('#games').onclick=e=>{const b=e.target.closest('[data-g]'); if(b){GAME=b.dataset.g;KIND=null;draw();}};
+  $('#kinds').onclick=e=>{const b=e.target.closest('[data-k]'); if(b){KIND=b.dataset.k;draw();}};
+  $('#grid').onclick=onGrid;
+  draw();
+}
+
+function purse(){
+  $('#cGold').textContent='🪙 '+num(DATA.wallet.gold);
+  $('#cGems').textContent='💎 '+num(DATA.wallet.gems);
+}
+
+function draw(){
+  const sec=DATA.sections[GAME]||{kinds:{}};
+  const mine=DATA.items.filter(i=>i.game===GAME);
+  const kinds=[...new Set(mine.map(i=>i.kind))];
+  if(!KIND||!kinds.includes(KIND)) KIND=kinds[0]||null;
+
+  document.querySelectorAll('#games .sh-tab').forEach(b=>b.classList.toggle('sh-on',b.dataset.g===GAME));
+  $('#kinds').innerHTML=kinds.map(k=>{
+    const n=mine.filter(i=>i.kind===k).length;
+    return `<button class="sh-tab${k===KIND?' sh-on':''}" data-k="${k}">${(sec.kinds||{})[k]||k} <span style="opacity:.6">${num(n)}</span></button>`;
+  }).join('');
+
+  const worn=(DATA.loadout[GAME]||{})[KIND];
+  $('#grid').innerHTML=mine.filter(i=>i.kind===KIND).map(i=>card(i,i.key===worn)).join('');
+}
+
+function card(i,worn){
+  const b = worn      ? '<button class="sh-buy sh-worn" disabled>✓ مُجهَّز</button>'
+          : i.owned   ? `<button class="sh-buy sh-eq" data-eq="${i.id}">تجهيز</button>`
+          : DATA.guest? `<button class="sh-buy sh-poor" disabled>🪙 ${num(i.price)}</button>`
+          : (DATA.wallet[i.currency]||0) < i.price
+                      ? `<button class="sh-buy sh-poor" disabled>${i.currency==='gems'?'💎':'🪙'} ${num(i.price)}</button>`
+                      : `<button class="sh-buy" data-buy="${i.id}">${i.currency==='gems'?'💎':'🪙'} ${num(i.price)}</button>`;
+  return `<div class="sh-it" data-kind="${i.kind}">
+      <div class="sh-pv">
+        <img src="${i.preview}" alt="" loading="lazy" onerror="this.style.display='none'">
+        <span class="sh-rar" data-r="${i.rarity}">${RAR[i.rarity]||''}</span>
+        ${i.owned?'<span class="sh-tick">✓</span>':''}
+      </div>
+      <div class="sh-nm" title="${(i.descr||'').replace(/"/g,'&quot;')}">${i.name}</div>
+      ${b}</div>`;
+}
+
+async function onGrid(e){
+  const buy=e.target.closest('[data-buy]'), eq=e.target.closest('[data-eq]');
+  if(BUSY) return;
+  if(buy) return doBuy(buy.dataset.buy, buy);
+  if(eq)  return doEquip(eq.dataset.eq);
+}
+
+async function doBuy(id,btn){
+  const it=DATA.items.find(x=>x.id===id); if(!it) return;
+  if(!confirm(`تشتري «${it.name}» بـ${num(it.price)}؟`)) return;
+  BUSY=true; btn.disabled=true; btn.textContent='…';
+  try{
+    const r=await fetch('/api/shop/buy',{method:'POST',credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+    const j=await r.json();
+    if(!j.ok){ toast(j.error||'تعذّر الشراء',true); BUSY=false; draw(); return; }
+    it.owned=true; DATA.wallet=j.wallet; purse();
+    toast('صار لك: '+it.name);
+    BUSY=false;
+    /* التجهيز التلقائيّ بعد الشراء: من اشترى إطارًا يريد أن يلبسه الآن */
+    await doEquip(id,true);
+  }catch(e){ toast('انقطع الاتصال',true); BUSY=false; draw(); }
+}
+
+async function doEquip(id,quiet){
+  const it=DATA.items.find(x=>x.id===id); if(!it) return;
+  BUSY=true;
+  try{
+    const r=await fetch('/api/shop/equip',{method:'POST',credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+    const j=await r.json();
+    if(!j.ok){ toast(j.error||'تعذّر التجهيز',true); }
+    else{
+      (DATA.loadout[j.game]=DATA.loadout[j.game]||{})[j.kind]=j.key;
+      if(!quiet) toast('جُهِّز: '+it.name);
+    }
+  }catch(e){ toast('انقطع الاتصال',true); }
+  BUSY=false; draw();
+}
+
+load();
+</script>
+</body>
+</html>

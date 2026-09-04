@@ -330,6 +330,10 @@ function setupAccounts(app, deps) {
     try { res.json({ ok: true, top: await st().top(10) }); }
     catch (e) { res.json({ ok: true, top: [] }); }
   });
+
+  /* تُعاد لبقيّة الوحدات (المتجر، الدعم) كي تحلّ الهويّة بالطريقة نفسها
+     بدل أن تُعيد كلٌّ منها فكّ الكوكي على هواها. */
+  return { currentUser };
 }
 
 module.exports = { setupAccounts, attachSocketAuth, nameFromReq, nameFromSocket, COOKIE };

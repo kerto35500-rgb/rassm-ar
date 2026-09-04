@@ -104,6 +104,7 @@ app.get(["/quiz2", "/apex"], (req, res) => {
 // (Express يطابق /uno و/uno/ معًا، فنفرّق بالمسار الأصليّ كي لا ندور في حلقة)
 // 👤 صفحة الحساب — حسابٌ واحد لكل الألعاب
 app.get(["/me", "/hesabi"], (req, res) => res.sendFile(path.join(pubDir, "me.html")));
+app.get(["/shop", "/mtjr"], (req, res) => res.sendFile(path.join(pubDir, "shop.html")));
 
 app.get("/uno", (req, res) => {
   if (!req.originalUrl.split("?")[0].endsWith("/")) return res.redirect(301, "/uno/");
@@ -133,10 +134,15 @@ app.get("/api/status", (req, res) => {
   });
 });
 // حساب واحد لكل الألعاب — يُسجّل الدخول من الصفحة الرئيسية فقط
-setupAccounts(app, {
+const accounts = setupAccounts(app, {
   get store() { return store; },   /* كسولٌ: القاعدة تُفتح بعد تركيب المسارات */
   hashPass, publicStats,
   onNewUser: () => { if (admin) admin.trackNewUser(); }
+});
+/* المتجر يحلّ الهويّة بالطريقة نفسها التي تحلّها الحسابات — لا فكَّ كوكي ثانٍ */
+require("./shop").setupShop(app, {
+  get store() { return store; },
+  currentUser: accounts.currentUser
 });
 /* ═══ صفحات المختبرات ═══
    *-lab.html و_doors_preview.html أدواتُ ضبطٍ داخلية (إحداثيات، فخاخ، أقراص).
@@ -1264,6 +1270,11 @@ createStore()
        جدولٍ بمعرّفات الحسابات. لا يمنع الإقلاع إن تعثّر. */
     try { await require("./statsmigrate").migrateGameStats(store); }
     catch (e) { console.error("stats migrate:", e.message); }
+
+    /* بذر المتجر من كتالوجات الألعاب: يُحدِّث الأسماء والأسعار عند كل إقلاع
+       فلا يفترق المعروض عمّا في اللعبة، ولا يمسّ ما أخفته الإدارة. */
+    try { await require("./shopseed").seedShop(store); }
+    catch (e) { console.error("shop seed:", e.message); }
 
     /* هويّة موحّدة لكل مساحات الأسماء: تُحلّ الجلسة قبل أن يصل الاتصال إلى
        منطق أي لعبة، فتعرف اللعبةُ صاحبَها بلا أن تسأل عن كوكي. تُركَّب بعد
