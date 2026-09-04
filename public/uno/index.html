@@ -228,11 +228,7 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 .mbg:after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,transparent 50%,rgba(0,0,0,.45) 100%)}
 .mbg .cf{position:absolute;width:26px;height:36px;background:rgba(255,255,255,.14);border-radius:4px;transform:rotate(20deg);animation:fall 12s linear infinite}
 @keyframes fall{from{transform:translateY(-80px) rotate(0)}to{transform:translateY(1000px) rotate(420deg)}}
-#splash{display:none;background:#8a0000 url(ui/start.jpg) center/cover no-repeat;cursor:pointer}
-#splash.show{display:block}
-#splash .press{position:absolute;bottom:12%;left:50%;transform:translateX(-50%);font-size:28px;font-weight:900;text-shadow:0 3px 0 #000,0 0 20px rgba(0,0,0,.6);animation:blink 1.4s infinite;letter-spacing:1px}
 @keyframes blink{50%{opacity:.25}}
-#splash .ver{position:absolute;bottom:14px;right:18px;font-size:12px;opacity:.6}
 
 .fe{position:fixed;inset:0;display:none;z-index:20}
 .fe.show{display:block}
@@ -446,10 +442,11 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 </div>
 
 <!-- ============ SPLASH ============ -->
-<div id="splash" class="screen show"><div class="press">اضغط في أي مكان للبدء</div><div class="ver">اونو — نسخة الويب العربية</div></div>
+<!-- شاشة «اضغط للبدء» حُذفت: نقرةٌ لا تُفيد أحدًا. اللعبة تفتح على القائمة
+     مباشرةً، وسياقُ الصوت يُفتح عند أوّل نقرةٍ حقيقيّة (انظر AC أدناه). -->
 
 <!-- ============ MAIN MENU ============ -->
-<div id="main" class="fe"><div class="mbg" id="mbg"></div>
+<div id="main" class="fe show"><div class="mbg" id="mbg"></div>
   <div class="content">
     <div id="pcard" onclick="openScreen('profile')"><div class="info"><div class="nm" id="pc-name"></div><div class="coins"><span id="pc-coins"></span><img src="ui/coin2.webp"></div><div class="xp"><i id="pc-xp"></i><b id="pc-lvl">1</b></div></div><div class="avbox"><img class="a" id="pc-av"><img class="f" id="pc-fr"></div></div>
     <div id="topnav">
@@ -778,7 +775,7 @@ const SCREENS={main:'#main',themes:'#themes-s',setup:'#setup-s',design:'#design-
 let curScreen='main';
 function openScreen(name,arg){
   snd('click');
-  $$('.fe').forEach(e=>e.classList.remove('show')); $('#game').classList.remove('show'); $('#mend').classList.remove('show'); $('#splash').classList.remove('show');
+  $$('.fe').forEach(e=>e.classList.remove('show')); $('#game').classList.remove('show'); $('#mend').classList.remove('show');
   if(G){ token++; clearTimer(); $$('.ov').forEach(o=>o.classList.remove('show')); $$('.fly').forEach(f=>f.remove()); }
   curScreen=name; $(SCREENS[name]).classList.add('show');
   if(name==='main') renderMain();
@@ -906,10 +903,15 @@ function showMatchEnd(){
   $('#mend-again').onclick=()=>{ snd('click'); $('#mend').classList.remove('show'); newMatch(); };
   $('#mend-menu').onclick=()=>openScreen('main');
 }
-$('#splash').onclick=()=>{ snd('uno'); openScreen('main'); };
+
 
 /* ---------- sound ---------- */
 let AC=null;
+/* المتصفّحات تُجمّد سياق الصوت حتى أوّل تفاعل. كانت شاشة «اضغط للبدء»
+   تقوم بذلك ضمنًا؛ وبعد حذفها نفتحه عند أوّل نقرةٍ في الصفحة. */
+document.addEventListener('pointerdown', () => {
+  try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); AC.resume(); } catch (e) {}
+}, { once: true });
 function snd(type){
   if(!S.sound) return;
   try{
@@ -1443,7 +1445,7 @@ function seatBubble(pi,t,cls='',ms=1500){ const b=$('#'+seatIds[pi]+' .bubble');
 $('#deck').onclick=()=>{ if(typeof ONL!=='undefined' && ONL.on){ if(ONL.view && ONL.view.phase==='turn' && ONL.view.turn===ONL.mySeat){ snd('click'); ONL.sock.emit('draw'); } return; }
   if(!G||G.turn!==0||!humanResolve||G.busy) return; snd('click'); if(G.pending>0) humanDrawPenalty(); else humanDraw(); };
 $('#startbtn').onclick=()=>{snd('click');newMatch()};
-document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('#splash').classList.contains('show')) $('#splash').click(); });
+
 $('#pausebtn').onclick=()=>{ $('#ov-pause').classList.add('show'); };
 $('#resume').onclick=()=>$('#ov-pause').classList.remove('show');
 function toMenu(){ $('#vs').classList.remove('show'); openScreen('main'); }
