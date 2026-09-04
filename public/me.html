@@ -75,6 +75,20 @@
         padding:11px 13px;font-size:13.5px;line-height:1.75;margin-top:10px}
   .me-center{text-align:center;padding:40px 10px}
   .me-center p{margin:10px 0 16px;font-size:15px;opacity:.8}
+
+  /* الصورة والإطار */
+  .me-sec{font-weight:800;font-size:14px;margin:12px 0 7px}
+  .me-pics{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;
+       max-height:230px;overflow:auto;padding:2px}
+  .me-pic{position:relative;aspect-ratio:1;border:2.5px solid var(--kw-line,#9C5A4C);border-radius:14px;
+       overflow:hidden;cursor:pointer;background:var(--kw-g-players,#FDF0DA);transition:.12s}
+  .me-pic img{width:100%;height:100%;object-fit:cover;display:block}
+  .me-pic.me-fr img{object-fit:contain;padding:3px}
+  .me-pic.me-on{box-shadow:0 0 0 3px var(--kw-g-pink,#F8A59E);border-color:#b3302c}
+  .me-pic:active{transform:translateY(2px)}
+  .me-ava{overflow:hidden;position:relative}
+  .me-ava img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .me-ava img.me-frame{object-fit:contain;border-radius:0}
   @media(max-width:520px){ h1{font-size:20px} .me-who .me-nm{font-size:19px} }
 </style>
 </head>
@@ -104,6 +118,14 @@
           <div class="me-sub" id="sub">حسابٌ واحد لكل الألعاب</div>
         </div>
       </div>
+      <label for="dname">الاسم الذي يراه الناس</label>
+      <input id="dname" maxlength="20" placeholder="اكتب اسمك">
+      <div class="me-hint" style="margin:6px 0 0">
+        اسم دخولك <b id="login">—</b> يبقى لك وحدك — به تدخل، ولا يراه أحد.
+        وهذا الاسم هو وجهك في الألعاب واللوحات.
+      </div>
+      <button class="me-btn" id="saveName">حفظ الاسم</button>
+      <div class="me-msg" id="nameMsg"></div>
       <div class="me-stats">
         <div class="me-st"><b id="s-wins">0</b><span>فوز</span></div>
         <div class="me-st"><b id="s-games">0</b><span>لعبة</span></div>
@@ -123,6 +145,18 @@
       <div id="capNote"></div>
       <a class="me-btn" href="/shop" style="display:inline-block;text-decoration:none">🛍️ اذهب للمتجر</a>
       <div id="ledger" style="margin-top:12px"></div>
+    </div>
+
+    <!-- الصورة والإطار -->
+    <div class="me-card">
+      <h2>🎭 صورتك وإطارك</h2>
+      <div class="me-hint">تظهر في الألعاب وفي الغرف. الافتراضيّة مجّانيّة، وما تشتريه من المتجر يُضاف هنا.</div>
+      <div id="lookMsg" class="me-msg"></div>
+      <div class="me-sec">الصورة</div>
+      <div class="me-pics" id="pickAv"></div>
+      <div class="me-sec">الإطار</div>
+      <div class="me-pics" id="pickFr"></div>
+      <a class="me-btn me-ghost" href="/shop" style="display:inline-block;text-decoration:none">🛍️ اشترِ المزيد</a>
     </div>
 
     <!-- إحصاءات كل لعبة -->
@@ -213,8 +247,12 @@ async function load() {
   ME = me;
   $("body").style.display = "";
   const s = me.stats || {};
-  $("nm").textContent = s.name || "—";
-  $("ava").textContent = (s.name || "؟").trim().charAt(0);
+  $("nm").textContent = me.displayName || s.name || "—";
+  $("login").textContent = me.login || "—";
+  $("dname").value = me.displayName === me.login ? "" : (me.displayName || "");
+  $("dname").placeholder = me.login || "اكتب اسمك";
+  drawAvatar();
+  loadLook();
   $("s-wins").textContent = s.wins || 0;
   $("s-games").textContent = s.games || 0;
   $("s-score").textContent = s.totalScore || 0;
@@ -231,6 +269,55 @@ async function load() {
   loadDevices();
   loadGames();
   loadWallet();
+}
+
+/* ── الاسم المعروض ── */
+$("saveName").onclick = async () => {
+  const b = $("saveName"); b.disabled = true;
+  const r = await api("name", { displayName: $("dname").value });
+  b.disabled = false;
+  const m = $("nameMsg"); m.className = "me-msg " + (r.ok ? "me-ok" : "me-err");
+  m.textContent = r.ok ? "تمّ ✔" : (r.error || "تعذّر");
+  if (r.ok) { ME.displayName = r.displayName; $("nm").textContent = r.displayName; }
+};
+
+/* ── الصورة والإطار ──
+   المصدر واحد: ما تملكه في المتجر. لا قائمةَ ثانيةً تُصان على حدة. */
+function drawAvatar() {
+  const a = $("ava");
+  if (!ME || !ME.avatar) { a.textContent = (ME && (ME.displayName || ME.login) || "؟").trim().charAt(0); return; }
+  a.textContent = "";
+  a.innerHTML = '<img src="/uno/avatars/' + encodeURIComponent(ME.avatar) + '.webp" alt="">' +
+    (ME.frame ? '<img class="me-frame" src="/uno/frames/' + encodeURIComponent(ME.frame) + '.webp" alt="">' : "");
+}
+async function loadLook() {
+  let cat;
+  try { cat = await (await fetch("/api/shop/catalog?game=uno", { credentials: "same-origin" })).json(); }
+  catch (e) { return; }
+  if (!cat.ok) return;
+  const mine = k => cat.items.filter(i => i.kind === k && i.owned);
+  const cell = (i, cur, kind) =>
+    '<div class="me-pic' + (kind === "frames" ? " me-fr" : "") + (i.key === cur ? " me-on" : "") +
+    '" data-k="' + kind + '" data-key="' + esc(i.key) + '" title="' + esc(i.name) + '">' +
+    '<img src="' + i.preview + '" alt="" loading="lazy"></div>';
+  $("pickAv").innerHTML = mine("avatars").map(i => cell(i, ME.avatar, "avatars")).join("") ||
+    '<div class="me-hint">لا صور بعد.</div>';
+  $("pickFr").innerHTML = mine("frames").map(i => cell(i, ME.frame, "frames")).join("") ||
+    '<div class="me-hint">لا إطارات بعد.</div>';
+  const pick = async e => {
+    const d = e.target.closest("[data-key]"); if (!d) return;
+    const kind = d.dataset.k, key = d.dataset.key;
+    const r = await fetch("/api/shop/equip", { method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "uno:" + kind + ":" + key }) }).then(x => x.json()).catch(() => ({}));
+    const m = $("lookMsg"); m.className = "me-msg " + (r.ok ? "me-ok" : "me-err");
+    m.textContent = r.ok ? "تمّ ✔" : (r.error || "تعذّر");
+    if (!r.ok) return;
+    if (kind === "avatars") ME.avatar = key; else ME.frame = key;
+    drawAvatar(); loadLook();
+  };
+  $("pickAv").onclick = pick;
+  $("pickFr").onclick = pick;
 }
 
 async function loadWallet() {

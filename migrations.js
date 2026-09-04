@@ -246,6 +246,18 @@ const STEPS = [
                  created_at BIGINT NOT NULL)`);
       await q(`CREATE INDEX IF NOT EXISTS tmsg_ticket_idx ON ticket_messages (ticket_id, id)`);
     }
+  },
+  {
+    id: 10,
+    name: "اسمٌ معروض منفصلٌ عن اسم الدخول",
+    async pg(q) {
+      /* كان `name` شيئين في آنٍ واحد: مفتاحَ الدخول وما يراه الناس. ومن أراد
+         تغيير ما يظهر عنه اضطُرّ لتغيير ما يدخل به — أو لم يستطع أصلًا.
+         الآن: `name` مفتاحٌ فريدٌ خاصّ، و`display_name` وجهُه أمام الناس،
+         يُغيَّر متى شاء ولا يُشترط تفرّده (كما في كل موقعٍ محترم). */
+      await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT`);
+      await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS name_changed_at BIGINT`);
+    }
   }
 ];
 

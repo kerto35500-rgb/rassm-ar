@@ -99,13 +99,13 @@ function attachSocketAuth(io, store, namespaces = ["/", "/bomb", "/quiz", "/salf
       const raw = parseCookies(socket.handshake?.headers?.cookie)[COOKIE];
       if (raw) {
         const u = await S.userOf(raw);
-        if (u) { socket.userName = u.name; socket.userId = u.id; }
+        if (u) { socket.userName = u.displayName || u.name; socket.loginName = u.name; socket.userId = u.id; }
         else {
           // كوكي قديم لم يُبدَّل بعد: نقبله للتعرّف فقط
           const n = verifyLegacyCookie(raw);
           if (n) {
             const old = await store.getUser(n);
-            if (old) { socket.userName = old.name; socket.userId = old.id; }
+            if (old) { socket.userName = old.displayName || old.name; socket.loginName = old.name; socket.userId = old.id; }
           }
         }
       }
@@ -159,8 +159,11 @@ function setupAccounts(app, deps) {
     try {
       const u = await currentUser(req, res);
       if (!u) return res.json({ ok: true, guest: true });
+      const look = await st().getLoadout(u.id, "uno").catch(() => ({}));
       res.json({
         ok: true, guest: false, stats: publicStats(u),
+        login: u.name, displayName: u.displayName || u.name,
+        avatar: look.avatars || null, frame: look.frames || null,
         email: u.email || null, emailVerified: !!u.emailVerifiedAt
       });
     } catch (e) { res.json({ ok: true, guest: true }); }
@@ -326,6 +329,30 @@ function setupAccounts(app, deps) {
       res.json({ ok: true });
     } catch (e) {
       console.error("account email:", e.message);
+      res.status(500).json({ ok: false, error: "خطأ في الخادم" });
+    }
+  });
+
+  /* الاسم المعروض: ما يراه الناس. اسم الدخول يبقى سرَّك ومفتاحَك، وهذا
+     وجهُك — يُغيَّر متى شئت، ولا يُشترط تفرّده (كما في كل موقعٍ محترم)،
+     لكنه يُنظَّف من المسافات المزدوجة والمحارف الخفيّة. */
+  app.post("/api/account/name",
+    rateLimit({ name: "dname", windowMs: 600000, max: 10 }), json, async (req, res) => {
+    try {
+      const u = await currentUser(req, null);
+      if (!u) return res.status(401).json({ ok: false, error: "لست مسجّلًا" });
+      let d = String(req.body?.displayName || "")
+        .replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069]/g, "")   /* محارف اتّجاهٍ خفيّة */
+        .replace(/\s+/g, " ").trim().slice(0, 20);
+      if (!d) {
+        await st().updateUser(u.id, { displayName: null, nameChangedAt: Date.now() });
+        return res.json({ ok: true, displayName: u.name, cleared: true });
+      }
+      if (d.length < 2) return res.status(400).json({ ok: false, error: "الاسم قصير جدًّا" });
+      await st().updateUser(u.id, { displayName: d, nameChangedAt: Date.now() });
+      res.json({ ok: true, displayName: d });
+    } catch (e) {
+      console.error("account name:", e.message);
       res.status(500).json({ ok: false, error: "خطأ في الخادم" });
     }
   });

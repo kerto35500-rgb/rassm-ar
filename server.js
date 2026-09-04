@@ -191,7 +191,8 @@ const rooms = new Map();
 // ====== قاعدة البيانات (عبر store.js) ======
 let store = null; // تُهيأ قبل تشغيل السيرفر في الأسفل
 function hashPass(pass, salt) { return crypto.scryptSync(String(pass), salt, 64).toString("hex"); }
-function publicStats(u) { return { name: u.name, wins: u.wins, games: u.games, totalScore: u.totalScore }; }
+/* ما يُعرَض للناس هو الاسم المعروض إن وُجد، لا اسم الدخول */
+function publicStats(u) { return { name: u.displayName || u.name, wins: u.wins, games: u.games, totalScore: u.totalScore }; }
 
 // ====== أدوات نصية ======
 function normalizeArabic(text) {

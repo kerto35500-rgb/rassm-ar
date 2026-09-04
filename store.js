@@ -27,7 +27,7 @@ class JsonStore {
     if (!u) return null;
     if (!u.id) { u.id = this._nextId(); this._save(); }
     return {
-      id: u.id, name, salt: u.salt, hash: u.hash, passHash: u.passHash || null,
+      id: u.id, name, displayName: u.displayName || null, salt: u.salt, hash: u.hash, passHash: u.passHash || null,
       email: u.email || null, emailVerifiedAt: u.emailVerifiedAt || null,
       role: u.role || "user", bannedUntil: u.bannedUntil || null, banReason: u.banReason || null,
       wins: u.wins, games: u.games, totalScore: u.totalScore, created: u.created || 0
@@ -58,7 +58,8 @@ class JsonStore {
     if (!e) return false;
     const u = e[1];
     const ok = ["passHash", "email", "emailVerifiedAt", "lastSeenAt", "role",
-                "bannedUntil", "banReason", "passChangedAt", "salt", "hash"];
+                "bannedUntil", "banReason", "passChangedAt", "salt", "hash",
+                "displayName", "nameChangedAt"];
     ok.forEach(k => { if (k in fields) u[k] = fields[k]; });
     this._save();
     return true;
@@ -338,7 +339,8 @@ class JsonStore {
     return Object.entries(this.db.users)
       .filter(([name]) => !s || name.includes(s))
       .slice(0, limit)
-      .map(([name, u]) => ({ id: u.id, name, email: u.email || null, role: u.role || "user",
+      .map(([name, u]) => ({ id: u.id, name, displayName: u.displayName || null,
+                             email: u.email || null, role: u.role || "user",
                              bannedUntil: u.bannedUntil || null, created: u.created || null }));
   }
 
@@ -350,7 +352,7 @@ class JsonStore {
       .slice(0, n)
       .map(e => {
         const u = users.find(([, x]) => x.id === e.userId);
-        return { name: u ? u[0] : "?", wins: e.wins, games: e.games, score: e.score };
+        return { name: u ? (u[1].displayName || u[0]) : "?", wins: e.wins, games: e.games, score: e.score };
       });
   }
   async addStats(name, { games = 0, score = 0, wins = 0 }) {
@@ -361,7 +363,7 @@ class JsonStore {
   }
   async top(n) {
     return Object.entries(this.db.users)
-      .map(([name, u]) => ({ name, wins: u.wins, games: u.games, totalScore: u.totalScore }))
+      .map(([name, u]) => ({ name: u.displayName || name, wins: u.wins, games: u.games, totalScore: u.totalScore }))
       .sort((a, b) => b.wins - a.wins || b.totalScore - a.totalScore)
       .slice(0, n);
   }
@@ -516,7 +518,8 @@ class PgStore {
     const map = {
       passHash: "pass_hash", email: "email", emailVerifiedAt: "email_verified_at",
       lastSeenAt: "last_seen_at", role: "role", bannedUntil: "banned_until",
-      banReason: "ban_reason", passChangedAt: "pass_changed_at", salt: "salt", hash: "hash"
+      banReason: "ban_reason", passChangedAt: "pass_changed_at", salt: "salt", hash: "hash",
+      displayName: "display_name", nameChangedAt: "name_changed_at"
     };
     const sets = [], args = [Number(id)];
     for (const k in fields) {
@@ -877,7 +880,7 @@ class PgStore {
   async searchUsers(q, limit = 25) {
     const s = String(q || "").trim();
     const r = await this.pool.query(
-      `SELECT id, name, email, role, banned_until AS "bannedUntil", created
+      `SELECT id, name, display_name AS "displayName", email, role, banned_until AS "bannedUntil", created
        FROM users ${s ? "WHERE name ILIKE $2" : ""} ORDER BY id DESC LIMIT $1`,
       s ? [limit, "%" + s + "%"] : [limit]);
     return r.rows.map(x => ({ ...x, id: Number(x.id) }));
@@ -885,7 +888,7 @@ class PgStore {
 
   async topByGame(game, n = 10) {
     const r = await this.pool.query(
-      `SELECT u.name, g.wins, g.games, g.score FROM game_stats g
+      `SELECT COALESCE(u.display_name, u.name) AS name, g.wins, g.games, g.score FROM game_stats g
        JOIN users u ON u.id = g.user_id
        WHERE g.game = $1 ORDER BY g.wins DESC, g.score DESC LIMIT $2`, [game, n]);
     return r.rows.map(x => ({ ...x, score: Number(x.score) }));
@@ -897,7 +900,7 @@ class PgStore {
   }
   async top(n) {
     const r = await this.pool.query(
-      'SELECT name, wins, games, total_score AS "totalScore" FROM users ORDER BY wins DESC, total_score DESC LIMIT $1', [n]);
+      'SELECT COALESCE(display_name, name) AS name, wins, games, total_score AS "totalScore" FROM users ORDER BY wins DESC, total_score DESC LIMIT $1', [n]);
     return r.rows;
   }
 
