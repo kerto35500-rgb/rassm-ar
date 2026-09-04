@@ -1302,10 +1302,15 @@ createStore()
       });
     } catch (e) { console.error("mod reports:", e.message); }
 
+    /* اونو أونلاين: القواعد في unorules.js والغرف هنا */
+    let unoApi = null;
+    try { unoApi = require("./unosrv").setupUnoOnline(io, { store }); }
+    catch (e) { console.error("uno online:", e.message); }
+
     /* هويّة موحّدة لكل مساحات الأسماء: تُحلّ الجلسة قبل أن يصل الاتصال إلى
        منطق أي لعبة، فتعرف اللعبةُ صاحبَها بلا أن تسأل عن كوكي. تُركَّب بعد
        إنشاء المساحات كلّها وقبل الاستماع، فلا اتصالَ يسبقها. */
-    attachSocketAuth(io, store);
+    attachSocketAuth(io, store, ["/", "/bomb", "/quiz", "/salfa", "/uno"]);
 
     server.listen(PORT, () => {
       console.log(`🎨 لعبة ارسمها! تعمل على المنفذ ${PORT}`);
