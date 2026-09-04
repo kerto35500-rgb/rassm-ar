@@ -1276,6 +1276,16 @@ createStore()
     try { await require("./shopseed").seedShop(store); }
     catch (e) { console.error("shop seed:", e.message); }
 
+    /* الإعدادات الحيّة إلى الذاكرة قبل أن يلعب أحد. لو تعذّرت القراءة بقيت
+       القيم الافتراضيّة — الموقع يعمل، ولا يقف بسبب جدولِ إعدادات. */
+    try {
+      await require("./settings").load(store);
+      /* والبذر أعاد للتوّ أسعار الملفّ، فنُعيد فوقها ما سعّرته اللوحة —
+         وإلا ضاع كل تسعيرٍ إداريّ مع كل نشرة. */
+      await require("./padmin").applyPriceOverrides(store);
+      require("./padmin").setupPanel(app, { store, currentUser: accounts.currentUser });
+    } catch (e) { console.error("settings/panel:", e.message); }
+
     /* هويّة موحّدة لكل مساحات الأسماء: تُحلّ الجلسة قبل أن يصل الاتصال إلى
        منطق أي لعبة، فتعرف اللعبةُ صاحبَها بلا أن تسأل عن كوكي. تُركَّب بعد
        إنشاء المساحات كلّها وقبل الاستماع، فلا اتصالَ يسبقها. */

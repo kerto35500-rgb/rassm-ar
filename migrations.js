@@ -182,6 +182,36 @@ const STEPS = [
                  updated_at BIGINT,
                  PRIMARY KEY (user_id, game, kind))`);
     }
+  },
+  {
+    id: 8,
+    name: "الإدارة: إعداداتٌ قابلة للتغيير وسجلُّ تدقيقٍ لا يُمحى",
+    async pg(q) {
+      /* الإعدادات: أرقامٌ كانت ثابتةً في الكود (مدّة السؤال، جوائز اللعب،
+         سقف الكسب) تصير صفوفًا تُغيَّر من اللوحة بلا نشرٍ جديد. المدى محفوظٌ
+         في الكود لا هنا، فلا يُدخَل رقمٌ يكسر لعبة. */
+      await q(`CREATE TABLE IF NOT EXISTS settings (
+                 scope TEXT NOT NULL,
+                 key TEXT NOT NULL,
+                 value JSONB NOT NULL,
+                 updated_at BIGINT,
+                 updated_by TEXT,
+                 PRIMARY KEY (scope, key))`);
+
+      /* سجلّ التدقيق: كل فعلٍ إداريّ سطرٌ فيه — من فعل، وبمن، ومتى، ومن أيّ
+         عنوان. لا تعديل ولا حذف. ولماذا؟ لأن أخطر ما في لوحةٍ إداريّة أن
+         يُمنَح ذهبٌ أو يُحظَر لاعبٌ ولا يعرف أحدٌ لاحقًا من فعلها ولا لماذا. */
+      await q(`CREATE TABLE IF NOT EXISTS audit_log (
+                 id BIGSERIAL PRIMARY KEY,
+                 actor TEXT NOT NULL,
+                 action TEXT NOT NULL,
+                 target TEXT,
+                 detail JSONB,
+                 ip TEXT,
+                 created_at BIGINT NOT NULL)`);
+      await q(`CREATE INDEX IF NOT EXISTS audit_time_idx ON audit_log (created_at DESC)`);
+      await q(`CREATE INDEX IF NOT EXISTS audit_target_idx ON audit_log (target, created_at DESC)`);
+    }
   }
 ];
 

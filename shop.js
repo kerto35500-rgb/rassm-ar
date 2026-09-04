@@ -9,6 +9,7 @@
 
 const { rateLimit } = require("./security");
 const { SECTIONS } = require("./shopseed");
+const SET = require("./settings");
 
 /* هديّةُ البداية: حسابٌ جديد رصيده صفر يرى متجرًا لا يستطيع لمسه، وهذا
    استقبالٌ بارد. نمنحه مرّةً واحدة عند أوّل زيارةٍ للمتجر، ومفتاحُ منع
@@ -18,8 +19,10 @@ const { SECTIONS } = require("./shopseed");
 const WELCOME_GOLD = 500;
 
 async function grantWelcome(store, userId) {
+  const amount = SET.get("economy", "welcomeGold");
+  if (!amount) return;                     /* صُفِّرت من اللوحة: لا هديّة */
   try {
-    await store.move(userId, "gold", WELCOME_GOLD, {
+    await store.move(userId, "gold", amount, {
       reason: "هديّة الترحيب", refType: "welcome", idem: "welcome:" + userId
     });
   } catch (e) { /* الهديّة لا تُعطّل المتجر */ }
@@ -91,6 +94,9 @@ function setupShop(app, deps) {
       if (u.bannedUntil && u.bannedUntil > Date.now())
         return res.status(403).json({ ok: false, error: "الحساب موقوف" });
 
+      if (!SET.get("site", "shopOpen"))
+        return res.status(503).json({ ok: false, error: "المتجر مغلقٌ مؤقّتًا" });
+
       const id = String(req.body?.id || "").slice(0, 120);
       const item = await st().getItem(id);
       if (!item || !item.active) return res.status(404).json({ ok: false, error: "عنصر غير متاح" });
@@ -128,7 +134,7 @@ function setupShop(app, deps) {
      المبالغ صغيرة والسقف اليوميّ أصغر — أقصى ما يجنيه مزوّرٌ ماهر ثمانون
      ذهبًا في اليوم، أي أقلّ من إطارٍ واحدٍ كل تسعة أيام. ويوم تصير «وحدة»
      على الخادم تُلغى هذه ويأخذ مكانَها awardMatch كبقيّة الألعاب. */
-  const SOLO = [20, 10, 6, 4], SOLO_CAP = 80;
+  const SOLO = [20, 10, 6, 4];
   app.post("/api/uno/solo",
     rateLimit({ name: "solo", windowMs: 60000, max: 6 }), json, async (req, res) => {
     try {
@@ -136,13 +142,14 @@ function setupShop(app, deps) {
       if (!u) return res.json({ ok: false, guest: true });
       const rank = Math.max(0, Math.min(3, parseInt(req.body?.rank, 10) || 0));
       const since = Date.now() - 24 * 3600 * 1000;
+      const cap = SET.get("economy", "unoSoloCap");
       const had = await st().earnedSince(u.id, since, "لعب:uno:منفرد");
-      const amount = Math.min(SOLO[rank], Math.max(0, SOLO_CAP - had));
+      const amount = Math.min(SOLO[rank], Math.max(0, cap - had));
       if (amount <= 0)
         return res.json({ ok: true, amount: 0, capped: true, wallet: await st().getWallet(u.id) });
       const r = await st().move(u.id, "gold", amount, { reason: "لعب:uno:منفرد" });
       res.json({ ok: true, amount, wallet: { gold: r.gold, gems: r.gems },
-                 remaining: Math.max(0, SOLO_CAP - had - amount) });
+                 remaining: Math.max(0, cap - had - amount) });
     } catch (e) {
       console.error("uno solo:", e.message);
       res.status(500).json({ ok: false });

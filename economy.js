@@ -26,6 +26,22 @@ const REWARDS = {
 const DAILY_CAP = { quiz: 400, bomb: 350, salfa: 350, draw: 300, uno: 300 };
 const DAILY_TOTAL = 900;
 
+/* الأرقام أعلاه هي الافتراضيّ. أمّا المطبَّق فعلًا فيأتي من الإعدادات الحيّة
+   إن ضُبطت من اللوحة — نقرأه عند كل منحة لا عند التحميل، وإلا بقي الموقع
+   على أرقام النشرة السابقة حتى يُعاد تشغيله. */
+let S = null;
+try { S = require("./settings"); } catch (e) { /* الاختبارات قد تعزل الوحدة */ }
+const cfg = (key, fallback) => {
+  const v = S && S.get("economy", key);
+  return v === undefined || v === null ? fallback : v;
+};
+const rewardOf = game => ({
+  win:  cfg(game + "Win",  REWARDS[game].win),
+  play: cfg(game + "Play", REWARDS[game].play)
+});
+const capOf   = game => cfg(game + "Cap", DAILY_CAP[game] || 300);
+const totalCap = () => cfg("dailyTotal", DAILY_TOTAL);
+
 /** هل هذه المباراة تستحقّ جائزة؟ يُرجع سببَ الرفض أو null إن كانت صالحة. */
 function matchProblem(players) {
   const real = players.filter(p => p && p.userId && !p.isBot && !p.spectator);
@@ -56,19 +72,20 @@ async function awardMatch(store, { game, players, winnerId, matchId }) {
 
   const since = Date.now() - DAY;
   const granted = [];
+  const rw = rewardOf(game), cap = capOf(game), total = totalCap();
   for (const p of players) {
     if (!p.userId || p.isBot || p.spectator) continue;
     const isWin = winnerId != null && p.id === winnerId;
-    let amount = isWin ? R.win : R.play;
+    let amount = isWin ? rw.win : rw.play;
 
     try {
       /* السقفان: لعبةً لعبةً ثم الكلّيّ. نمنح الباقي لا صفرًا،
          فمن بقي له عشرون يأخذ عشرين ولا يخرج بخفَّي حنين. */
       const perGame = await store.earnedSince(p.userId, since, "لعب:" + game);
-      amount = Math.min(amount, Math.max(0, (DAILY_CAP[game] || 300) - perGame));
+      amount = Math.min(amount, Math.max(0, cap - perGame));
       if (amount > 0) {
         const all = await store.earnedSince(p.userId, since, "لعب:");
-        amount = Math.min(amount, Math.max(0, DAILY_TOTAL - all));
+        amount = Math.min(amount, Math.max(0, total - all));
       }
       if (amount <= 0) { granted.push({ userId: p.userId, amount: 0, capped: true }); continue; }
 
@@ -93,8 +110,8 @@ async function remainingToday(store, userId) {
   const all = await store.earnedSince(userId, since, "لعب:");
   const perGame = {};
   for (const g of Object.keys(REWARDS))
-    perGame[g] = Math.max(0, (DAILY_CAP[g] || 300) - await store.earnedSince(userId, since, "لعب:" + g));
-  return { total: Math.max(0, DAILY_TOTAL - all), perGame, earnedToday: all };
+    perGame[g] = Math.max(0, capOf(g) - await store.earnedSince(userId, since, "لعب:" + g));
+  return { total: Math.max(0, totalCap() - all), perGame, earnedToday: all };
 }
 
 module.exports = { REWARDS, DAILY_CAP, DAILY_TOTAL, awardMatch, matchProblem, remainingToday, DAY };

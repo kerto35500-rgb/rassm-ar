@@ -232,6 +232,42 @@ class JsonStore {
     this._save();
   }
 
+  /* ── الإعدادات وسجلّ التدقيق ── */
+  async getSettings(scope = null) {
+    const all = this.db.settings || {};
+    if (!scope) return all;
+    return all[scope] || {};
+  }
+  async setSetting(scope, key, value, by = null) {
+    this.db.settings = this.db.settings || {};
+    (this.db.settings[scope] = this.db.settings[scope] || {})[key] = value;
+    this.db.settingsMeta = this.db.settingsMeta || {};
+    this.db.settingsMeta[scope + "." + key] = { at: Date.now(), by };
+    this._save();
+  }
+  async audit(entry) {
+    this.db.audit = this.db.audit || [];
+    this.db.audit.push({ id: this.db.audit.length + 1, ...entry, createdAt: Date.now() });
+    /* الملفّ المحلّيّ ليس أرشيفًا: نُبقي الألفَ الأخيرة كي لا ينتفخ */
+    if (this.db.audit.length > 1000) this.db.audit = this.db.audit.slice(-1000);
+    this._save();
+  }
+  async auditLog({ target = null, limit = 100 } = {}) {
+    return (this.db.audit || [])
+      .filter(x => !target || x.target === target)
+      .sort((a, b) => (b.createdAt - a.createdAt) || (b.id - a.id))
+      .slice(0, limit);
+  }
+  /* بحثٌ بالاسم للوحة الإدارة — تطابقٌ جزئيّ، والنتائج مختصرة */
+  async searchUsers(q, limit = 25) {
+    const s = String(q || "").trim();
+    return Object.entries(this.db.users)
+      .filter(([name]) => !s || name.includes(s))
+      .slice(0, limit)
+      .map(([name, u]) => ({ id: u.id, name, email: u.email || null, role: u.role || "user",
+                             bannedUntil: u.bannedUntil || null, created: u.created || null }));
+  }
+
   async topByGame(game, n = 10) {
     const users = Object.entries(this.db.users);
     return Object.values(this.db.gameStats || {})
@@ -632,6 +668,42 @@ class PgStore {
       `INSERT INTO loadout (user_id, game, kind, item_key, updated_at) VALUES ($1,$2,$3,$4,$5)
        ON CONFLICT (user_id, game, kind) DO UPDATE SET item_key = $4, updated_at = $5`,
       [Number(userId), game, kind, itemKey, Date.now()]);
+  }
+
+  /* ── الإعدادات وسجلّ التدقيق ── */
+  async getSettings(scope = null) {
+    const r = await this.pool.query(
+      `SELECT scope, key, value FROM settings ${scope ? "WHERE scope = $1" : ""}`, scope ? [scope] : []);
+    const out = {};
+    r.rows.forEach(x => { (out[x.scope] = out[x.scope] || {})[x.key] = x.value; });
+    return scope ? (out[scope] || {}) : out;
+  }
+  async setSetting(scope, key, value, by = null) {
+    await this.pool.query(
+      `INSERT INTO settings (scope, key, value, updated_at, updated_by) VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (scope, key) DO UPDATE SET value = $3, updated_at = $4, updated_by = $5`,
+      [scope, key, JSON.stringify(value), Date.now(), by]);
+  }
+  async audit(entry) {
+    await this.pool.query(
+      `INSERT INTO audit_log (actor, action, target, detail, ip, created_at) VALUES ($1,$2,$3,$4,$5,$6)`,
+      [entry.actor || "?", entry.action || "?", entry.target || null,
+       JSON.stringify(entry.detail || {}), entry.ip || null, Date.now()]);
+  }
+  async auditLog({ target = null, limit = 100 } = {}) {
+    const a = target ? [target, limit] : [limit];
+    const r = await this.pool.query(
+      `SELECT id, actor, action, target, detail, ip, created_at AS "createdAt" FROM audit_log
+       ${target ? "WHERE target = $1" : ""} ORDER BY id DESC LIMIT $${a.length}`, a);
+    return r.rows;
+  }
+  async searchUsers(q, limit = 25) {
+    const s = String(q || "").trim();
+    const r = await this.pool.query(
+      `SELECT id, name, email, role, banned_until AS "bannedUntil", created
+       FROM users ${s ? "WHERE name ILIKE $2" : ""} ORDER BY id DESC LIMIT $1`,
+      s ? [limit, "%" + s + "%"] : [limit]);
+    return r.rows.map(x => ({ ...x, id: Number(x.id) }));
   }
 
   async topByGame(game, n = 10) {

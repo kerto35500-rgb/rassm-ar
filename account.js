@@ -208,6 +208,10 @@ function setupAccounts(app, deps) {
   app.post("/api/account/register",
     rateLimit({ name: "reg", windowMs: 3600000, max: 6, message: "حساباتٌ كثيرة من هذا الجهاز، حاول لاحقًا." }),
     json, async (req, res) => {
+    /* مفتاحٌ في اللوحة يُغلق التسجيل عند الحاجة (موجة حساباتٍ آليّة مثلًا)
+       ولا يمسّ الحسابات القائمة ولا دخولها. */
+    if (!require("./settings").get("site", "registerOpen"))
+      return res.status(503).json({ ok: false, error: "التسجيل مغلقٌ مؤقّتًا" });
     const name = String(req.body?.name || "").trim().slice(0, 20);
     const pass = String(req.body?.pass || "");
     if (name.length < 2) return res.status(400).json({ ok: false, error: "الاسم قصير جدًا (حرفان على الأقل)" });
