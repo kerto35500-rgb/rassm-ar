@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
-<title>وحدة</title>
+<title>اونو</title>
 <link rel="icon" href="cards/nomercy/back.webp">
 <style>
 :root{ --red:#e3242b; --blue:#0a5cc2; --green:#3aa93c; --yellow:#f5d20a; --cw:126px; --ch:195px; --sky:#2ea6e6; --org:#f6a02b; }
@@ -269,8 +269,11 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 #topnav .tn.dis:hover{transform:none;border-color:rgba(255,255,255,.35)}
 
 /* main tiles */
-#tiles{display:flex;gap:26px;justify-content:center;margin-top:34px;direction:ltr}
-.tile{width:300px;height:470px;border-radius:26px;border:6px solid #111;position:relative;overflow:hidden;cursor:pointer;transition:.18s;box-shadow:0 14px 30px rgba(0,0,0,.45)}
+/* ثلاث بطاقاتٍ بدل خمس: نُوسّعها قليلًا ونرفعها إلى وسط الشاشة بدل أن
+   نترك الفراغ الذي خلّفته اللافتات المحذوفة أسفلها. */
+#tiles{display:flex;gap:30px;justify-content:center;align-items:center;margin-top:min(6vh,60px);direction:ltr;flex-wrap:wrap}
+.tile{width:min(330px,28vw);height:min(500px,52vh);min-width:220px;min-height:330px;
+      border-radius:26px;border:6px solid #111;position:relative;overflow:hidden;cursor:pointer;transition:.18s;box-shadow:0 14px 30px rgba(0,0,0,.45)}
 .tile:hover{transform:translateY(-10px) scale(1.03);box-shadow:0 0 0 6px #ffd400,0 0 50px #ffd400}
 .tile.dis{cursor:default;filter:saturate(.5) brightness(.75)}
 .tile.dis:hover{transform:none;box-shadow:0 14px 30px rgba(0,0,0,.45)}
@@ -406,7 +409,7 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 </div>
 
 <!-- ============ SPLASH ============ -->
-<div id="splash" class="screen show"><div class="press">اضغط في أي مكان للبدء</div><div class="ver">وحدة — نسخة الويب العربية</div></div>
+<div id="splash" class="screen show"><div class="press">اضغط في أي مكان للبدء</div><div class="ver">اونو — نسخة الويب العربية</div></div>
 
 <!-- ============ MAIN MENU ============ -->
 <div id="main" class="fe"><div class="mbg" id="mbg"></div>
@@ -418,17 +421,12 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
       <div class="tn" onclick="openScreen('leader')"><img src="ui/icon_leader.webp"><span>المتصدرون</span></div>
       <div class="tn" onclick="openScreen('options')"><img src="ui/icon_options.webp"><span>الخيارات</span></div>
     </div>
+    <!-- ثلاث بطاقات لا خمس: «تويتش» لم تكن متاحةً أصلًا، و«الملف» يُفتَح من
+         بطاقة الاسم أعلى اليمين، واللافتات الثلاث كانت تكرارًا للمتجر. -->
     <div id="tiles">
       <div class="tile red" onclick="openScreen('themes')"><div class="pl">👤 1 لاعب + 3 بوت</div><img class="ic" src="ui/icon_local.webp"><div class="lbl">محلي</div></div>
       <div class="tile green dis"><div class="pl">👥 2-4 لاعبين</div><img class="ic" src="ui/icon_online.webp"><div class="soon">قريبًا</div><div class="lbl">أونلاين</div></div>
       <div class="tile yellow" onclick="openScreen('store')"><img class="ic" src="ui/icon_store.webp"><div class="lbl">المتجر</div></div>
-      <div class="tile dark dis"><img class="ic" src="ui/icon_twitch.webp" style="width:55%"><div class="soon">غير متاح</div><div class="lbl">تويتش</div></div>
-      <div class="tile blue" onclick="openScreen('profile')"><div class="cal"><span id="cal-day"></span></div><div class="lbl">الملف</div></div>
-    </div>
-    <div id="banners">
-      <div class="bnr" onclick="openScreen('themes','nomercy')"><img src="ui/event_happy.webp"><div class="t">ساعة السعادة<small>العب وضع بلا رحمة الآن</small></div></div>
-      <div class="bnr" onclick="openScreen('store','cards')"><img src="ui/banner5.webp"><div class="t">تشكيلات كروت جديدة<small>تصفّح المتجر</small></div></div>
-      <div class="bnr" onclick="openScreen('store','boards')"><img src="ui/banner2.webp"><div class="t">طاولات جديدة<small>غيّر شكل الطاولة</small></div></div>
     </div>
   </div>
 </div>
@@ -488,10 +486,10 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
       <h3 style="color:#ffd400;font-size:20px;margin-bottom:8px">🃏 قواعد البيت</h3>
       <div class="opt"><div class="lbl">التكديس (Stacking)<small>رد على كرت سحب بكرت سحب وتتراكم</small></div><div class="switch on" data-rule="stacking"></div></div>
       <div class="opt"><div class="lbl">7-0<small>الـ7 تبدّل يدك مع لاعب، والـ0 تدوّر الأيدي</small></div><div class="switch" data-rule="seven0"></div></div>
-      <div class="opt"><div class="lbl">قاعدة الرحمة (بلا رحمة)<small>من يصل 25 كرت يخرج</small></div><div class="switch on" data-rule="mercy"></div></div>
+      <div class="opt" data-only="nomercy"><div class="lbl">قاعدة الرحمة<small>من يصل 25 كرتًا يخرج من الجولة — في وضع «بلا رحمة» فقط</small></div><div class="switch on" data-rule="mercy"></div></div>
       <div class="opt"><div class="lbl">القفز (Jump-In)<small>العب كرتًا مطابقًا تمامًا خارج دورك</small></div><div class="switch" data-rule="jumpin"></div></div>
       <div class="opt"><div class="lbl">اللعب الإجباري<small>إذا سحبت كرتًا صالحًا تلعبه فورًا</small></div><div class="switch" data-rule="forceplay"></div></div>
-      <div class="opt"><div class="lbl">تحدي +4 (كلاسيك)</div><div class="switch on" data-rule="challenge"></div></div>
+      <div class="opt" data-only="classic"><div class="lbl">تحدي +4<small>اتّهم من لعب +4 بأنه كان يملك اللون — في الكلاسيكي فقط</small></div><div class="switch on" data-rule="challenge"></div></div>
     </div>
   </div>
   <div style="text-align:center;margin-top:26px"><button class="play-btn" id="startbtn" style="margin:0">ابدأ المباراة</button></div>
@@ -557,7 +555,7 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
     <div class="opt"><div class="lbl">مستوى الخصوم</div><div class="seg" data-opt="diff"><button data-v="easy">سهل</button><button data-v="normal" class="on">عادي</button><button data-v="hard">صعب</button></div></div>
     <div class="opt"><div class="lbl">اختصارات لوحة المفاتيح<small>مسافة = وحدة!، D = سحب كرت، Esc = إيقاف</small></div><img src="ui/tab_keyboard.webp" style="height:50px"></div>
     <div class="opt"><div class="lbl">إعادة ضبط التقدم<small>يحذف العملات والمشتريات والإحصائيات</small></div><button class="btn k" onclick="resetProfile()">إعادة ضبط</button></div>
-    <div class="opt"><div class="lbl">الاعتمادات<small>«وحدة» لعبةُ ورقٍ عربية من ألعابنا — القواعد مستوحاة من ألعاب الورق الكلاسيكية</small></div><img src="ui/tab_credits.webp" style="height:50px"></div>
+    <div class="opt"><div class="lbl">الاعتمادات<small>«اونو» لعبةُ ورقٍ عربية من ألعابنا — القواعد مستوحاة من ألعاب الورق الكلاسيكية</small></div><img src="ui/tab_credits.webp" style="height:50px"></div>
   </div>
   <div class="backbtn" onclick="openScreen('main')">◀ رجوع</div>
 </div></div>
@@ -683,7 +681,11 @@ function saveS(){try{localStorage.setItem('uno-nm-settings',JSON.stringify(S))}c
 function syncSettingsUI(){
   $$('.seg').forEach(seg=>{const k=seg.dataset.opt;seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',String(S[k])===b.dataset.v))});
   $$('.switch').forEach(sw=>sw.classList.toggle('on',!!S[sw.dataset.rule]));
-  const nm=S.mode==='nomercy'; $$('.switch[data-rule=mercy]').forEach(x=>x.classList.toggle('dis',!nm)); $$('.switch[data-rule=challenge]').forEach(x=>x.classList.toggle('dis',nm));
+  /* القاعدة التي لا تنطبق تُخفى لا تُعطَّل.
+     كانت تُعرَض مطفأةَ اللون ومفتاحُها «مفعَّل»، فيقرؤها اللاعب: «قاعدة بلا
+     رحمة شغّالة في الكلاسيكي ولا أقدر أطفيها» — وهي لم تكن تعمل أصلًا
+     (الإقصاء مشروطٌ بوضع بلا رحمة في الكود). خيارٌ يكذب أسوأ من خيارٍ ناقص. */
+  $$('.opt[data-only]').forEach(o=>{ o.style.display = o.dataset.only===S.mode ? '' : 'none'; });
 }
 $$('.seg').forEach(seg=>{const k=seg.dataset.opt;seg.querySelectorAll('button').forEach(b=>{b.onclick=()=>{S[k]=isNaN(b.dataset.v)?b.dataset.v:+b.dataset.v;saveS();snd('click');syncSettingsUI()}})});
 $$('.switch').forEach(sw=>{const k=sw.dataset.rule;sw.onclick=()=>{S[k]=!S[k];saveS();snd('click');syncSettingsUI()}});

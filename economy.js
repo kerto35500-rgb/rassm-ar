@@ -19,7 +19,7 @@ const REWARDS = {
   bomb:  { win: 50, play: 18, name: "القنبلة" },
   salfa: { win: 45, play: 16, name: "برّا السالفة" },
   draw:  { win: 40, play: 15, name: "ارسمها!" },
-  uno:   { win: 40, play: 15, name: "وحدة" }
+  uno:   { win: 40, play: 15, name: "اونو" }
 };
 
 /* سقفٌ يوميّ لكل لعبة على حدة، وسقفٌ كلّيّ فوقها */

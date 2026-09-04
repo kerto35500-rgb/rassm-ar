@@ -53,7 +53,7 @@ function allItems() { return [...unoItems()]; }
 /** تسميات الأقسام للواجهة — عربيّةٌ في مكانٍ واحد. */
 const SECTIONS = {
   uno: {
-    name: "وحدة", icon: "🃏", href: "/uno/",
+    name: "اونو", icon: "🃏", href: "/uno/",
     kinds: { boards: "الطاولات", cards: "أطقم الكروت", avatars: "الصور الشخصية", frames: "الإطارات" }
   }
 };
