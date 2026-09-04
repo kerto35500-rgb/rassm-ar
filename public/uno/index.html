@@ -397,6 +397,43 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 .toastc.show{opacity:1}
 .seat .avw>img.fr{position:absolute;inset:-18%;width:136%;height:136%;object-fit:contain;pointer-events:none;z-index:3}
 .vsp .avbox{width:110px;height:110px}
+
+/* ===== أونلاين: شاشتا الغرفة والهويّة ===== */
+.scr-t{font-size:38px;font-weight:900;text-align:center;color:#ffd400;-webkit-text-stroke:3px #111;paint-order:stroke fill;margin:14px 0 18px}
+.scr-t .code{background:#111;color:#ffd400;border:3px solid #ffd400;border-radius:12px;padding:2px 18px;letter-spacing:8px;-webkit-text-stroke:0}
+#online-s .panels,#room-s .panels{display:flex;gap:22px;justify-content:center;align-items:flex-start;max-width:1100px;margin:0 auto;flex-wrap:wrap}
+#online-s .panel,#room-s .panel{flex:1;min-width:300px;max-width:520px;background:rgba(0,0,0,.45);border:3px solid #111;border-radius:16px;padding:14px 20px;max-height:66vh;overflow:auto}
+#online-s input,#room-s input{background:#1a0605;border:2px solid #111;border-radius:10px;color:#fff;font:inherit;font-size:17px;font-weight:700;padding:9px 12px;width:100%}
+#online-s input:disabled{opacity:.6}
+.olrow{display:flex;gap:10px;align-items:center}
+.olrow .play-btn,.play-btn.sm{margin:0;font-size:17px;padding:10px 22px;white-space:nowrap}
+.olsec{margin:14px 0 8px;font-weight:900;color:#ffd400;font-size:16px}
+.olsec small{font-weight:400;opacity:.75;font-size:13px}
+.olnote{font-size:14px;opacity:.8;line-height:1.7}
+.olmsg{min-height:22px;margin-top:10px;font-weight:800;font-size:15px;color:#9fe6a0}
+.olmsg.bad{color:#ff9a8f}
+.olgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;max-height:210px;overflow:auto;padding:2px}
+.olpick{border:3px solid #111;border-radius:12px;overflow:hidden;cursor:pointer;background:#2a0d0b;aspect-ratio:1;transition:.12s}
+.olpick img{width:100%;height:100%;object-fit:cover;display:block}
+.olpick.fr img{object-fit:contain;padding:3px}
+.olpick.on{border-color:#ffd400;box-shadow:0 0 0 3px #ffd400,0 0 18px #ffd400}
+.olpick:hover{transform:translateY(-2px)}
+.olp{display:flex;align-items:center;gap:12px;background:rgba(0,0,0,.35);border:2px solid #111;border-radius:12px;padding:8px 12px;margin-bottom:8px}
+.olp .avbox{position:relative;width:52px;height:52px;flex:none}
+.olp .avbox img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.olp .avbox img.f{border-radius:0;object-fit:contain}
+.olp .n{font-weight:800;font-size:17px;flex:1}
+.olp .tag{font-size:12px;background:#ffd400;color:#111;border-radius:99px;padding:1px 9px;font-weight:900}
+.olp .tag.bad{background:#e3242b;color:#fff}
+.olp.gone{opacity:.5}
+.olp.empty{justify-content:center;color:#ffdcc8;opacity:.55;border-style:dashed;font-size:15px;padding:14px}
+.olp .kick{background:#e3242b;border:2px solid #111;color:#fff;border-radius:9px;width:32px;height:32px;font-size:16px;font-weight:900;cursor:pointer}
+.olread{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:15px}
+.olread div{display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,.12);padding:4px 0}
+.olread b{font-weight:700;opacity:.85}
+#ol-challenge{position:absolute;bottom:150px;left:50%;transform:translateX(-50%);background:linear-gradient(#ff6a55,#c9181f);border:3px solid #111;color:#fff;font-size:20px;font-weight:900;padding:10px 28px;border-radius:12px;box-shadow:0 6px 0 #111;z-index:20;cursor:pointer}
+.seat .burst{cursor:pointer}
+@media(max-width:820px){ .scr-t{font-size:26px} #online-s .panel,#room-s .panel{min-width:260px;max-height:none} }
 </style>
 </head>
 <body>
@@ -425,7 +462,7 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
          بطاقة الاسم أعلى اليمين، واللافتات الثلاث كانت تكرارًا للمتجر. -->
     <div id="tiles">
       <div class="tile red" onclick="openScreen('themes')"><div class="pl">👤 1 لاعب + 3 بوت</div><img class="ic" src="ui/icon_local.webp"><div class="lbl">محلي</div></div>
-      <div class="tile green dis"><div class="pl">👥 2-4 لاعبين</div><img class="ic" src="ui/icon_online.webp"><div class="soon">قريبًا</div><div class="lbl">أونلاين</div></div>
+      <div class="tile green" onclick="openScreen('online')"><div class="pl">👥 2-4 لاعبين</div><img class="ic" src="ui/icon_online.webp"><div class="lbl">أونلاين</div></div>
       <div class="tile yellow" onclick="openScreen('store')"><img class="ic" src="ui/icon_store.webp"><div class="lbl">المتجر</div></div>
     </div>
   </div>
@@ -547,6 +584,49 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 </div></div>
 
 <!-- ============ OPTIONS ============ -->
+<!-- ============ ONLINE ============ -->
+<div id="online-s" class="fe"><div class="mbg"></div><div class="content">
+  <div class="backbtn" onclick="openScreen('main')">◀ رجوع</div>
+  <h2 class="scr-t">أونلاين — العب مع أصحابك</h2>
+  <div class="panels">
+    <div class="panel">
+      <h3 style="color:#ffd400;font-size:20px;margin-bottom:8px">👤 شخصيّتك</h3>
+      <div id="ol-id"></div>
+    </div>
+    <div class="panel">
+      <h3 style="color:#ffd400;font-size:20px;margin-bottom:8px">🚪 الغرفة</h3>
+      <div class="olnote">أنشئ غرفةً وأرسل الرابط لأصحابك — أو اكتب رمز غرفةٍ عندك.</div>
+      <button class="play-btn" style="width:100%;margin:14px 0" onclick="olCreate()">أنشئ غرفة</button>
+      <div class="olsec">أو انضمّ برمز</div>
+      <div class="olrow">
+        <input id="ol-code" maxlength="8" placeholder="مثل A7K2" style="text-transform:uppercase;letter-spacing:4px;text-align:center">
+        <button class="play-btn sm" onclick="olJoin()">انضمّ</button>
+      </div>
+      <div class="olmsg" id="ol-msg"></div>
+    </div>
+  </div>
+</div></div>
+
+<!-- ============ ROOM ============ -->
+<div id="room-s" class="fe"><div class="mbg"></div><div class="content">
+  <div class="backbtn" onclick="olQuit()">◀ خروج من الغرفة</div>
+  <h2 class="scr-t">غرفة <span id="rm-code" class="code"></span></h2>
+  <div class="olrow" style="max-width:640px;margin:0 auto 16px">
+    <input id="rm-link" readonly onclick="olCopyLink()">
+    <button class="play-btn sm" onclick="olCopyLink()">انسخ الرابط</button>
+  </div>
+  <div class="panels">
+    <div class="panel"><h3 style="color:#ffd400;font-size:20px;margin-bottom:8px">👥 اللاعبون</h3>
+      <div id="rm-players"></div></div>
+    <div class="panel"><h3 style="color:#ffd400;font-size:20px;margin-bottom:8px">⚙️ الإعدادات</h3>
+      <div id="rm-set"></div></div>
+  </div>
+  <div style="text-align:center;margin-top:22px">
+    <button class="play-btn" id="rm-start" onclick="ONL.sock.emit('start')">ابدأ المباراة</button>
+    <div id="rm-wait" class="olnote" style="display:none">بانتظار أن يبدأ المضيف…</div>
+  </div>
+</div></div>
+
 <div id="options-s" class="fe"><div class="mbg"></div><div class="content">
   <h1 class="title">الخيارات</h1>
   <div class="optbox">
@@ -590,6 +670,7 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
     <div class="seat" id="seat-right"><div class="plate"><span></span></div><div class="avw"><div class="burst"></div><div class="av"><img class="a"></div><img class="fr"><div class="timer"></div><div class="cc"><b></b></div><div class="bubble"></div></div></div>
     <div class="seat" id="seat-me"><div class="plate"><span></span></div><div class="avw"><div class="burst"></div><div class="av"><img class="a"></div><img class="fr"><div class="timer"></div><div class="cc"><b></b></div><div class="bubble"></div></div></div>
     <div id="hand"></div>
+    <button id="ol-challenge" style="display:none" onclick="ONL.sock.emit('challenge')">تحدَّ +4</button>
     <button id="unobtn"><img src="img/uno_logo.png" alt="وحدة!"><span></span></button>
     <div id="msg"><div></div></div>
     <div id="splat"></div><div id="banner"></div>
@@ -613,6 +694,7 @@ table.sc img{width:34px;height:34px;border-radius:6px;vertical-align:middle;bord
 <div class="ov" id="ov-help"><div class="box"><h2>قواعد بلا رحمة</h2><div class="rules" id="rules-body"></div><button class="btn" id="help-close">فهمت</button></div></div>
 <div id="toast"></div>
 
+<script src="/socket.io/socket.io.js"></script>
 <script src="catalog.js"></script>
 <script src="unoacc.js"></script>
 <script>
@@ -692,7 +774,7 @@ $$('.switch').forEach(sw=>{const k=sw.dataset.rule;sw.onclick=()=>{S[k]=!S[k];sa
 syncSettingsUI();
 
 /* ================= SCREENS ================= */
-const SCREENS={main:'#main',themes:'#themes-s',setup:'#setup-s',design:'#design-s',store:'#store-s',profile:'#profile-s',leader:'#leader-s',options:'#options-s'};
+const SCREENS={main:'#main',themes:'#themes-s',setup:'#setup-s',design:'#design-s',store:'#store-s',profile:'#profile-s',leader:'#leader-s',options:'#options-s',online:'#online-s',room:'#room-s'};
 let curScreen='main';
 function openScreen(name,arg){
   snd('click');
@@ -707,6 +789,8 @@ function openScreen(name,arg){
   if(name==='profile') showProfile(arg||'overview');
   if(name==='leader') renderLeader();
   if(name==='options') syncSettingsUI();
+  if(name==='online') olRenderIdentity();
+  if(name==='room') olRenderRoom();
 }
 function pickTheme(m){ S.mode=m; saveS(); openScreen('setup'); }
 function renderMain(){
@@ -990,6 +1074,7 @@ async function humanDraw(){
   G.busy=false; G.turn=next(G.turn); finishHuman();
 }
 async function humanPlay(k){
+  if(typeof ONL!=='undefined' && ONL.on){ olPlay(k); return; }
   if(G.busy) return;
   const myTurn=G.turn===0 && !!humanResolve;
   if(!myTurn){ if(!isJumpIn(k) || G.anim || G.over) return; G.busy=true; clearTimer(); await doJumpIn(0,k); return; }
@@ -1189,7 +1274,8 @@ async function handleUnoCall(pi){
   }
 }
 function showUnoBtn(show,catchPi){ const b=$('#unobtn'); b.classList.toggle('show',show); b.classList.toggle('hot',show); b.classList.toggle('catch',catchPi!=null); b.querySelector('span').textContent=catchPi!=null?'امسكه!':''; }
-$('#unobtn').onclick=()=>{ snd('click'); if(G&&G.unoTimer){ G.unoTimer.ok(); return; } if(G && G.players[0].hand.length===2 && G.turn===0){ G.players[0].uno=true; seatBubble(0,'وحدة!','',900); snd('uno'); showUnoBtn(false); } };
+$('#unobtn').onclick=()=>{ snd('click');
+  if(typeof ONL!=='undefined' && ONL.on){ ONL.sock.emit('uno'); showUnoBtn(false); return; } if(G&&G.unoTimer){ G.unoTimer.ok(); return; } if(G && G.players[0].hand.length===2 && G.turn===0){ G.players[0].uno=true; seatBubble(0,'وحدة!','',900); snd('uno'); showUnoBtn(false); } };
 
 /* ---------- challenge (classic) ---------- */
 function offerChallenge(pi,canStack){
@@ -1354,7 +1440,8 @@ let bannerT=null; function banner(t,sub,ms){ const b=$('#banner'); b.innerHTML=t
 let splatT=null; function splat(y){ const s=$('#splat'); s.classList.toggle('y',!!y); s.style.transform=`translate(-50%,-50%) scale(1) rotate(${Math.random()*360}deg)`; s.classList.add('show'); clearTimeout(splatT); splatT=setTimeout(()=>{s.classList.remove('show');s.style.transform=''},1600); }
 function seatBubble(pi,t,cls='',ms=1500){ const b=$('#'+seatIds[pi]+' .bubble'); b.textContent=t; b.className='bubble show '+cls; setTimeout(()=>b.classList.remove('show'),ms); }
 
-$('#deck').onclick=()=>{ if(!G||G.turn!==0||!humanResolve||G.busy) return; snd('click'); if(G.pending>0) humanDrawPenalty(); else humanDraw(); };
+$('#deck').onclick=()=>{ if(typeof ONL!=='undefined' && ONL.on){ if(ONL.view && ONL.view.phase==='turn' && ONL.view.turn===ONL.mySeat){ snd('click'); ONL.sock.emit('draw'); } return; }
+  if(!G||G.turn!==0||!humanResolve||G.busy) return; snd('click'); if(G.pending>0) humanDrawPenalty(); else humanDraw(); };
 $('#startbtn').onclick=()=>{snd('click');newMatch()};
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('#splash').classList.contains('show')) $('#splash').click(); });
 $('#pausebtn').onclick=()=>{ $('#ov-pause').classList.add('show'); };
@@ -1411,6 +1498,8 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&G) $('#pausebtn').
 // preload
 (function(){ const d='cards/nomercy'; const l=[`${d}/back.webp`]; for(const c of COLORS){ for(const v of ['0','1','2','3','4','5','6','7','8','9','d2','d4','rev','skip','skipall','discard']) l.push(`${d}/${c}_${v}.webp`); for(const w of ['d6','d10','revd4','roulette']) l.push(`${d}/${w}_${c}.webp`); } for(const w of ['d6','d10','revd4','roulette']) l.push(`${d}/${w}.webp`); l.forEach(s=>{const i=new Image();i.src=s}); })();
 </script>
+<script src="online.js"></script>
+<script>olBoot();</script>
 </div>
 </body>
 </html>
