@@ -280,7 +280,9 @@ async function olApplyOne(v) {
 
   ONL.animating = true;
   try {
-    if (dealing || !G || !G.online) {
+    /* لسانٌ مخفيّ لا يرى الحركة أصلًا، ولا داعي لأن ينتظرها: نرسم فورًا */
+    if (document.hidden) { G = next; }
+    else if (dealing || !G || !G.online) {
       /* جولةٌ جديدة: نبدأ بأيدٍ فارغة ثم نوزّع كما يوزّع المحلّيّ */
       G = next;
       const full = next.players.map(p => p.hand);

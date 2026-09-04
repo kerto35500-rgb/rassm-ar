@@ -1424,14 +1424,22 @@ function flyCard(from,to,src,opts={}){
     const rotEnd=opts.rot?(Math.random()*30-15):0, tiltFrom=opts.tiltFrom||0, tiltTo=opts.tiltTo||0;
     const tr={pts:[],w:opts.small?10:16,live:true}; trails.push(tr); if(!trailRaf) trailRaf=requestAnimationFrame(trailTick);
     const t0=performance.now();
+    /* requestAnimationFrame يتوقّف حين يُخفى اللسان (تبديل تبويب، قفل الجوّال).
+       في المحلّيّ مجرّد توقّف؛ لكن أونلاين يعني أن طابور الحالات يقف والخادم
+       يواصل — ويعود اللاعب فيجد دوره قد مرّ. صمّامٌ زمنيّ يُنهي الطيران
+       بعد مدّته مهما حدث، فلا يعلق شيءٌ خلف إطارٍ لم يأتِ. */
+    let done=false;
+    const finish=()=>{ if(done) return; done=true; tr.live=false; f.remove(); res(); };
+    const guard=setTimeout(finish, dur+350);
     const step=()=>{
+      if(done) return;
       const u=Math.min(1,(performance.now()-t0)/dur), e=ease(u);
       const cx=from.x+from.w/2+(to.x+to.w/2-from.x-from.w/2)*e, cy=from.y+from.h/2+(to.y+to.h/2-from.y-from.h/2)*e - Math.sin(u*Math.PI)*arc;
       const w=from.w+(to.w-from.w)*e, h=from.h+(to.h-from.h)*e, sc=1+Math.sin(u*Math.PI)*.22;
       f.style.width=w+'px'; f.style.height=h+'px';
       f.style.transform=`translate(${cx-w/2}px,${cy-h/2}px) perspective(900px) rotateX(${tiltFrom+(tiltTo-tiltFrom)*e}deg) scale(${sc}) rotate(${rotEnd*e}deg)`;
       tr.pts.push({x:cx,y:cy,t:performance.now()});
-      if(u<1) requestAnimationFrame(step); else { tr.live=false; f.remove(); res(); }
+      if(u<1) requestAnimationFrame(step); else { clearTimeout(guard); finish(); }
     };
     step();
   });
