@@ -67,6 +67,16 @@ const STEPS = [
       await q(`CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions (user_id)`);
       await q(`CREATE INDEX IF NOT EXISTS sessions_exp_idx ON sessions (expires_at)`);
     }
+  },
+  {
+    id: 4,
+    name: "كلمة السرّ بصيغةٍ قابلة للترقية (عمود pass_hash)",
+    async pg(q) {
+      // الأعمدة القديمة (salt/hash) تبقى للتحقّق من الحسابات السابقة حتى
+      // يدخل صاحبها مرّةً فتُرقّى تجزئتُه تلقائيًّا وتُكتب هنا.
+      await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS pass_hash TEXT`);
+      await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS pass_changed_at BIGINT`);
+    }
   }
 ];
 

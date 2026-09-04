@@ -17,13 +17,82 @@ class JsonStore {
       try { fs.writeFileSync(this.file, JSON.stringify(this.db, null, 2)); } catch (e) { console.error("db save:", e.message); }
     }, 500);
   }
-  async getUser(name) {
-    const u = this.db.users[name];
-    return u ? { name, salt: u.salt, hash: u.hash, wins: u.wins, games: u.games, totalScore: u.totalScore } : null;
+  /* الهويّة: المعرّف الرقميّ هو المرجع، والاسم مجرّد عنوانٍ فريد. الصفوف
+     القديمة بلا معرّف، فنمنحها واحدًا عند أوّل قراءة. */
+  _nextId() {
+    const ids = Object.values(this.db.users).map(u => u.id || 0);
+    return Math.max(0, ...ids) + 1;
   }
-  async createUser(name, salt, hash) {
-    this.db.users[name] = { salt, hash, wins: 0, games: 0, totalScore: 0, created: Date.now() };
+  _pub(name, u) {
+    if (!u) return null;
+    if (!u.id) { u.id = this._nextId(); this._save(); }
+    return {
+      id: u.id, name, salt: u.salt, hash: u.hash, passHash: u.passHash || null,
+      email: u.email || null, emailVerifiedAt: u.emailVerifiedAt || null,
+      role: u.role || "user", bannedUntil: u.bannedUntil || null, banReason: u.banReason || null,
+      wins: u.wins, games: u.games, totalScore: u.totalScore, created: u.created || 0
+    };
+  }
+  async getUser(name) { return this._pub(name, this.db.users[name]); }
+  async getUserById(id) {
+    const e = Object.entries(this.db.users).find(([, u]) => u.id === Number(id));
+    return e ? this._pub(e[0], e[1]) : null;
+  }
+  async getUserByEmail(email) {
+    const low = String(email || "").toLowerCase();
+    const e = Object.entries(this.db.users).find(([, u]) => (u.email || "").toLowerCase() === low);
+    return e ? this._pub(e[0], e[1]) : null;
+  }
+  async createUser(name, salt, hash, extra = {}) {
+    const id = this._nextId();
+    this.db.users[name] = {
+      id, salt, hash, passHash: extra.passHash || null, email: extra.email || null,
+      role: "user", wins: 0, games: 0, totalScore: 0, created: Date.now()
+    };
     this._save();
+    return id;
+  }
+  /* تحديثٌ انتقائيّ: نسمح بحقولٍ معلومةٍ فقط كي لا يتسرّب حقلٌ غير متوقَّع */
+  async updateUser(id, fields) {
+    const e = Object.entries(this.db.users).find(([, u]) => u.id === Number(id));
+    if (!e) return false;
+    const u = e[1];
+    const ok = ["passHash", "email", "emailVerifiedAt", "lastSeenAt", "role",
+                "bannedUntil", "banReason", "passChangedAt", "salt", "hash"];
+    ok.forEach(k => { if (k in fields) u[k] = fields[k]; });
+    this._save();
+    return true;
+  }
+
+  /* ── الجلسات ── */
+  async createSession(s) {
+    this.db.sessions = this.db.sessions || [];
+    this.db.sessions.push({ ...s, revokedAt: null });
+    this._save();
+  }
+  async findSession(tokenHash) {
+    return (this.db.sessions || []).find(x => x.tokenHash === tokenHash) || null;
+  }
+  async revokeSession(tokenHash) {
+    const s = (this.db.sessions || []).find(x => x.tokenHash === tokenHash);
+    if (s) { s.revokedAt = Date.now(); this._save(); }
+  }
+  async revokeUserSessions(userId) {
+    (this.db.sessions || []).forEach(x => { if (x.userId === Number(userId) && !x.revokedAt) x.revokedAt = Date.now(); });
+    this._save();
+  }
+  async listSessions(userId) {
+    const now = Date.now();
+    return (this.db.sessions || [])
+      .filter(x => x.userId === Number(userId) && !x.revokedAt && x.expiresAt > now)
+      .map(x => ({ ua: x.ua, ip: x.ip, createdAt: x.createdAt, expiresAt: x.expiresAt }));
+  }
+  async purgeSessions() {
+    const now = Date.now();
+    const before = (this.db.sessions || []).length;
+    this.db.sessions = (this.db.sessions || []).filter(x => x.expiresAt > now && !x.revokedAt);
+    if (before !== this.db.sessions.length) this._save();
+    return before - this.db.sessions.length;
   }
   async addStats(name, { games = 0, score = 0, wins = 0 }) {
     const u = this.db.users[name];
@@ -145,14 +214,81 @@ class PgStore {
     const r = await this.pool.query("SELECT COUNT(*)::int AS n FROM users");
     return r.rows[0].n;
   }
+  /* الحقول نفسها في الواجهتين — أسماءٌ بلغة الكود لا بلغة الجدول */
+  get _userCols() {
+    return `id, name, salt, hash, pass_hash AS "passHash", email,
+            email_verified_at AS "emailVerifiedAt", role,
+            banned_until AS "bannedUntil", ban_reason AS "banReason",
+            wins, games, total_score AS "totalScore", created`;
+  }
   async getUser(name) {
-    const r = await this.pool.query(
-      'SELECT name, salt, hash, wins, games, total_score AS "totalScore" FROM users WHERE name = $1', [name]);
+    const r = await this.pool.query(`SELECT ${this._userCols} FROM users WHERE name = $1`, [name]);
     return r.rows[0] || null;
   }
-  async createUser(name, salt, hash) {
+  async getUserById(id) {
+    const r = await this.pool.query(`SELECT ${this._userCols} FROM users WHERE id = $1`, [Number(id)]);
+    return r.rows[0] || null;
+  }
+  async getUserByEmail(email) {
+    const r = await this.pool.query(
+      `SELECT ${this._userCols} FROM users WHERE lower(email) = lower($1)`, [String(email)]);
+    return r.rows[0] || null;
+  }
+  async createUser(name, salt, hash, extra = {}) {
+    const r = await this.pool.query(
+      "INSERT INTO users (name, salt, hash, pass_hash, email, created) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id",
+      [name, salt, hash, extra.passHash || null, extra.email || null, Date.now()]);
+    return r.rows[0].id;
+  }
+  async updateUser(id, fields) {
+    const map = {
+      passHash: "pass_hash", email: "email", emailVerifiedAt: "email_verified_at",
+      lastSeenAt: "last_seen_at", role: "role", bannedUntil: "banned_until",
+      banReason: "ban_reason", passChangedAt: "pass_changed_at", salt: "salt", hash: "hash"
+    };
+    const sets = [], args = [Number(id)];
+    for (const k in fields) {
+      if (!map[k]) continue;
+      args.push(fields[k]);
+      sets.push(`${map[k]} = $${args.length}`);
+    }
+    if (!sets.length) return false;
+    const r = await this.pool.query(`UPDATE users SET ${sets.join(", ")} WHERE id = $1`, args);
+    return r.rowCount > 0;
+  }
+
+  /* ── الجلسات ── */
+  async createSession(s) {
     await this.pool.query(
-      "INSERT INTO users (name, salt, hash, created) VALUES ($1, $2, $3, $4)", [name, salt, hash, Date.now()]);
+      `INSERT INTO sessions (user_id, token_hash, ua, ip, created_at, expires_at)
+       VALUES ($1,$2,$3,$4,$5,$6)`,
+      [Number(s.userId), s.tokenHash, s.ua, s.ip, s.createdAt, s.expiresAt]);
+  }
+  async findSession(tokenHash) {
+    const r = await this.pool.query(
+      `SELECT user_id AS "userId", expires_at AS "expiresAt", revoked_at AS "revokedAt"
+       FROM sessions WHERE token_hash = $1`, [tokenHash]);
+    return r.rows[0] || null;
+  }
+  async revokeSession(tokenHash) {
+    await this.pool.query("UPDATE sessions SET revoked_at = $2 WHERE token_hash = $1 AND revoked_at IS NULL",
+      [tokenHash, Date.now()]);
+  }
+  async revokeUserSessions(userId) {
+    await this.pool.query("UPDATE sessions SET revoked_at = $2 WHERE user_id = $1 AND revoked_at IS NULL",
+      [Number(userId), Date.now()]);
+  }
+  async listSessions(userId) {
+    const r = await this.pool.query(
+      `SELECT ua, ip, created_at AS "createdAt", expires_at AS "expiresAt"
+       FROM sessions WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > $2
+       ORDER BY created_at DESC LIMIT 20`, [Number(userId), Date.now()]);
+    return r.rows;
+  }
+  async purgeSessions() {
+    const r = await this.pool.query(
+      "DELETE FROM sessions WHERE expires_at < $1 OR revoked_at IS NOT NULL", [Date.now()]);
+    return r.rowCount || 0;
   }
   async addStats(name, { games = 0, score = 0, wins = 0 }) {
     await this.pool.query(

@@ -141,11 +141,15 @@ async function playAttack(room,socks){
   socks[0].fire("devJump","pyramid"); await sleep(60); socks[0].fire("skipIntro");
   await until(room,["attack","question"],4000); await playAttack(room,socks);
   ok(room.phase==="question","الجولة الأولى وصلت للخيارات",room.phase);
-  room.players[0].pyPos=4; room.players[1].pyPos=5; room.players[2].pyPos=0;   /* الدرجات ٥ و٦ والأولى */
   const wrong=(room.currentQ.correct+1)%4;
   socks.forEach(s=>s.clear());
   for(const s of socks){ s.fire("answer",wrong); await sleep(20); }
-  await until(room,["pyReveal"],3000); await until(room,["pyramid"],3000); await until(room,["attack"],5000);
+  await until(room,["pyReveal"],3000); await until(room,["pyramid"],3000);
+  /* نضع الدرجات بعد أن يُطبّق الخادم حركات الجولة (تُطبَّق بعد ثانية السكون)،
+     وإلّا داستها الحركاتُ أحيانًا فتذبذب الاختبار. */
+  await sleep(120);
+  room.players[0].pyPos=4; room.players[1].pyPos=5; room.players[2].pyPos=0;   /* الدرجات ٥ و٦ والأولى */
+  await until(room,["attack"],5000);
   const hits=room.attacks.map(a=>a.fromName+"→"+a.toName+":"+a.power);
   ok(hits.includes("ل0→ل1:gloop")&&hits.includes("ل0→ل2:gloop"),"درجة ٥: وحلٌ على الجميع تلقائيًّا",hits.join(" "));
   ok(hits.includes("ل1→ل0:freeze")&&hits.includes("ل1→ل2:freeze"),"درجة ٦: تجميدٌ على الجميع تلقائيًّا");

@@ -12,7 +12,7 @@ const { setupBomb } = require("./bomb");
 const { setupQuiz } = require("./quiz");
 const mod = require("./moderation");
 const { setupSalfa } = require("./salfa");
-const { setupAccounts, nameFromSocket } = require("./account");
+const { setupAccounts, attachSocketAuth, nameFromSocket } = require("./account");
 const { securityHeaders, rateLimit } = require("./security");
 
 const app = express();
@@ -131,7 +131,7 @@ app.get("/api/status", (req, res) => {
 });
 // حساب واحد لكل الألعاب — يُسجّل الدخول من الصفحة الرئيسية فقط
 setupAccounts(app, {
-  store: { getUser: (n) => store.getUser(n), createUser: (...a) => store.createUser(...a), top: (n) => store.top(n) },
+  get store() { return store; },   /* كسولٌ: القاعدة تُفتح بعد تركيب المسارات */
   hashPass, publicStats,
   onNewUser: () => { if (admin) admin.trackNewUser(); }
 });
@@ -1257,6 +1257,11 @@ createStore()
     } catch (e) {
       console.error("salfa setup:", e.message);
     }
+    /* هويّة موحّدة لكل مساحات الأسماء: تُحلّ الجلسة قبل أن يصل الاتصال إلى
+       منطق أي لعبة، فتعرف اللعبةُ صاحبَها بلا أن تسأل عن كوكي. تُركَّب بعد
+       إنشاء المساحات كلّها وقبل الاستماع، فلا اتصالَ يسبقها. */
+    attachSocketAuth(io, store);
+
     server.listen(PORT, () => {
       console.log(`🎨 لعبة ارسمها! تعمل على المنفذ ${PORT}`);
     });
