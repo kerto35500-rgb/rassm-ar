@@ -76,6 +76,12 @@ app.get(["/quiz2", "/apex"], (req, res) => {
   res.status(404).type("text").send("quiz2.html غير موجود");
 });
 // 🕵️ برّا السالفة
+// 🃏 أونو: لعبةٌ ثابتة كاملة في public/uno — تُخدَم من المجلد نفسه لأنّ مساراتها نسبية
+// (Express يطابق /uno و/uno/ معًا، فنفرّق بالمسار الأصليّ كي لا ندور في حلقة)
+app.get("/uno", (req, res) => {
+  if (!req.originalUrl.split("?")[0].endsWith("/")) return res.redirect(301, "/uno/");
+  res.sendFile(path.join(pubDir, "uno", "index.html"));
+});
 app.get(["/barra", "/salfa"], (req, res) => {
   if (admin) admin.trackVisit();
   const f = pageFile("salfa.html");
