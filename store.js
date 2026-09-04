@@ -94,6 +94,38 @@ class JsonStore {
     if (before !== this.db.sessions.length) this._save();
     return before - this.db.sessions.length;
   }
+
+  /* ── إحصاءات الألعاب ──
+     صفٌّ لكل (لاعب، لعبة). الحقول العامّة مشتركة بين الألعاب، وما يخصّ لعبةً
+     بعينها (كلمات القنبلة مثلًا) يذهب في extra. */
+  async bumpGameStats(userId, game, { games = 0, wins = 0, score = 0, best = null, extra = null } = {}) {
+    if (!userId || !game) return;
+    this.db.gameStats = this.db.gameStats || {};
+    const k = userId + "|" + game;
+    const e = this.db.gameStats[k] || { userId: Number(userId), game, games: 0, wins: 0, score: 0, best: 0, extra: {} };
+    e.games += games; e.wins += wins; e.score += score;
+    if (best != null && best > e.best) e.best = best;
+    if (extra) for (const x in extra) e.extra[x] = (e.extra[x] || 0) + extra[x];
+    e.updatedAt = Date.now();
+    this.db.gameStats[k] = e;
+    this._save();
+  }
+  async getGameStats(userId) {
+    return Object.values(this.db.gameStats || {})
+      .filter(e => e.userId === Number(userId))
+      .map(e => ({ game: e.game, games: e.games, wins: e.wins, score: e.score, best: e.best, extra: e.extra || {} }));
+  }
+  async topByGame(game, n = 10) {
+    const users = Object.entries(this.db.users);
+    return Object.values(this.db.gameStats || {})
+      .filter(e => e.game === game)
+      .sort((a, b) => b.wins - a.wins || b.score - a.score)
+      .slice(0, n)
+      .map(e => {
+        const u = users.find(([, x]) => x.id === e.userId);
+        return { name: u ? u[0] : "?", wins: e.wins, games: e.games, score: e.score };
+      });
+  }
   async addStats(name, { games = 0, score = 0, wins = 0 }) {
     const u = this.db.users[name];
     if (!u) return;
@@ -289,6 +321,35 @@ class PgStore {
     const r = await this.pool.query(
       "DELETE FROM sessions WHERE expires_at < $1 OR revoked_at IS NOT NULL", [Date.now()]);
     return r.rowCount || 0;
+  }
+
+  /* ── إحصاءات الألعاب ── */
+  async bumpGameStats(userId, game, { games = 0, wins = 0, score = 0, best = null, extra = null } = {}) {
+    if (!userId || !game) return;
+    /* صفٌّ واحدٌ ذرّيّ: الإدراج أو الزيادة في أمرٍ واحد، فلا سباق بين مباراتين */
+    await this.pool.query(
+      `INSERT INTO game_stats (user_id, game, games, wins, score, best, extra, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8)
+       ON CONFLICT (user_id, game) DO UPDATE SET
+         games = game_stats.games + EXCLUDED.games,
+         wins  = game_stats.wins  + EXCLUDED.wins,
+         score = game_stats.score + EXCLUDED.score,
+         best  = GREATEST(game_stats.best, EXCLUDED.best),
+         extra = game_stats.extra || EXCLUDED.extra,
+         updated_at = EXCLUDED.updated_at`,
+      [Number(userId), game, games, wins, score, best || 0, JSON.stringify(extra || {}), Date.now()]);
+  }
+  async getGameStats(userId) {
+    const r = await this.pool.query(
+      `SELECT game, games, wins, score, best, extra FROM game_stats WHERE user_id = $1`, [Number(userId)]);
+    return r.rows.map(x => ({ ...x, score: Number(x.score) }));
+  }
+  async topByGame(game, n = 10) {
+    const r = await this.pool.query(
+      `SELECT u.name, g.wins, g.games, g.score FROM game_stats g
+       JOIN users u ON u.id = g.user_id
+       WHERE g.game = $1 ORDER BY g.wins DESC, g.score DESC LIMIT $2`, [game, n]);
+    return r.rows.map(x => ({ ...x, score: Number(x.score) }));
   }
   async addStats(name, { games = 0, score = 0, wins = 0 }) {
     await this.pool.query(

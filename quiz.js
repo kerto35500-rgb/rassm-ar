@@ -1166,6 +1166,15 @@ function setupQuiz(io, deps) {
         changed = true;
       }
       if (changed) await store.saveKV("quizStats", prev);
+      /* والوجهة الجديدة: صفٌّ لكل لاعبٍ بمعرّفه. نكتب في الاثنين خلال
+         الانتقال، فلو تعثّر الجديد بقيت الأرقام القديمة سليمة. */
+      for (const p of alive(room)) {
+        if (!p.userId) continue;
+        await store.bumpGameStats?.(p.userId, "quiz", {
+          games: 1, wins: winner && winner.id === p.id ? 1 : 0,
+          score: p.score, best: p.score
+        });
+      }
     } catch (e) { console.error("quiz stats:", e.message); }
   }
 
@@ -1199,6 +1208,7 @@ function setupQuiz(io, deps) {
         token: crypto.randomBytes(8).toString("hex"),
         name: socket.userName || String(name || "").trim().slice(0, 20) || "لاعب",
         userName: socket.userName || null,
+        userId: socket.userId || null,
         score: 0, connected: true, spectator: false,
         powersLeft: 0, effects: [], answered: false, lastGain: 0,
         pyPos: 0, rtt: 0, disconnectedAt: 0, lastTarget: null, pendingAttack: null, doubleNext: false,
@@ -1233,13 +1243,15 @@ function setupQuiz(io, deps) {
         const name = String(data?.name || "").trim().slice(0, 20);
         const pass = String(data?.pass || "");
         if (name.length < 2) return cb({ ok: false, error: "الاسم قصير جدًا" });
-        if (pass.length < 4) return cb({ ok: false, error: "كلمة المرور قصيرة (4 أحرف على الأقل)" });
         if (await store.getUser(name)) return cb({ ok: false, error: "الاسم مستخدم، جرب تسجيل الدخول" });
-        const salt = crypto.randomBytes(16).toString("hex");
-        await store.createUser(name, salt, hashPass(pass, salt));
+        const A = require("./auth");
+        const bad = A.passwordProblem(pass, name);
+        if (bad) return cb({ ok: false, error: bad });
+        const id = await store.createUser(name, "", "", { passHash: await A.hashPassword(pass) });
         const a = getAdmin && getAdmin();
         if (a && a.trackNewUser) a.trackNewUser();
         socket.userName = name;
+        socket.userId = id || null;
         cb({ ok: true, stats: { name, wins: 0, games: 0, totalScore: 0 }, quiz: { games: 0, wins: 0, points: 0 } });
       } catch (e) { cb({ ok: false, error: "خطأ في الخادم" }); }
     });
@@ -1251,8 +1263,14 @@ function setupQuiz(io, deps) {
         const pass = String(data?.pass || "");
         const u = await store.getUser(name);
         if (!u) return cb({ ok: false, error: "الحساب غير موجود" });
-        if (hashPass(pass, u.salt) !== u.hash) return cb({ ok: false, error: "كلمة المرور خاطئة" });
-        socket.userName = name;
+        /* الحسابات الجديدة تُخزَّن بصيغة pass_hash، فلا تُتحقَّق بالطريقة
+           القديمة. نستعمل التحقّق الموحّد كي يدخل الجميع من هنا ومن الموقع. */
+        const A = require("./auth");
+        const good = u.passHash ? await A.verifyNew(pass, u.passHash)
+                                : (u.salt && u.hash ? await A.verifyLegacy(pass, u.salt, u.hash) : false);
+        if (!good) return cb({ ok: false, error: "كلمة المرور خاطئة" });
+        socket.userName = u.name || name;
+        socket.userId = u.id || null;
         const qs = (await store.getKV("quizStats")) || {};
         cb({ ok: true, stats: publicStats(u), quiz: qs[name] || { games: 0, wins: 0, points: 0 } });
       } catch (e) { cb({ ok: false, error: "خطأ في الخادم" }); }

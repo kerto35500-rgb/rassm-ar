@@ -66,7 +66,7 @@ const ask = (s, e, d, ms = 400) => new Promise(res => {
   console.log("\n② الحسابات والغرفة");
   const A = nsp.connect("A"), B = nsp.connect("B"), C = nsp.connect("C");
   const P = { A, B, C };
-  const ra = await ask(A, "register", { name: "أحمد", pass: "1234" });
+  const ra = await ask(A, "register", { name: "أحمد", pass: "كلمة سرّ طويلة" });
   ok(ra && ra.ok, "تسجيل حساب");
   ok(ra && ra.quiz && ra.quiz.games === 0, "إحصائيات المسابقات منفصلة عن باقي الألعاب");
   const r1 = await ask(A, "createRoom", { name: "أحمد" });

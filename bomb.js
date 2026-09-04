@@ -371,6 +371,13 @@ function setupBomb(io, deps) {
         changed = true;
       }
       if (changed) await store.saveKV("bombStats", prev);
+      for (const p of room.players) {
+        if (!p.userId || p.spectator) continue;
+        await store.bumpGameStats?.(p.userId, "bomb", {
+          games: 1, wins: winner && winner.id === p.id ? 1 : 0,
+          extra: { words: p.wordsCount || 0 }
+        });
+      }
     } catch (e) { console.error("bomb stats:", e.message); }
   }
 
@@ -481,13 +488,15 @@ function setupBomb(io, deps) {
         const name = String(data?.name || "").trim().slice(0, 20);
         const pass = String(data?.pass || "");
         if (name.length < 2) return cb({ ok: false, error: "الاسم قصير جدًا (حرفان على الأقل)" });
-        if (pass.length < 4) return cb({ ok: false, error: "كلمة المرور قصيرة (4 أحرف على الأقل)" });
         if (await store.getUser(name)) return cb({ ok: false, error: "الاسم مستخدم، جرب تسجيل الدخول" });
-        const salt = crypto.randomBytes(16).toString("hex");
-        await store.createUser(name, salt, hashPass(pass, salt));
+        const A = require("./auth");
+        const bad = A.passwordProblem(pass, name);
+        if (bad) return cb({ ok: false, error: bad });
+        const id = await store.createUser(name, "", "", { passHash: await A.hashPassword(pass) });
         const a = getAdmin && getAdmin();
         if (a && a.trackNewUser) a.trackNewUser();
         socket.userName = name;
+        socket.userId = id || null;
         cb({ ok: true, stats: { name, wins: 0, games: 0, totalScore: 0 }, bomb: { games: 0, wins: 0, words: 0 } });
       } catch (e) { cb({ ok: false, error: "خطأ في الخادم" }); }
     });
@@ -499,8 +508,14 @@ function setupBomb(io, deps) {
         const pass = String(data?.pass || "");
         const u = await store.getUser(name);
         if (!u) return cb({ ok: false, error: "الحساب غير موجود" });
-        if (hashPass(pass, u.salt) !== u.hash) return cb({ ok: false, error: "كلمة المرور خاطئة" });
-        socket.userName = name;
+        /* الحسابات الجديدة تُخزَّن بصيغة pass_hash، فلا تُتحقَّق بالطريقة
+           القديمة. نستعمل التحقّق الموحّد كي يدخل الجميع من هنا ومن الموقع. */
+        const A = require("./auth");
+        const good = u.passHash ? await A.verifyNew(pass, u.passHash)
+                                : (u.salt && u.hash ? await A.verifyLegacy(pass, u.salt, u.hash) : false);
+        if (!good) return cb({ ok: false, error: "كلمة المرور خاطئة" });
+        socket.userName = u.name || name;
+        socket.userId = u.id || null;
         const bs = (await store.getKV("bombStats")) || {};
         cb({ ok: true, stats: publicStats(u), bomb: bs[name] || { games: 0, wins: 0, words: 0 } });
       } catch (e) { cb({ ok: false, error: "خطأ في الخادم" }); }
@@ -527,6 +542,7 @@ function setupBomb(io, deps) {
         token: crypto.randomBytes(8).toString("hex"),
         name: socket.userName || String(name || "").trim().slice(0, 20) || "لاعب",
         userName: socket.userName || null,
+        userId: socket.userId || null,
         lives: DEFAULTS.lives, alive: true, connected: true, spectator: false,
         letters: new Set(), resets: 0, wordsCount: 0, disconnectedAt: 0
       };

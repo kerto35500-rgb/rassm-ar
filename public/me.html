@@ -111,6 +111,13 @@
       </div>
     </div>
 
+    <!-- إحصاءات كل لعبة -->
+    <div class="me-card" id="gamesCard" style="display:none">
+      <h2>🎮 في كل لعبة</h2>
+      <div class="me-hint">تتجمّع تلقائيًّا كلّما لعبتَ وأنت مسجَّل.</div>
+      <div id="gameRows"></div>
+    </div>
+
     <!-- البريد (اختياريّ) -->
     <div class="me-card">
       <h2>📧 البريد الإلكتروني</h2>
@@ -208,6 +215,34 @@ async function load() {
       '<div class="me-note">⚠️ حسابك بلا بريد. لو نسيت كلمة السرّ فلن نستطيع إرجاعه إليك — أضف بريدك ولو مرّة.</div>';
   }
   loadDevices();
+  loadGames();
+}
+
+/* أسماء الألعاب ورموزها وما يُعرَض من حقولها */
+const GAMES = {
+  quiz:  { icon: "🏆", name: "قمّة الهرم", score: "نقطة" },
+  bomb:  { icon: "💣", name: "القنبلة",    extra: "words", extraName: "كلمة" },
+  salfa: { icon: "🕵️", name: "برّا السالفة", score: "نقطة" },
+  draw:  { icon: "🎨", name: "ارسمها!",    score: "نقطة" },
+  uno:   { icon: "🃏", name: "وحدة",       score: "نقطة" }
+};
+
+async function loadGames() {
+  const r = await api("games");
+  const rows = (r && r.games) || [];
+  if (!rows.length) return;
+  $("gamesCard").style.display = "";
+  $("gameRows").innerHTML = rows.map(g => {
+    const meta = GAMES[g.game] || { icon: "🎲", name: g.game };
+    const bits = [g.games + " لعبة", g.wins + " فوز"];
+    if (meta.score && g.score) bits.push(g.score + " " + meta.score);
+    if (meta.extra && g.extra && g.extra[meta.extra]) bits.push(g.extra[meta.extra] + " " + meta.extraName);
+    if (g.best) bits.push("أفضل " + g.best);
+    return `<div class="me-dev">
+      <div><div class="me-d1">${meta.icon} ${esc(meta.name)}</div>
+           <div class="me-d2">${esc(bits.join(" · "))}</div></div>
+      <span class="me-badge">${g.wins}/${g.games}</span></div>`;
+  }).join("");
 }
 
 async function loadDevices() {

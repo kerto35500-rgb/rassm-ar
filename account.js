@@ -277,6 +277,16 @@ function setupAccounts(app, deps) {
     } catch (e) { res.status(500).json({ ok: false, error: "خطأ في الخادم" }); }
   });
 
+  /* إحصاءات اللاعب في كل لعبة — من الجدول الموحّد */
+  app.get("/api/account/games", async (req, res) => {
+    try {
+      const u = await currentUser(req, null);
+      if (!u) return res.status(401).json({ ok: false, error: "لست مسجّلًا" });
+      const rows = (await st().getGameStats?.(u.id)) || [];
+      res.json({ ok: true, games: rows });
+    } catch (e) { res.json({ ok: true, games: [] }); }
+  });
+
   /* ربط بريدٍ اختياريّ — لا يُطلب عند التسجيل كي لا نُتعب أحدًا، ويُطلب
      هنا لمن أراد أن يستطيع استرجاع حسابه. التأكيد يأتي في خطوةٍ لاحقة. */
   app.post("/api/account/email",

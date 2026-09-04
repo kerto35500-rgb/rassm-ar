@@ -77,6 +77,26 @@ const STEPS = [
       await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS pass_hash TEXT`);
       await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS pass_changed_at BIGINT`);
     }
+  },
+  {
+    id: 5,
+    name: "إحصاءات كل لعبة تحت معرّف الحساب (game_stats)",
+    async pg(q) {
+      /* كانت كل لعبة تحفظ إحصاءاتها في كائنٍ واحدٍ داخل kv مفتاحُه اسم اللاعب:
+         تضيع لو تغيّر الاسم، ولا تُستعلَم، وتُكتَب كاملةً مع كل مباراة.
+         الآن: صفٌّ لكل (لاعب، لعبة)، والحقول العامّة مشتركة، والخاصّ في extra. */
+      await q(`CREATE TABLE IF NOT EXISTS game_stats (
+                 user_id BIGINT NOT NULL,
+                 game TEXT NOT NULL,
+                 games INT NOT NULL DEFAULT 0,
+                 wins INT NOT NULL DEFAULT 0,
+                 score BIGINT NOT NULL DEFAULT 0,
+                 best INT NOT NULL DEFAULT 0,
+                 extra JSONB NOT NULL DEFAULT '{}'::jsonb,
+                 updated_at BIGINT,
+                 PRIMARY KEY (user_id, game))`);
+      await q(`CREATE INDEX IF NOT EXISTS game_stats_game_idx ON game_stats (game, wins DESC)`);
+    }
   }
 ];
 

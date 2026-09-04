@@ -97,14 +97,14 @@ function ask(sock, ev, data, ms = 250) {
 
   console.log("\n② الحسابات (موحّدة مع لعبة الرسم)");
   const A = nsp.connect("A"), B = nsp.connect("B"), C = nsp.connect("C");
-  const ra = await ask(A, "register", { name: "أحمد", pass: "1234" });
+  const ra = await ask(A, "register", { name: "أحمد", pass: "كلمة سرّ طويلة" });
   ok(ra && ra.ok, "تسجيل حساب جديد");
   ok(ra && ra.bomb && ra.bomb.games === 0, "إحصائيات القنبلة منفصلة تبدأ من صفر");
-  const rb = await ask(B, "register", { name: "بدر", pass: "1234" });
+  const rb = await ask(B, "register", { name: "بدر", pass: "كلمة سرّ طويلة" });
   ok(rb && rb.ok, "تسجيل حساب ثانٍ");
-  const rdup = await ask(C, "register", { name: "أحمد", pass: "1234" });
+  const rdup = await ask(C, "register", { name: "أحمد", pass: "كلمة سرّ طويلة" });
   ok(rdup && !rdup.ok, "يرفض اسماً مستخدماً");
-  const rshort = await ask(C, "register", { name: "ك", pass: "1234" });
+  const rshort = await ask(C, "register", { name: "ك", pass: "كلمة سرّ طويلة" });
   ok(rshort && !rshort.ok, "يرفض اسماً قصيراً");
   const rlogin = await ask(C, "login", { name: "أحمد", pass: "غلط" });
   ok(rlogin && !rlogin.ok, "كلمة مرور خاطئة تُرفض عند الدخول");

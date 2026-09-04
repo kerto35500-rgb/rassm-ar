@@ -483,6 +483,13 @@ function setupSalfa(io, deps) {
         s[p.userName] = e;
       });
       await store.saveKV(key, s);
+      for (const p of room.players) {
+        if (!p.userId) continue;
+        await store.bumpGameStats?.(p.userId, "salfa", {
+          games: 1, wins: champ && champ.id === p.id ? 1 : 0,
+          score: p.score, best: p.score
+        });
+      }
     } catch (e) { /* لا يعطّل اللعبة */ }
   }
 
@@ -521,6 +528,7 @@ function setupSalfa(io, deps) {
         token: crypto.randomBytes(8).toString("hex"),
         name: socket.userName || String(name || "").trim().slice(0, 20) || "لاعب",
         userName: socket.userName || null,
+        userId: socket.userId || null,
         avatar: Math.floor(Math.random() * 12),
         score: 0, connected: true, spectator: false,
         ready: false, asked: false, answered: false, disconnectedAt: 0
