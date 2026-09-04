@@ -277,6 +277,21 @@ function setupAccounts(app, deps) {
     } catch (e) { res.status(500).json({ ok: false, error: "خطأ في الخادم" }); }
   });
 
+  /* المحفظة: الرصيد وآخر الحركات وما بقي من سقف اليوم */
+  app.get("/api/account/wallet", async (req, res) => {
+    try {
+      const u = await currentUser(req, null);
+      if (!u) return res.status(401).json({ ok: false, error: "لست مسجّلًا" });
+      const E = require("./economy");
+      const [w, led, rem] = await Promise.all([
+        st().getWallet(u.id),
+        st().ledgerOf(u.id, 15),
+        E.remainingToday(st(), u.id)
+      ]);
+      res.json({ ok: true, wallet: w, ledger: led, today: rem });
+    } catch (e) { res.json({ ok: true, wallet: { gold: 0, gems: 0 }, ledger: [], today: null }); }
+  });
+
   /* إحصاءات اللاعب في كل لعبة — من الجدول الموحّد */
   app.get("/api/account/games", async (req, res) => {
     try {

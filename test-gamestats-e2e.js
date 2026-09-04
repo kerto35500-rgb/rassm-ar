@@ -1,13 +1,20 @@
 // مباراةٌ كاملة عبر منطق اللعبة نفسه، ثم نتحقّق أن الإحصاءات وصلت للجدول الجديد
 process.env.QUIZ_TEST_FAST="1";
 const { setupQuiz } = require("./quiz");
-const gs = {};             // مخزنٌ وهميّ يسجّل ما يصل
+const gs = {}, wallets = {}, ledger = [], idems = new Set();             // مخزنٌ وهميّ يسجّل ما يصل
 const kv = {}, users = {};
 let nextId = 1;
 const store = {
   async getUser(n){ return users[n]||null; },
   async createUser(n,s,h,x){ const id=nextId++; users[n]={id,name:n,salt:s,hash:h,passHash:(x||{}).passHash,wins:0,games:0,totalScore:0}; return id; },
   async getKV(k){ return kv[k]||null; }, async saveKV(k,v){ kv[k]=v; },
+  async getWallet(u){ return wallets[u]||{gold:0,gems:0}; },
+  async move(u,c,d,meta){ const w=wallets[u]||(wallets[u]={gold:0,gems:0});
+    if(meta&&meta.idem&&idems.has(meta.idem)) return {ok:false,duplicate:true};
+    if(meta&&meta.idem) idems.add(meta.idem);
+    if(w[c]+d<0) return {ok:false,error:"لا يكفي"};
+    w[c]+=d; ledger.push({u,c,d,reason:meta&&meta.reason}); return {ok:true,balance:w[c]}; },
+  async earnedSince(u,since,pre){ return ledger.filter(x=>x.u===u&&x.d>0&&(!pre||String(x.reason).startsWith(pre))).reduce((a,x)=>a+x.d,0); },
   async bumpGameStats(uid,game,d){ const k=uid+"|"+game; const e=gs[k]||(gs[k]={games:0,wins:0,score:0,best:0,extra:{}});
     e.games+=d.games||0; e.wins+=d.wins||0; e.score+=d.score||0; if((d.best||0)>e.best)e.best=d.best;
     if(d.extra) for(const x in d.extra) e.extra[x]=(e.extra[x]||0)+d.extra[x]; }
@@ -31,7 +38,10 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const ra=await ask(A,"register",{name:"بطل",pass:"كلمة سرّ طويلة"});
   console.log("تسجيل:", ra && ra.ok ? "✅" : "❌ "+(ra&&ra.error));
   console.log("معرّف على المقبس:", A.userId ? "✅ "+A.userId : "❌ غائب");
-  const r=await ask(A,"createRoom",{name:"بطل"}); await ask(B,"joinRoom",{name:"ضيف",roomId:r.roomId});
+  const rb=await ask(B,"register",{name:"منافس",pass:"كلمة سرّ طويلة"});
+  console.log("تسجيل الثاني:", rb && rb.ok ? "✅" : "❌");
+  A.handshake={address:"1.1.1.1"}; B.handshake={address:"2.2.2.2"};
+  const r=await ask(A,"createRoom",{name:"بطل"}); await ask(B,"joinRoom",{name:"منافس",roomId:r.roomId});
   const room=Q.rooms.get(r.roomId);
   room.settings.length="short"; room.settings.challenges=false; room.settings.powers=false;
   room.settings.pyramidHeight=1; room.settings.pyramidTime=1;
@@ -46,6 +56,10 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   console.log("صفوف الإحصاءات:", keys.length?keys.join(", "):"لا شيء");
   const mine=gs["1|quiz"];
   console.log("إحصاءة اللاعب المسجَّل:", mine?("✅ "+JSON.stringify(mine)):"❌ لم تُسجَّل");
-  console.log("الضيف بلا إحصاءات:", keys.every(k=>k.startsWith("1|"))?"✅":"❌");
+  console.log("لاعبان مسجَّلان → صفّان:", keys.length===2?"✅":"❌ "+keys.length);
+  const w1=(wallets[1]||{}).gold, w2=(wallets[2]||{}).gold;
+  console.log("جائزة الفائز ٦٠:", w1===60?"✅":"❌ "+w1);
+  console.log("جائزة المشارك ٢٠:", w2===20?"✅":"❌ "+w2);
+  console.log("سطرا دفتر بسببٍ مقروء:", ledger.length===2&&/^لعب:quiz:/.test(ledger[0].reason)?"✅":"❌ "+JSON.stringify(ledger));
   process.exit(0);
 })();

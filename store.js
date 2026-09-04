@@ -115,6 +115,50 @@ class JsonStore {
       .filter(e => e.userId === Number(userId))
       .map(e => ({ game: e.game, games: e.games, wins: e.wins, score: e.score, best: e.best, extra: e.extra || {} }));
   }
+  /* ── المحفظة والدفتر ──
+     كل حركةٍ تُسجَّل في الدفتر مع الرصيد بعدها. الرصيد لا ينزل تحت الصفر:
+     محاولة خصمٍ أكبر من الرصيد تُرفَض ولا تُسجَّل. */
+  _wallet(userId) {
+    this.db.wallets = this.db.wallets || {};
+    return this.db.wallets[userId] || (this.db.wallets[userId] = { gold: 0, gems: 0, updatedAt: 0 });
+  }
+  async getWallet(userId) {
+    const w = this._wallet(Number(userId));
+    return { gold: w.gold, gems: w.gems };
+  }
+  async move(userId, currency, delta, meta = {}) {
+    const uid = Number(userId);
+    if (!uid || !["gold", "gems"].includes(currency) || !Number.isFinite(delta) || delta === 0)
+      return { ok: false, error: "حركة غير صالحة" };
+    this.db.ledger = this.db.ledger || [];
+    if (meta.idem && this.db.ledger.some(x => x.idem === meta.idem))
+      return { ok: false, duplicate: true, ...(await this.getWallet(uid)) };
+    const w = this._wallet(uid);
+    const next = w[currency] + delta;
+    if (next < 0) return { ok: false, error: "الرصيد لا يكفي", balance: w[currency] };
+    w[currency] = next; w.updatedAt = Date.now();
+    this.db.ledger.push({
+      id: this.db.ledger.length + 1, userId: uid, currency, delta, balanceAfter: next,
+      reason: String(meta.reason || "—"), refType: meta.refType || null, refId: meta.refId || null,
+      adminId: meta.adminId || null, idem: meta.idem || null, createdAt: Date.now()
+    });
+    this._save();
+    return { ok: true, balance: next, ...(await this.getWallet(uid)) };
+  }
+  async ledgerOf(userId, n = 30) {
+    return (this.db.ledger || [])
+      .filter(x => x.userId === Number(userId))
+      .sort((a, b) => (b.createdAt - a.createdAt) || (b.id - a.id))   /* الرقم يفصل عند تساوي اللحظة */
+      .slice(0, n);
+  }
+  /* مجموع ما مُنح لهذا اللاعب اليوم بسببٍ بعينه — لسقف الكسب اليوميّ */
+  async earnedSince(userId, since, reasonPrefix = "") {
+    return (this.db.ledger || [])
+      .filter(x => x.userId === Number(userId) && x.createdAt >= since && x.delta > 0 &&
+                   (!reasonPrefix || String(x.reason).startsWith(reasonPrefix)))
+      .reduce((a, x) => a + x.delta, 0);
+  }
+
   async topByGame(game, n = 10) {
     const users = Object.entries(this.db.users);
     return Object.values(this.db.gameStats || {})
@@ -344,6 +388,65 @@ class PgStore {
       `SELECT game, games, wins, score, best, extra FROM game_stats WHERE user_id = $1`, [Number(userId)]);
     return r.rows.map(x => ({ ...x, score: Number(x.score) }));
   }
+  /* ── المحفظة والدفتر ── */
+  async getWallet(userId) {
+    const r = await this.pool.query("SELECT gold, gems FROM wallets WHERE user_id = $1", [Number(userId)]);
+    const w = r.rows[0] || { gold: 0, gems: 0 };
+    return { gold: Number(w.gold), gems: Number(w.gems) };
+  }
+  /* معاملةٌ واحدة تقفل صفّ المحفظة: لا سباق بين مباراتين ولا شراءين */
+  async move(userId, currency, delta, meta = {}) {
+    const uid = Number(userId);
+    if (!uid || !["gold", "gems"].includes(currency) || !Number.isFinite(delta) || delta === 0)
+      return { ok: false, error: "حركة غير صالحة" };
+    const c = await this.pool.connect();
+    try {
+      await c.query("BEGIN");
+      if (meta.idem) {
+        const dup = await c.query("SELECT 1 FROM ledger WHERE idem = $1", [meta.idem]);
+        if (dup.rowCount) {
+          await c.query("COMMIT");
+          return { ok: false, duplicate: true, ...(await this.getWallet(uid)) };
+        }
+      }
+      await c.query(
+        `INSERT INTO wallets (user_id, gold, gems, updated_at) VALUES ($1,0,0,$2)
+         ON CONFLICT (user_id) DO NOTHING`, [uid, Date.now()]);
+      const cur = await c.query(`SELECT ${currency} AS v FROM wallets WHERE user_id = $1 FOR UPDATE`, [uid]);
+      const before = Number(cur.rows[0].v);
+      const next = before + delta;
+      if (next < 0) { await c.query("ROLLBACK"); return { ok: false, error: "الرصيد لا يكفي", balance: before }; }
+      await c.query(`UPDATE wallets SET ${currency} = $2, updated_at = $3 WHERE user_id = $1`,
+                    [uid, next, Date.now()]);
+      await c.query(
+        `INSERT INTO ledger (user_id, currency, delta, balance_after, reason, ref_type, ref_id, admin_id, idem, created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [uid, currency, delta, next, String(meta.reason || "—"), meta.refType || null,
+         meta.refId || null, meta.adminId || null, meta.idem || null, Date.now()]);
+      await c.query("COMMIT");
+      return { ok: true, balance: next, ...(await this.getWallet(uid)) };
+    } catch (e) {
+      await c.query("ROLLBACK").catch(() => {});
+      /* تصادمُ مفتاح المنع المزدوج يعني أن الحركة سُجّلت في نداءٍ متوازٍ */
+      if (/ledger_idem_uq/.test(e.message)) return { ok: false, duplicate: true, ...(await this.getWallet(uid)) };
+      throw e;
+    } finally { c.release(); }
+  }
+  async ledgerOf(userId, n = 30) {
+    const r = await this.pool.query(
+      `SELECT currency, delta, balance_after AS "balanceAfter", reason,
+              ref_type AS "refType", ref_id AS "refId", created_at AS "createdAt"
+       FROM ledger WHERE user_id = $1 ORDER BY id DESC LIMIT $2`, [Number(userId), n]);
+    return r.rows.map(x => ({ ...x, delta: Number(x.delta), balanceAfter: Number(x.balanceAfter) }));
+  }
+  async earnedSince(userId, since, reasonPrefix = "") {
+    const r = await this.pool.query(
+      `SELECT COALESCE(SUM(delta),0) AS s FROM ledger
+       WHERE user_id = $1 AND created_at >= $2 AND delta > 0 AND reason LIKE $3`,
+      [Number(userId), since, (reasonPrefix || "") + "%"]);
+    return Number(r.rows[0].s);
+  }
+
   async topByGame(game, n = 10) {
     const r = await this.pool.query(
       `SELECT u.name, g.wins, g.games, g.score FROM game_stats g

@@ -97,6 +97,35 @@ const STEPS = [
                  PRIMARY KEY (user_id, game))`);
       await q(`CREATE INDEX IF NOT EXISTS game_stats_game_idx ON game_stats (game, wins DESC)`);
     }
+  },
+  {
+    id: 6,
+    name: "المحفظة ودفتر الحركات (ذهب وجواهر)",
+    async pg(q) {
+      /* المحفظة رصيدٌ لحظيّ، والدفتر تاريخٌ لا يُعدَّل: كل حركةٍ سطرٌ فيه
+         مقدارُها وسببُها والرصيدُ بعدها. لو شكّ أحدٌ في رصيده رجعنا للسطور. */
+      await q(`CREATE TABLE IF NOT EXISTS wallets (
+                 user_id BIGINT PRIMARY KEY,
+                 gold BIGINT NOT NULL DEFAULT 0,
+                 gems BIGINT NOT NULL DEFAULT 0,
+                 updated_at BIGINT,
+                 CONSTRAINT wallets_no_negative CHECK (gold >= 0 AND gems >= 0))`);
+      await q(`CREATE TABLE IF NOT EXISTS ledger (
+                 id BIGSERIAL PRIMARY KEY,
+                 user_id BIGINT NOT NULL,
+                 currency TEXT NOT NULL,
+                 delta BIGINT NOT NULL,
+                 balance_after BIGINT NOT NULL,
+                 reason TEXT NOT NULL,
+                 ref_type TEXT,
+                 ref_id TEXT,
+                 admin_id BIGINT,
+                 created_at BIGINT NOT NULL)`);
+      await q(`CREATE INDEX IF NOT EXISTS ledger_user_idx ON ledger (user_id, created_at DESC)`);
+      /* مفتاحٌ اختياريّ لمنع تكرار المنح نفسه (نهاية مباراةٍ تُعالَج مرّتين) */
+      await q(`ALTER TABLE ledger ADD COLUMN IF NOT EXISTS idem TEXT`);
+      await q(`CREATE UNIQUE INDEX IF NOT EXISTS ledger_idem_uq ON ledger (idem) WHERE idem IS NOT NULL`);
+    }
   }
 ];
 

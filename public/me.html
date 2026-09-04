@@ -111,6 +111,19 @@
       </div>
     </div>
 
+    <!-- المحفظة -->
+    <div class="me-card">
+      <h2>🪙 محفظتي</h2>
+      <div class="me-hint">الذهب يأتي من اللعب، والجواهر من الهدايا والمناسبات.</div>
+      <div class="me-stats">
+        <div class="me-st"><b id="w-gold">0</b><span>🪙 ذهب</span></div>
+        <div class="me-st"><b id="w-gems">0</b><span>💎 جوهرة</span></div>
+        <div class="me-st"><b id="w-today">0</b><span>كسبتَ اليوم</span></div>
+      </div>
+      <div id="capNote"></div>
+      <div id="ledger" style="margin-top:12px"></div>
+    </div>
+
     <!-- إحصاءات كل لعبة -->
     <div class="me-card" id="gamesCard" style="display:none">
       <h2>🎮 في كل لعبة</h2>
@@ -216,6 +229,46 @@ async function load() {
   }
   loadDevices();
   loadGames();
+  loadWallet();
+}
+
+async function loadWallet() {
+  const r = await api("wallet");
+  if (!r || !r.ok) return;
+  const w = r.wallet || { gold: 0, gems: 0 };
+  $("w-gold").textContent = w.gold;
+  $("w-gems").textContent = w.gems;
+  $("w-today").textContent = (r.today && r.today.earnedToday) || 0;
+  /* نُخبره بصراحة حين يبلغ سقفه، فلا يظنّ اللعبة معطوبة */
+  if (r.today && r.today.total <= 0)
+    $("capNote").innerHTML = '<div class="me-note">بلغتَ سقف الذهب اليوميّ. الكسب يعود بعد ٢٤ ساعة — والفوز يبقى فوزًا 🙂</div>';
+  else if (r.today)
+    $("capNote").innerHTML = '<div class="me-hint" style="margin:10px 0 0">يبقى لك اليوم حتى <b>' + r.today.total + '</b> 🪙</div>';
+
+  const led = r.ledger || [];
+  $("ledger").innerHTML = led.length
+    ? '<div class="me-hint" style="margin:0 0 6px">آخر الحركات</div>' + led.map(x => {
+        const plus = x.delta > 0;
+        return `<div class="me-dev">
+          <div><div class="me-d1">${esc(reasonText(x.reason))}</div>
+               <div class="me-d2">${esc(when(x.createdAt))}</div></div>
+          <span class="me-badge" style="color:${plus ? "#1e7a44" : "#b3302c"}">${plus ? "+" : ""}${x.delta} ${x.currency === "gems" ? "💎" : "🪙"}</span>
+        </div>`;
+      }).join("")
+    : '<div class="me-hint">لا حركات بعد — العب مباراةً واكسب أوّل ذهبك.</div>';
+}
+
+/* أسباب الحركات بلغةٍ مفهومة بدل مفاتيحها */
+function reasonText(r) {
+  const s = String(r || "");
+  const m = s.match(/^لعب:([a-z]+):(فوز|مشاركة)$/);
+  if (m) {
+    const n = { quiz: "قمّة الهرم", bomb: "القنبلة", salfa: "برّا السالفة", draw: "ارسمها!", uno: "وحدة" }[m[1]] || m[1];
+    return (m[2] === "فوز" ? "🏅 فوز في " : "🎮 مشاركة في ") + n;
+  }
+  if (s.startsWith("هدية")) return "🎁 هدية";
+  if (s.startsWith("شراء")) return "🛒 شراء";
+  return s;
 }
 
 /* أسماء الألعاب ورموزها وما يُعرَض من حقولها */

@@ -310,6 +310,8 @@ function setupQuiz(io, deps) {
       p.lastPower = null; p.menu = null;
       p.color = COLORS[i % COLORS.length];
     });
+    /* ختمُ المباراة: منه يُشتقّ مفتاحُ منعِ تكرار الجائزة */
+    room.matchStamp = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
     room.state = "playing";
     room.stages = buildStages(room.settings);
     room.stageIdx = -1;
@@ -1168,6 +1170,12 @@ function setupQuiz(io, deps) {
       if (changed) await store.saveKV("quizStats", prev);
       /* والوجهة الجديدة: صفٌّ لكل لاعبٍ بمعرّفه. نكتب في الاثنين خلال
          الانتقال، فلو تعثّر الجديد بقيت الأرقام القديمة سليمة. */
+      /* الجائزة بعد الإحصاءات: مفتاحُ المباراة يمنع منحها مرّتين لو
+         استُدعيت النهاية مجدّدًا. */
+      await require("./economy").awardMatch(store, {
+        game: "quiz", players: alive(room), winnerId: winner && winner.id,
+        matchId: room.id + ":" + (room.matchStamp || 0)
+      }).catch(() => {});
       for (const p of alive(room)) {
         if (!p.userId) continue;
         await store.bumpGameStats?.(p.userId, "quiz", {
@@ -1209,6 +1217,7 @@ function setupQuiz(io, deps) {
         name: socket.userName || String(name || "").trim().slice(0, 20) || "لاعب",
         userName: socket.userName || null,
         userId: socket.userId || null,
+        ip: (socket.handshake && (socket.handshake.address || "")) || null,
         score: 0, connected: true, spectator: false,
         powersLeft: 0, effects: [], answered: false, lastGain: 0,
         pyPos: 0, rtt: 0, disconnectedAt: 0, lastTarget: null, pendingAttack: null, doubleNext: false,

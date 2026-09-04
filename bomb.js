@@ -242,6 +242,8 @@ function setupBomb(io, deps) {
       p.resets = 0;
       p.wordsCount = 0;
     });
+    /* ختمُ المباراة: منه يُشتقّ مفتاحُ منعِ تكرار الجائزة */
+    room.matchStamp = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
     room.state = "playing";
     room.roundNo = 0;
     room.winner = null;
@@ -371,6 +373,10 @@ function setupBomb(io, deps) {
         changed = true;
       }
       if (changed) await store.saveKV("bombStats", prev);
+      await require("./economy").awardMatch(store, {
+        game: "bomb", players: room.players, winnerId: winner && winner.id,
+        matchId: room.id + ":" + (room.matchStamp || 0)
+      }).catch(() => {});
       for (const p of room.players) {
         if (!p.userId || p.spectator) continue;
         await store.bumpGameStats?.(p.userId, "bomb", {
@@ -543,6 +549,7 @@ function setupBomb(io, deps) {
         name: socket.userName || String(name || "").trim().slice(0, 20) || "لاعب",
         userName: socket.userName || null,
         userId: socket.userId || null,
+        ip: (socket.handshake && (socket.handshake.address || "")) || null,
         lives: DEFAULTS.lives, alive: true, connected: true, spectator: false,
         letters: new Set(), resets: 0, wordsCount: 0, disconnectedAt: 0
       };

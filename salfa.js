@@ -234,6 +234,8 @@ function setupSalfa(io, deps) {
 
   // ====== دورة اللعبة ======
   function startRound(room) {
+    /* ختمُ الجولة: مفتاحُ منعِ تكرار الجائزة */
+    room.matchStamp = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
     const list = playing(room);
     if (list.length < 3) {
       room.state = "lobby";
@@ -483,6 +485,10 @@ function setupSalfa(io, deps) {
         s[p.userName] = e;
       });
       await store.saveKV(key, s);
+      await require("./economy").awardMatch(store, {
+        game: "salfa", players: room.players, winnerId: champ && champ.id,
+        matchId: room.id + ":" + (room.matchStamp || 0)
+      }).catch(() => {});
       for (const p of room.players) {
         if (!p.userId) continue;
         await store.bumpGameStats?.(p.userId, "salfa", {
@@ -529,6 +535,7 @@ function setupSalfa(io, deps) {
         name: socket.userName || String(name || "").trim().slice(0, 20) || "لاعب",
         userName: socket.userName || null,
         userId: socket.userId || null,
+        ip: (socket.handshake && (socket.handshake.address || "")) || null,
         avatar: Math.floor(Math.random() * 12),
         score: 0, connected: true, spectator: false,
         ready: false, asked: false, answered: false, disconnectedAt: 0
