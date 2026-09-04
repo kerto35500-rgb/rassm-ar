@@ -1,6 +1,7 @@
 // 🔊 لوحة تحكم أصوات الأسئلة — تُركَّب تحت نفس المسار السري للوحة المراقبة.
 const { ADMIN_PATH, verifySession, parseCookies } = require("./admin");
 const qbank = require("./qbank");
+const { rateLimit } = require("./security");
 
 function readJson(req, limit = 2e5) {
   return new Promise(resolve => {
@@ -110,7 +111,7 @@ function setupVoiceAdmin(app, deps) {
     return true;
   };
   app.options("/tts-ingest", (req, res) => { cors(req, res); res.writeHead(204); res.end(); });
-  app.post("/tts-ingest", async (req, res) => {
+  app.post("/tts-ingest", rateLimit({ name: "ingest", windowMs: 60000, max: 40 }), async (req, res) => {
     if (!cors(req, res)) { res.writeHead(403); return res.end("origin"); }
     if (!ingestOk(req.headers["x-ingest-token"])) return json(res, 403, { error: "رمز الإدخال منتهٍ أو خاطئ" });
     const v = await readJson(req, 4e6);

@@ -1,6 +1,7 @@
 // 📚 لوحة إدارة أسئلة «قمّة الهرم»
 // تُركَّب تحت نفس المسار السري للوحة المراقبة وتستعمل نفس الجلسة.
 const { ADMIN_PATH, adminEnabled, verifySession, parseCookies } = require("./admin");
+const { rateLimit } = require("./security");
 const qbank = require("./qbank");
 
 function readJson(req, limit = 8e6) {
@@ -254,7 +255,7 @@ function setupQuestionAdmin(app, deps) {
 
   // نقطة عامة (بلا جلسة أدمن): زر 🚩 داخل اللعبة يرسل إليها.
   // بلاغ مكرر على نفس السؤال يرفع عدّاده بدل أن يغرق القائمة.
-  app.post("/api/qreport", async (req, res) => {
+  app.post("/api/qreport", rateLimit({ name: "qreport", windowMs: 600000, max: 10, message: "بلاغاتٌ كثيرة، انتظر قليلًا." }), async (req, res) => {
     const b = await readJson(req, 4e4);
     if (!b) return json(res, 400, { ok: false });
     const q = String(b.q || "").trim().slice(0, 400);

@@ -4,6 +4,7 @@
 //  تتعرّف على المستخدم من الكوكي — لا حاجة لبطاقة دخول في كل لعبة.
 // ═══════════════════════════════════════════════════════════════
 const crypto = require("crypto");
+const { rateLimit } = require("./security");
 
 const SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
 const COOKIE = "acct";
@@ -100,7 +101,7 @@ function setupAccounts(app, deps) {
     }
   });
 
-  app.post("/api/account/login", json, async (req, res) => {
+  app.post("/api/account/login", rateLimit({name:"login",windowMs:600000,max:20,message:"محاولات دخولٍ كثيرة، انتظر قليلًا."}), json, async (req, res) => {
     const ip = clientIp(req);
     if (blocked(ip)) return res.status(429).json({ ok: false, error: "محاولات كثيرة، انتظر ١٠ دقائق" });
     const name = String(req.body?.name || "").trim().slice(0, 20);
@@ -119,7 +120,7 @@ function setupAccounts(app, deps) {
     }
   });
 
-  app.post("/api/account/register", json, async (req, res) => {
+  app.post("/api/account/register", rateLimit({name:"reg",windowMs:3600000,max:6,message:"حساباتٌ كثيرة من هذا الجهاز، حاول لاحقًا."}), json, async (req, res) => {
     const name = String(req.body?.name || "").trim().slice(0, 20);
     const pass = String(req.body?.pass || "");
     if (name.length < 2) return res.status(400).json({ ok: false, error: "الاسم قصير جدًا (حرفان على الأقل)" });

@@ -5,6 +5,7 @@
 // الإعدادات في KV باسم voCfg: { off:[مفاتيح معطَّلة], db:{ "hurry-5": 4.2 } }
 const { ADMIN_PATH, adminEnabled, verifySession, parseCookies } = require("./admin");
 const voc = require("./vo");
+const { rateLimit } = require("./security");
 
 const BLOB = "vo_";
 const MAX_MP3 = 3 * 1024 * 1024;
@@ -115,7 +116,7 @@ function setupVoiceOverAdmin(app, { store }) {
   });
 
   /* رفع: { event, dur, b64 } — الرقم يُختار تلقائيًّا بعد آخر رقمٍ موجود */
-  app.post(ADMIN_PATH + "/vo/upload", async (req, res) => {
+  app.post(ADMIN_PATH + "/vo/upload", rateLimit({ name: "voup", windowMs: 60000, max: 20 }), async (req, res) => {
     if (!guard(req, res)) return;
     const v = await readJson(req, MAX_MP3 * 1.4 + 1000);
     if (!v) return json(res, 400, { error: "الطلب كبيرٌ أو غير صالح (الحدّ ٣ ميجا)" });

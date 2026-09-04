@@ -53,6 +53,10 @@ class JsonStore {
   }
   _blobPath(key) { return path.join(this._blobDir(), String(key).replace(/[^\w.-]/g, "_")); }
   async initBlobs() { this._blobDir(); }
+  async init() {
+    const { migrateJson } = require("./migrations");
+    await migrateJson(this);
+  }
   async getBlob(key) {
     try {
       const p = this._blobPath(key);
@@ -93,22 +97,22 @@ class PgStore {
       max: 5
     });
   }
+  /* البنية كلّها تأتي من migrations.js: خطواتٌ مرقَّمة تُنفَّذ مرّةً وتُسجَّل،
+     بدل CREATE TABLE مبعثرٍ لا يُعرَف ما طُبّق منه.
+
+     لماذا لا نُسقط الخادم عند فشل هجرة؟ لأن الخطوات الحالية إضافيّةٌ بحتة
+     (أعمدة وجداول لا يستعملها كودٌ بعد)، فإسقاط الموقع كلّه بسببها خسارةٌ
+     بلا مقابل. نُبلّغ بصوتٍ عالٍ ونُكمل بالبنية القديمة. وحين يعتمد الكود
+     على خطوةٍ فعلًا، نجعل فشلها مانعًا للإقلاع. */
   async init() {
-    await this.pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        name TEXT PRIMARY KEY,
-        salt TEXT NOT NULL,
-        hash TEXT NOT NULL,
-        wins INT NOT NULL DEFAULT 0,
-        games INT NOT NULL DEFAULT 0,
-        total_score INT NOT NULL DEFAULT 0,
-        created BIGINT
-      )`);
-    await this.pool.query(`
-      CREATE TABLE IF NOT EXISTS kv (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      )`);
+    const { migratePg } = require("./migrations");
+    try {
+      await migratePg(this.pool);
+    } catch (e) {
+      console.error("\n⚠️  " + e.message);
+      console.error("⚠️  الموقع يعمل بالبنية القديمة — عالج الهجرة قبل الاعتماد عليها.\n");
+    }
+    this._blobsReady = true;   // جدول blobs ضمن الهجرة الأولى
   }
   async getWords() {
     const r = await this.pool.query("SELECT value FROM kv WHERE key = 'words'");
@@ -213,7 +217,9 @@ async function createStore() {
     return s;
   }
   console.log("💾 قاعدة البيانات: ملف db.json (محلي)");
-  return new JsonStore(path.join(__dirname, "db.json"));
+  const j = new JsonStore(path.join(__dirname, "db.json"));
+  await j.init();
+  return j;
 }
 
 module.exports = { createStore };

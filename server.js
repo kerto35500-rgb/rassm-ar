@@ -13,10 +13,34 @@ const { setupQuiz } = require("./quiz");
 const mod = require("./moderation");
 const { setupSalfa } = require("./salfa");
 const { setupAccounts, nameFromSocket } = require("./account");
+const { securityHeaders, rateLimit } = require("./security");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" }, maxHttpBufferSize: 1e6 });
+
+/* ═══ الأصول المسموح بها ═══
+   خلف Render نعرف نطاقنا من RENDER_EXTERNAL_URL، ويمكن إضافة نطاقاتٍ أخرى في
+   ALLOWED_ORIGINS مفصولةً بفواصل. في التطوير المحلّي نسمح بكل شيء. */
+const PROD = process.env.NODE_ENV === "production" || !!process.env.RENDER;
+const ORIGINS = [process.env.RENDER_EXTERNAL_URL, ...String(process.env.ALLOWED_ORIGINS || "")
+  .split(",").map(x => x.trim())].filter(Boolean);
+const originOK = o => !PROD || !ORIGINS.length || !o || ORIGINS.includes(o);
+
+const io = new Server(server, {
+  cors: { origin: (o, cb) => cb(null, originOK(o)), credentials: true },
+  maxHttpBufferSize: 1e6
+});
+
+/* خلف بروكسي Render: بدونه تكون req.ip هي البروكسي فتفشل كل حدود المعدّل،
+   ولا يعرف express أن الاتصال https فلا تُوسَم الكوكيز Secure. */
+app.set("trust proxy", 1);
+app.disable("x-powered-by");
+app.use(securityHeaders());
+
+/* حدٌّ عامٌّ لكل الطلبات — سخيّ كي لا يزعج اللعب، ويكفي لصدّ الإغراق */
+app.use(rateLimit({ name: "all", windowMs: 60000, max: 600 }));
+/* وحدٌّ أضيق على واجهات البيانات */
+app.use("/api", rateLimit({ name: "api", windowMs: 60000, max: 120 }));
 
 let admin = null; // يُهيأ بعد الاتصال بقاعدة البيانات
 
@@ -111,7 +135,29 @@ setupAccounts(app, {
   hashPass, publicStats,
   onNewUser: () => { if (admin) admin.trackNewUser(); }
 });
+/* ═══ صفحات المختبرات ═══
+   *-lab.html و_doors_preview.html أدواتُ ضبطٍ داخلية (إحداثيات، فخاخ، أقراص).
+   تبقى متاحةً محلّيًّا للتطوير، وتُحجَب في الإنتاج إلا لصاحب جلسة الأدمن. */
+const LAB_RE = /(^|\/)(_.*|.*-lab)\.html$/i;
+app.use((req, res, next) => {
+  if (!PROD || !LAB_RE.test(req.path)) return next();
+  let ok = false;
+  try {
+    const { verifySession, parseCookies } = require("./admin");
+    ok = verifySession(parseCookies(req).adm);
+  } catch (e) {}
+  if (ok) return next();
+  res.status(404).type("text/plain; charset=utf-8").send("غير موجود");
+});
+
 if (fs.existsSync(path.join(pubDir, "index.html"))) app.use(express.static(pubDir));
+
+/* SESSION_SECRET بلا قيمةٍ ثابتة يعني توليدَ سرٍّ جديد مع كل إقلاع، فتُبطَل
+   جلساتُ كل اللاعبين والأدمن مع كل نشر. نمنع الإقلاع في الإنتاج بدونه. */
+if (PROD && !process.env.SESSION_SECRET) {
+  console.error("\n❌ SESSION_SECRET غير مضبوط — أضفه في متغيّرات البيئة قبل التشغيل.\n");
+  process.exit(1);
+}
 
 const PORT = process.env.PORT || 3000;
 
