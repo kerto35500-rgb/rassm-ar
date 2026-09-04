@@ -165,30 +165,33 @@ function draw(){
 
   const worn=(DATA.loadout[GAME]||{})[KIND];
   $('#grid').innerHTML=mine.filter(i=>i.kind===KIND).map(i=>card(i,i.key===worn)).join('');
-  watchImages();
+  loadImages();
 }
 
-/* تحميل الصور عند الاقتراب فقط.
+/* تحميل الصور بطابورٍ محدود العرض.
    القسم الواحد فيه ٨٦ صورة؛ لو طلبناها دفعةً واحدة فتحَ المتصفّح ثمانين
    اتّصالًا على خادمٍ صغير، فتتعطّل وتنتهي مهلتُها ويبقى المتجر فارغًا —
-   وهذا ما حدث فعلًا. loading="lazy" وحده لم يكفِ لأنه يتساهل في التقدير،
-   فنُمسك القرار بأيدينا: لا تُطلَب صورةٌ إلا وهي على بُعد شاشةٍ من العين. */
-let IO=null;
-function watchImages(){
-  if(IO) IO.disconnect();   /* تبديلُ التبويب يُلغي ما لم يُطلَب بعد */
-  if(!('IntersectionObserver' in window)){
-    document.querySelectorAll('#grid img[data-src]').forEach(im=>{im.src=im.dataset.src;});
-    return;
-  }
-  IO=new IntersectionObserver(es=>{
-    for(const e of es){
-      if(!e.isIntersecting) continue;
-      const im=e.target;
-      im.src=im.dataset.src; delete im.dataset.src;
-      IO.unobserve(im);
-    }
-  },{rootMargin:'600px 0px'});
-  document.querySelectorAll('#grid img[data-src]').forEach(im=>IO.observe(im));
+   وهذا ما حدث فعلًا (٣٠ ثانية ثم صفر بايت). فنُنزلها ستًّا في كل مرّة،
+   بترتيب الشبكة، وكلّما فرغت واحدة بدأت التي بعدها.
+   ولمَ لا IntersectionObserver؟ جرّبتُه فلم يُطلِق أصلًا حين كانت الصفحة
+   مخفيّة أو الحاوية بلا ارتفاعٍ بعد — والنتيجة متجرٌ فارغٌ إلى الأبد.
+   الطابور لا يعتمد على رؤيةٍ ولا تخطيط: يبدأ ويكمل. */
+const LANES=6;
+let GEN=0;
+function loadImages(){
+  const gen=++GEN;                       /* تبديلُ التبويب يُلغي ما لم يبدأ */
+  const q=[...document.querySelectorAll('#grid img[data-src]')];
+  let i=0;
+  const next=()=>{
+    if(gen!==GEN) return;                /* رسمةٌ أحدث تولّت الأمر */
+    const im=q[i++];
+    if(!im) return;
+    const done=()=>{ im.onload=im.onerror=null; next(); };
+    im.onload=done;
+    im.onerror=()=>{ im.style.visibility='hidden'; done(); };
+    im.src=im.dataset.src; delete im.dataset.src;
+  };
+  for(let k=0;k<LANES;k++) next();
 }
 
 function card(i,worn){
@@ -203,7 +206,7 @@ function card(i,worn){
                       : `<button class="sh-buy" data-buy="${i.id}">${i.currency==='gems'?'💎':'🪙'} ${num(i.price)}</button>`;
   return `<div class="sh-it" data-kind="${i.kind}">
       <div class="sh-pv">
-        <img data-src="${i.preview}" alt="" decoding="async" onerror="this.style.visibility='hidden'">
+        <img data-src="${i.preview}" alt="" decoding="async">
         <span class="sh-rar" data-r="${i.rarity}">${RAR[i.rarity]||''}</span>
         ${i.owned?'<span class="sh-tick">✓</span>':''}
       </div>
