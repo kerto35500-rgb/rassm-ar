@@ -119,6 +119,28 @@
   .playerRow .pname { font-weight:700; font-size:14px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .playerRow .pscore { font-size:13px; color:#666; font-weight:700; }
   .playerRow .badge { font-size:15px; }
+  /* ===== الفرق: لافتةٌ لكلّ فريقٍ وتحتها أعضاؤه ===== */
+  .teamBlock { border-radius:12px; padding:5px; margin-bottom:8px; background:#fafbfd; }
+  .teamBlock.t-red  { background:#fdecec; }
+  .teamBlock.t-blue { background:#e9f2fd; }
+  .teamBlock.t-none { background:#f4f4f6; }
+  .teamBlock.turn { outline:3px solid var(--accent); outline-offset:1px; }
+  .teamBanner { display:flex; align-items:center; gap:6px; font-size:14px; font-weight:800;
+    padding:6px 8px; border-radius:9px; margin-bottom:5px; color:#fff; }
+  .t-red  .teamBanner { background:linear-gradient(90deg,#e53935,#ef6c60); }
+  .t-blue .teamBanner { background:linear-gradient(90deg,#1e88e5,#5aa9ef); }
+  .t-none .teamBanner { background:linear-gradient(90deg,#8a8f98,#b3b8c0); }
+  .teamBanner b { flex:1; }
+  .teamBanner .tscore { background:rgba(255,255,255,.28); border-radius:8px; padding:1px 9px; font-size:15px; }
+  .teamBanner .tnow { background:#fff; color:#333; border-radius:8px; padding:1px 8px; font-size:11px; }
+  .teamEmpty { font-size:12px; color:#888; padding:4px 8px; }
+  .playerRow.spent { opacity:.55; }
+  .playerRow .ptries { font-size:11px; font-weight:800; color:#fff; background:#7986cb;
+    border-radius:7px; padding:1px 6px; }
+  .tmove { border:0; background:#fff; border-radius:7px; cursor:pointer; font-size:13px;
+    padding:2px 7px; box-shadow:0 1px 3px rgba(0,0,0,.18); }
+  .shuffleBtn { width:100%; border:0; background:#eef1f6; border-radius:10px; padding:8px;
+    font-family:inherit; font-weight:800; font-size:13px; cursor:pointer; }
   .kickBtn { border:none; background:#ffe0e0; color:#c62828; border-radius:6px; width:22px; height:22px; font-size:12px; cursor:pointer; flex-shrink:0; }
   .kickBtn:hover { background:#ffcdd2; }
 
@@ -289,6 +311,18 @@
   .rankRow { background:rgba(255,255,255,.12); padding:9px 22px; border-radius:10px; font-size:18px; font-weight:700; min-width:250px; display:flex; justify-content:space-between; gap:20px; }
   .rankRow.team-red { border-right:5px solid #e53935; }
   .rankRow.team-blue { border-right:5px solid #1e88e5; }
+  /* شاشة نتائج الفرق: الفائز فوق، والفريقان جنبًا إلى جنب */
+  .winBig { display:block; font-size:26px; font-weight:900; padding:8px 0; }
+  .winBig.red { color:#e53935; } .winBig.blue { color:#1e88e5; } .winBig.tie { color:#777; }
+  .tcols { display:flex; gap:10px; }
+  .tcol { flex:1; border-radius:12px; padding:6px; background:#fafbfd; }
+  .tcol.t-red { background:#fdecec; } .tcol.t-blue { background:#e9f2fd; }
+  .tcol.won { outline:3px solid #ffc107; }
+  .tcolHead { display:flex; align-items:center; gap:6px; font-weight:800; font-size:14px;
+    padding:6px 8px; border-radius:9px; margin-bottom:5px; color:#fff; }
+  .t-red .tcolHead { background:#e53935; } .t-blue .tcolHead { background:#1e88e5; }
+  .tcolHead b { margin-inline-start:auto; font-size:19px; }
+  @media (max-width:520px){ .tcols { flex-direction:column; } }
   #startBtn { display:none; }
   #waitingNote { color:#fff; background:rgba(0,0,0,.35); padding:8px 16px; border-radius:10px; font-size:14px; }
 
@@ -310,6 +344,23 @@
   .voteBtn { padding:6px 18px; border:none; border-radius:8px; background:var(--green); color:#fff; font-weight:700; cursor:pointer; font-size:14px; }
   .voteBtn:disabled { background:#bbb; cursor:default; }
   .voteBtn.voted { background:var(--yellow); color:#333; }
+  /* التصويت واحدةً واحدة */
+  #galleryOne { display:flex; flex-direction:column; gap:10px; align-items:center; width:100%; max-width:520px; }
+  #goImg { width:100%; max-height:46vh; object-fit:contain; background:#fff; border-radius:12px; border:3px solid #fff; }
+  #goName { font-weight:900; font-size:18px; color:#fff; }
+  #goNote { font-size:13px; color:#cfe3f7; min-height:18px; }
+  #votePickOverlay input { width:100%; max-width:340px; padding:10px 12px; border-radius:10px;
+    border:2px solid #ddd; font-family:inherit; font-size:15px; }
+  #vpList { display:flex; flex-wrap:wrap; gap:7px; justify-content:center; max-height:44vh;
+    overflow-y:auto; max-width:640px; padding:4px; }
+  #vpList button { border:0; border-radius:9px; padding:7px 13px; background:#fff; color:#222;
+    font-family:inherit; font-weight:700; font-size:14px; cursor:pointer; }
+  #vpList button:hover { background:var(--yellow); }
+  /* زرّ «انتهيت» في وضع الكلّ يرسم */
+  #doneBtn { display:none; border:0; border-radius:11px; padding:9px 18px; font-family:inherit;
+    font-weight:800; font-size:14px; cursor:pointer; background:var(--green); color:#fff; }
+  #doneBtn.on { background:var(--yellow); color:#333; }
+  #doneBtn.show { display:inline-block; }
   .rgItem { background:#fff; border-radius:10px; padding:8px; color:#222; display:flex; flex-direction:column; gap:6px; align-items:center; width:230px; }
   .rgItem img { width:214px; height:150px; object-fit:contain; background:#fff; border:1px solid #eee; border-radius:6px; }
   .rgItem .cap { font-size:13px; color:#444; }
@@ -569,6 +620,7 @@
           <div id="colors"></div>
           <span class="tbSep"></span>
           <div class="tbGroup">
+            <button id="doneBtn" title="أعلن انتهاءك — تقدر تتراجع ما دام أحدٌ لم ينتهِ">✅ انتهيت</button>
             <div id="currentColor" title="اللون الحالي"></div>
             <label class="toolBtn" id="pickerWrap" title="اختر أي لون"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18c1.5 0 2-1 2-2s-1-1.5-1-2.5.8-1.5 2-1.5h1a3 3 0 0 0 3-3c0-3.9-3.5-6.5-7-6.5z"/><circle cx="8" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="10" r="1" fill="currentColor" stroke="none"/></svg><input type="color" id="colorPicker" value="#000000"></label>
           </div>
@@ -601,11 +653,28 @@
           <div id="turnEndExtra"></div>
         </div>
 
-        <!-- معرض التصويت -->
+        <!-- التصويت: رسمةٌ واحدةٌ في كلّ مرّة، تُرى كبيرةً وتُحكَم على انفراد -->
         <div class="overlay" id="galleryOverlay">
-          <h2>صوّت لأفضل رسمة! 🗳️</h2>
+          <h2 id="galleryTitle">صوّت على هذه الرسمة 🗳️</h2>
           <div id="galleryWord" style="color:var(--yellow);font-weight:900;font-size:20px;"></div>
-          <div id="galleryGrid"></div>
+          <div id="galleryOne">
+            <div id="goName"></div>
+            <img id="goImg" alt="">
+            <div id="goBtns" class="row2">
+              <button class="btn btn-green" id="goYes">👍 أعجبتني</button>
+              <button class="btn btn-blue" id="goSkip">🚫 أمتنع</button>
+            </div>
+            <div id="goNote"></div>
+            <button class="btn btn-purple" id="goNext" style="display:none;">التالية ▶️ (للقائد)</button>
+          </div>
+        </div>
+
+        <!-- القائد يختار كلمة «الكلّ يرسم» من بنك غرفته -->
+        <div class="overlay" id="votePickOverlay">
+          <h2>✍️ اختر الكلمة التي سيرسمها الجميع</h2>
+          <input id="vpSearch" placeholder="ابحث عن كلمة…" autocomplete="off">
+          <div id="vpList"></div>
+          <button class="btn btn-blue" id="vpRandom">🎲 عشوائية</button>
         </div>
 
         <!-- معرض نهاية الجولة (إعجاب/عدم إعجاب/تحميل) -->
@@ -659,7 +728,41 @@
                 <option value="40">40 ثانية</option>
                 <option value="60">60 ثانية</option>
                 <option value="80" selected>80 ثانية</option>
-                <option value="120">120 ثانية</option>
+                <option value="120">دقيقتان</option>
+                <option value="180" data-vote="1">3 دقائق</option>
+                <option value="240" data-vote="1">4 دقائق</option>
+                <option value="300" data-vote="1">5 دقائق</option>
+              </select>
+            </div>
+            <!-- المحاولات: في وضع الفرق مفروضة، وفي الكلاسيكيّ خيار -->
+            <div class="setRow" id="rowUseAttempts">
+              <label>🎯 اللعب بالمحاولات</label>
+              <select id="setUseAttempts">
+                <option value="0" selected>بالوقت فقط</option>
+                <option value="1">محاولات محدودة</option>
+              </select>
+            </div>
+            <div class="setRow" id="rowAttempts">
+              <label>🔢 محاولات كل لاعب</label>
+              <select id="setAttempts">
+                <option value="1">1</option><option value="2">2</option>
+                <option value="3" selected>3</option><option value="4">4</option>
+                <option value="5">5</option><option value="6">6</option>
+                <option value="8">8</option><option value="10">10</option>
+              </select>
+            </div>
+            <div class="setRow" id="rowTeamAssign">
+              <label>🔴🔵 توزيع الفرق</label>
+              <select id="setTeamAssign">
+                <option value="random" selected>عشوائي</option>
+                <option value="manual">يدويّ (من قائمة اللاعبين)</option>
+              </select>
+            </div>
+            <div class="setRow" id="rowVotePick">
+              <label>✍️ كلمة «الكل يرسم»</label>
+              <select id="setVotePick">
+                <option value="random" selected>عشوائية</option>
+                <option value="host">يختارها القائد</option>
               </select>
             </div>
             <div class="setRow">
@@ -919,10 +1022,30 @@ function sendSettings() {
     turnTime: $("setTime").value,
     category: $("setCategory").value,
     guessLock: $("setLock").value,
-    roundGallery: $("setGallery").value === "1"
+    roundGallery: $("setGallery").value === "1",
+    useAttempts: $("setUseAttempts").value === "1",
+    attempts: $("setAttempts").value,
+    teamAssign: $("setTeamAssign").value,
+    votePick: $("setVotePick").value
   });
 }
-["setMode","setRounds","setTime","setCategory","setLock","setGallery"].forEach(id => $(id).onchange = sendSettings);
+/* لا نعرض للمضيف إلا ما يخصّ وضعَه: خياراتٌ لا أثر لها تُربك ولا تُفيد */
+function syncSetRows() {
+  const m = $("setMode").value;
+  $("rowUseAttempts").style.display = m === "classic" ? "" : "none";
+  $("rowAttempts").style.display = (m === "teams" || $("setUseAttempts").value === "1") ? "" : "none";
+  $("rowTeamAssign").style.display = m === "teams" ? "" : "none";
+  $("rowVotePick").style.display = m === "vote" ? "" : "none";
+  $("setLock").parentElement.style.display = m === "vote" ? "none" : "";
+  $("setGallery").parentElement.style.display = m === "vote" ? "none" : "";
+  /* الأوقات الطويلة لوضع «الكلّ يرسم» وحده — الرسم فيه هو المقصود */
+  [...$("setTime").options].forEach(o => { o.hidden = o.dataset.vote === "1" && m !== "vote"; });
+  if ($("setTime").selectedOptions[0]?.hidden) { $("setTime").value = "80"; sendSettings(); }
+}
+["setMode","setRounds","setTime","setCategory","setLock","setGallery",
+ "setUseAttempts","setAttempts","setTeamAssign","setVotePick"]
+  .forEach(id => $(id).onchange = () => { syncSetRows(); sendSettings(); });
+syncSetRows();
 $("customWordsInput").onchange = () => socket.emit("setCustomWords", $("customWordsInput").value);
 
 // الإعدادات كنافذة منبثقة (الجوال)
@@ -1121,6 +1244,80 @@ $("catAddInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.p
 const overlays = ["pickOverlay","waitOverlay","turnEndOverlay","gameEndOverlay","lobbyOverlay","galleryOverlay","roundGalleryOverlay"];
 function showOverlay(id) { overlays.forEach(o => $(o).style.display = (o === id ? "flex" : "none")); }
 
+/* ===== قائمة اللاعبين =====
+   في وضع الفرق تُقسَم القائمة قسمين تحت لافتتين ملوّنتين، فيرى اللاعب من
+   معه ومن عليه بلمحة — لا مجرّد شريطٍ ملوّنٍ على حافّة الاسم. ومجموع كلّ
+   فريقٍ في لافتته، لأنّه الرقم الذي يهمّ لا نقاط الأفراد. */
+function playerRow(p, s, extra = "") {
+  const spent = p.spent ? " spent" : "";
+  const badge = p.isDrawer ? "✏️" : p.guessed ? "✅" : p.spent ? "🔒"
+              : p.isOwner ? "👑" : p.isBot ? "🤖" : "👤";
+  const tries = (s.attemptsOn && s.maxTries && !p.isDrawer && p.tries > 0)
+    ? `<span class="ptries" title="محاولات">${Math.max(0, s.maxTries - p.tries)}/${s.maxTries}</span>` : "";
+  return `<div class="playerRow ${p.isDrawer ? "drawer" : ""} ${p.guessed ? "guessed" : ""}` +
+    ` ${p.team ? "team-" + p.team : ""}${spent}" data-pid="${p.id}">
+      <span class="badge">${badge}</span>
+      <span class="pname">${esc(p.name)}${p.id === myId ? " (أنت)" : ""}</span>
+      ${extra}${tries}<span class="pscore">${p.score}</span>
+    </div>`;
+}
+function renderPlayers(s, iAmOwner) {
+  const list = s.players.filter(p => p.connected);
+  const panel = $("playersPanel");
+  const teams = s.settings.mode === "teams";
+  const lobby = s.state === "lobby" || s.state === "gameEnd";
+
+  if (!teams) {
+    panel.innerHTML = list.map(p => playerRow(p, s)).join("");
+  } else {
+    const ts = s.teamScores || { red: 0, blue: 0 };
+    const sec = (t, label, icon) => {
+      const mem = list.filter(p => p.team === t);
+      const turn = s.guessTeam === t && (s.state === "drawing");
+      /* في اللوبي: أزرار نقل اللاعب بين الفريقين للمضيف وحده */
+      const rows = mem.map(p => playerRow(p, s,
+        (lobby && iAmOwner)
+          ? `<button class="tmove" data-move="${p.id}" data-to="${t === "red" ? "blue" : "red"}"
+               title="انقله للفريق الآخر">⇄</button>` : "")).join("")
+        || '<div class="teamEmpty">لا أحد بعد</div>';
+      return `<div class="teamBlock t-${t} ${turn ? "turn" : ""}">
+        <div class="teamBanner">${icon} <b>${label}</b>
+          ${turn ? '<span class="tnow">' + (s.steal ? "خطف!" : "يخمّن") + "</span>" : ""}
+          <span class="tscore">${ts[t] || 0}</span></div>
+        ${rows}</div>`;
+    };
+    const unassigned = list.filter(p => p.team !== "red" && p.team !== "blue");
+    panel.innerHTML = sec("red", "الفريق الأحمر", "🔴") + sec("blue", "الفريق الأزرق", "🔵") +
+      (unassigned.length
+        ? `<div class="teamBlock t-none"><div class="teamBanner">⚪ <b>بلا فريق</b></div>` +
+          unassigned.map(p => playerRow(p, s, (lobby && iAmOwner)
+            ? `<button class="tmove" data-move="${p.id}" data-to="red">🔴</button>
+               <button class="tmove" data-move="${p.id}" data-to="blue">🔵</button>` : "")).join("") + "</div>"
+        : "") +
+      (lobby && iAmOwner
+        ? '<button class="shuffleBtn" id="shuffleTeamsBtn">🔀 اخلط الفرق عشوائيًّا</button>' : "");
+  }
+
+  /* الضغط على الصف يفتح نافذة الإشراف — نربط بالمعرّف لا بالفهرس */
+  panel.querySelectorAll(".playerRow").forEach(row => {
+    const id = row.dataset.pid;
+    if (!id || id === myId) return;
+    row.style.cursor = "pointer"; row.title = "خيارات اللاعب";
+    row.onclick = e => {
+      if (e.target.closest(".tmove")) return;
+      window.RassmMod && RassmMod.open(id);
+    };
+  });
+  panel.querySelectorAll(".tmove").forEach(b => {
+    b.onclick = e => {
+      e.stopPropagation();
+      socket.emit("setTeam", { id: b.dataset.move, team: b.dataset.to });
+    };
+  });
+  const sh = $("shuffleTeamsBtn");
+  if (sh) sh.onclick = () => socket.emit("shuffleTeams");
+}
+
 socket.on("roomState", s => {
   state = s;
   voteMode = s.settings.mode === "vote";
@@ -1128,6 +1325,14 @@ socket.on("roomState", s => {
   canDraw = (isDrawer && s.state === "drawing") || s.state === "drawAll";
   $("canvasWrap").classList.toggle("drawmode", canDraw);
   $("board").classList.toggle("drawing", canDraw);
+  /* زرّ «انتهيت» لا معنى له خارج وضع الجميع يرسم */
+  $("doneBtn").classList.toggle("show", s.state === "drawAll");
+  if (s.state === "drawAll") {
+    const meP = s.players.find(p => p.id === myId);
+    iAmDone = !!(meP && meP.done);
+    $("doneBtn").classList.toggle("on", iAmDone);
+    $("doneBtn").textContent = iAmDone ? "↩️ لم أنتهِ" : "✅ انتهيت";
+  }
   // في الجوال: نُخفي شريط الأسماء وقت دوري في الرسم لتوسيع مساحة اللوحة
   document.body.classList.toggle("iDraw", canDraw);
   // نسبة الرسمة: تُصفَّر مع كل رسّام جديد، والرسّام يُعلن نسبته فوراً
@@ -1150,19 +1355,7 @@ socket.on("roomState", s => {
 
   // اللاعبون
   const iAmOwner = !!s.players.find(p => p.id === myId)?.isOwner;
-  $("playersPanel").innerHTML = s.players.filter(p => p.connected).map(p => `
-    <div class="playerRow ${p.isDrawer ? "drawer" : ""} ${p.guessed ? "guessed" : ""} ${p.team ? "team-" + p.team : ""}">
-      <span class="badge">${p.isDrawer ? "✏️" : p.guessed ? "✅" : p.isOwner ? "👑" : p.isBot ? "🤖" : "👤"}</span>
-      <span class="pname">${esc(p.name)}${p.id === myId ? " (أنت)" : ""}</span>
-      <span class="pscore">${p.score}</span>
-    </div>`).join("");
-  // الضغط على صف اللاعب يفتح نافذة الإشراف الموحّدة
-  $("playersPanel").querySelectorAll(".playerRow").forEach((row, i) => {
-    const p = s.players.filter(x => x.connected)[i];
-    if (!p || p.id === myId) return;
-    row.style.cursor = "pointer"; row.title = "خيارات اللاعب";
-    row.onclick = () => window.RassmMod && RassmMod.open(p.id);
-  });
+  renderPlayers(s, iAmOwner);
 
   const me = s.players.find(p => p.id === myId);
   const set = s.settings;
@@ -1200,6 +1393,11 @@ socket.on("roomState", s => {
       $("setCategory").value = set.category;
       $("setLock").value = set.guessLock ?? 0;
       $("setGallery").value = set.roundGallery ? "1" : "0";
+      $("setUseAttempts").value = set.useAttempts ? "1" : "0";
+      $("setAttempts").value = String(set.attempts || 3);
+      $("setTeamAssign").value = set.teamAssign || "random";
+      $("setVotePick").value = set.votePick || "random";
+      syncSetRows();
     }
   } else if (s.state === "picking") {
     setRound(`الجولة ${s.round + 1} من ${s.totalRounds}`, `${s.round + 1}/${s.totalRounds}`);
@@ -1218,8 +1416,13 @@ socket.on("roomState", s => {
     // قفل التخمين عند إعادة الاتصال أو الانضمام المتأخر
     if (!isDrawer && s.guessLockRemaining > 0) applyGuessLock(s.guessLockRemaining);
     showOverlay(null);
+  } else if (s.state === "votePick") {
+    setRound("القائد يختار الكلمة… ✍️", "✍️");
+    if (!me?.isOwner) { $("waitText").textContent = "القائد يختار الكلمة… ✍️"; showOverlay("waitOverlay"); }
   } else if (s.state === "drawAll") {
-    setRound(`الكلمة ${s.round + 1} من ${s.totalRounds} — الجميع يرسم!`, `${s.round + 1}/${s.totalRounds} 🖌️`);
+    const humans = s.players.filter(p => p.connected && !p.isBot).length;
+    setRound(`الكلمة ${s.round + 1} من ${s.totalRounds} — الجميع يرسم! (${s.doneCount}/${humans} انتهوا)`,
+             `${s.round + 1}/${s.totalRounds} 🖌️`);
     showOverlay(null);
   } else if (s.state === "collecting") {
     setRound("جمع الرسمات... 📥", "📥");
@@ -1339,12 +1542,75 @@ socket.on("turnEnd", ({ word }) => {
 // ===== وضع "الكل يرسم" =====
 socket.on("voteWord", ({ word }) => {
   myVoted = false;
+  iAmDone = false;
+  localOps = []; localRedo = [];
+  $("doneBtn").classList.remove("on");
+  $("doneBtn").textContent = "✅ انتهيت";
   $("hintBox").innerHTML = `<span class="plain">ارسم: ${esc(word)}</span>`;
   showOverlay(null);
 });
 
 socket.on("requestDrawing", () => {
   try { socket.emit("submitDrawing", canvas.toDataURL("image/jpeg", 0.6)); } catch (e) {}
+});
+
+/* ── «انتهيت» ──
+   إعلانٌ قابلٌ للتراجع: ما دام أحدٌ لم يُعلن بعد فبإمكانك أن تعود وتُكمل.
+   ومتى أعلن الجميع انتقلنا فورًا للتصويت بلا انتظار وقتٍ لا يُستعمَل. */
+let iAmDone = false;
+$("doneBtn").onclick = () => {
+  iAmDone = !iAmDone;
+  socket.emit("doneDrawing", iAmDone);
+  $("doneBtn").classList.toggle("on", iAmDone);
+  $("doneBtn").textContent = iAmDone ? "↩️ لم أنتهِ" : "✅ انتهيت";
+};
+
+/* ── القائد يختار كلمة الجميع من بنك غرفته ── */
+let vpWords = [];
+socket.on("votePickWord", ({ words }) => {
+  vpWords = words || [];
+  $("vpSearch").value = "";
+  renderVpList("");
+  showOverlay("votePickOverlay");
+  setTimeout(() => $("vpSearch").focus(), 60);
+});
+function renderVpList(q) {
+  const s = String(q || "").trim();
+  const list = (s ? vpWords.filter(w => w.includes(s)) : vpWords).slice(0, 120);
+  $("vpList").innerHTML = list.length
+    ? list.map(w => `<button data-w="${esc(w)}">${esc(w)}</button>`).join("")
+    : "<div class='muted' style='color:#cfe3f7'>لا كلمات مطابقة</div>";
+  $("vpList").querySelectorAll("button").forEach(b => {
+    b.onclick = () => { socket.emit("chooseVoteWord", b.dataset.w); showOverlay(null); };
+  });
+}
+$("vpSearch").oninput = () => renderVpList($("vpSearch").value);
+$("vpRandom").onclick = () => { socket.emit("chooseVoteWord", ""); showOverlay(null); };
+
+/* ── التصويت: رسمةٌ واحدةٌ في كلّ مرّة ── */
+socket.on("galleryOne", ({ index, total, word, entry }) => {
+  $("galleryTitle").textContent = `صوّت على الرسمة ${index + 1} من ${total} 🗳️`;
+  $("galleryWord").textContent = "الكلمة: " + word;
+  $("goName").textContent = entry.name;
+  $("goImg").src = entry.img;
+  const mine = entry.id === myId;
+  $("goBtns").style.display = mine ? "none" : "flex";
+  $("goNote").textContent = mine ? "هذه رسمتك — لا تصوّت لنفسك 😄" : "";
+  $("goYes").disabled = $("goSkip").disabled = false;
+  $("goYes").onclick = () => voteOne(index, true);
+  $("goSkip").onclick = () => voteOne(index, false);
+  const owner = !!state?.players.find(p => p.id === myId)?.isOwner;
+  $("goNext").style.display = owner ? "block" : "none";
+  $("goNext").onclick = () => socket.emit("nextDrawing");
+  showOverlay("galleryOverlay");
+});
+function voteOne(index, yes) {
+  socket.emit("voteOne", { index, yes });
+  $("goYes").disabled = $("goSkip").disabled = true;
+  $("goNote").textContent = yes ? "صوّتَّ لها 👍" : "امتنعتَ — بانتظار البقيّة…";
+}
+socket.on("voteAck", ({ yes }) => {
+  $("goNote").textContent = yes ? "صوّتَّ لها 👍" : "امتنعتَ — بانتظار البقيّة…";
 });
 
 // ===== معرض نهاية الجولة =====
@@ -1399,31 +1665,9 @@ function rgReact(i, type) {
   $("rgDislike" + i).disabled = true;
 }
 
-socket.on("gallery", ({ entries, word }) => {
-  $("galleryWord").textContent = `الكلمة: ${word}`;
-  $("galleryGrid").innerHTML = "";
-  entries.forEach(e => {
-    const div = document.createElement("div");
-    div.className = "galleryItem";
-    const mine = e.id === myId;
-    div.innerHTML = `<img src="${e.img}"><div class="gname">${esc(e.name)}${mine ? " (أنت)" : ""}</div>`;
-    const btn = document.createElement("button");
-    btn.className = "voteBtn";
-    btn.textContent = mine ? "رسمتك" : "صوّت 👍";
-    btn.disabled = mine;
-    btn.onclick = () => {
-      if (myVoted || mine) return;
-      socket.emit("vote", e.id);
-      myVoted = true;
-      btn.textContent = "✅ صوّتت";
-      btn.classList.add("voted");
-      document.querySelectorAll(".voteBtn").forEach(b => { if (b !== btn) b.disabled = true; });
-    };
-    div.appendChild(btn);
-    $("galleryGrid").appendChild(div);
-  });
-  showOverlay("galleryOverlay");
-});
+/* المعرض الشبكيّ القديم (الكلّ دفعةً واحدة) حلّ محلّه العرضُ واحدةً واحدة
+   في `galleryOne`. أُبقي المستمع فارغًا كي لا يكسر عميلًا لم يُحدَّث بعد. */
+socket.on("gallery", () => {});
 
 socket.on("voteResults", ({ word, results }) => {
   $("turnEndTitle").textContent = "نتائج التصويت 🗳️";
@@ -1439,14 +1683,26 @@ socket.on("gameEnd", ({ ranking, teams }) => {
   sndEnd();
   const medals = ["🥇","🥈","🥉"];
   if (teams) {
-    const win = teams.red > teams.blue ? `فاز الفريق الأحمر 🔴 (${teams.red} مقابل ${teams.blue})`
-              : teams.blue > teams.red ? `فاز الفريق الأزرق 🔵 (${teams.blue} مقابل ${teams.red})`
-              : `تعادل! 🤝 (${teams.red} - ${teams.blue})`;
-    $("teamResult").textContent = win;
+    /* الفائزُ أوّلًا وبخطٍّ كبير، ثمّ الفريقان جنبًا إلى جنبٍ كلٌّ بنتيجته
+       وأعضائه — لا قائمةٌ واحدةٌ مرتّبةٌ بالأفراد، فاللعبةُ لُعبت بالفِرَق. */
+    const win = teams.red > teams.blue ? "red" : teams.blue > teams.red ? "blue" : null;
+    $("teamResult").innerHTML = win
+      ? `<span class="winBig ${win}">${win === "red" ? "🔴 فاز الفريق الأحمر" : "🔵 فاز الفريق الأزرق"}</span>`
+      : '<span class="winBig tie">🤝 تعادل!</span>';
     $("teamResult").style.display = "block";
-  } else $("teamResult").style.display = "none";
-  $("ranking").innerHTML = ranking.map((r, i) =>
-    `<div class="rankRow ${r.team ? "team-" + r.team : ""}"><span>${medals[i] || (i+1)}‏ ${esc(r.name)}</span><span>${r.score}</span></div>`).join("");
+    const col = (t, label, icon) => {
+      const mem = ranking.filter(r => r.team === t);
+      return `<div class="tcol t-${t} ${win === t ? "won" : ""}">
+        <div class="tcolHead">${icon} ${label}<b>${teams[t]}</b></div>
+        ${mem.map(r => `<div class="rankRow"><span>${esc(r.name)}</span><span>${r.score}</span></div>`).join("")
+          || '<div class="teamEmpty">—</div>'}</div>`;
+    };
+    $("ranking").innerHTML = `<div class="tcols">${col("red", "الأحمر", "🔴")}${col("blue", "الأزرق", "🔵")}</div>`;
+  } else {
+    $("teamResult").style.display = "none";
+    $("ranking").innerHTML = ranking.map((r, i) =>
+      `<div class="rankRow ${r.team ? "team-" + r.team : ""}"><span>${medals[i] || (i+1)}‏ ${esc(r.name)}</span><span>${r.score}</span></div>`).join("");
+  }
   showOverlay("gameEndOverlay");
   const owner = !!state?.players.find(p => p.id === myId)?.isOwner;
   $("playAgainBtn").style.display = owner ? "block" : "none";
@@ -1638,8 +1894,32 @@ document.querySelectorAll("[data-size]").forEach((b, i) => {
     b.classList.add("active");
   };
 });
-$("undoBtn").onclick = () => socket.emit("undo");
-$("redoBtn").onclick = () => socket.emit("redo");
+/* التراجع في وضع «الكلّ يرسم» محلّيٌّ بالضرورة: لوحةُ كلٍّ عنده وحده ولا
+   تمرّ بالخادم، فطلبُ تراجعٍ منه كان يذهب إلى خادمٍ يرفضه — أزرارٌ ميّتة.
+   هنا مكدّسٌ محلّيّ: نمشي للخلف حتى أوّل عمليّةٍ من الضربة (`start`) ونقتطع. */
+let localRedo = [];
+function localUndo() {
+  if (!localOps.length) return;
+  let i = localOps.length - 1;
+  while (i > 0 && !localOps[i].start) i--;
+  const cut = localOps.splice(i);
+  if (cut.length) localRedo.push(cut);
+  redrawAll();
+}
+function localRedoDo() {
+  const cut = localRedo.pop();
+  if (!cut) return;
+  cut.forEach(op => localOps.push(op));
+  redrawAll();
+}
+function localClear() {
+  if (localOps.length) localRedo.push(localOps.slice());
+  localOps = [];
+  redrawAll();
+}
+const isLocalCanvas = () => state?.state === "drawAll";
+$("undoBtn").onclick = () => isLocalCanvas() ? localUndo() : socket.emit("undo");
+$("redoBtn").onclick = () => isLocalCanvas() ? localRedoDo() : socket.emit("redo");
 
 /* اختصارات لوحة المفاتيح للراسم: Ctrl+Z تراجع · Ctrl+Y أو Ctrl+Shift+Z إعادة */
 document.addEventListener("keydown", (e) => {
@@ -1648,10 +1928,10 @@ document.addEventListener("keydown", (e) => {
   if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
   if (!canDraw) return;
   const k = (e.key || "").toLowerCase();
-  if (k === "z" && !e.shiftKey) { e.preventDefault(); socket.emit("undo"); }
-  else if (k === "y" || (k === "z" && e.shiftKey)) { e.preventDefault(); socket.emit("redo"); }
+  if (k === "z" && !e.shiftKey) { e.preventDefault(); isLocalCanvas() ? localUndo() : socket.emit("undo"); }
+  else if (k === "y" || (k === "z" && e.shiftKey)) { e.preventDefault(); isLocalCanvas() ? localRedoDo() : socket.emit("redo"); }
 });
-$("clearBtn").onclick = () => socket.emit("clearCanvas");
+$("clearBtn").onclick = () => isLocalCanvas() ? localClear() : socket.emit("clearCanvas");
 
 let localOps = []; // سجل العمليات لإعادة الرسم عند تغير المقاس (أدق من تكبير الصورة)
 
@@ -1841,6 +2121,7 @@ function renderOp(op) {
 }
 function applyOp(op) {
   if (canvas.width < 10) resizeCanvas(); // ضمان جاهزية اللوحة (مهم للجوال)
+  if (op.start) localRedo = [];          // رسمةٌ جديدة تُلغي ما تُرك للإعادة
   localOps.push(op);
   renderOp(op);
 }

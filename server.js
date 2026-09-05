@@ -196,7 +196,20 @@ const VOTE_TIME = 25;
 const CATEGORY_NAMES = Object.keys(CATEGORIES);
 const ALL_WORDS = CATEGORY_NAMES.flatMap(c => CATEGORIES[c]);
 
-const DEFAULT_SETTINGS = { rounds: 3, turnTime: 80, category: "الكل", mode: "classic", guessLock: 0, roundGallery: false };
+const DEFAULT_SETTINGS = {
+  rounds: 3, turnTime: 80, category: "الكل", mode: "classic",
+  guessLock: 0, roundGallery: false,
+  /* اللعب بالمحاولات: من نفدت محاولاته صمت بقيّة الدور. في وضع الفرق هو
+     الأصل (لأنّ نفاد المحاولات هو ما يفتح الخطف)، وفي الكلاسيكيّ خيار. */
+  useAttempts: false,
+  attempts: 3,
+  teamAssign: "random",     /* random | manual — من يوزّع الفرق */
+  votePick: "random"        /* random | host — من يختار كلمة «الكلّ يرسم» */
+};
+/* نقاط وضع الفرق: عشرةٌ لمن خمّن في دوره، وخمسةٌ لمن خطفها من الخصم.
+   والخطف أقلّ عمدًا — فمن خمّن كلمةً رُسمت لفريقه أحقُّ ممّن التقطها بعده. */
+const TEAM_POINTS = 10, STEAL_POINTS = 5;
+const STEAL_DIV = 4;                       /* ربع الوقت للفريق الخاطف */
 const MAX_POINTS = 10; // أعلى نقاط للسؤال الواحد
 
 const rooms = new Map();
@@ -310,9 +323,43 @@ function sanitizeSettings(s, old, room) {
     category: catOk ? s.category : old.category,
     mode: ["classic", "teams", "vote"].includes(s.mode) ? s.mode : old.mode,
     guessLock: [0, 3, 5, 10, 15, 25, 30].includes(+s.guessLock) ? +s.guessLock : (old.guessLock || 0),
-    roundGallery: typeof s.roundGallery === "boolean" ? s.roundGallery : (old.roundGallery || false)
+    roundGallery: typeof s.roundGallery === "boolean" ? s.roundGallery : (old.roundGallery || false),
+    useAttempts: typeof s.useAttempts === "boolean" ? s.useAttempts : (old.useAttempts || false),
+    attempts: Number.isFinite(+s.attempts) ? Math.min(10, Math.max(1, Math.round(+s.attempts))) : (old.attempts || 3),
+    teamAssign: ["random", "manual"].includes(s.teamAssign) ? s.teamAssign : (old.teamAssign || "random"),
+    votePick: ["random", "host"].includes(s.votePick) ? s.votePick : (old.votePick || "random")
   };
 }
+
+/* ── وضع الفرق: من يخمّن الآن؟ ──
+   في الطور الأوّل فريقُ الرسّام وحده. فإذا نفدت محاولاتهم أو وقتُهم انتقل
+   التخمين إلى الخصم بربع الوقت ومحاولةٍ واحدة. وهذا هو جوهر الوضع: أن
+   يرسم المرء لأهله لا للجميع. */
+const teamOf = (room, id) => (room.players.find(p => p.id === id) || {}).team || null;
+function guessSide(room) {
+  const dt = teamOf(room, room.drawerId);
+  if (!dt) return [];
+  return room.players.filter(p =>
+    p.connected && p.id !== room.drawerId &&
+    (room.steal ? p.team !== dt : p.team === dt));
+}
+const maxTries = room =>
+  room.steal ? 1 : (room.settings.attempts || 3);
+const triesLeft = (room, id) =>
+  Math.max(0, maxTries(room) - (room.tries.get(id) || 0));
+/* من يحقّ له التخمين الآن — في الفرق جانبٌ واحد، وفي غيرها الجميع.
+   وكان هذا موضعَ خطأ: قصرُ الدالّة على وضع الفرق جعل «نفدت محاولات
+   الجميع» لا تقع أبدًا في الكلاسيكيّ، فيبقى الدور إلى آخر ثانيةٍ وكلُّهم
+   صامتون. */
+function eligible(room) {
+  if (room.settings.mode === "teams") return guessSide(room);
+  return room.players.filter(p => p.connected && p.id !== room.drawerId && !room.guessedIds.has(p.id));
+}
+/* هل نفدت محاولات كلّ من يحقّ له التخمين؟ */
+const sideSpent = room => {
+  const side = eligible(room);
+  return side.length > 0 && side.every(p => triesLeft(room, p.id) <= 0);
+};
 
 // ====== حالة الغرفة ======
 function publicPlayers(room) {
@@ -323,9 +370,17 @@ function publicPlayers(room) {
     connected: p.connected,
     isOwner: p.id === room.ownerId,
     isBot: !!p.isBot,
-    team: p.team || null
+    team: p.team || null,
+    /* المحاولات معلومةٌ عامّة عمدًا: الفريق يحتاج أن يعرف من بقيت عنده
+       محاولة قبل أن يضيّعها أحدُهم في تخمينٍ عشوائيّ. */
+    tries: room.tries ? (room.tries.get(p.id) || 0) : 0,
+    spent: !!(room.tries && attemptsOn(room) && p.id !== room.drawerId &&
+              (room.tries.get(p.id) || 0) > 0 && triesLeft(room, p.id) <= 0),
+    done: !!(room.done && room.done.has(p.id))
   }));
 }
+/* المحاولات مفعّلةٌ دائمًا في وضع الفرق، وفي الكلاسيكيّ باختيار المضيف */
+const attemptsOn = room => room.settings.mode === "teams" || !!room.settings.useAttempts;
 
 function roomState(room) {
   return {
@@ -345,7 +400,19 @@ function roomState(room) {
     guessLockRemaining: (room.state === "drawing" && room.guessOpenAt && Date.now() < room.guessOpenAt)
       ? Math.ceil((room.guessOpenAt - Date.now()) / 1000) : 0,
     paused: !!room.paused,
-    pausedName: room.paused ? (room.pendingDrawer?.name || null) : null
+    pausedName: room.paused ? (room.pendingDrawer?.name || null) : null,
+    /* الفرق والمحاولات: تحتاجها الواجهةُ لترسم اللافتات وتُقفل مربّع الكتابة */
+    attemptsOn: attemptsOn(room),
+    maxTries: attemptsOn(room) ? maxTries(room) : 0,
+    steal: !!room.steal,
+    guessTeam: room.settings.mode === "teams"
+      ? (room.steal ? (teamOf(room, room.drawerId) === "red" ? "blue" : "red") : teamOf(room, room.drawerId))
+      : null,
+    teamScores: room.settings.mode === "teams"
+      ? { red: room.players.filter(p => p.team === "red").reduce((a, p) => a + p.score, 0),
+          blue: room.players.filter(p => p.team === "blue").reduce((a, p) => a + p.score, 0) }
+      : null,
+    doneCount: room.done ? room.done.size : 0
   };
 }
 
@@ -366,17 +433,27 @@ function startGame(room) {
   room.roundDrawings = [];
   room.galleryDone = false;
   room.players = room.players.filter(p => p.connected); // تنظيف المغادرين
-  room.players.forEach(p => { p.score = 0; p.hasDrawn = false; p.team = null; });
+  const keepTeams = room.settings.mode === "teams" && room.settings.teamAssign === "manual";
+  room.players.forEach(p => { p.score = 0; p.hasDrawn = false; if (!keepTeams) p.team = null; });
+  room.lastTeam = null;
+  room.tries = new Map();
+  room.steal = false;
 
   if (room.settings.mode === "teams") {
     const conn = room.players.filter(p => p.connected);
-    // خلط ثم توزيع بالتناوب
-    const shuffled = [...conn].sort(() => Math.random() - 0.5);
-    shuffled.forEach((p, i) => p.team = i % 2 === 0 ? "red" : "blue");
-    const red = shuffled.filter(p => p.team === "red").map(p => p.name).join("، ");
-    const blue = shuffled.filter(p => p.team === "blue").map(p => p.name).join("، ");
-    sysMsg(room, `🔴 الفريق الأحمر: ${red}`);
-    sysMsg(room, `🔵 الفريق الأزرق: ${blue}`);
+    if (keepTeams) {
+      /* التوزيع اليدويّ: ما تركه المضيف بلا فريقٍ يُوزَّع على الأصغر عددًا،
+         فلا تبدأ اللعبةُ بلاعبٍ بلا فريق مهما نسي المضيف. */
+      const count = t => conn.filter(p => p.team === t).length;
+      conn.filter(p => p.team !== "red" && p.team !== "blue")
+          .forEach(p => { p.team = count("red") <= count("blue") ? "red" : "blue"; });
+    } else {
+      const shuffled = [...conn].sort(() => Math.random() - 0.5);
+      shuffled.forEach((p, i) => p.team = i % 2 === 0 ? "red" : "blue");
+    }
+    const nm = t => conn.filter(p => p.team === t).map(p => p.name).join("، ");
+    sysMsg(room, `🔴 الفريق الأحمر: ${nm("red")}`);
+    sysMsg(room, `🔵 الفريق الأزرق: ${nm("blue")}`);
   }
 
   sysMsg(room, "بدأت اللعبة! 🎨");
@@ -422,6 +499,13 @@ function nextTurn(room) {
     next = room.pendingDrawer;
   }
   room.pendingDrawer = null;
+  /* في وضع الفرق يتناوب الفريقان الرسم: أحمرُ ثمّ أزرقُ ثمّ أحمر. ولو نفد
+     من لم يرسم في الفريق المستحقّ أخذنا من الآخر — فلا يقف الدور. */
+  if (!next && room.settings.mode === "teams") {
+    const want = room.lastTeam === "red" ? "blue" : "red";
+    next = connected.find(p => !p.hasDrawn && p.team === want)
+        || connected.find(p => !p.hasDrawn);
+  }
   if (!next) next = connected.find(p => !p.hasDrawn);
   if (!next) {
     // انتهت الجولة — اعرض المعرض أولًا إن كان مفعّلًا
@@ -435,7 +519,10 @@ function nextTurn(room) {
     if (room.round >= room.settings.rounds) return endGame(room);
     room.players.forEach(p => p.hasDrawn = false);
     sysMsg(room, `الجولة ${room.round + 1} من ${room.settings.rounds}`);
-    next = connected[0];
+    if (room.settings.mode === "teams") {
+      const want = room.lastTeam === "red" ? "blue" : "red";
+      next = connected.find(p => p.team === want) || connected[0];
+    } else next = connected[0];
   }
   if (room.round === 0 && !room.players.some(p => p.hasDrawn)) {
     sysMsg(room, `الجولة 1 من ${room.settings.rounds}`);
@@ -443,6 +530,9 @@ function nextTurn(room) {
 
   next.hasDrawn = true;
   room.drawerId = next.id;
+  room.lastTeam = next.team || null;
+  room.tries = new Map();
+  room.steal = false;
   room.state = "picking";
   room.wordOptions = pickWords(room, WORD_CHOICES);
   room.timeLeft = PICK_TIME;
@@ -474,13 +564,48 @@ function chooseWord(room, playerId, word) {
   const lock = room.settings.guessLock || 0;
   room.guessOpenAt = Date.now() + lock * 1000;
 
+  room.tries = new Map();
+  room.steal = false;
+
   io.to(playerId).emit("yourWord", { word });
   io.to(room.id).emit("clearCanvas");
   io.to(room.id).emit("guessLock", { seconds: lock });
-  sysMsg(room, lock > 0 ? `بدأ الرسم! التخمين يفتح بعد ${lock} ثواني ✏️` : "بدأ الرسم! خمنوا الكلمة ✏️");
+  if (room.settings.mode === "teams") {
+    const t = teamOf(room, playerId) === "red" ? "🔴 الأحمر" : "🔵 الأزرق";
+    sysMsg(room, `بدأ الرسم! يخمّن الفريق ${t} وحده — ${maxTries(room)} محاولات لكلّ لاعب ✏️`);
+  } else {
+    sysMsg(room, lock > 0 ? `بدأ الرسم! التخمين يفتح بعد ${lock} ثواني ✏️` : "بدأ الرسم! خمنوا الكلمة ✏️");
+  }
   broadcast(room);
 
   startDrawCountdown(room);
+  /* فريقٌ بلا مخمّنٍ واحد (لاعبٌ وحده في فريقه) لا معنى لانتظاره */
+  if (room.settings.mode === "teams" && guessSide(room).length === 0) startSteal(room);
+}
+
+/* ── طور الخطف ──
+   ينتقل التخمين إلى الفريق الخصم بربع الوقت ومحاولةٍ واحدةٍ لكلّ لاعب.
+   ولا يُفتَح إلا بعد أن يستنفد فريقُ الرسّام محاولاته أو وقتَه — وهذا ما
+   يجعل الخطف مكافأةً على صبرٍ لا سباقًا موازيًا. */
+function startSteal(room) {
+  if (room.settings.mode !== "teams" || room.steal || room.state !== "drawing") return;
+  room.steal = true;
+  room.tries = new Map();
+  const T = Math.max(5, Math.ceil((room.settings.turnTime || 60) / STEAL_DIV));
+  room.timeLeft = T;
+  const dt = teamOf(room, room.drawerId);
+  const other = dt === "red" ? "blue" : "red";
+  if (!room.players.some(p => p.connected && p.team === other)) return endTurn(room, "time");
+  io.to(room.id).emit("stealPhase", { team: other, time: T });
+  sysMsg(room, `🔓 خطف! الفريق ${other === "red" ? "🔴 الأحمر" : "🔵 الأزرق"} ` +
+               `يخمّن الآن — ${T} ثانية ومحاولةٌ واحدةٌ لكلّ لاعب (+${STEAL_POINTS})`, "close");
+  broadcast(room);
+}
+
+/* انتهى الوقت: في الفرق يفتح الخطف أوّلًا، وفي غيره ينتهي الدور */
+function timeUp(room) {
+  if (room.settings.mode === "teams" && !room.steal) return startSteal(room);
+  endTurn(room, "time");
 }
 
 // عدّاد وقت الرسم (يُستأنف من الوقت المتبقّي عند رجوع الرسام)
@@ -543,7 +668,7 @@ function startDrawCountdown(room) {
         broadcast(room);
       }
     }
-    if (room.timeLeft <= 0) endTurn(room, "time");
+    if (room.timeLeft <= 0) timeUp(room);
     else if (room.timeLeft % 5 === 0) broadcast(room);
     io.to(room.id).emit("tick", room.timeLeft);
   }, 1000);
@@ -562,7 +687,11 @@ function endTurn(room, reason) {
   }
 
   io.to(room.id).emit("turnEnd", { word, reason });
-  if (reason === "all") sysMsg(room, `الجميع خمّن الكلمة! كانت: ${word} ✅`, "correct");
+  if (reason === "all") {
+    sysMsg(room, room.settings.mode === "teams"
+      ? `الكلمة كانت: ${word} ✅`
+      : `الجميع خمّن الكلمة! كانت: ${word} ✅`, "correct");
+  } else if (reason === "attempts") sysMsg(room, `نفدت المحاولات! الكلمة كانت: ${word}`);
   else sysMsg(room, `انتهى الوقت! الكلمة كانت: ${word}`);
   broadcast(room);
 
@@ -588,10 +717,36 @@ function nextVoteRound(room) {
   }
 
   if (room.round >= room.settings.rounds) return endGame(room);
+  room.done = new Set();
 
-  const word = pickWords(room, 1)[0];
-  room.currentWord = word;
-  room.usedWords.add(word);
+  /* المضيف يختار الكلمة من بنك غرفته إن شاء. وله مهلة — فغرفةٌ تنتظر
+     مضيفًا قام عن جهازه ليست لعبة. عند انقضائها تُختار عشوائيًّا. */
+  if (room.settings.votePick === "host") {
+    room.state = "votePick";
+    room.timeLeft = PICK_TIME + 15;
+    const pool = wordPool(room);
+    io.to(room.ownerId).emit("votePickWord", { words: pool.slice(0, 400), time: room.timeLeft });
+    sysMsg(room, "القائد يختار الكلمة التي سترسمونها…");
+    broadcast(room);
+    room.timer = setInterval(() => {
+      room.timeLeft--;
+      io.to(room.id).emit("tick", room.timeLeft);
+      if (room.timeLeft <= 0) startDrawAll(room, null);
+    }, 1000);
+    return;
+  }
+  startDrawAll(room, null);
+}
+
+function startDrawAll(room, chosen) {
+  clearTimers(room);
+  if (room.state !== "drawAll") {
+    const word = chosen || pickWords(room, 1)[0];
+    room.currentWord = word;
+    room.usedWords.add(word);
+  }
+  const word = room.currentWord;
+  room.done = new Set();
   room.state = "drawAll";
   room.timeLeft = room.settings.turnTime;
   room.hint = "";
@@ -607,6 +762,20 @@ function nextVoteRound(room) {
     else if (room.timeLeft % 5 === 0) broadcast(room);
     io.to(room.id).emit("tick", room.timeLeft);
   }, 1000);
+}
+
+/* «انتهيت» — إعلانٌ قابلٌ للتراجع ما دام أحدٌ لم ينتهِ بعد. ومتى أعلن
+   الجميعُ انتهاءهم انتقلنا فورًا: لا معنى لانتظار وقتٍ لا أحد يستعمله. */
+function setDone(room, id, val) {
+  if (room.state !== "drawAll") return;
+  room.done = room.done || new Set();
+  if (val) room.done.add(id); else room.done.delete(id);
+  const humans = room.players.filter(p => p.connected && !p.isBot);
+  broadcast(room);
+  if (humans.length && humans.every(p => room.done.has(p.id))) {
+    sysMsg(room, "الجميع انتهى — إلى التصويت! 🗳️");
+    startGallery(room);
+  }
 }
 
 function startGallery(room) {
@@ -626,43 +795,70 @@ function startGallery(room) {
       room.round++;
       return setTimeout(() => nextVoteRound(room), 2000);
     }
+    /* رسمةٌ واحدةٌ في كلّ مرّة، لا شبكةٌ يتنافس فيها الجميع دفعةً واحدة:
+       الرسمةُ تُرى كبيرةً وتُحكَم على انفراد، ولمن لم تُعجبه أن يمتنع. */
     room.state = "voting";
-    room.timeLeft = VOTE_TIME;
-    io.to(room.id).emit("gallery", { entries, word: room.currentWord });
-    sysMsg(room, "صوّتوا لأفضل رسمة! 🗳️ (لا يمكنك التصويت لنفسك)");
-    broadcast(room);
-
-    room.timer = setInterval(() => {
-      room.timeLeft--;
-      if (room.timeLeft <= 0) finishVoting(room);
-      io.to(room.id).emit("tick", room.timeLeft);
-    }, 1000);
+    room.entries = entries;
+    room.voteIdx = 0;
+    room.voteYes = entries.map(() => new Set());
+    room.voteSeen = entries.map(() => new Set());
+    showEntry(room);
   }, 2500);
 }
 
-function castVote(room, voterId, targetId) {
-  if (room.state !== "voting") return;
-  if (voterId === targetId) return;
-  if (!room.drawings.has(targetId)) return;
-  if (room.votes.has(voterId)) return;
-  room.votes.set(voterId, targetId);
+/* من يحقّ له الحكم على هذه الرسمة: كلُّ متّصلٍ حقيقيّ عدا صاحبها */
+const judges = (room, i) => room.players.filter(p =>
+  p.connected && !p.isBot && p.id !== (room.entries[i] || {}).id);
 
-  const voters = room.players.filter(p => p.connected).length;
-  if (room.votes.size >= voters) finishVoting(room);
+function showEntry(room) {
+  clearTimers(room);
+  if (!room.entries || room.voteIdx >= room.entries.length) return finishVoting(room);
+  const i = room.voteIdx, e = room.entries[i];
+  room.timeLeft = VOTE_TIME;
+  io.to(room.id).emit("galleryOne", {
+    index: i, total: room.entries.length, word: room.currentWord,
+    entry: { id: e.id, img: e.img, name: e.name }
+  });
+  broadcast(room);
+  room.timer = setInterval(() => {
+    room.timeLeft--;
+    if (room.timeLeft <= 0) nextEntry(room);
+    io.to(room.id).emit("tick", room.timeLeft);
+  }, 1000);
+}
+function nextEntry(room) {
+  if (room.state !== "voting") return;
+  room.voteIdx++;
+  if (room.voteIdx >= room.entries.length) return finishVoting(room);
+  showEntry(room);
+}
+
+/* صوتٌ أو امتناع — كلاهما «رأيٌ أُدلي به»، وبهما معًا نعرف متى ننتقل */
+function castVote(room, voterId, index, yes) {
+  if (room.state !== "voting") return;
+  if (index !== room.voteIdx) return;
+  const e = room.entries[index];
+  if (!e || e.id === voterId) return;                 /* لا يصوّت لنفسه */
+  if (room.voteSeen[index].has(voterId)) return;      /* رأيٌ واحدٌ لكلّ رسمة */
+  room.voteSeen[index].add(voterId);
+  if (yes) room.voteYes[index].add(voterId);
+  io.to(voterId).emit("voteAck", { index, yes: !!yes });
+  const need = judges(room, index);
+  if (need.length && need.every(p => room.voteSeen[index].has(p.id))) nextEntry(room);
 }
 
 function finishVoting(room) {
   clearTimers(room);
   room.state = "turnEnd";
 
-  const counts = new Map();
-  room.votes.forEach(target => counts.set(target, (counts.get(target) || 0) + 1));
-  const results = [...room.drawings.keys()].map(id => {
-    const p = room.players.find(x => x.id === id);
-    const votes = counts.get(id) || 0;
+  const entries = room.entries || [];
+  const results = entries.map((e, i) => {
+    const p = room.players.find(x => x.id === e.id);
+    const votes = (room.voteYes[i] || new Set()).size;
     if (p) p.score += votes * 100;
-    return { name: p?.name || "؟", votes, points: votes * 100 };
+    return { name: p?.name || e.name || "؟", votes, points: votes * 100 };
   }).sort((a, b) => b.votes - a.votes);
+  room.entries = null;
 
   io.to(room.id).emit("voteResults", { word: room.currentWord, results });
   if (results[0] && results[0].votes > 0) {
@@ -736,14 +932,43 @@ function handleChat(room, player, text) {
       return;
     }
 
+    /* في وضع الفرق: من ليس في الفريق صاحب الدور لا يخمّن — ورسالتُه
+       تُنشَر كدردشةٍ عاديّة كي لا يظنّ أنّ الموقع ابتلعها. */
+    if (room.settings.mode === "teams") {
+      const side = guessSide(room);
+      if (!side.some(p => p.id === player.id)) {
+        io.to(room.id).emit("chat", { name: player.name, text });
+        return;
+      }
+    }
+    /* نفدت محاولاته: صامتٌ بقيّة الدور */
+    if (attemptsOn(room) && triesLeft(room, player.id) <= 0) {
+      io.to(player.id).emit("chat", { system: true, cls: "close", text: "🔒 نفدت محاولاتك في هذا الدور" });
+      io.to(player.id).emit("guessResult", { ok: false, spent: true, left: 0 });
+      return;
+    }
+
     const guess = normalizeArabic(text);
     const answer = normalizeArabic(room.currentWord);
 
     if (guess === answer) {
       room.guessedIds.add(player.id);
+      let points;
+      if (room.settings.mode === "teams") {
+        /* الفريق يأخذها مرّةً واحدة، والدور ينتهي فورًا — لا سباق داخل الفريق */
+        points = room.steal ? STEAL_POINTS : TEAM_POINTS;
+        player.score += points;
+        const tm = player.team === "red" ? "🔴 الأحمر" : "🔵 الأزرق";
+        io.to(room.id).emit("chat", { system: true, cls: "correct",
+          text: `${player.name} خمّن الكلمة! ✅ الفريق ${tm} +${points}${room.steal ? " (خطف!)" : ""}` });
+        io.to(player.id).emit("guessedCorrectly");
+        io.to(player.id).emit("guessResult", { ok: true });
+        broadcast(room);
+        return endTurn(room, "all");
+      }
       // نقاط بالترتيب: الأول 10، الثاني 9 ... العاشر فما بعده 1
       const rank = room.guessedIds.size; // ترتيب هذا اللاعب
-      const points = Math.max(1, MAX_POINTS + 1 - rank);
+      points = Math.max(1, MAX_POINTS + 1 - rank);
       player.score += points;
       io.to(room.id).emit("chat", { system: true, cls: "correct", text: `${player.name} خمّن الكلمة! ✅ (المركز ${rank} • +${points})` });
       io.to(player.id).emit("guessedCorrectly");
@@ -755,13 +980,31 @@ function handleChat(room, player, text) {
       return;
     }
 
+    /* المحاولة تُحسَب على الخطأ وحده — والقريبة جدًّا خطأٌ كذلك، وإلا صار
+       تقريبُ الحرف طريقًا لمحاولاتٍ بلا عدد. */
+    let left = null;
+    if (attemptsOn(room)) {
+      room.tries.set(player.id, (room.tries.get(player.id) || 0) + 1);
+      left = triesLeft(room, player.id);
+    }
     const veryClose = levenshtein(guess, answer) === 1;
     if (veryClose) {
       io.to(player.id).emit("chat", { system: true, cls: "close", text: `"${text}" قريبة جدًا! 🔥` });
     }
     // نتيجة التخمين للمُخمِّن نفسه: يلوّن مربع الدردشة (أحمر خطأ • برتقالي قريبة)
-    io.to(player.id).emit("guessResult", { ok: false, close: veryClose });
+    io.to(player.id).emit("guessResult", { ok: false, close: veryClose, left, spent: left === 0 });
     io.to(room.id).emit("chat", { name: player.name, text });
+
+    if (attemptsOn(room)) {
+      if (left === 0) io.to(player.id).emit("chat", { system: true, cls: "close", text: "🔒 نفدت محاولاتك" });
+      broadcast(room);
+      /* نفدت محاولات الجانب كلِّه: في الفرق يُفتَح الخطف، وفي الكلاسيكيّ
+         ينتهي الدور — لا معنى لانتظار وقتٍ لا يستطيع أحدٌ استعماله. */
+      if (sideSpent(room)) {
+        if (room.settings.mode === "teams") return startSteal(room);
+        return endTurn(room, "attempts");
+      }
+    }
     return;
   }
 
@@ -847,7 +1090,8 @@ io.on("connection", (socket) => {
       timeLeft: 0, timer: null, canvasOps: [], botTimers: [],
       settings: { ...DEFAULT_SETTINGS }, customWords: [],
       words: emptyWords(),
-      drawings: new Map(), votes: new Map()
+      drawings: new Map(), votes: new Map(),
+      tries: new Map(), steal: false, lastTeam: null, done: new Set()
     };
     rooms.set(id, room);
     player = { id: socket.id, name, userName: socket.userName || null, score: 0, hasDrawn: false, connected: true };
@@ -934,6 +1178,30 @@ io.on("connection", (socket) => {
     broadcast(room);
   });
 
+  /* التوزيع اليدويّ للفرق: المضيف يضع كلَّ لاعبٍ حيث يشاء قبل البدء.
+     يعمل في اللوبي وحده — تبديل الفرق في منتصف اللعبة يقلب النتيجة. */
+  socket.on("setTeam", ({ id, team } = {}) => {
+    if (!room || socket.id !== room.ownerId) return;
+    if (room.state !== "lobby" && room.state !== "gameEnd") return;
+    if (!["red", "blue", null].includes(team) && team !== undefined) return;
+    const p = room.players.find(x => x.id === id);
+    if (!p) return;
+    p.team = (team === "red" || team === "blue") ? team : null;
+    room.settings.teamAssign = "manual";
+    broadcast(room);
+  });
+
+  /* خلطٌ عشوائيّ فوريّ — زرٌّ للمضيف حين يملّ الترتيب اليدويّ */
+  socket.on("shuffleTeams", () => {
+    if (!room || socket.id !== room.ownerId) return;
+    if (room.state !== "lobby" && room.state !== "gameEnd") return;
+    const conn = room.players.filter(p => p.connected);
+    [...conn].sort(() => Math.random() - 0.5)
+      .forEach((p, i) => p.team = i % 2 === 0 ? "red" : "blue");
+    room.settings.teamAssign = "manual";
+    broadcast(room);
+  });
+
   socket.on("setCustomWords", (text) => {
     if (!room || socket.id !== room.ownerId) return;
     if (room.state !== "lobby" && room.state !== "gameEnd") return;
@@ -1005,6 +1273,26 @@ io.on("connection", (socket) => {
   });
 
   socket.on("chooseWord", (word) => { if (room) chooseWord(room, socket.id, word); });
+
+  /* ── وضع «الكلّ يرسم» ── */
+  socket.on("chooseVoteWord", (word) => {
+    if (!room || socket.id !== room.ownerId || room.state !== "votePick") return;
+    const w = String(word || "").trim().slice(0, 40);
+    const pool = wordPool(room);
+    startDrawAll(room, pool.includes(w) ? w : null);
+  });
+  socket.on("doneDrawing", (v) => {
+    if (!room) return;
+    setDone(room, socket.id, v !== false);
+  });
+  socket.on("voteOne", ({ index, yes } = {}) => {
+    if (room) castVote(room, socket.id, +index, !!yes);
+  });
+  /* المضيف يقطع الانتظار: من صمت لا يُوقف الطاولة */
+  socket.on("nextDrawing", () => {
+    if (!room || socket.id !== room.ownerId || room.state !== "voting") return;
+    nextEntry(room);
+  });
 
   // ---- الرسم ----
   socket.on("draw", (op) => {
@@ -1156,10 +1444,9 @@ io.on("connection", (socket) => {
     room.drawings.set(socket.id, img);
   });
 
-  socket.on("vote", (targetId) => {
-    if (!room) return;
-    castVote(room, socket.id, String(targetId || ""));
-  });
+  /* التصويت القديم (شبكةٌ دفعةً واحدة) لم يعد يُستعمَل — أُبقي المستمع
+     صامتًا كي لا يُخطئ عميلٌ قديمٌ لم يُحدَّث بعد النشر. */
+  socket.on("vote", () => {});
 
   // ---- معرض نهاية الجولة ----
   socket.on("turnDrawing", (img) => {

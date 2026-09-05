@@ -314,7 +314,9 @@ ok(/id="sAT" min="5" max="60" step="5"/.test(Q2), "شريط الإعداد يص�
 // ───────── ١٢ · تلوين مربع الدردشة حسب نتيجة التخمين ─────────
 console.log("\n⑫ الدردشة تقلب أحمر/أخضر حسب التخمين");
 ok(/io\.to\(player\.id\)\.emit\("guessResult", \{ ok: true \}\)/.test(SRV), "الخادم يبلّغ المُخمِّن بالإجابة الصحيحة");
-ok(/io\.to\(player\.id\)\.emit\("guessResult", \{ ok: false, close: veryClose \}\)/.test(SRV), "ويبلّغه بالخطأ ويميّز القريبة");
+/* الحمولة اتّسعت بحقلَي المحاولات (`left` و`spent`)، فنفحص جوهرها لا نصَّها */
+ok(/io\.to\(player\.id\)\.emit\("guessResult", \{ ok: false, close: veryClose[^}]*\}\)/.test(SRV),
+   "ويبلّغه بالخطأ ويميّز القريبة");
 ok(/const veryClose = levenshtein\(guess, answer\) === 1/.test(SRV), "«قريبة جدًا» تُحسب بفرق حرف واحد");
 ok(!/io\.to\(room\.id\)\.emit\("guessResult"/.test(SRV), "النتيجة تُرسل للمُخمِّن وحده لا للغرفة (لا تكشف الكلمة)");
 ok(/socket\.on\("guessResult", r => \{/.test(DRAW), "العميل يستقبل النتيجة");
