@@ -258,6 +258,32 @@ const STEPS = [
       await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT`);
       await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS name_changed_at BIGINT`);
     }
+  },
+
+  {
+    id: 11,
+    name: "رهانات محجوزة (escrow)",
+    async pg(q) {
+      /* طاولةُ رهانٍ تعني أنّ ذهبًا خرج من محفظةٍ ولم يدخل أخرى بعد. لو
+         بقي هذا في ذاكرة الخادم وحدها، فإعادةُ تشغيلٍ واحدةٌ تبتلع رهانَ
+         أربعةِ لاعبين ولا أحد يعرف كم كان. فالمحجوز صفٌّ في القاعدة: يُنشأ
+         مع الخصم في معاملةٍ واحدة، ولا يُغلَق إلا بدفعٍ أو ردّ. وما بقي
+         `held` بعد إقلاعٍ جديد يُردّ آليًّا — فالغرف لا تعيش عبر التشغيل. */
+      await q(`CREATE TABLE IF NOT EXISTS escrow (
+                 id BIGSERIAL PRIMARY KEY,
+                 room TEXT NOT NULL,
+                 game TEXT NOT NULL,
+                 user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                 amount BIGINT NOT NULL CHECK (amount > 0),
+                 state TEXT NOT NULL DEFAULT 'held',
+                 created_at BIGINT NOT NULL,
+                 settled_at BIGINT)`);
+      await q(`CREATE INDEX IF NOT EXISTS escrow_room_idx ON escrow(room, state)`);
+      await q(`CREATE INDEX IF NOT EXISTS escrow_state_idx ON escrow(state)`);
+      /* لاعبٌ واحدٌ لا يُحجَز له مرّتان في الغرفة نفسها */
+      await q(`CREATE UNIQUE INDEX IF NOT EXISTS escrow_room_user_uq
+               ON escrow(room, user_id) WHERE state = 'held'`);
+    }
   }
 ];
 

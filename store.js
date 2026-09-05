@@ -160,6 +160,88 @@ class JsonStore {
       .reduce((a, x) => a + x.delta, 0);
   }
 
+  /* مجموع ما خرج من محفظته بسببٍ بعينه — لسقف الرهان اليوميّ */
+  async spentSince(userId, since, reasonPrefix = "") {
+    return (this.db.ledger || [])
+      .filter(x => x.userId === Number(userId) && x.createdAt >= since && x.delta < 0 &&
+                   (!reasonPrefix || String(x.reason).startsWith(reasonPrefix)))
+      .reduce((a, x) => a - x.delta, 0);
+  }
+
+  /* ── الرهان المحجوز ──
+     الحجز خصمٌ وصفٌّ معًا. وفي الملفّ لا معاملات، لكن الكتابة متزامنة على
+     خيطٍ واحد فلا يتخلّل الخصمَ والتسجيلَ شيء. */
+  async holdBet(room, game, userId, amount) {
+    const uid = Number(userId), amt = Math.round(Number(amount) || 0);
+    if (!uid || amt <= 0) return { ok: false, error: "رهانٌ غير صالح" };
+    this.db.escrow = this.db.escrow || [];
+    if (this.db.escrow.some(e => e.room === room && e.userId === uid && e.state === "held"))
+      return { ok: false, error: "لك رهانٌ محجوزٌ في هذه الطاولة" };
+    const w = this._wallet(uid);
+    if (w.gold < amt) return { ok: false, error: "رصيدك لا يكفي للرهان", balance: w.gold };
+    const r = await this.move(uid, "gold", -amt, { reason: "رهان:حجز:" + game, refType: game, refId: room });
+    if (!r.ok) return r;
+    this.db.escrow.push({
+      id: this.db.escrow.length + 1, room, game, userId: uid, amount: amt,
+      state: "held", createdAt: Date.now(), settledAt: null
+    });
+    this._save();
+    return { ok: true, balance: r.balance, amount: amt };
+  }
+  async heldBets(room) {
+    return (this.db.escrow || []).filter(e => e.room === room && e.state === "held")
+      .map(e => ({ ...e }));
+  }
+  async settleBets(room, winnerUserIds) {
+    const held = (this.db.escrow || []).filter(e => e.room === room && e.state === "held");
+    if (!held.length) return { ok: true, pot: 0, paid: [] };
+    const pot = held.reduce((a, e) => a + e.amount, 0);
+    const winners = [...new Set((winnerUserIds || []).map(Number).filter(Boolean))];
+    if (!winners.length) return this.refundBets(room);
+    /* القسمة قد لا تستوي، والباقي لا يُرمى: يُضاف لأوّل فائز */
+    const share = Math.floor(pot / winners.length);
+    const paid = [];
+    for (let i = 0; i < winners.length; i++) {
+      const amt = share + (i === 0 ? pot - share * winners.length : 0);
+      if (amt <= 0) continue;
+      const r = await this.move(winners[i], "gold", amt,
+        { reason: "رهان:فوز:" + held[0].game, refType: held[0].game, refId: room });
+      paid.push({ userId: winners[i], amount: amt, ok: !!r.ok });
+    }
+    held.forEach(e => { e.state = "paid"; e.settledAt = Date.now(); });
+    this._save();
+    return { ok: true, pot, paid };
+  }
+  async refundBets(room) {
+    const held = (this.db.escrow || []).filter(e => e.room === room && e.state === "held");
+    const back = [];
+    for (const e of held) {
+      const r = await this.move(e.userId, "gold", e.amount,
+        { reason: "رهان:ردّ:" + e.game, refType: e.game, refId: room });
+      e.state = "refunded"; e.settledAt = Date.now();
+      back.push({ userId: e.userId, amount: e.amount, ok: !!r.ok });
+    }
+    this._save();
+    return { ok: true, refunded: back };
+  }
+  /** عند الإقلاع: كلُّ محجوزٍ باقٍ يعني غرفةً ماتت مع الخادم — يُردّ. */
+  async sweepEscrow() {
+    const held = (this.db.escrow || []).filter(e => e.state === "held");
+    const rooms = [...new Set(held.map(e => e.room))];
+    for (const r of rooms) await this.refundBets(r);
+    return held.length;
+  }
+  async escrowStats() {
+    const all = this.db.escrow || [];
+    const s = { held: 0, heldGold: 0, paid: 0, refunded: 0 };
+    for (const e of all) {
+      if (e.state === "held") { s.held++; s.heldGold += e.amount; }
+      else if (e.state === "paid") s.paid++;
+      else s.refunded++;
+    }
+    return s;
+  }
+
   /* ── المتجر: كتالوج ومخزون وتجهيز ── */
   async upsertItems(rows) {
     this.db.items = this.db.items || {};
@@ -644,6 +726,112 @@ class PgStore {
        WHERE user_id = $1 AND created_at >= $2 AND delta > 0 AND reason LIKE $3`,
       [Number(userId), since, (reasonPrefix || "") + "%"]);
     return Number(r.rows[0].s);
+  }
+
+  async spentSince(userId, since, reasonPrefix = "") {
+    const r = await this.pool.query(
+      `SELECT COALESCE(-SUM(delta),0) AS s FROM ledger
+       WHERE user_id = $1 AND created_at >= $2 AND delta < 0 AND reason LIKE $3`,
+      [Number(userId), since, (reasonPrefix || "") + "%"]);
+    return Number(r.rows[0].s);
+  }
+
+  /* ── الرهان المحجوز ──
+     الخصمُ وصفُّ الحجز في معاملةٍ واحدة. لو نجح الخصمُ وفشل الصفّ لضاع ذهبٌ
+     لا أثر له، ولو نجح الصفُّ وفشل الخصمُ لدفعنا من العدم. فإمّا معًا وإمّا لا. */
+  async holdBet(room, game, userId, amount) {
+    const uid = Number(userId), amt = Math.round(Number(amount) || 0);
+    if (!uid || amt <= 0) return { ok: false, error: "رهانٌ غير صالح" };
+    const c = await this.pool.connect();
+    try {
+      await c.query("BEGIN");
+      await c.query(`INSERT INTO wallets (user_id, gold, gems, updated_at) VALUES ($1,0,0,$2)
+                     ON CONFLICT (user_id) DO NOTHING`, [uid, Date.now()]);
+      const cur = await c.query("SELECT gold FROM wallets WHERE user_id = $1 FOR UPDATE", [uid]);
+      const before = Number(cur.rows[0].gold);
+      if (before < amt) { await c.query("ROLLBACK"); return { ok: false, error: "رصيدك لا يكفي للرهان", balance: before }; }
+      const next = before - amt;
+      await c.query("UPDATE wallets SET gold = $2, updated_at = $3 WHERE user_id = $1", [uid, next, Date.now()]);
+      await c.query(
+        `INSERT INTO ledger (user_id, currency, delta, balance_after, reason, ref_type, ref_id, created_at)
+         VALUES ($1,'gold',$2,$3,$4,$5,$6,$7)`,
+        [uid, -amt, next, "رهان:حجز:" + game, game, room, Date.now()]);
+      await c.query(
+        `INSERT INTO escrow (room, game, user_id, amount, state, created_at)
+         VALUES ($1,$2,$3,$4,'held',$5)`, [room, game, uid, amt, Date.now()]);
+      await c.query("COMMIT");
+      return { ok: true, balance: next, amount: amt };
+    } catch (e) {
+      await c.query("ROLLBACK").catch(() => {});
+      if (/escrow_room_user_uq/.test(e.message)) return { ok: false, error: "لك رهانٌ محجوزٌ في هذه الطاولة" };
+      throw e;
+    } finally { c.release(); }
+  }
+  async heldBets(room) {
+    const r = await this.pool.query(
+      `SELECT id, room, game, user_id AS "userId", amount, state, created_at AS "createdAt"
+       FROM escrow WHERE room = $1 AND state = 'held' ORDER BY id`, [room]);
+    return r.rows.map(x => ({ ...x, userId: Number(x.userId), amount: Number(x.amount) }));
+  }
+  async settleBets(room, winnerUserIds) {
+    const winners = [...new Set((winnerUserIds || []).map(Number).filter(Boolean))];
+    const c = await this.pool.connect();
+    try {
+      await c.query("BEGIN");
+      const h = await c.query(
+        "SELECT id, game, user_id, amount FROM escrow WHERE room = $1 AND state = 'held' FOR UPDATE", [room]);
+      if (!h.rowCount) { await c.query("COMMIT"); return { ok: true, pot: 0, paid: [] }; }
+      const game = h.rows[0].game;
+      const pot = h.rows.reduce((a, x) => a + Number(x.amount), 0);
+      const per = winners.length ? Math.floor(pot / winners.length) : 0;
+      const targets = winners.length
+        ? winners.map((u, i) => ({ uid: u, amt: per + (i === 0 ? pot - per * winners.length : 0) }))
+        /* بلا فائز: يُردّ لكلٍّ ما دفع بالضبط */
+        : h.rows.map(x => ({ uid: Number(x.user_id), amt: Number(x.amount) }));
+      const reason = winners.length ? "رهان:فوز:" + game : "رهان:ردّ:" + game;
+      const paid = [];
+      for (const t of targets) {
+        if (t.amt <= 0) continue;
+        await c.query(`INSERT INTO wallets (user_id, gold, gems, updated_at) VALUES ($1,0,0,$2)
+                       ON CONFLICT (user_id) DO NOTHING`, [t.uid, Date.now()]);
+        const cur = await c.query("SELECT gold FROM wallets WHERE user_id = $1 FOR UPDATE", [t.uid]);
+        const next = Number(cur.rows[0].gold) + t.amt;
+        await c.query("UPDATE wallets SET gold = $2, updated_at = $3 WHERE user_id = $1", [t.uid, next, Date.now()]);
+        await c.query(
+          `INSERT INTO ledger (user_id, currency, delta, balance_after, reason, ref_type, ref_id, created_at)
+           VALUES ($1,'gold',$2,$3,$4,$5,$6,$7)`,
+          [t.uid, t.amt, next, reason, game, room, Date.now()]);
+        paid.push({ userId: t.uid, amount: t.amt, ok: true });
+      }
+      await c.query("UPDATE escrow SET state = $2, settled_at = $3 WHERE room = $1 AND state = 'held'",
+                    [room, winners.length ? "paid" : "refunded", Date.now()]);
+      await c.query("COMMIT");
+      return { ok: true, pot, paid };
+    } catch (e) {
+      await c.query("ROLLBACK").catch(() => {});
+      throw e;
+    } finally { c.release(); }
+  }
+  async refundBets(room) {
+    const r = await this.settleBets(room, []);
+    return { ok: true, refunded: r.paid || [] };
+  }
+  /** عند الإقلاع: كلُّ محجوزٍ باقٍ يعني غرفةً ماتت مع الخادم — يُردّ. */
+  async sweepEscrow() {
+    const r = await this.pool.query("SELECT DISTINCT room FROM escrow WHERE state = 'held'");
+    for (const row of r.rows) await this.refundBets(row.room);
+    return r.rowCount;
+  }
+  async escrowStats() {
+    const r = await this.pool.query(
+      `SELECT state, COUNT(*)::int AS n, COALESCE(SUM(amount),0)::bigint AS g FROM escrow GROUP BY state`);
+    const s = { held: 0, heldGold: 0, paid: 0, refunded: 0 };
+    for (const x of r.rows) {
+      if (x.state === "held") { s.held = x.n; s.heldGold = Number(x.g); }
+      else if (x.state === "paid") s.paid = x.n;
+      else s.refunded = x.n;
+    }
+    return s;
   }
 
   /* ── المتجر: كتالوج ومخزون وتجهيز ── */

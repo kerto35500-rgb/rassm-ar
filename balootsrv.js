@@ -16,6 +16,21 @@
 const B = require("./balootrules");
 const BOT = require("./balootbot");
 const { awardMatch } = require("./economy");
+let SET = null;
+try { SET = require("./settings"); } catch (e) { /* الاختبارات قد تعزل الوحدة */ }
+const cfg = (k, d) => {
+  const v = SET && SET.get("bet", k);
+  return v === undefined || v === null ? d : v;
+};
+
+/* طبقاتُ الرهان: المعنى ثابتٌ والمقدار من الإعدادات الحيّة */
+const TIERS = ["bronze", "silver", "gold", "vip"];
+const TIER_AR = { bronze: "برونزيّة", silver: "فضّيّة", gold: "ذهبيّة", vip: "VIP" };
+const tierBet = t => ({
+  bronze: cfg("betBronze", 100), silver: cfg("betSilver", 500),
+  gold: cfg("betGold", 2500), vip: cfg("betVip", 10000)
+}[t] || 0);
+const DAY = 24 * 60 * 60 * 1000;
 
 const SEATS = 4;
 const CODE_LEN = 4;
@@ -66,9 +81,13 @@ function setupBalootOnline(io, deps = {}) {
       code, hostId: null, createdAt: Date.now(), touched: Date.now(),
       settings: { ...B.DEFAULTS, bots: true, botDiff: 2 },
       seats: [],
+      /* `tier` فارغةٌ في الطاولة العاديّة. وطاولةُ الرهان لا بوتات فيها ولا
+         ضيوف — الذهب لا يُراهَن به على خصمٍ لا حساب له ولا خصمٍ من صنعنا. */
+      tier: null, bet: 0, betRoom: null, held: false,
       match: null, timer: null, deadline: 0, botT: null, nextHandT: null, closed: false
     };
   }
+  const roomKey = r => "baloot:" + r.code + ":" + r.createdAt;
   const touch = r => { r.touched = Date.now(); };
   const seatById = (r, id) => r.seats.findIndex(p => p.id === id);
   const humans = r => r.seats.filter(p => !p.bot);
@@ -77,6 +96,7 @@ function setupBalootOnline(io, deps = {}) {
     return {
       code: r.code, host: r.hostId, settings: publicSettings(r.settings),
       botsOn: !!r.settings.bots, max: SEATS,
+      tier: r.tier, tierName: r.tier ? TIER_AR[r.tier] : null, bet: r.bet, held: !!r.held,
       players: r.seats.map((p, i) => ({
         id: p.id, seat: i, team: i % 2, name: p.name, av: p.av, frame: p.frame,
         bot: p.bot, gone: !!p.gone, host: p.id === r.hostId
@@ -210,6 +230,60 @@ function setupBalootOnline(io, deps = {}) {
     scheduleBot(r);
   }
 
+  /* ── الرهان ──
+     الحجز قبل أوّل ورقة، فمن لا يستطيع الدفع لا يجلس. وإن عجز واحدٌ رُدّ
+     على الجميع — لا تبدأ صكّةُ رهانٍ ناقصة. */
+  async function holdAll(r) {
+    if (!r.tier || !r.bet) return { ok: true };
+    const key = roomKey(r);
+    const cap = cfg("betDailyCap", 20000), since = Date.now() - DAY;
+    const need = r.bet * cfg("betMinFactor", 3);
+    const done = [];
+    for (const p of r.seats) {
+      if (p.bot || !p.userId) { await st().refundBets(key).catch(() => {}); return { ok: false, error: "طاولة الرهان لا تقبل ضيفًا ولا بوتًا" }; }
+      try {
+        const w = await st().getWallet(p.userId);
+        if ((w.gold || 0) < need) {
+          await st().refundBets(key).catch(() => {});
+          return { ok: false, error: `${p.name}: يحتاج ${need} ذهبًا للجلوس على هذه الطاولة` };
+        }
+        if (cap > 0) {
+          const spent = await st().spentSince(p.userId, since, "رهان:حجز");
+          if (spent + r.bet > cap) {
+            await st().refundBets(key).catch(() => {});
+            return { ok: false, error: `${p.name}: بلغ سقف الرهان اليوميّ` };
+          }
+        }
+        const h = await st().holdBet(key, "baloot", p.userId, r.bet);
+        if (!h.ok) {
+          await st().refundBets(key).catch(() => {});
+          return { ok: false, error: `${p.name}: ${h.error || "تعذّر حجز الرهان"}` };
+        }
+        done.push(p);
+      } catch (e) {
+        await st().refundBets(key).catch(() => {});
+        return { ok: false, error: "تعذّر حجز الرهان — حاول لاحقًا" };
+      }
+    }
+    r.betRoom = key; r.held = true;
+    for (const p of done) {
+      if (!p.sockId) continue;
+      const s = nsp.sockets.get(p.sockId);
+      if (s) s.emit("bet", { held: r.bet, pot: r.bet * SEATS });
+    }
+    return { ok: true };
+  }
+  async function releaseBets(r, winnerUserIds) {
+    if (!r.held || !r.betRoom) return null;
+    r.held = false;
+    try {
+      const res = winnerUserIds && winnerUserIds.length
+        ? await st().settleBets(r.betRoom, winnerUserIds)
+        : await st().refundBets(r.betRoom);
+      return res;
+    } catch (e) { console.error("baloot bets:", e.message); return null; }
+  }
+
   /* ── نهاية الصكّة والجائزة ── */
   async function finish(r) {
     clearTimer(r); clearBot(r); clearNext(r);
@@ -218,6 +292,8 @@ function setupBalootOnline(io, deps = {}) {
     m._awarded = true;
 
     const winners = r.seats.filter((p, i) => i % 2 === m.winnerTeam);
+    /* الرهان يُصرف أوّلًا: هو مالُ اللاعبين، والجائزة مالُنا */
+    const bets = await releaseBets(r, winners.map(p => p.userId).filter(Boolean));
     const hasBot = r.seats.some(p => p.bot);
     let reason = null, granted = [];
     if (hasBot) reason = "مباراةٌ فيها بوت — لا جائزة";
@@ -250,9 +326,11 @@ function setupBalootOnline(io, deps = {}) {
       const s = nsp.sockets.get(p.sockId);
       if (!s) continue;
       const mine = granted.find(g => String(g.userId) === String(p.userId));
+      const myBet = bets && (bets.paid || []).find(x => String(x.userId) === String(p.userId));
       s.emit("matchEnd", {
         winnerTeam: m.winnerTeam, myTeam: i % 2, won: (i % 2) === m.winnerTeam,
         scores: m.scores.slice(), hands: m.history.length, players,
+        bet: r.bet || 0, pot: bets ? bets.pot || 0 : 0, betWon: myBet ? myBet.amount : 0,
         gold: mine ? mine.amount : 0,
         reason: p.userId ? reason : "الضيوف لا يكسبون ذهبًا — سجّل حسابك"
       });
@@ -267,6 +345,8 @@ function setupBalootOnline(io, deps = {}) {
     for (const [code, r] of rooms) {
       if (now - r.touched > IDLE_MS || (!humans(r).length && now - r.touched > GRACE_MS)) {
         clearTimer(r); clearBot(r); clearNext(r);
+        /* غرفةٌ تموت وفيها رهانٌ محجوز: يُردّ كما هو — لا نُصادر مالَ أحد */
+        if (r.held) releaseBets(r, null).catch(() => {});
         rooms.delete(code);
       }
     }
@@ -299,15 +379,38 @@ function setupBalootOnline(io, deps = {}) {
     }
 
     socket.on("create", (d, cb) => {
+      const tier = d && TIERS.includes(d.tier) ? d.tier : null;
+      if (tier) {
+        if (!cfg("betOpen", false)) return cb && cb({ ok: false, error: "الرهان مغلقٌ حاليًّا" });
+        if (!socket.userId) return cb && cb({ ok: false, error: "طاولات الرهان للمسجَّلين وحدهم" });
+      }
       const code = newCode();
       const r = makeRoom(code);
+      if (tier) {
+        r.tier = tier;
+        r.bet = tierBet(tier);
+        r.settings.bots = false;          /* لا بوت يراهن ولا يُراهَن عليه */
+      }
       rooms.set(code, r);
       const me = identity(d);
       /* المسجَّل يلعب باسم حسابه دائمًا — لا ينتحل أحدٌ اسم غيره أونلاين */
       if (socket.userName) me.name = socket.userName;
       r.seats.push(me);
       joinRoom(r, me);
-      cb && cb({ ok: true, code, id: me.id });
+      cb && cb({ ok: true, code, id: me.id, tier, bet: r.bet });
+    });
+
+    /* طاولاتُ الرهان المفتوحة — ينضمّ إليها الناس بلا رمزٍ يتبادلونه */
+    socket.on("betRooms", (d, cb) => {
+      const open = !!cfg("betOpen", false);
+      const tiers = TIERS.map(t => ({
+        tier: t, name: TIER_AR[t], bet: tierBet(t),
+        min: tierBet(t) * cfg("betMinFactor", 3),
+        rooms: [...rooms.values()]
+          .filter(r => r.tier === t && !r.match && r.seats.length < SEATS)
+          .map(r => ({ code: r.code, n: r.seats.length }))
+      }));
+      cb && cb({ ok: true, open, tiers, me: !!socket.userId });
     });
 
     socket.on("join", (d, cb) => {
@@ -316,6 +419,7 @@ function setupBalootOnline(io, deps = {}) {
       if (!r) return cb && cb({ ok: false, error: "لا توجد غرفة بهذا الرمز" });
       if (r.match) return cb && cb({ ok: false, error: "المباراة بدأت — انتظر انتهاءها" });
       if (r.seats.length >= SEATS) return cb && cb({ ok: false, error: "الطاولة ممتلئة" });
+      if (r.tier && !socket.userId) return cb && cb({ ok: false, error: "طاولات الرهان للمسجَّلين وحدهم" });
       const me = identity(d);
       if (socket.userName) {
         me.name = socket.userName;
@@ -364,14 +468,16 @@ function setupBalootOnline(io, deps = {}) {
       sendLobby(room);
     });
 
-    socket.on("start", () => {
-      if (!isHost() || !room || room.match) return;
+    socket.on("start", async () => {
+      if (!isHost() || !room || room.match || room._starting) return;
       const real = humans(room).length;
+      if (room.tier && real < SEATS) return err("طاولة الرهان تحتاج أربعة لاعبين حقيقيّين");
       if (real < SEATS && !room.settings.bots)
         return err("بالوت أربعة — فعّل البوتات أو انتظر البقيّة");
       if (real < 1) return;
 
       room.seats = room.seats.filter(p => !p.bot);
+      if (room.tier) room.settings.bots = false;
       if (room.settings.bots) {
         const names = ["أبو فهد", "المعلّم", "صقر", "الشمري", "أبو تركي", "الفارس", "سيف", "العنيد", "الذيب", "مشعل"];
         const avs = ["Adult_2", "Adult_3", "Adult_5", "Adult_4", "Animal_1", "Animal_2"];
@@ -388,6 +494,15 @@ function setupBalootOnline(io, deps = {}) {
         }
       }
       if (room.seats.length !== SEATS) return err("بالوت أربعة لاعبين");
+
+      /* الحجز غير متزامن، والعلَم يمنع بدأين متسابقين يحجزان مرّتين */
+      if (room.tier) {
+        room._starting = true;
+        const h = await holdAll(room);
+        room._starting = false;
+        if (!h.ok) { sendLobby(room); return err(h.error); }
+      }
+      if (room.match) return;                    /* سبقنا آخرُ أثناء الانتظار */
 
       const rules = {};
       for (const k of Object.keys(B.DEFAULTS)) rules[k] = room.settings[k];
@@ -440,7 +555,11 @@ function setupBalootOnline(io, deps = {}) {
         }
         if (r.match) { flush(r); armTimer(r); scheduleBot(r); }
         sendLobby(r);
-        if (!humans(r).some(x => !x.gone)) { clearTimer(r); clearBot(r); clearNext(r); rooms.delete(r.code); }
+        if (!humans(r).some(x => !x.gone)) {
+          clearTimer(r); clearBot(r); clearNext(r);
+          if (r.held) releaseBets(r, null).catch(() => {});
+          rooms.delete(r.code);
+        }
       };
 
       if (deliberate || !r.match) { p.gone = true; drop(); }

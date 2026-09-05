@@ -42,10 +42,54 @@ function identity() {
   return { name: P.name, av: P.avatar, frame: P.frame };
 }
 
-function olCreate(solo) {
+/* ══════════ طاولات الرهان ══════════ */
+function renderBet() {
+  const b = $("#bet-body");
+  b.innerHTML = '<p style="text-align:center;color:var(--ink2)">جارٍ التحميل…</p>';
+  const s = olConnect();
+  s.emit("betRooms", {}, d => {
+    if (!d || !d.ok) { b.innerHTML = '<p style="text-align:center;color:var(--ink2)">تعذّر التحميل</p>'; return; }
+    if (!d.open) {
+      b.innerHTML = '<p style="text-align:center;color:var(--ink2);font-weight:700;line-height:1.9">' +
+        'الرهان مغلقٌ حاليًّا.<br>جرّب الأونلاين العاديّ — الجائزة فيه بلا مخاطرة.</p>';
+      return;
+    }
+    if (!d.me) {
+      b.innerHTML = '<p style="text-align:center;color:var(--ink2);font-weight:700;line-height:1.9">' +
+        'طاولات الرهان للمسجَّلين وحدهم.</p><div style="text-align:center;margin-top:12px">' +
+        '<button class="btn b" onclick="location.href=\'/me\'">سجّل حسابك</button></div>';
+      return;
+    }
+    b.innerHTML = d.tiers.map(t => {
+      const afford = P.coins >= t.min;
+      const open = t.rooms.length
+        ? t.rooms.map(r => `<button class="btn sm b" onclick="olJoinCode('${r.code}')">${r.code} · ${r.n}/٤</button>`).join("")
+        : '<span style="color:var(--ink2);font-weight:700;font-size:13px">لا طاولاتٍ مفتوحة</span>';
+      return `<div class="row" style="align-items:flex-start">
+        <div class="lbl">الطاولة ${t.name}
+          <small>الرهان ${t.bet} ذهبًا · تحتاج ${t.min} في محفظتك</small>
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">${open}</div></div>
+        <button class="btn ${afford ? "p" : "k"} sm" ${afford ? "" : "disabled"}
+          onclick="olCreate(false,'${t.tier}')">افتح طاولة</button></div>`;
+    }).join("") +
+    `<p style="text-align:center;color:var(--ink2);font-weight:700;margin-top:14px;font-size:13px">
+       رصيدك ${P.coins} ذهبًا · لا بوتات ولا ضيوف على طاولة رهان · من انقطع يلعب البوت مكانه ورهانُه باقٍ</p>`;
+  });
+}
+function olJoinCode(code) {
+  $("#ol-code") && ($("#ol-code").value = code);
+  const s = olConnect();
+  s.emit("join", { code, ...identity() }, r => {
+    if (!r || !r.ok) return toast((r && r.error) || "تعذّر الانضمام");
+    ONL.on = true; ONL.code = r.code; ONL.me = r.id;
+    openScreen("room");
+  });
+}
+
+function olCreate(solo, tier) {
   const s = olConnect();
   ONL.solo = !!solo;
-  s.emit("create", identity(), r => {
+  s.emit("create", { ...identity(), tier: tier || null }, r => {
     if (!r || !r.ok) return olErr((r && r.error) || "تعذّر إنشاء الطاولة");
     ONL.on = true; ONL.code = r.code; ONL.me = r.id;
     if (solo) {
@@ -120,6 +164,14 @@ function renderRoom() {
   if (!l) return;
   $("#rm-code").textContent = l.code;
   $("#rm-link").value = location.origin + "/baloot/?r=" + l.code;
+  const bt = $("#rm-bet");
+  if (bt) bt.innerHTML = l.tier
+    ? `<div style="text-align:center;font-weight:900;background:linear-gradient(#fff,var(--pink));
+         border-radius:20px;padding:10px;margin-bottom:8px">
+         🎲 طاولة ${l.tierName} · الرهان ${l.bet} ذهبًا للاعب · المجموع ${l.bet * 4}
+         <div style="font-weight:700;font-size:12px;color:var(--ink2);margin-top:3px">
+           يُحجَز من الأربعة عند البدء، والفريق الفائز يقتسمه</div></div>`
+    : "";
 
   const box = $("#rm-seats");
   box.innerHTML = "";
@@ -552,10 +604,16 @@ function onMatchEnd(d) {
        <div style="display:flex;gap:10px">${mates.map(p => card(p, d.won)).join("")}</div></div>
      <div><div style="font-weight:900;margin-bottom:6px">لهم · ${d.scores[them]}</div>
        <div style="display:flex;gap:10px">${opps.map(p => card(p, !d.won)).join("")}</div></div>`;
+  const betLine = d.bet
+    ? (d.betWon
+        ? `<p style="font-weight:900;color:#c9821a;font-size:20px">🎲 ربحتَ ${d.betWon} من رهانٍ مجموعه ${d.pot}</p>`
+        : `<p style="font-weight:900;color:#b06070;font-size:17px">🎲 خسرتَ رهانك (${d.bet} ذهبًا)</p>`)
+    : "";
   $("#end-body").innerHTML =
-    `<p style="font-weight:800">${d.hands} يدًا</p>` +
+    `<p style="font-weight:800">${d.hands} يدًا</p>` + betLine +
     (d.gold ? `<p style="font-weight:900;color:#c9821a;font-size:18px">+${d.gold} ذهبًا 🪙</p>`
             : `<p style="color:var(--ink2);font-weight:700">${esc(d.reason || "لا جائزة")}</p>`);
+  if (d.betWon || d.gold) ACC.load().then(() => renderMain());
   fitFrames($("#end-podium"));
   $("#ov-end").classList.add("show");
   snd(d.won ? "win" : "bad");

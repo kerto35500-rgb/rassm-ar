@@ -69,6 +69,7 @@ function openScreen(name) {
   if (name === "leader") renderLeader();
   if (name === "profile") renderProfile();
   if (name === "online") renderOnlineMe();
+  if (name === "bet") renderBet();
 }
 function showBoard() {
   Object.values(SCREENS).forEach(s => $(s) && $(s).classList.remove("show"));

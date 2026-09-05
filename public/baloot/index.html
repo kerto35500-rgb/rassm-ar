@@ -365,7 +365,7 @@ table.sc tr.win td{color:var(--mint2);font-weight:900}
         <div class="pl">👥 ٤ لاعبين</div><div class="ic">🌐</div><div class="lbl">أونلاين</div>
       </div>
       <div class="tile c" onclick="openScreen('bet')">
-        <div class="soon">قريبًا</div><div class="pl">💰 طاولات رهان</div><div class="ic">🎲</div><div class="lbl">الرهان</div>
+        <div class="pl">💰 طاولات رهان</div><div class="ic">🎲</div><div class="lbl">الرهان</div>
       </div>
       <div class="tile d" onclick="location.href='/shop'">
         <div class="pl">🛍️ صور وبراويز</div><div class="ic">🎁</div><div class="lbl">المتجر</div>
@@ -394,6 +394,7 @@ table.sc tr.win td{color:var(--mint2);font-weight:900}
     <div class="backbtn" onclick="olQuit()">◀ خروج من الطاولة</div>
     <div class="pane" style="width:960px">
       <h2>الطاولة</h2>
+      <div id="rm-bet"></div>
       <div id="rm-code">····</div>
       <input id="rm-link" readonly onclick="olCopyLink()">
       <div style="text-align:center;margin-top:8px"><button class="btn sm k" onclick="olCopyLink()">📋 انسخ الرابط</button></div>
@@ -431,8 +432,9 @@ table.sc tr.win td{color:var(--mint2);font-weight:900}
   <!-- ═════════ الرهان ═════════ -->
   <div id="scr-bet" class="fe">
     <div class="backbtn" onclick="openScreen('main')">◀ رجوع</div>
-    <div class="pane" style="width:640px"><h2>طاولات الرهان</h2>
-      <p class="sub">قريبًا — طاولاتٌ بحدٍّ أدنى من الذهب، الفائز يأخذ الرهان</p></div>
+    <div class="pane" style="width:760px"><h2>طاولات الرهان</h2>
+      <p class="sub">يُحجَز الرهان من الأربعة قبل أوّل ورقة، والفريق الفائز يقتسم المجموع</p>
+      <div id="bet-body"></div></div>
   </div>
 
   <!-- ═════════ الساحة ═════════ -->

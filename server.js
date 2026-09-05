@@ -1318,6 +1318,13 @@ createStore()
     try { balootApi = require("./balootsrv").setupBalootOnline(io, { store }); }
     catch (e) { console.error("baloot online:", e.message); }
 
+    /* رهانٌ محجوزٌ نجا من إقلاعٍ سابق يعني غرفةً ماتت مع الخادم: يُردّ لأهله
+       قبل أن يُفتح الموقع. المال المحجوز بلا غرفةٍ تُطالب به مالٌ ضائع. */
+    try {
+      const back = await store.sweepEscrow();
+      if (back) console.log(`💰 رُدّ ${back} رهانًا محجوزًا من تشغيلٍ سابق`);
+    } catch (e) { console.error("escrow sweep:", e.message); }
+
     /* هويّة موحّدة لكل مساحات الأسماء: تُحلّ الجلسة قبل أن يصل الاتصال إلى
        منطق أي لعبة، فتعرف اللعبةُ صاحبَها بلا أن تسأل عن كوكي. تُركَّب بعد
        إنشاء المساحات كلّها وقبل الاستماع، فلا اتصالَ يسبقها. */

@@ -192,6 +192,14 @@ function setupPanel(app, deps) {
 
   // ═══════════════ الإعدادات ═══════════════
 
+  /* صحّة الرهان: كم ذهبٍ محجوزٌ الآن، وكم صفًّا سُوّي. الرقم «المحجوز» يجب
+     أن يوافق ما في الطاولات الجارية — فإن بقي بعد أن خلا الموقع فثمّ خلل. */
+  app.get(ADMIN_PATH + "/p/escrow", async (req, res) => {
+    if (!guard(req, res)) return;
+    try { res.json({ ok: true, escrow: await st().escrowStats() }); }
+    catch (e) { res.json({ ok: false, error: e.message }); }
+  });
+
   app.get(ADMIN_PATH + "/p/settings", (req, res) => {
     if (!guard(req, res)) return;
     res.json({ ok: true, settings: SET.describe() });
@@ -568,10 +576,22 @@ async function toggleItem(id){
 }
 
 /* ── الإعدادات ── */
-const SCOPE_NAME={economy:"💰 الاقتصاد",site:"🌐 الموقع"};
+const SCOPE_NAME={economy:"💰 الاقتصاد",site:"🌐 الموقع",bet:"🎲 الرهان"};
 async function loadSets(){
   const r=await j("/settings"); if(!r.ok) return;
-  $("#sets").innerHTML=Object.entries(r.settings).map(([scope,list])=>
+  /* لوحةُ صحّةٍ صغيرة فوق الإعدادات: المحجوز الآن. صفرٌ والموقع خالٍ = سليم،
+     ورقمٌ باقٍ بلا طاولاتٍ جارية = ذهبٌ عالقٌ يحتاج نظرًا. */
+  let esc0="";
+  try{ const e=await j("/escrow");
+    if(e.ok) esc0='<div class="card"><h2>🎲 صحّة الرهان</h2><div class="grid2">'+
+      '<div class="set"><b>محجوزٌ الآن</b><div class="row"><span class="'+(e.escrow.held?"warn":"muted")+'">'+
+        e.escrow.held+' صفًّا · '+e.escrow.heldGold+' ذهبًا</span></div></div>'+
+      '<div class="set"><b>سُوّي سابقًا</b><div class="row"><span class="muted">'+
+        e.escrow.paid+' مدفوعًا · '+e.escrow.refunded+' مردودًا</span></div></div></div>'+
+      '<div class="h" style="padding:0 12px 10px">المحجوز يجب أن يوافق الطاولات الجارية؛ '+
+      'وبقاؤه والموقع خالٍ يعني ذهبًا عالقًا.</div></div>';
+  }catch(x){}
+  $("#sets").innerHTML=esc0+Object.entries(r.settings).map(([scope,list])=>
     '<div class="card"><h2>'+(SCOPE_NAME[scope]||scope)+'</h2><div class="grid2">'+
     list.map(s=>'<div class="set"><b>'+esc(s.name)+'</b>'+
       (s.hint?'<div class="h">'+esc(s.hint)+'</div>':'')+

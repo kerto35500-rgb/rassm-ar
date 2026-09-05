@@ -26,7 +26,28 @@ const SCHEMA = {
     drawCap:      { def: 300, min: 0,  max: 10000, name: "ارسمها! · سقف يوميّ" },
     unoWin:       { def: 40,  min: 0,  max: 1000, name: "وحدة · فوز" },
     unoPlay:      { def: 15,  min: 0,  max: 1000, name: "وحدة · مشاركة" },
-    unoCap:       { def: 300, min: 0,  max: 10000, name: "وحدة · سقف يوميّ" }
+    unoCap:       { def: 300, min: 0,  max: 10000, name: "وحدة · سقف يوميّ" },
+    balootWin:    { def: 70,  min: 0,  max: 1000, name: "بالوت · فوز" },
+    balootPlay:   { def: 25,  min: 0,  max: 1000, name: "بالوت · مشاركة" },
+    balootCap:    { def: 420, min: 0,  max: 10000, name: "بالوت · سقف يوميّ" }
+  },
+
+  /* ── الرهان ──
+     هنا يخرج ذهبٌ من محافظ الناس، فكلُّ رقمٍ حدٌّ لا زينة. الطبقات الأربع
+     ثابتةُ المعنى (برونزيّة → VIP) ومتغيّرةُ المقدار، والسقف اليوميّ يمنع
+     أن يُفرِّغ لاعبٌ محفظته في ليلةٍ واحدة. وإطفاء `betOpen` يوقف الرهان
+     كلَّه فورًا بلا نشرٍ جديد — وهو أوّل ما يُلجأ إليه عند أيّ شبهة. */
+  bet: {
+    betOpen:      { def: false, type: "bool", name: "الرهان مفتوح",
+                    hint: "إطفاؤه يمنع فتح طاولات رهانٍ جديدة ولا يمسّ الجارية" },
+    betBronze:    { def: 100,   min: 10,  max: 100000,  name: "الطاولة البرونزيّة · الرهان" },
+    betSilver:    { def: 500,   min: 10,  max: 500000,  name: "الطاولة الفضّيّة · الرهان" },
+    betGold:      { def: 2500,  min: 10,  max: 2000000, name: "الطاولة الذهبيّة · الرهان" },
+    betVip:       { def: 10000, min: 10,  max: 5000000, name: "طاولة VIP · الرهان" },
+    betMinFactor: { def: 3,     min: 1,   max: 20,      name: "مضاعف الحدّ الأدنى للرصيد",
+                    hint: "لا يجلس على طاولةٍ إلا من يملك ضعف الرهان بهذا العدد" },
+    betDailyCap:  { def: 20000, min: 0,   max: 5000000, name: "سقف الرهان اليوميّ للاعب",
+                    hint: "مجموع ما يُحجَز في اليوم — صفرٌ يعني بلا سقف" }
   },
   site: {
     registerOpen: { def: true, type: "bool", name: "التسجيل مفتوح",
@@ -106,4 +127,8 @@ function describe() {
   return out;
 }
 
-module.exports = { SCHEMA, load, set, get, all, describe, validate, resetCache };
+/* الذاكرة نفسها — للاختبار وحده، كي يُبدَّل إعدادٌ بلا قاعدةٍ ولا لوحة.
+   لا يُستعمَل في مسارٍ حقيقيّ: التغيير المشروع يمرّ بـ`set` فيُتحقَّق منه. */
+const _cache = () => cache;
+
+module.exports = { SCHEMA, load, set, get, all, describe, validate, resetCache, _cache };

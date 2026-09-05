@@ -31,12 +31,47 @@ class FN {
   to(r) { return { emit: (e, d) => this.sockets.forEach(s => { if (s.rooms.has(r)) s.emit(e, d); }) }; }
 }
 const nsp = new FN();
-const wallets = {}, stats = {};
+const wallets = {}, stats = {}, escrow = [];
 const store = {
-  async move(u, c, d) { const w = wallets[u] = wallets[u] || { gold: 0, gems: 0 }; w[c] += d; return { ok: true, ...w }; },
+  async move(u, c, d) {
+    const w = wallets[u] = wallets[u] || { gold: 0, gems: 0 };
+    if (w[c] + d < 0) return { ok: false, error: "الرصيد لا يكفي" };
+    w[c] += d; return { ok: true, balance: w[c], ...w };
+  },
   async getWallet(u) { return wallets[u] || { gold: 0, gems: 0 }; },
   async earnedSince() { return 0; },
-  async bumpGameStats(u, g, x) { (stats[u] = stats[u] || []).push({ g, ...x }); }
+  async spentSince() { return 0; },
+  async bumpGameStats(u, g, x) { (stats[u] = stats[u] || []).push({ g, ...x }); },
+  /* حجزٌ مبسَّطٌ يحاكي الذرّيّة: إمّا الخصمُ والصفُّ معًا وإمّا لا شيء */
+  async holdBet(room, game, u, amt) {
+    if (escrow.some(e => e.room === room && e.userId === u && e.state === "held"))
+      return { ok: false, error: "لك رهانٌ محجوز" };
+    const r = await this.move(u, "gold", -amt);
+    if (!r.ok) return r;
+    escrow.push({ room, game, userId: u, amount: amt, state: "held" });
+    return { ok: true, balance: r.balance, amount: amt };
+  },
+  async heldBets(room) { return escrow.filter(e => e.room === room && e.state === "held"); },
+  async settleBets(room, winners) {
+    const held = escrow.filter(e => e.room === room && e.state === "held");
+    if (!held.length) return { ok: true, pot: 0, paid: [] };
+    const pot = held.reduce((a, e) => a + e.amount, 0);
+    const W = [...new Set((winners || []).filter(Boolean))];
+    const paid = [];
+    if (W.length) {
+      const per = Math.floor(pot / W.length);
+      for (let i = 0; i < W.length; i++) {
+        const amt = per + (i === 0 ? pot - per * W.length : 0);
+        await this.move(W[i], "gold", amt);
+        paid.push({ userId: W[i], amount: amt, ok: true });
+      }
+    } else {
+      for (const e of held) { await this.move(e.userId, "gold", e.amount); paid.push({ userId: e.userId, amount: e.amount, ok: true }); }
+    }
+    held.forEach(e => { e.state = W.length ? "paid" : "refunded"; });
+    return { ok: true, pot, paid };
+  },
+  async refundBets(room) { const r = await this.settleBets(room, []); return { ok: true, refunded: r.paid }; }
 };
 /* بوتٌ سريعٌ ومهَلٌ قصيرة: نختبر المنطق لا تمثيليّة التفكير */
 const SRV = setupBalootOnline({ of: () => nsp }, { store, botMin: 1, botMax: 4, handPause: 20, redealPause: 10 });
@@ -385,7 +420,87 @@ async function drive(socks, room, maxSteps = 4000) {
     ok(late && !late.ok && /بدأت/.test(late.error), "ولا انضمامَ بعد البداية", late);
   }
 
-  console.log("⑮ إحصاءات حيّة");
+  console.log("⑮ طاولات الرهان");
+  {
+    const SETT = require("./settings");
+    /* الرهان مغلقٌ افتراضيًّا — نفتحه في الذاكرة وحدها للاختبار */
+    const open = v => { try { SETT._cache().bet.betOpen = v; } catch (e) {} };
+
+    const A = conn("7.1.1.1"); A.userId = "b1"; A.userName = "راهنٌ ١";
+    let r = await ask(A, "create", { tier: "bronze" });
+    ok(r && !r.ok && /مغلق/.test(r.error || ""), "لا طاولةَ رهانٍ والرهان مغلق", r);
+
+    open(true);
+    const G0 = conn("7.9.9.9");                       /* ضيفٌ بلا حساب */
+    const g = await ask(G0, "create", { tier: "bronze" });
+    ok(g && !g.ok && /للمسجَّلين/.test(g.error || ""), "ولا يفتحها ضيف", g);
+
+    r = await ask(A, "create", { tier: "bronze" });
+    ok(r && r.ok, "والمسجَّل يفتحها", r);
+    ok(r.bet > 0, "ولها رهانٌ مقدَّر", r.bet);
+    const room = SRV.rooms.get(r.code);
+    ok(room.tier === "bronze" && !room.settings.bots, "ولا بوتات فيها");
+
+    const list = await ask(A, "betRooms", {});
+    ok(list && list.ok && list.tiers.length === 4, "وتُعرَض أربع طبقات", list && list.tiers.length);
+    ok(list.tiers.some(t => t.rooms.some(x => x.code === r.code)), "وطاولتُنا مفتوحةٌ فيها");
+    ok(list.tiers.every(t => t.min >= t.bet), "والحدّ الأدنى فوق الرهان", list.tiers.map(t => [t.bet, t.min]));
+
+    const G1 = conn("7.9.9.8");
+    const gj = await ask(G1, "join", { code: r.code });
+    ok(gj && !gj.ok && /للمسجَّلين/.test(gj.error || ""), "ولا ينضمّ إليها ضيف", gj);
+
+    A.fire("start");
+    await sleep(30);
+    ok(!room.match, "ولا تبدأ بأقلّ من أربعة حقيقيّين");
+    ok(/أربعة/.test((A.last("err") || {}).msg || ""), "ويُقال ذلك صراحةً", A.last("err"));
+
+    /* أربعةٌ مسجَّلون، وثلاثةٌ منهم بلا رصيد */
+    const B2 = conn("7.2.2.2"); B2.userId = "b2"; B2.userName = "راهنٌ ٢";
+    const C3 = conn("7.3.3.3"); C3.userId = "b3"; C3.userName = "راهنٌ ٣";
+    const D4 = conn("7.4.4.4"); D4.userId = "b4"; D4.userName = "راهنٌ ٤";
+    for (const s of [B2, C3, D4]) await ask(s, "join", { code: r.code });
+    ok(room.seats.length === 4, "اكتملت الطاولة", room.seats.length);
+
+    A.fire("start");
+    await sleep(60);
+    ok(!room.match, "ولا تبدأ ومحافظُهم فارغة");
+    ok(/يحتاج|يكفي/.test((A.last("err") || {}).msg || ""), "ويُقال من يعجز ولماذا", A.last("err"));
+    ok(Object.values(wallets).every(w => (w.gold || 0) >= 0), "ولا رصيدَ سالب");
+
+    /* نمنحهم ما يكفي ثمّ نبدأ */
+    for (const u of ["b1", "b2", "b3", "b4"]) await store.move(u, "gold", 5000);
+    const before = { ...Object.fromEntries(["b1", "b2", "b3", "b4"].map(u => [u, wallets[u].gold])) };
+    A.fire("start");
+    await sleep(80);
+    ok(!!room.match, "وتبدأ حين يكفي رصيدهم");
+    ok(room.held === true, "والرهان محجوز");
+    const held = escrow.filter(e => e.state === "held");
+    ok(held.length === 4, "أربعةُ صفوفٍ محجوزة", held.length);
+    ok(["b1", "b2", "b3", "b4"].every(u => wallets[u].gold === before[u] - room.bet),
+       "وخُصم من كلٍّ رهانُه بالضبط", ["b1", "b2", "b3", "b4"].map(u => wallets[u].gold));
+    const pot = held.reduce((a, e) => a + e.amount, 0);
+
+    A.fire("settings", { targetScore: 102, turnSeconds: 0, bidSeconds: 0 });
+    await drive([A, B2, C3, D4], room, 9000);
+    const ends = [A, B2, C3, D4].map(s => s.last("matchEnd"));
+    ok(ends.every(e => !!e), "وانتهت الصكّة", ends.map(e => !!e));
+    if (ends.every(e => !!e)) {
+      const w = ends.filter(e => e.won), l = ends.filter(e => !e.won);
+      ok(w.every(e => e.betWon > 0), "والفائزان أخذا من الرهان", w.map(e => e.betWon));
+      ok(l.every(e => !e.betWon), "والخاسران لا شيء", l.map(e => e.betWon));
+      ok(w.reduce((a, e) => a + e.betWon, 0) === pot, "ووُزّع المجموع كاملًا", { pot, w: w.map(e => e.betWon) });
+      ok(w.every(e => e.pot === pot), "والمجموع معلَنٌ للجميع", w.map(e => e.pot));
+    }
+    const after = ["b1", "b2", "b3", "b4"].reduce((a, u) => a + wallets[u].gold, 0);
+    const beforeSum = Object.values(before).reduce((a, x) => a + x, 0);
+    const rewards = ends.reduce((a, e) => a + ((e && e.gold) || 0), 0);
+    ok(after === beforeSum + rewards, "ولم يُخلَق ذهبٌ ولم يضِع", { beforeSum, after, rewards });
+    ok(!escrow.some(e => e.state === "held"), "ولم يبقَ محجوز");
+    open(false);
+  }
+
+  console.log("⑯ إحصاءات حيّة");
   {
     const s = SRV.liveStats();
     ok(typeof s.rooms === "number" && typeof s.online === "number", "الإحصاءات الحيّة متاحة", s);
