@@ -160,6 +160,38 @@ class JsonStore {
       .reduce((a, x) => a + x.delta, 0);
   }
 
+  /* ── الدوري الأسبوعيّ ── */
+  _lg() { return (this.db.league = this.db.league || []); }
+  async bumpLeague(userId, week, game, { points = 0, games = 0, wins = 0 } = {}) {
+    if (!userId || !week || !game) return;
+    const uid = Number(userId);
+    let r = this._lg().find(x => x.userId === uid && x.week === week && x.game === game);
+    if (!r) { r = { userId: uid, week, game, points: 0, games: 0, wins: 0 }; this._lg().push(r); }
+    r.points += points; r.games += games; r.wins += wins; r.updatedAt = Date.now();
+    this._save();
+  }
+  async leagueTop(week, game, n = 20) {
+    const rows = this._lg()
+      .filter(x => x.week === week && x.game === game)
+      .sort((a, b) => b.points - a.points || b.wins - a.wins || a.userId - b.userId)
+      .slice(0, n);
+    const out = [];
+    for (const r of rows) {
+      const u = await this.getUserById(r.userId);
+      out.push({ userId: r.userId, name: u ? (u.displayName || u.name) : "لاعب",
+                 points: r.points, games: r.games, wins: r.wins });
+    }
+    return out;
+  }
+  async leagueOf(userId, week, game) {
+    const r = this._lg().find(x => x.userId === Number(userId) && x.week === week && x.game === game);
+    if (!r) return null;
+    const board = this._lg().filter(x => x.week === week && x.game === game)
+      .sort((a, b) => b.points - a.points || b.wins - a.wins || a.userId - b.userId);
+    return { points: r.points, games: r.games, wins: r.wins,
+             rank: board.findIndex(x => x.userId === Number(userId)) + 1, of: board.length };
+  }
+
   /* ── الأصدقاء ──
      الحالات: pending (طلبٌ خرج منّي) · accepted (صديقان) · blocked (حظرته).
      والصفُّ لكلّ اتّجاه: الصداقة صفّان، والطلبُ والحظر صفٌّ واحد. */
@@ -835,6 +867,42 @@ class PgStore {
        WHERE user_id = $1 AND created_at >= $2 AND delta < 0 AND reason LIKE $3`,
       [Number(userId), since, (reasonPrefix || "") + "%"]);
     return Number(r.rows[0].s);
+  }
+
+  /* ── الدوري الأسبوعيّ ── */
+  async bumpLeague(userId, week, game, { points = 0, games = 0, wins = 0 } = {}) {
+    if (!userId || !week || !game) return;
+    await this.pool.query(
+      `INSERT INTO league (user_id, week, game, points, games, wins, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
+       ON CONFLICT (user_id, week, game) DO UPDATE SET
+         points = league.points + EXCLUDED.points,
+         games  = league.games  + EXCLUDED.games,
+         wins   = league.wins   + EXCLUDED.wins,
+         updated_at = EXCLUDED.updated_at`,
+      [Number(userId), week, game, points, games, wins, Date.now()]);
+  }
+  async leagueTop(week, game, n = 20) {
+    const r = await this.pool.query(
+      `SELECT l.user_id AS "userId", COALESCE(u.display_name, u.name) AS name,
+              l.points, l.games, l.wins
+       FROM league l JOIN users u ON u.id = l.user_id
+       WHERE l.week = $1 AND l.game = $2
+       ORDER BY l.points DESC, l.wins DESC, l.user_id ASC LIMIT $3`, [week, game, n]);
+    return r.rows.map(x => ({ ...x, userId: Number(x.userId), points: Number(x.points) }));
+  }
+  async leagueOf(userId, week, game) {
+    const r = await this.pool.query(
+      `WITH b AS (
+         SELECT user_id, points, games, wins,
+                ROW_NUMBER() OVER (ORDER BY points DESC, wins DESC, user_id ASC) AS rank,
+                COUNT(*) OVER () AS of
+         FROM league WHERE week = $2 AND game = $3)
+       SELECT * FROM b WHERE user_id = $1`, [Number(userId), week, game]);
+    if (!r.rowCount) return null;
+    const x = r.rows[0];
+    return { points: Number(x.points), games: x.games, wins: x.wins,
+             rank: Number(x.rank), of: Number(x.of) };
   }
 
   /* ── الأصدقاء ── */

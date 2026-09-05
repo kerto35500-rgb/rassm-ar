@@ -156,15 +156,77 @@ function renderOptions() {
 }
 
 /* ══════════ المتصدرون ══════════ */
-function renderLeader() {
-  /* لوحةُ المتصدّرين والدوري الأسبوعيّ مرحلةٌ قادمة — ولا نعرض جدولًا فارغًا
-     يوهم اللاعب أنّ شيئًا تعطّل. إحصاءاتُه الشخصيّة متاحةٌ الآن في صفحة حسابه. */
-  $("#lead-body").innerHTML =
-    `<p style="text-align:center;color:var(--ink2);font-weight:700;line-height:1.9">
-       ترتيبُ بالوت والدوري الأسبوعيّ في الطريق.<br>
-       أمّا مبارياتُك وفوزُك فمحفوظةٌ من الآن — تجدها في صفحة حسابك.</p>
-     <div style="text-align:center;margin-top:14px">
-       <button class="btn b" onclick="location.href='/me'">👤 إحصاءاتي</button></div>`;
+async function renderLeader() {
+  const b = $("#lead-body");
+  b.innerHTML = '<p style="text-align:center;color:var(--ink2)">جارٍ التحميل…</p>';
+  let d;
+  try { d = await (await fetch("/api/league", { credentials: "same-origin" })).json(); }
+  catch (e) { d = null; }
+  if (!d || !d.ok) { b.innerHTML = '<p style="text-align:center;color:var(--ink2)">تعذّر التحميل</p>'; return; }
+  if (!d.open) {
+    b.innerHTML = '<p style="text-align:center;color:var(--ink2);font-weight:700">الدوري موقوفٌ حاليًّا</p>';
+    return;
+  }
+  const row = (u, i) => {
+    const medal = ["🥇", "🥈", "🥉"][i] || (i + 1);
+    const prize = d.prizes[i] ? ` <small style="color:#c9821a">+${d.prizes[i]}</small>` : "";
+    const short = u.games < d.minGames
+      ? ' <small style="color:var(--ink2)">(لم يكمل الحدّ الأدنى)</small>' : "";
+    return `<tr><td>${medal}</td><td>${esc(u.name)}${short}</td>` +
+           `<td><b>${u.points}</b>${prize}</td><td>${u.wins}/${u.games}</td></tr>`;
+  };
+  b.innerHTML =
+    `<p class="sub">أسبوع ${d.week} · الفوز ${d.points.win} نقاط والمشاركة ${d.points.play} ·
+       الجوائز تُصرَف تلقائيًّا مع بداية الأسبوع التالي لمن أكمل ${d.minGames} مباريات</p>` +
+    (d.justPaid ? `<div style="background:linear-gradient(#fff,var(--lemon));border-radius:20px;
+        padding:10px;text-align:center;font-weight:900;margin-bottom:10px">
+        🎉 صُرفت جوائز الأسبوع الماضي: ${d.justPaid.map(p => esc(p.name) + " +" + p.amount).join(" · ")}</div>` : "") +
+    (d.top.length
+      ? '<table class="sc"><tr><th>#</th><th>اللاعب</th><th>نقاط</th><th>فوز/لعب</th></tr>' +
+        d.top.map(row).join("") + "</table>"
+      : '<p style="text-align:center;color:var(--ink2);font-weight:700">لا مباريات هذا الأسبوع بعد — كن أوّل المتصدّرين 🂡</p>') +
+    (d.me
+      ? `<p style="text-align:center;font-weight:900;margin-top:8px">ترتيبك ${d.me.rank} من ${d.me.of} ·
+           ${d.me.points} نقطة · ${d.me.wins}/${d.me.games}</p>`
+      : '<p style="text-align:center;color:var(--ink2);font-weight:700;margin-top:8px">' +
+        "الْعب مباراةً أونلاين بلا بوتات لتدخل الدوري</p>") +
+    (d.lastTop.length
+      ? '<div style="margin-top:14px"><b>أبطال الأسبوع الماضي</b><table class="sc">' +
+        d.lastTop.map(row).join("") + "</table></div>"
+      : "");
+}
+
+/* ── الجائزة اليوميّة ──
+   تظهر كفقاعةٍ فوق بطاقة اللاعب حين تكون متاحة. لا نافذةَ تقفز في وجهه
+   عند كلّ دخول — من أرادها ضغطها. */
+async function loadDaily() {
+  if (P.guest) return;
+  let d;
+  try { d = await (await fetch("/api/daily", { credentials: "same-origin" })).json(); }
+  catch (e) { return; }
+  const el = $("#daily");
+  if (!el) return;
+  if (!d || !d.ok || !d.open || d.taken) { el.classList.remove("show"); return; }
+  el.innerHTML = `🎁 هديّة اليوم <b>+${d.amount}</b>` +
+    (d.streak ? `<small>سلسلة ${d.streak} ${d.streak === 1 ? "يوم" : "أيّام"}</small>` : "");
+  el.onclick = claimDaily;
+  el.classList.add("show");
+}
+async function claimDaily() {
+  snd("click");
+  const el = $("#daily");
+  el.classList.remove("show");
+  try {
+    const r = await (await fetch("/api/daily/claim", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" }, body: "{}"
+    })).json();
+    if (!r.ok) return toast(r.error || "تعذّر الاستلام");
+    P.coins = (r.wallet && r.wallet.gold) != null ? r.wallet.gold : P.coins + r.amount;
+    renderMain();
+    banner("+" + r.amount, "هديّة اليوم · سلسلة " + r.streak, 1800);
+    snd("win");
+  } catch (e) { toast("تعذّر الاتّصال"); }
 }
 
 /* ══════════ البروفايل ══════════ */
@@ -200,6 +262,7 @@ async function boot() {
   await ACC.me();
   await ACC.load();
   renderMain();
+  loadDaily();
 
   /* دعوةٌ برابط: /baloot/?r=ABCD تدخل الطاولة مباشرة */
   const code = new URLSearchParams(location.search).get("r");

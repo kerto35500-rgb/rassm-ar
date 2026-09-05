@@ -306,6 +306,28 @@ const STEPS = [
       await q(`CREATE INDEX IF NOT EXISTS friends_user_idx ON friends(user_id, state)`);
       await q(`CREATE INDEX IF NOT EXISTS friends_other_idx ON friends(other_id, state)`);
     }
+  },
+
+  {
+    id: 13,
+    name: "الدوري الأسبوعيّ",
+    async pg(q) {
+      /* لماذا جدولٌ مستقلٌّ ولا نحسبه من `game_stats`؟ لأنّ الإحصاءات تراكميّة
+         من أوّل يوم، والدوري نافذةٌ أسبوعيّة. وحسابُها من الدفتر ممكنٌ نظريًّا
+         لكنه مسحُ آلافِ الصفوف عند كلّ فتحةِ صفحة. الصفُّ هنا واحدٌ لكلّ
+         (لاعب، أسبوع، لعبة) يزيد مع كلّ مباراة. */
+      await q(`CREATE TABLE IF NOT EXISTS league (
+                 user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                 week TEXT NOT NULL,
+                 game TEXT NOT NULL,
+                 points BIGINT NOT NULL DEFAULT 0,
+                 games INT NOT NULL DEFAULT 0,
+                 wins INT NOT NULL DEFAULT 0,
+                 updated_at BIGINT NOT NULL,
+                 PRIMARY KEY (user_id, week, game))`);
+      await q(`CREATE INDEX IF NOT EXISTS league_board_idx
+               ON league(week, game, points DESC, wins DESC)`);
+    }
   }
 ];
 

@@ -157,6 +157,10 @@ require("./friends").setupFriends(app, {
   get store() { return store; },
   currentUser: accounts.currentUser
 });
+require("./league").setupLeague(app, {
+  get store() { return store; },
+  currentUser: accounts.currentUser
+});
 /* ═══ صفحات المختبرات ═══
    *-lab.html و_doors_preview.html أدواتُ ضبطٍ داخلية (إحداثيات، فخاخ، أقراص).
    تبقى متاحةً محلّيًّا للتطوير، وتُحجَب في الإنتاج إلا لصاحب جلسة الأدمن. */

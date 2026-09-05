@@ -25,6 +25,8 @@ const cfg = (k, d) => {
 
 /* طبقاتُ الرهان: المعنى ثابتٌ والمقدار من الإعدادات الحيّة */
 const FILTER = require("./chatfilter");
+let LEAGUE = { recordMatch: async () => {} };
+try { LEAGUE = require("./league"); } catch (e) { /* الاختبارات قد تعزل الوحدة */ }
 const soc = (k, d) => {
   const v = SET && SET.get("social", k);
   return v === undefined || v === null ? d : v;
@@ -355,6 +357,16 @@ function setupBalootOnline(io, deps = {}) {
         await st().bumpGameStats(p.userId, "baloot", {
           games: 1, wins: (i % 2 === m.winnerTeam) ? 1 : 0, score: m.scores[i % 2]
         });
+      } catch (e) {}
+    }
+
+    /* نقاط الدوري: للمسجَّلين وحدهم، وفي مباراةٍ بلا بوت — وإلا صار الدوري
+       سباقًا في اللعب ضدّ الحاسوب لا بين الناس. */
+    if (!hasBot) {
+      try {
+        await LEAGUE.recordMatch(st(), "baloot", r.seats.map((p, i) => ({
+          userId: p.userId, isBot: p.bot, won: (i % 2) === m.winnerTeam
+        })));
       } catch (e) {}
     }
 
