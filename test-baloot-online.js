@@ -500,7 +500,120 @@ async function drive(socks, room, maxSteps = 4000) {
     open(false);
   }
 
-  console.log("⑯ إحصاءات حيّة");
+  console.log("⑯ الدردشة والعبارات");
+  {
+    const t = await table(2);
+    const [A, C] = t.socks;
+    const meta = await ask(A, "chatMeta", {});
+    ok(meta && meta.ok, "قائمةُ العبارات والهدايا متاحة", meta && meta.ok);
+    ok(meta.phrases.length >= 6 && meta.emojis.length >= 6, "وفيها عباراتٌ وإيموجي",
+       { p: meta.phrases.length, e: meta.emojis.length });
+    ok(meta.gifts.every(g => g.price > 0), "وكلُّ هديّةٍ لها ثمن", meta.gifts.map(g => g.price));
+
+    A.fire("chat", { text: "يا سلام لعبٌ نظيف" });
+    await sleep(5);
+    const m = C.last("chat");
+    ok(m && m.text === "يا سلام لعبٌ نظيف", "وصلت الرسالة للآخر", m);
+    ok(m.seat === 0, "ومعها مقعدُ قائلها", m && m.seat);
+
+    A.fire("chat", { text: "ثانيةٌ فورًا" });
+    await sleep(5);
+    ok(C.last("chat").text === "يا سلام لعبٌ نظيف", "والثانيةُ فورًا تُبتلَع (حدُّ الإغراق)", C.last("chat").text);
+
+    const room = SRV.rooms.get(t.code);
+    room.settings && (room.settings._x = 1);
+    await sleep(1600);
+    A.fire("chat", { text: "شوف https://example.com" });
+    await sleep(5);
+    ok(C.last("chat").text !== "شوف https://example.com", "والرابط لا يمرّ");
+    ok(/روابط/.test((A.last("err") || {}).msg || ""), "ويُقال له لماذا", A.last("err"));
+
+    A.fire("quick", { id: "p1" });
+    await sleep(5);
+    let q = C.last("quick");
+    ok(q && q.text && q.seat === 0, "والعبارة الجاهزة تصل", q);
+    await sleep(1600);
+    A.fire("quick", { id: "😂" });
+    await sleep(5);
+    q = C.last("quick");
+    ok(q && q.emoji === true, "والإيموجي كذلك", q);
+    await sleep(1600);
+    const before = C.all("quick").length;
+    A.fire("quick", { id: "لا-وجود-له" });
+    await sleep(5);
+    ok(C.all("quick").length === before, "ومعرّفٌ مخترَعٌ لا يصل");
+
+    /* من دخل متأخّرًا يرى ما قيل */
+    const D = conn("8.8.8.8");
+    await ask(D, "join", { code: t.code });
+    await sleep(5);
+    ok(Array.isArray(D.last("chatLog")) && D.last("chatLog").length >= 1,
+       "والداخلُ متأخّرًا يرى السجلّ", D.last("chatLog") && D.last("chatLog").length);
+  }
+
+  console.log("⑰ الهدايا");
+  {
+    const t = await table(2);
+    const [A, C] = t.socks;
+    const room = SRV.rooms.get(t.code);
+    const uid = A.userId;
+    wallets[uid] = { gold: 1000, gems: 0 };
+
+    let r = await ask(A, "gift", { seat: 1, id: "rose" });
+    ok(r && r.ok, "أُهديت وردة", r);
+    ok(wallets[uid].gold === 950, "وخُصم ثمنُها", wallets[uid].gold);
+    const g = C.last("gift");
+    ok(g && g.from === 0 && g.to === 1, "ووصلت لكلّ الطاولة بمقعدَيها", g);
+    ok(g.icon === "🌹", "ومعها رمزُها", g && g.icon);
+    const sys = C.all("chat").filter(x => x.sys).pop();
+    ok(sys && /أهدى/.test(sys.text), "وسطرٌ في الدردشة يشرحها", sys);
+
+    r = await ask(A, "gift", { seat: 1, id: "rose" });
+    ok(!r.ok && /تمهّل/.test(r.error), "ولا هديّتان متلاحقتان", r);
+    await sleep(4100);
+
+    r = await ask(A, "gift", { seat: 0, id: "rose" });
+    ok(!r.ok, "ولا يُهدي نفسه", r);
+    r = await ask(A, "gift", { seat: 9, id: "rose" });
+    ok(!r.ok, "ولا مقعدًا لا وجود له", r);
+    r = await ask(A, "gift", { seat: 1, id: "تنّين" });
+    ok(!r.ok, "ولا هديّةً مخترَعة", r);
+
+    wallets[uid] = { gold: 10, gems: 0 };
+    r = await ask(A, "gift", { seat: 1, id: "crown" });
+    ok(!r.ok, "ولا يُهدي ما لا يملك ثمنَه", r);
+    ok(wallets[uid].gold === 10, "ورصيدُه لم يُمسّ", wallets[uid].gold);
+
+    /* الهديّة تحرق ولا تنقل */
+    wallets[uid] = { gold: 1000, gems: 0 };
+    const toUid = C.userId;
+    wallets[toUid] = { gold: 500, gems: 0 };
+    await sleep(4100);
+    r = await ask(A, "gift", { seat: 1, id: "coffee" });
+    ok(r.ok, "أُهديت قهوة", r);
+    ok(wallets[uid].gold === 850, "خُصمت من المُهدي", wallets[uid].gold);
+    ok(wallets[toUid].gold === 500, "ولم تُضَف للمُهدى إليه — الهديّة تحرق ولا تنقل",
+       wallets[toUid].gold);
+
+    /* الضيف لا يُهدي */
+    const Gst = conn("8.7.7.7");
+    await ask(Gst, "join", { code: t.code });
+    r = await ask(Gst, "gift", { seat: 0, id: "rose" });
+    ok(!r.ok && /مسجَّلين/.test(r.error), "والضيف لا يُهدي", r);
+
+    /* البوت لا يُهدى */
+    A.fire("settings", { bots: true });
+    A.fire("start");
+    await sleep(40);
+    const botSeat = room.seats.findIndex(p => p.bot);
+    if (botSeat >= 0) {
+      await sleep(4100);
+      r = await ask(A, "gift", { seat: botSeat, id: "rose" });
+      ok(!r.ok && /البوتات/.test(r.error), "ولا تُهدى البوتات", r);
+    } else ok(true, "(لا بوت في الطاولة)");
+  }
+
+  console.log("⑱ إحصاءات حيّة");
   {
     const s = SRV.liveStats();
     ok(typeof s.rooms === "number" && typeof s.online === "number", "الإحصاءات الحيّة متاحة", s);

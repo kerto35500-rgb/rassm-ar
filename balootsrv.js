@@ -24,6 +24,41 @@ const cfg = (k, d) => {
 };
 
 /* طبقاتُ الرهان: المعنى ثابتٌ والمقدار من الإعدادات الحيّة */
+const FILTER = require("./chatfilter");
+const soc = (k, d) => {
+  const v = SET && SET.get("social", k);
+  return v === undefined || v === null ? d : v;
+};
+
+/* عباراتٌ جاهزةٌ مجّانيّة: أسرع من الكتابة، ولا تحتاج مرشِّحًا، ولا تُهين.
+   وهي أكثر ما يُستعمَل فعلًا — الكتابة على جوّالٍ في وسط أكلةٍ عناء. */
+const PHRASES = [
+  { id: "p1", t: "يا سلام! 👏" },
+  { id: "p2", t: "لعبٌ نظيف" },
+  { id: "p3", t: "الحقني يا شريك!" },
+  { id: "p4", t: "صنّها صنّها" },
+  { id: "p5", t: "حكم وبس" },
+  { id: "p6", t: "قهوة عليك ☕" },
+  { id: "p7", t: "شدّ حيلك" },
+  { id: "p8", t: "الله يعوّضك" },
+  { id: "p9", t: "أسرع لو سمحت ⏳" },
+  { id: "p10", t: "مبروك 🎉" }
+];
+const EMOJIS = ["😀", "😂", "😍", "😎", "🤔", "😭", "😡", "👏", "🔥", "💪", "🙏", "👑"];
+
+/* الهديّة تحرق ذهبًا ولا تنقله. لو انتقل لصار قناةَ تحويلٍ بين الحسابات:
+   يفتح أحدُهم حسابًا ثانيًا ويُفرّغ فيه ذهبَه، فينهار كلُّ سقفٍ وضعناه. فما
+   يصل المُهدى إليه لفتةٌ على الطاولة لا رصيدٌ في محفظته — وهذا هو المقصود. */
+const GIFTS = [
+  { id: "rose",   name: "وردة",  icon: "🌹", price: 50 },
+  { id: "coffee", name: "قهوة",  icon: "☕", price: 150 },
+  { id: "candy",  name: "حلوى",  icon: "🍬", price: 300 },
+  { id: "medal",  name: "ميدالية", icon: "🥇", price: 800 },
+  { id: "car",    name: "سيّارة", icon: "🚗", price: 2500 },
+  { id: "crown",  name: "تاج",   icon: "👑", price: 6000 }
+];
+const CHAT_KEEP = 40;
+
 const TIERS = ["bronze", "silver", "gold", "vip"];
 const TIER_AR = { bronze: "برونزيّة", silver: "فضّيّة", gold: "ذهبيّة", vip: "VIP" };
 const tierBet = t => ({
@@ -87,6 +122,7 @@ function setupBalootOnline(io, deps = {}) {
       /* `tier` فارغةٌ في الطاولة العاديّة. وطاولةُ الرهان لا بوتات فيها ولا
          ضيوف — الذهب لا يُراهَن به على خصمٍ لا حساب له ولا خصمٍ من صنعنا. */
       tier: null, bet: 0, betRoom: null, held: false,
+      chat: [],                           /* في الذاكرة وحدها — لا سجلَّ دردشةٍ يُخزَّن */
       match: null, timer: null, deadline: 0, botT: null, nextHandT: null, closed: false
     };
   }
@@ -371,6 +407,89 @@ function setupBalootOnline(io, deps = {}) {
       });
     }
 
+    /* ── الدردشة والعبارات والهدايا ──
+       الحدُّ زمنيٌّ لا عدديّ: من أراد أن يُغرق الطاولة يُغرقها في ثانيتين
+       بعشرين رسالة، والعدُّ في نافذةٍ طويلة يسمح بذلك ثمّ يمنع. */
+    let lastChat = 0, lastGift = 0;
+
+    const inRoom = () => room && seatById(room, meId) >= 0;
+    const meSeat = () => (room ? seatById(room, meId) : -1);
+
+    function pushChat(msg) {
+      room.chat.push(msg);
+      if (room.chat.length > CHAT_KEEP) room.chat.splice(0, room.chat.length - CHAT_KEEP);
+      nsp.to(room.code).emit("chat", msg);
+      touch(room);
+    }
+
+    socket.on("chatMeta", (d, cb) =>
+      cb && cb({ ok: true, phrases: PHRASES, emojis: EMOJIS,
+                 gifts: soc("giftsOpen", true) ? GIFTS : [],
+                 chatOpen: soc("chatOpen", true) }));
+
+    socket.on("chat", d => {
+      if (!inRoom()) return;
+      if (!soc("chatOpen", true)) return err("الدردشة مغلقةٌ حاليًّا");
+      const now = Date.now();
+      if (now - lastChat < soc("chatEveryMs", 1500)) return;   /* صمتٌ لا رسالةُ خطأ */
+      const r = FILTER.check(d && d.text);
+      if (!r.ok) return err(r.why);
+      lastChat = now;
+      pushChat({ seat: meSeat(), name: socket.userName || (room.seats[meSeat()] || {}).name || "لاعب",
+                 text: r.text, at: now });
+    });
+
+    /* العبارة والإيموجي لا يمرّان بالمرشِّح: قائمتُهما مغلقةٌ عندنا، ومن
+       أرسل معرّفًا ليس فيها لا يصل شيء. */
+    socket.on("quick", d => {
+      if (!inRoom()) return;
+      if (!soc("chatOpen", true)) return;
+      const now = Date.now();
+      if (now - lastChat < soc("chatEveryMs", 1500)) return;
+      lastChat = now;
+      const seat = meSeat();
+      const id = clean(d && d.id, 12);
+      const p = PHRASES.find(x => x.id === id);
+      const e = EMOJIS.includes(id) ? id : null;
+      if (!p && !e) return;
+      nsp.to(room.code).emit("quick", { seat, text: p ? p.t : e, emoji: !!e });
+      touch(room);
+    });
+
+    socket.on("gift", async (d, cb) => {
+      const done = (ok2, error) => cb && cb({ ok: ok2, error });
+      if (!inRoom()) return done(false, "لستَ في طاولة");
+      if (!soc("giftsOpen", true)) return done(false, "الهدايا مغلقةٌ حاليًّا");
+      if (!socket.userId) return done(false, "الهدايا للمسجَّلين وحدهم");
+      const now = Date.now();
+      if (now - lastGift < soc("giftEveryMs", 4000)) return done(false, "تمهّل قليلًا");
+      const g = GIFTS.find(x => x.id === clean(d && d.id, 12));
+      const to = Number(d && d.seat);
+      const from = meSeat();
+      if (!g) return done(false, "هديّةٌ غير معروفة");
+      if (!(to >= 0 && to < SEATS) || to === from) return done(false, "اختر لاعبًا آخر");
+      const target = room.seats[to];
+      if (!target || target.bot) return done(false, "لا تُهدى البوتات");
+      try {
+        const cap = soc("giftDailyCap", 30000);
+        if (cap > 0) {
+          const spent = await st().spentSince(socket.userId, now - DAY, "هديّة:");
+          if (spent + g.price > cap) return done(false, "بلغتَ سقف الإهداء اليوميّ");
+        }
+        const r = await st().move(socket.userId, "gold", -g.price, {
+          reason: "هديّة:" + g.id, refType: "baloot", refId: room.code
+        });
+        if (!r.ok) return done(false, r.error || "رصيدك لا يكفي");
+        lastGift = now;
+        nsp.to(room.code).emit("gift", {
+          from, to, id: g.id, icon: g.icon, name: g.name, price: g.price,
+          fromName: socket.userName || "لاعب", toName: target.name
+        });
+        pushChat({ sys: true, text: `${socket.userName || "لاعب"} أهدى ${target.name} ${g.name} ${g.icon}`, at: now });
+        done(true);
+      } catch (e) { done(false, "تعذّر الإهداء"); }
+    });
+
     /* من من أصدقائي متّصلٌ الآن؟ لا نكشف حالةَ من ليس صديقًا. */
     socket.on("friends", async (d, cb) => {
       if (!socket.userId) return cb && cb({ ok: true, list: [] });
@@ -419,6 +538,8 @@ function setupBalootOnline(io, deps = {}) {
       socket.join(r.code);
       if (!r.hostId) r.hostId = me.id;
       sendLobby(r);
+      /* من دخل متأخّرًا يرى ما قيل قبله — وإلا بدت الطاولة صامتة */
+      if (r.chat.length) socket.emit("chatLog", r.chat.slice(-CHAT_KEEP));
     }
 
     socket.on("create", (d, cb) => {

@@ -576,7 +576,7 @@ async function toggleItem(id){
 }
 
 /* ── الإعدادات ── */
-const SCOPE_NAME={economy:"💰 الاقتصاد",site:"🌐 الموقع",bet:"🎲 الرهان"};
+const SCOPE_NAME={economy:"💰 الاقتصاد",site:"🌐 الموقع",bet:"🎲 الرهان",social:"💬 التواصل"};
 async function loadSets(){
   const r=await j("/settings"); if(!r.ok) return;
   /* لوحةُ صحّةٍ صغيرة فوق الإعدادات: المحجوز الآن. صفرٌ والموقع خالٍ = سليم،

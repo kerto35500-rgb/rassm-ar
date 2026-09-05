@@ -29,18 +29,125 @@ function olConnect() {
   ONL.sock = s;
 
   s.on("lobby", l => { ONL.lobby = l; if (curScreen === "room") renderRoom(); });
-  s.on("started", () => { ONL.started = true; ONL.animating = false; Q.length = 0; showBoard(); });
+  s.on("started", () => {
+    ONL.started = true; ONL.animating = false; Q.length = 0;
+    showBoard(); loadChatMeta();
+  });
   s.on("state", v => { Q.push(v); drain(); });
   s.on("matchEnd", d => onMatchEnd(d));
   s.on("kicked", () => { toast("أُخرِجتَ من الطاولة"); olReset(); openScreen("main"); });
   s.on("err", d => { toast((d && d.msg) || "تعذّر الفعل"); });
   s.on("invited", d => showInvite(d));
+  s.on("chatLog", list => { (list || []).forEach(m => addChat(m, true)); });
+  s.on("chat", m => addChat(m));
+  s.on("quick", d => { if (d) seatBubble(phys(d.seat), d.text, d.emoji ? "hot" : "", 2000); });
+  s.on("gift", d => flyGift(d));
   s.on("disconnect", () => { if (ONL.on) toast("انقطع الاتّصال — نحاول العودة…"); });
   return s;
 }
 
 function identity() {
   return { name: P.name, av: P.avatar, frame: P.frame };
+}
+
+/* ══════════ الدردشة والعبارات والهدايا ══════════ */
+const CHAT = { open: false, unread: 0, meta: null };
+
+document.addEventListener("keydown", e => {
+  if (e.key !== "Enter" || document.activeElement !== $("#chatin")) return;
+  e.preventDefault(); sendChat();
+});
+function toggleChat() {
+  CHAT.open = !CHAT.open;
+  $("#chatbox").classList.toggle("show", CHAT.open);
+  if (CHAT.open) { CHAT.unread = 0; renderChatDot(); $("#chatin").focus(); }
+  snd("click");
+}
+function renderChatDot() {
+  const b = $("#chatdot");
+  b.textContent = CHAT.unread > 9 ? "9+" : CHAT.unread;
+  b.classList.toggle("show", CHAT.unread > 0);
+}
+function addChat(m, quiet) {
+  if (!m) return;
+  const log = $("#chatlog");
+  const d = document.createElement("div");
+  const mine = !m.sys && m.seat === ONL.mySeat;
+  d.className = "m" + (m.sys ? " sys" : "") + (mine ? " me" : "");
+  d.innerHTML = m.sys ? esc(m.text) : "<b>" + esc(m.name || "لاعب") + "</b>" + esc(m.text);
+  log.appendChild(d);
+  while (log.children.length > 60) log.removeChild(log.firstChild);
+  log.scrollTop = log.scrollHeight;
+  if (!quiet && !CHAT.open) { CHAT.unread++; renderChatDot(); }
+}
+function sendChat() {
+  const el = $("#chatin"), t = el.value.trim();
+  if (!t || !ONL.sock) return;
+  ONL.sock.emit("chat", { text: t });
+  el.value = "";
+}
+function loadChatMeta() {
+  if (!ONL.sock) return;
+  ONL.sock.emit("chatMeta", {}, d => {
+    if (!d || !d.ok) return;
+    CHAT.meta = d;
+    const q = $("#chatquick");
+    q.innerHTML =
+      d.phrases.map(p => `<button onclick="quick('${p.id}')">${esc(p.t)}</button>`).join("") +
+      d.emojis.map(e => `<button class="emo" onclick="quick('${e}')">${e}</button>`).join("") +
+      (d.gifts.length ? `<button class="gift" onclick="openGifts()">🎁 هديّة</button>` : "");
+    $("#chatrow").style.display = d.chatOpen ? "" : "none";
+  });
+}
+function quick(id) { if (ONL.sock) ONL.sock.emit("quick", { id }); }
+
+/* الهديّة: اختَر اللاعب ثمّ الهديّة — لا العكس، فاللاعب هو المقصود */
+function openGifts() {
+  if (!CHAT.meta || !CHAT.meta.gifts.length) return;
+  const others = (ONL.view && ONL.view.players || []).filter(p => p.seat !== ONL.mySeat && !p.bot);
+  if (!others.length) return toast("لا لاعبَ حقيقيًّا لتُهديه");
+  const l = $("#swaplist");
+  l.innerHTML = others.map(p =>
+    `<button onclick="pickGift(${p.seat})"><img src="${avSrc(p.av)}">${esc(p.name)}</button>`).join("");
+  $("#swap-title").textContent = "لمن تُهدي؟";
+  $("#ov-swap").classList.add("show");
+}
+function pickGift(seat) {
+  const l = $("#swaplist");
+  l.innerHTML = CHAT.meta.gifts.map(g =>
+    `<button onclick="sendGift(${seat},'${g.id}')"><span style="font-size:34px">${g.icon}</span>
+       ${esc(g.name)}<small>${g.price} ذهبًا</small></button>`).join("");
+  $("#swap-title").textContent = "اختر الهديّة";
+}
+function sendGift(seat, id) {
+  $("#ov-swap").classList.remove("show");
+  ONL.sock.emit("gift", { seat, id }, r => {
+    if (!r || !r.ok) return toast((r && r.error) || "تعذّر الإهداء");
+    ACC.load().then(() => renderMain());
+  });
+}
+/* الهديّة تطير من مقعدٍ إلى مقعد — الرمز نفسه، بلا صورةٍ تُحمَّل */
+async function flyGift(d) {
+  if (!d || !G) return;
+  const a = phys(d.from), b = phys(d.to);
+  const from = rect($("#" + SEAT_IDS[a] + " .av")), to = rect($("#" + SEAT_IDS[b] + " .av"));
+  const el = document.createElement("div");
+  el.className = "giftfly";
+  el.textContent = d.icon;
+  $("#app").appendChild(el);
+  snd("proj");
+  const t0 = performance.now(), dur = 900;
+  let done = false;
+  const finish = () => { if (done) return; done = true; el.remove(); seatBubble(b, d.icon + " " + d.name, "hot", 1800); };
+  setTimeout(finish, dur + 300);
+  const step = () => {
+    if (done) return;
+    const u = Math.min(1, (performance.now() - t0) / dur), e = ease(u);
+    const x = from.x + (to.x - from.x) * e, y = from.y + (to.y - from.y) * e - Math.sin(u * Math.PI) * 160;
+    el.style.transform = `translate(${x}px,${y}px) scale(${1 + Math.sin(u * Math.PI) * .7}) rotate(${u * 360}deg)`;
+    if (u < 1) requestAnimationFrame(step); else finish();
+  };
+  step();
 }
 
 /* ══════════ طاولات الرهان ══════════ */
@@ -127,6 +234,11 @@ function olReset() {
   ONL.view = null; ONL.lobby = null; ONL.animating = false; ONL.solo = false;
   Q.length = 0; draining = false; G = null;
   $$(".ov").forEach(o => o.classList.remove("show"));
+  /* الدردشة تخصّ الطاولة: من خرج منها لا يحمل رسائلها إلى التالية */
+  CHAT.open = false; CHAT.unread = 0;
+  $("#chatbox").classList.remove("show");
+  $("#chatlog").innerHTML = "";
+  renderChatDot();
 }
 function olStart() { if (ONL.sock) ONL.sock.emit("start"); }
 function olCopyLink() {
