@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>بالوت</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🂡</text></svg>">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   بالوت — الساحة منقولةٌ من «اونو» (الكاميرا، طيران البطاقات،
+   المقاعد، المراوح، الرايات)، والواجهة بستايل «مارشميلو»:
+   ألوانٌ باستيل، حوافُّ منتفخة، ظلالٌ طريّة، أيقوناتٌ مستديرة.
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  --cw:126px; --ch:195px;
+  --cream:#fff9f4; --ink:#4e4356; --ink2:#7c7089;
+  --pink:#ffb7cd; --pink2:#ff8fb1; --mint:#a9e7cd; --mint2:#6fd0ab;
+  --sky:#a9d8ff; --sky2:#6bb6f5; --lemon:#ffe6a8; --lemon2:#ffcf5c;
+  --lilac:#d9c7f2; --lilac2:#b79bea; --coral:#ffb59b;
+  --felt1:#9adcbe; --felt2:#57b391; --felt3:#3d9276;
+  --soft:0 10px 0 rgba(0,0,0,.10), 0 18px 34px rgba(78,67,86,.22);
+  --softn:inset 0 -6px 0 rgba(0,0,0,.08), inset 0 4px 0 rgba(255,255,255,.55);
+}
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-drag:none}
+html,body{height:100%;overflow:hidden;background:#2f4f43;touch-action:none;
+  font-family:"Segoe UI","Tahoma","Noto Sans Arabic","Arial",sans-serif;color:var(--ink)}
+img{-webkit-user-drag:none;pointer-events:none}
+button{font-family:inherit;cursor:pointer;border:0}
+#app{position:absolute;left:0;top:0;width:1600px;height:900px;transform-origin:0 0;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 42%,var(--felt1),var(--felt2) 55%,var(--felt3))}
+#rotate{position:fixed;inset:0;background:var(--felt3);display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:14px;z-index:1000;font-size:22px;font-weight:800;text-align:center;padding:20px;color:#fff}
+#rotate .ph{width:70px;height:120px;border:5px solid #fff;border-radius:16px;animation:rot 1.6s infinite ease-in-out}
+@keyframes rot{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(90deg)}}
+body.portrait #rotate{display:flex}
+#fsbtn{position:absolute;top:16px;left:16px;background:var(--cream);color:var(--ink);border-radius:16px;
+  padding:9px 18px;font-weight:800;font-size:15px;z-index:50;display:none;box-shadow:var(--soft)}
+body.mobile #fsbtn{display:block}
+.fe{position:absolute;inset:0;display:none;overflow:hidden}
+.fe.show{display:block}
+#board{position:absolute;inset:0;display:none}
+#board.show{display:block}
+
+/* ═══ خلفيّة الطاولة ═══ */
+#bg{position:absolute;inset:0;pointer-events:none}
+#bg .vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 44%,transparent 42%,rgba(20,60,45,.5) 100%)}
+#bg .dots{position:absolute;inset:0;opacity:.10;
+  background:radial-gradient(circle,#fff 1.6px,transparent 1.9px) 0 0/26px 26px}
+
+/* ═══ الواجهة: مارشميلو ═══ */
+.mm{background:var(--cream);border-radius:26px;box-shadow:var(--soft),var(--softn)}
+.btn{background:linear-gradient(#fff,var(--lemon));color:var(--ink);font-size:18px;font-weight:900;
+  padding:13px 30px;border-radius:22px;box-shadow:0 7px 0 rgba(0,0,0,.12),0 12px 22px rgba(78,67,86,.2),
+  inset 0 3px 0 rgba(255,255,255,.8);transition:.12s;margin:6px}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(5px);box-shadow:0 2px 0 rgba(0,0,0,.12)}
+.btn.g{background:linear-gradient(#fff,var(--mint))}
+.btn.b{background:linear-gradient(#fff,var(--sky))}
+.btn.p{background:linear-gradient(#fff,var(--pink))}
+.btn.k{background:linear-gradient(#fff,#e3dee8)}
+.btn.sm{font-size:15px;padding:9px 20px;border-radius:16px}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.play-btn{display:block;margin:20px auto 0;background:linear-gradient(#fff6d9,var(--lemon2));color:#5a4520;
+  font-size:26px;font-weight:900;padding:15px 74px;border-radius:28px;letter-spacing:1px;
+  box-shadow:0 9px 0 rgba(0,0,0,.13),0 20px 36px rgba(78,67,86,.28),inset 0 4px 0 rgba(255,255,255,.85);transition:.12s}
+.play-btn:hover{transform:translateY(-3px)}
+.play-btn:active{transform:translateY(6px);box-shadow:0 3px 0 rgba(0,0,0,.13)}
+.backbtn{position:absolute;top:22px;right:26px;background:var(--cream);color:var(--ink);font-weight:900;
+  font-size:16px;padding:10px 22px;border-radius:20px;box-shadow:var(--soft);z-index:9}
+
+/* بطاقة اللاعب أعلى اليسار */
+#pcard{position:absolute;top:20px;left:24px;display:flex;align-items:center;gap:14px;padding:12px 18px 12px 12px;
+  background:var(--cream);border-radius:28px;box-shadow:var(--soft),var(--softn);cursor:pointer;z-index:8;direction:ltr}
+#pcard .avbox{position:relative;width:74px;height:74px}
+#pcard .avbox img.a{position:absolute;border-radius:18px;object-fit:cover}
+#pcard .avbox img.f{position:absolute;inset:0;width:100%;height:100%}
+#pcard .info{text-align:left}
+#pcard .nm{font-weight:900;font-size:18px}
+#pcard .coins{display:flex;align-items:center;gap:6px;font-weight:900;color:#c9821a;font-size:16px}
+#pcard .coins img{width:20px}
+#pcard .xp{position:relative;width:132px;height:12px;background:#ece6f2;border-radius:8px;margin-top:6px;overflow:hidden}
+#pcard .xp i{position:absolute;inset:0;width:0;background:linear-gradient(90deg,var(--lilac2),var(--sky2));border-radius:8px}
+#pcard .xp b{position:absolute;right:-30px;top:-4px;font-size:12px;color:var(--ink2)}
+
+#topnav{position:absolute;top:24px;right:26px;display:flex;gap:12px;z-index:8}
+#topnav .tn{width:78px;height:78px;background:var(--cream);border-radius:24px;box-shadow:var(--soft),var(--softn);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:.12s}
+#topnav .tn:hover{transform:translateY(-3px)}
+#topnav .tn .ic{font-size:28px;line-height:1}
+#topnav .tn span{font-size:11px;font-weight:800;color:var(--ink2)}
+
+.title{position:absolute;left:50%;top:96px;transform:translateX(-50%);text-align:center;z-index:5}
+.title h1{font-size:62px;font-weight:900;color:#fff;text-shadow:0 5px 0 rgba(0,0,0,.15),0 14px 30px rgba(0,0,0,.3)}
+.title p{color:rgba(255,255,255,.9);font-size:16px;font-weight:700;margin-top:2px}
+
+/* البلاطات */
+#tiles{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);display:flex;gap:26px;z-index:6}
+.tile{width:280px;height:330px;border-radius:34px;background:var(--cream);box-shadow:var(--soft),var(--softn);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transition:.15s;position:relative;overflow:hidden}
+.tile:hover{transform:translateY(-8px) scale(1.02)}
+.tile .ic{font-size:96px;line-height:1;filter:drop-shadow(0 8px 10px rgba(0,0,0,.14))}
+.tile .lbl{font-size:28px;font-weight:900}
+.tile .pl{font-size:13px;font-weight:800;color:var(--ink2)}
+.tile:before{content:"";position:absolute;left:0;right:0;top:0;height:14px}
+.tile.a:before{background:var(--mint2)} .tile.b:before{background:var(--sky2)}
+.tile.c:before{background:var(--pink2)} .tile.d:before{background:var(--lemon2)}
+.tile .soon{position:absolute;top:14px;left:14px;background:var(--lilac);color:var(--ink);font-size:11px;
+  font-weight:900;padding:4px 10px;border-radius:12px}
+
+/* شاشاتٌ فرعيّة */
+.pane{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:900px;max-height:78vh;overflow:auto;
+  background:var(--cream);border-radius:30px;box-shadow:var(--soft),var(--softn);padding:28px 34px}
+.pane h2{font-size:30px;font-weight:900;margin-bottom:6px;text-align:center}
+.pane .sub{text-align:center;color:var(--ink2);font-size:14px;margin-bottom:18px}
+.row{display:flex;align-items:center;justify-content:space-between;padding:11px 6px;border-bottom:2px dashed #ece6f2}
+.row:last-child{border-bottom:0}
+.row .lbl{font-size:15px;font-weight:800}
+.row .lbl small{display:block;font-weight:600;color:var(--ink2);font-size:12px;margin-top:2px}
+.seg{display:flex;background:#f1ecf6;border-radius:16px;padding:4px;gap:4px}
+.seg button{background:transparent;color:var(--ink2);padding:7px 14px;border-radius:12px;font-size:14px;font-weight:800}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 3px 8px rgba(78,67,86,.18)}
+.sw{width:56px;height:30px;border-radius:20px;background:#e2dbea;position:relative;transition:.2s;cursor:pointer;flex:none}
+.sw:after{content:"";position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;background:#fff;
+  transition:.2s;box-shadow:0 2px 5px rgba(0,0,0,.2)}
+.sw.on{background:var(--mint2)}
+.sw.on:after{right:29px}
+.inp{background:#f6f2fa;color:var(--ink);padding:10px 16px;border-radius:16px;font-size:16px;
+  font-family:inherit;text-align:center;font-weight:800;width:220px;border:0;outline:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* أونلاين والغرفة */
+#rm-code{font-size:52px;font-weight:900;letter-spacing:10px;text-align:center;color:var(--ink);
+  background:#f6f2fa;border-radius:22px;padding:10px 0;margin:6px 0 12px}
+#rm-link{width:100%;background:#f6f2fa;border:0;border-radius:16px;padding:11px 14px;font-size:13px;
+  color:var(--ink2);text-align:center;font-family:inherit;outline:0}
+.seatlist{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.slot{display:flex;align-items:center;gap:12px;background:#f6f2fa;border-radius:20px;padding:10px 14px;min-height:76px}
+.slot.t0{box-shadow:inset 0 0 0 3px var(--mint2)}
+.slot.t1{box-shadow:inset 0 0 0 3px var(--sky2)}
+.slot .avw{position:relative;width:52px;height:52px;flex:none}
+.slot .avw img.a{position:absolute;border-radius:14px;object-fit:cover}
+.slot .avw img.f{position:absolute;inset:0;width:100%;height:100%}
+.slot .nm{font-weight:900;font-size:15px}
+.slot .tg{font-size:11px;font-weight:800;color:var(--ink2)}
+.slot.empty{opacity:.5;justify-content:center;font-weight:800;color:var(--ink2)}
+
+/* ═══ الطاولة ثلاثيّة الأبعاد (منقولةٌ من اونو) ═══ */
+#world{position:absolute;inset:0;perspective:1500px;perspective-origin:50% 40%;pointer-events:none}
+#floor{position:absolute;left:50%;top:51%;width:1700px;height:1300px;margin:-650px 0 0 -850px;
+  transform:rotateX(50deg);transform-style:preserve-3d}
+.fl{position:absolute;transform-style:preserve-3d}
+#glow{left:50%;top:50%;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;
+  box-shadow:0 0 130px 46px transparent;transition:box-shadow .6s;opacity:.7}
+#tablering{left:50%;top:50%;width:700px;height:700px;margin:-350px 0 0 -350px;border-radius:50%;
+  box-shadow:inset 0 0 0 10px rgba(255,255,255,.14),inset 0 0 70px rgba(0,0,0,.16)}
+#deck{left:calc(50% - 430px);top:calc(50% - 380px);width:var(--cw);height:var(--ch);transform:rotate(-24deg)}
+#deck .lay{position:absolute;inset:0;border-radius:12px;background:linear-gradient(140deg,#fff,#efe9f4);
+  box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+#deck .cnt{position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);font-size:14px;font-weight:900;
+  background:rgba(255,255,255,.85);color:var(--ink);padding:3px 13px;border-radius:12px;white-space:nowrap}
+#deck.hide{display:none}
+
+/* خانات الأكلة: أربعٌ، كلٌّ أمام مقعدها */
+.tk{position:absolute;left:50%;top:50%;width:var(--cw);height:var(--ch);
+  margin:calc(var(--ch)/-2) 0 0 calc(var(--cw)/-2)}
+#tk-0{transform:translate(0,150px) rotate(2deg)}
+#tk-1{transform:translate(200px,0) rotate(-7deg)}
+#tk-2{transform:translate(0,-150px) rotate(4deg)}
+#tk-3{transform:translate(-200px,0) rotate(8deg)}
+.tk .bc{position:absolute;inset:0;width:100%;height:100%}
+.tk.win{animation:tkwin .5s ease-out}
+@keyframes tkwin{50%{filter:brightness(1.35) drop-shadow(0 0 18px #fff)}}
+#bidcard{left:50%;top:50%;width:var(--cw);height:var(--ch);margin:calc(var(--ch)/-2) 0 0 calc(var(--cw)/-2);
+  transform:rotate(-4deg);display:none}
+#bidcard.show{display:block}
+#bidcard .bc{position:absolute;inset:0;width:100%;height:100%}
+#bidcard:after{content:"";position:absolute;inset:-14px;border-radius:18px;
+  box-shadow:0 0 0 5px var(--lemon2),0 0 34px var(--lemon2);animation:pulse 1.3s infinite}
+@keyframes pulse{50%{opacity:.35}}
+
+/* مراوح الخصوم */
+.ohand{position:absolute;width:0;height:0}
+.ohand .bc{width:calc(var(--cw)*.72);height:calc(var(--ch)*.72);position:absolute;
+  transition:left .3s,top .3s,transform .3s;transform-origin:50% 50%}
+#ohand-left{left:calc(50% - 585px);top:calc(50% - 40px)}
+#ohand-right{left:calc(50% + 585px);top:calc(50% - 40px)}
+#ohand-top{left:calc(50% + 40px);top:calc(50% - 520px)}
+
+/* ═══ الورقة ═══ */
+.bc{width:var(--cw);height:var(--ch);border-radius:12px;position:absolute;background:#fffdfa;
+  box-shadow:0 6px 14px rgba(30,50,45,.34),inset 0 0 0 2px rgba(0,0,0,.06);color:#2f2b35;
+  font-family:"Segoe UI","Arial",sans-serif;overflow:hidden}
+.bc.red{color:#e2506a}
+.bc .cn{position:absolute;display:flex;flex-direction:column;align-items:center;line-height:.95;font-style:normal}
+.bc .cn b{font-size:calc(var(--cw)*.2);font-weight:900}
+.bc .cn u{font-size:calc(var(--cw)*.17);text-decoration:none;margin-top:1px}
+.bc .cn.tl{left:7%;top:5%}
+.bc .cn.br{right:7%;bottom:5%;transform:rotate(180deg)}
+.bc .mid{position:absolute;inset:20% 16%}
+.bc .pip{position:absolute;transform:translate(-50%,-50%);font-size:calc(var(--cw)*.26);font-style:normal;line-height:1}
+.bc .pip.big{font-size:calc(var(--cw)*.72)}
+.bc .court{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);font-size:calc(var(--cw)*.62);
+  font-weight:900;font-style:normal;line-height:1;opacity:.92}
+.bc .courtsym{position:absolute;left:50%;top:78%;transform:translate(-50%,-50%);font-size:calc(var(--cw)*.3);font-style:normal}
+.bc.sm{border-radius:9px}
+.bc.back{background:linear-gradient(140deg,var(--lilac),var(--sky));box-shadow:0 5px 12px rgba(30,50,45,.34),
+  inset 0 0 0 5px rgba(255,255,255,.9),inset 0 0 0 7px rgba(0,0,0,.05)}
+.bc.back .bk{position:absolute;inset:11px;border-radius:8px;
+  background:radial-gradient(circle,rgba(255,255,255,.85) 2.6px,transparent 3px) 0 0/17px 17px,
+             linear-gradient(140deg,var(--pink),var(--lilac2))}
+.fly{position:absolute;left:0;top:0;z-index:200;width:var(--cw);height:var(--ch);border-radius:12px;
+  pointer-events:none;will-change:transform;transform-origin:50% 50%}
+.fly .bc{position:absolute;inset:0;width:100%;height:100%}
+#trail{position:absolute;left:0;top:0;z-index:199;pointer-events:none}
+
+/* ═══ المقاعد ═══ */
+.seat{position:absolute;z-index:6;width:236px}
+.seat .plate{position:relative;height:38px;background:linear-gradient(90deg,var(--cream) 72%,rgba(255,249,244,.25));
+  border-radius:14px;box-shadow:0 5px 0 rgba(0,0,0,.10);display:flex;align-items:center;padding:0 16px;
+  margin-bottom:10px;transition:.3s;gap:8px}
+.seat .plate span{font-weight:900;font-size:20px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seat .plate i{font-size:12px;font-weight:900;font-style:normal;padding:2px 8px;border-radius:10px;flex:none}
+.seat.t0 .plate i{background:var(--mint2);color:#123a2c}
+.seat.t1 .plate i{background:var(--sky2);color:#0d2f52}
+.seat.active .plate{background:linear-gradient(90deg,var(--lemon2) 72%,rgba(255,207,92,.25))}
+.seat .avw{position:relative;width:126px;height:126px;margin-right:8px}
+.seat .av{position:relative;width:126px;height:126px;border-radius:26px;box-shadow:0 8px 22px rgba(20,60,45,.4),
+  inset 0 0 0 5px #fff;overflow:hidden;background:#e6dff0}
+.seat .av img{width:100%;height:100%;object-fit:cover}
+.seat .avw img.fr{position:absolute;inset:0;width:100%;height:100%;z-index:3}
+.seat.out .av{filter:grayscale(1) brightness(.6)}
+.seat .cc{position:absolute;bottom:-12px;right:-26px;width:44px;height:50px;z-index:6}
+.seat .cc:before,.seat .cc:after{content:"";position:absolute;inset:0;background:#fff;border-radius:9px;
+  box-shadow:0 3px 8px rgba(0,0,0,.25)}
+.seat .cc:before{transform:translate(-7px,-6px)}
+.seat .cc b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink);
+  font-size:20px;font-weight:900;z-index:2}
+.seat .bubble{position:absolute;top:-18px;right:-10px;background:#fff;color:var(--ink);font-weight:900;
+  padding:7px 15px;border-radius:16px;font-size:18px;transform:scale(0);
+  transition:.25s cubic-bezier(.3,1.6,.5,1);box-shadow:var(--soft);white-space:nowrap;z-index:9}
+.seat .bubble.show{transform:scale(1) rotate(-3deg)}
+.seat .bubble.hot{background:var(--lemon2)}
+.seat .bubble.bad{background:var(--pink2);color:#fff}
+.timer{position:absolute;inset:-8px;border-radius:32px;background:conic-gradient(var(--lemon2) var(--p,0%),transparent 0);
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;padding:5px;display:none}
+.seat.active .timer{display:block}
+#seat-left{left:28px;top:170px}
+#seat-top{left:calc(50% + 250px);top:16px}
+#seat-right{right:28px;top:170px}
+#seat-me{left:236px;bottom:26px}
+
+/* يدي */
+#hand{position:absolute;left:0;right:0;bottom:-18px;height:calc(var(--ch) + 90px);z-index:20}
+#hand .bc{bottom:0;cursor:pointer;transition:transform .2s,left .35s cubic-bezier(.2,.8,.2,1),filter .25s}
+#hand .bc.dim{filter:brightness(.62) saturate(.5)}
+#hand .bc.ok{box-shadow:0 6px 14px rgba(30,50,45,.34),inset 0 0 0 3px var(--lemon2)}
+#hand .bc.ok:hover{transform:translateY(-46px) scale(1.08)!important;z-index:99!important}
+#hand .bc.hidden{visibility:hidden}
+.shake{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+/* ═══ لوحة النقاط ═══ */
+#scorebox{position:absolute;top:18px;left:20px;background:var(--cream);border-radius:24px;padding:12px 16px;
+  box-shadow:var(--soft),var(--softn);z-index:40;min-width:230px}
+#scorebox .hd{display:flex;justify-content:space-between;font-size:12px;font-weight:900;color:var(--ink2)}
+#scorebox .sc{display:flex;justify-content:space-between;font-size:34px;font-weight:900;line-height:1.1}
+#scorebox .sc .us{color:var(--mint2)} #scorebox .sc .them{color:var(--sky2)}
+#scorebox .raw{display:flex;justify-content:space-between;font-size:13px;font-weight:800;color:var(--ink2);
+  border-top:2px dashed #ece6f2;margin-top:6px;padding-top:5px}
+#scorebox .md{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px;font-weight:900}
+#scorebox .md .badge{background:var(--lemon2);border-radius:12px;padding:3px 11px}
+#scorebox .md .mult{background:var(--pink2);color:#fff;border-radius:12px;padding:3px 10px}
+#trickcount{position:absolute;top:18px;right:20px;background:var(--cream);border-radius:20px;padding:9px 18px;
+  font-weight:900;font-size:16px;box-shadow:var(--soft);z-index:40}
+#quitbtn{position:absolute;top:18px;right:170px;z-index:40}
+
+#msg{position:absolute;left:50%;bottom:calc(var(--ch) + 26px);transform:translateX(-50%);z-index:60;pointer-events:none}
+#msg div{background:var(--cream);color:var(--ink);padding:9px 24px;border-radius:20px;font-size:18px;
+  font-weight:900;opacity:0;transition:.3s;transform:translateY(-10px);white-space:nowrap;box-shadow:var(--soft)}
+#msg div.show{opacity:1;transform:none}
+#banner{position:absolute;left:50%;top:36%;transform:translate(-50%,-50%) scale(0) rotate(-5deg);z-index:120;
+  font-size:104px;font-weight:900;color:#fff;text-shadow:0 6px 0 rgba(0,0,0,.18),0 18px 40px rgba(0,0,0,.35);
+  transition:transform .3s cubic-bezier(.3,1.6,.5,1);pointer-events:none;white-space:nowrap;text-align:center}
+#banner.show{transform:translate(-50%,-50%) scale(1) rotate(-5deg)}
+#banner small{display:block;font-size:28px;color:rgba(255,255,255,.95);text-shadow:0 3px 0 rgba(0,0,0,.2)}
+#toast{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:var(--cream);color:var(--ink);
+  padding:9px 22px;border-radius:20px;font-weight:900;z-index:300;opacity:0;transition:.3s;pointer-events:none;box-shadow:var(--soft)}
+#toast.show{opacity:1}
+
+/* ═══ النوافذ ═══ */
+.ov{position:absolute;inset:0;background:rgba(40,70,60,.5);backdrop-filter:blur(3px);display:none;
+  align-items:center;justify-content:center;z-index:150}
+.ov.show{display:flex}
+.box{background:var(--cream);border-radius:32px;padding:26px 36px;text-align:center;
+  box-shadow:0 30px 80px rgba(20,50,40,.5),var(--softn);min-width:400px;max-width:1240px;
+  animation:pop .3s cubic-bezier(.3,1.5,.5,1)}
+@keyframes pop{from{transform:scale(.7);opacity:0}}
+.box h2{font-size:28px;font-weight:900;margin-bottom:6px}
+.box p{color:var(--ink2);margin-bottom:14px;font-size:15px;font-weight:700}
+.bidgrid{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+.bidgrid button{min-width:118px;font-size:19px}
+.suitbtn{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:15px!important}
+.suitbtn s{font-size:30px;text-decoration:none;line-height:1}
+.suitbtn.red s{color:#e2506a}
+#bid-timer{height:8px;background:#ece6f2;border-radius:6px;margin-top:14px;overflow:hidden}
+#bid-timer i{display:block;height:100%;width:100%;background:var(--lemon2);border-radius:6px;transition:width .1s linear}
+.projlist{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.projlist .pj{background:#f6f2fa;border-radius:18px;padding:10px 16px;font-weight:900;font-size:15px}
+.projlist .pj small{display:block;color:var(--ink2);font-weight:700;font-size:13px;margin-top:3px;letter-spacing:2px}
+table.sc{width:100%;border-collapse:collapse;margin:10px 0 14px;font-size:15px}
+table.sc td,table.sc th{padding:8px 14px;border-bottom:2px solid #f1ecf6}
+table.sc th{color:var(--ink2);font-size:13px}
+table.sc tr.win td{color:var(--mint2);font-weight:900}
+.podium{display:flex;gap:26px;justify-content:center;margin:14px 0}
+.podium .pd{background:#f6f2fa;border-radius:24px;padding:16px 22px;min-width:200px}
+.podium .pd.w{background:linear-gradient(#fff8e6,var(--lemon))}
+.podium .pd .avw{position:relative;width:84px;height:84px;margin:0 auto 8px}
+.podium .pd .avw img.a{position:absolute;border-radius:20px;object-fit:cover}
+.podium .pd .avw img.f{position:absolute;inset:0;width:100%;height:100%}
+.podium .pd .nm{font-weight:900;font-size:16px}
+.podium .pd .tm{font-size:12px;color:var(--ink2);font-weight:800}
+
+@media (max-width:1300px){
+  :root{--cw:100px;--ch:155px}
+  #deck{left:calc(50% - 250px)}
+  #banner{font-size:74px}
+  .seat{width:194px}
+  .seat .av,.seat .avw{width:98px;height:98px}
+  #seat-top{left:calc(50% + 258px)}
+}
+</style>
+</head>
+<body>
+
+<div id="rotate"><div class="ph"></div><div>أدِر جهازك أفقيًّا للّعب 🂡</div></div>
+<button id="fsbtn">⛶ ملء الشاشة</button>
+
+<div id="app">
+  <div id="bg"><div class="dots"></div><div class="vig"></div></div>
+
+  <!-- ═════════ الواجهة الرئيسة ═════════ -->
+  <div id="main" class="fe show">
+    <div id="pcard" onclick="openScreen('profile')">
+      <div class="avbox"><img class="a" id="pc-av"><img class="f" id="pc-fr"></div>
+      <div class="info">
+        <div class="nm" id="pc-name">لاعب</div>
+        <div class="coins"><img src="/uno/ui/coin2.webp"><span id="pc-coins">0</span></div>
+        <div class="xp"><i id="pc-xp"></i><b id="pc-lvl">1</b></div>
+      </div>
+    </div>
+    <div id="topnav">
+      <div class="tn" onclick="openScreen('rules')"><div class="ic">📖</div><span>القواعد</span></div>
+      <div class="tn" onclick="openScreen('leader')"><div class="ic">🏆</div><span>المتصدرون</span></div>
+      <div class="tn" onclick="openScreen('options')"><div class="ic">⚙️</div><span>الخيارات</span></div>
+      <div class="tn" onclick="location.href='/'"><div class="ic">🏠</div><span>الألعاب</span></div>
+    </div>
+    <div class="title"><h1>بالوت</h1><p>صنّ · حكم · أشكل · مشاريع · قهوة</p></div>
+    <div id="tiles">
+      <div class="tile a" onclick="startLocal()">
+        <div class="pl">👤 أنت + ٣ بوتات</div><div class="ic">🃏</div><div class="lbl">محلّي</div>
+      </div>
+      <div class="tile b" onclick="openScreen('online')">
+        <div class="pl">👥 ٤ لاعبين</div><div class="ic">🌐</div><div class="lbl">أونلاين</div>
+      </div>
+      <div class="tile c" onclick="openScreen('bet')">
+        <div class="soon">قريبًا</div><div class="pl">💰 طاولات رهان</div><div class="ic">🎲</div><div class="lbl">الرهان</div>
+      </div>
+      <div class="tile d" onclick="location.href='/shop'">
+        <div class="pl">🛍️ صور وبراويز</div><div class="ic">🎁</div><div class="lbl">المتجر</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════ أونلاين ═════════ -->
+  <div id="scr-online" class="fe">
+    <div class="backbtn" onclick="openScreen('main')">◀ رجوع</div>
+    <div class="pane" style="width:620px">
+      <h2>اللعب أونلاين</h2>
+      <p class="sub">أنشئ طاولةً وادعُ أصدقاءك بالرمز، أو انضمّ لطاولةٍ برمزها</p>
+      <div id="ol-me"></div>
+      <button class="play-btn" onclick="olCreate()">أنشئ طاولة</button>
+      <div class="row" style="margin-top:18px;justify-content:center;gap:12px">
+        <input id="ol-code" class="inp" placeholder="رمز الطاولة" maxlength="4" style="width:180px;letter-spacing:6px">
+        <button class="btn b" onclick="olJoin()">انضمّ</button>
+      </div>
+      <div id="ol-err" style="color:#e2506a;font-weight:800;text-align:center;margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- ═════════ الغرفة ═════════ -->
+  <div id="scr-room" class="fe">
+    <div class="backbtn" onclick="olQuit()">◀ خروج من الطاولة</div>
+    <div class="pane" style="width:960px">
+      <h2>الطاولة</h2>
+      <div id="rm-code">····</div>
+      <input id="rm-link" readonly onclick="olCopyLink()">
+      <div style="text-align:center;margin-top:8px"><button class="btn sm k" onclick="olCopyLink()">📋 انسخ الرابط</button></div>
+      <div class="seatlist" id="rm-seats"></div>
+      <div class="grid2" id="rm-settings"></div>
+      <button class="play-btn" id="rm-start" onclick="olStart()">ابدأ الصكّة</button>
+      <div id="rm-note" style="text-align:center;color:var(--ink2);font-weight:800;margin-top:10px;font-size:14px"></div>
+    </div>
+  </div>
+
+  <!-- ═════════ القواعد ═════════ -->
+  <div id="scr-rules" class="fe">
+    <div class="backbtn" onclick="openScreen('main')">◀ رجوع</div>
+    <div class="pane"><h2>قواعد بالوت</h2><div id="rules-body" style="line-height:1.9;font-size:15px"></div></div>
+  </div>
+
+  <!-- ═════════ الخيارات ═════════ -->
+  <div id="scr-options" class="fe">
+    <div class="backbtn" onclick="openScreen('main')">◀ رجوع</div>
+    <div class="pane" style="width:660px"><h2>الخيارات</h2><div id="opt-body"></div></div>
+  </div>
+
+  <!-- ═════════ المتصدرون ═════════ -->
+  <div id="scr-leader" class="fe">
+    <div class="backbtn" onclick="openScreen('main')">◀ رجوع</div>
+    <div class="pane" style="width:700px"><h2>المتصدرون</h2><div id="lead-body"></div></div>
+  </div>
+
+  <!-- ═════════ البروفايل ═════════ -->
+  <div id="scr-profile" class="fe">
+    <div class="backbtn" onclick="openScreen('main')">◀ رجوع</div>
+    <div class="pane" style="width:700px"><h2>ملفّي</h2><div id="prof-body"></div></div>
+  </div>
+
+  <!-- ═════════ الرهان ═════════ -->
+  <div id="scr-bet" class="fe">
+    <div class="backbtn" onclick="openScreen('main')">◀ رجوع</div>
+    <div class="pane" style="width:640px"><h2>طاولات الرهان</h2>
+      <p class="sub">قريبًا — طاولاتٌ بحدٍّ أدنى من الذهب، الفائز يأخذ الرهان</p></div>
+  </div>
+
+  <!-- ═════════ الساحة ═════════ -->
+  <div id="board">
+    <div id="world">
+      <div id="floor">
+        <div class="fl" id="glow"></div>
+        <div class="fl" id="tablering"></div>
+        <div class="fl" id="deck"><div class="lay"></div><div class="lay" style="transform:translate(-3px,-4px)"></div>
+          <div class="lay" style="transform:translate(-6px,-8px)"></div><div class="cnt">٣٢</div></div>
+        <div class="fl tk" id="tk-0"></div>
+        <div class="fl tk" id="tk-1"></div>
+        <div class="fl tk" id="tk-2"></div>
+        <div class="fl tk" id="tk-3"></div>
+        <div class="fl" id="bidcard"></div>
+      </div>
+    </div>
+
+    <canvas id="trail"></canvas>
+
+    <div class="seat t0" id="seat-me">
+      <div class="plate"><i>لنا</i><span>أنا</span></div>
+      <div class="avw"><div class="av"><img></div><img class="fr"><div class="timer"></div></div>
+      <div class="cc"><b>0</b></div><div class="bubble"></div>
+    </div>
+    <div class="seat t1" id="seat-right">
+      <div class="plate"><i>لهم</i><span></span></div>
+      <div class="avw"><div class="av"><img></div><img class="fr"><div class="timer"></div></div>
+      <div class="cc"><b>0</b></div><div class="bubble"></div>
+    </div>
+    <div class="seat t0" id="seat-top">
+      <div class="plate"><i>لنا</i><span></span></div>
+      <div class="avw"><div class="av"><img></div><img class="fr"><div class="timer"></div></div>
+      <div class="cc"><b>0</b></div><div class="bubble"></div>
+    </div>
+    <div class="seat t1" id="seat-left">
+      <div class="plate"><i>لهم</i><span></span></div>
+      <div class="avw"><div class="av"><img></div><img class="fr"><div class="timer"></div></div>
+      <div class="cc"><b>0</b></div><div class="bubble"></div>
+    </div>
+
+    <div class="ohand" id="ohand-right"></div>
+    <div class="ohand" id="ohand-top"></div>
+    <div class="ohand" id="ohand-left"></div>
+    <div id="hand"></div>
+
+    <div id="scorebox">
+      <div class="hd"><span>لنا</span><span>لهم</span></div>
+      <div class="sc"><b class="us" id="sc-us">0</b><b class="them" id="sc-them">0</b></div>
+      <div class="raw"><span id="rw-us">0</span><span id="rw-them">0</span></div>
+      <div class="md" id="sc-mode"></div>
+    </div>
+    <div id="trickcount">أكلة <b id="tk-n">0</b>/٨</div>
+    <button class="btn sm k" id="quitbtn" onclick="leaveMatch()">خروج</button>
+
+    <div id="msg"><div></div></div>
+    <div id="banner"></div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- ═════════ نوافذ ═════════ -->
+  <div class="ov" id="ov-bid"><div class="box">
+    <h2 id="bid-title">الشراء</h2><p id="bid-sub"></p>
+    <div class="bidgrid" id="bid-opts"></div>
+    <div id="bid-timer"><i></i></div>
+  </div></div>
+
+  <div class="ov" id="ov-double"><div class="box">
+    <h2>المضاعفة</h2><p id="dbl-sub"></p>
+    <div class="bidgrid" id="dbl-opts"></div>
+    <div id="bid-timer2" style="height:8px;background:#ece6f2;border-radius:6px;margin-top:14px;overflow:hidden">
+      <i style="display:block;height:100%;width:100%;background:var(--lemon2);border-radius:6px"></i></div>
+  </div></div>
+
+  <div class="ov" id="ov-proj"><div class="box">
+    <h2>مشاريعك</h2><p>تُعلَن في الأكلة الأولى وحدها — بعدها تسقط</p>
+    <div class="projlist" id="proj-list"></div>
+    <button class="btn g" onclick="declProjects(true)">أعلِنها</button>
+    <button class="btn k" onclick="declProjects(false)">لا، أخفيها</button>
+  </div></div>
+
+  <div class="ov" id="ov-hand"><div class="box">
+    <h2 id="hand-title">نتيجة اليد</h2>
+    <div id="hand-body"></div>
+    <button class="btn g" onclick="$('#ov-hand').classList.remove('show')">تمام</button>
+  </div></div>
+
+  <div class="ov" id="ov-end"><div class="box">
+    <h2 id="end-title">انتهت الصكّة</h2>
+    <div class="podium" id="end-podium"></div>
+    <div id="end-body"></div>
+    <button class="btn g" onclick="againMatch()">مرّة أخرى</button>
+    <button class="btn k" onclick="toMenu()">القائمة</button>
+  </div></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="cards.js"></script>
+<script src="arena.js"></script>
+<script src="menu.js"></script>
+<script src="online.js"></script>
+<script>boot();</script>
+</body>
+</html>

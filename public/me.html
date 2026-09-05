@@ -351,7 +351,7 @@ function reasonText(r) {
   const s = String(r || "");
   const m = s.match(/^لعب:([a-z]+):(فوز|مشاركة)$/);
   if (m) {
-    const n = { quiz: "قمّة الهرم", bomb: "القنبلة", salfa: "برّا السالفة", draw: "ارسمها!", uno: "اونو" }[m[1]] || m[1];
+    const n = { quiz: "قمّة الهرم", bomb: "القنبلة", salfa: "برّا السالفة", draw: "ارسمها!", uno: "اونو", baloot: "بالوت" }[m[1]] || m[1];
     return (m[2] === "فوز" ? "🏅 فوز في " : "🎮 مشاركة في ") + n;
   }
   if (s.startsWith("هدية") || s.startsWith("هديّة")) return "🎁 " + s;
@@ -359,7 +359,7 @@ function reasonText(r) {
      لا نملكه هنا (الدفتر يحفظ المعرّف لا الاسم)، فنكتفي بالنوع واللعبة. */
   const b = s.match(/^شراء:([a-z]+):([a-z]+):(.+)$/);
   if (b) {
-    const g = { quiz: "قمّة الهرم", bomb: "القنبلة", salfa: "برّا السالفة", draw: "ارسمها!", uno: "اونو" }[b[1]] || b[1];
+    const g = { quiz: "قمّة الهرم", bomb: "القنبلة", salfa: "برّا السالفة", draw: "ارسمها!", uno: "اونو", baloot: "بالوت" }[b[1]] || b[1];
     const k = { boards: "طاولة", cards: "طقم كروت", avatars: "صورة", frames: "إطار", char: "شخصية" }[b[2]] || b[2];
     return `🛒 شراء ${k} في ${g}`;
   }

@@ -110,6 +110,11 @@ app.get("/uno", (req, res) => {
   if (!req.originalUrl.split("?")[0].endsWith("/")) return res.redirect(301, "/uno/");
   res.sendFile(path.join(pubDir, "uno", "index.html"));
 });
+// 🂡 بالوت: ساحتها منقولةٌ من اونو، وقواعدها في balootrules.js على الخادم
+app.get("/baloot", (req, res) => {
+  if (!req.originalUrl.split("?")[0].endsWith("/")) return res.redirect(301, "/baloot/");
+  res.sendFile(path.join(pubDir, "baloot", "index.html"));
+});
 app.get(["/barra", "/salfa"], (req, res) => {
   if (admin) admin.trackVisit();
   const f = pageFile("salfa.html");
@@ -1308,10 +1313,15 @@ createStore()
     try { unoApi = require("./unosrv").setupUnoOnline(io, { store }); }
     catch (e) { console.error("uno online:", e.message); }
 
+    /* بالوت أونلاين: القواعد في balootrules.js والطاولات هنا */
+    let balootApi = null;
+    try { balootApi = require("./balootsrv").setupBalootOnline(io, { store }); }
+    catch (e) { console.error("baloot online:", e.message); }
+
     /* هويّة موحّدة لكل مساحات الأسماء: تُحلّ الجلسة قبل أن يصل الاتصال إلى
        منطق أي لعبة، فتعرف اللعبةُ صاحبَها بلا أن تسأل عن كوكي. تُركَّب بعد
        إنشاء المساحات كلّها وقبل الاستماع، فلا اتصالَ يسبقها. */
-    attachSocketAuth(io, store, ["/", "/bomb", "/quiz", "/salfa", "/uno"]);
+    attachSocketAuth(io, store, ["/", "/bomb", "/quiz", "/salfa", "/uno", "/baloot"]);
 
     server.listen(PORT, () => {
       console.log(`🎨 لعبة ارسمها! تعمل على المنفذ ${PORT}`);

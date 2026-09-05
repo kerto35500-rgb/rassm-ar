@@ -19,11 +19,14 @@ const REWARDS = {
   bomb:  { win: 50, play: 18, name: "القنبلة" },
   salfa: { win: 45, play: 16, name: "برّا السالفة" },
   draw:  { win: 40, play: 15, name: "ارسمها!" },
-  uno:   { win: 40, play: 15, name: "اونو" }
+  uno:   { win: 40, play: 15, name: "اونو" },
+  /* بالوت صكّةٌ طويلة (أيدٍ متتالية حتى ١٥٢)، فجائزتها أعلى — الوقت المبذول
+     فيها أضعافُ جولةِ اونو، ولو تساوت الجوائز لهجرها الناس إلى الأسرع. */
+  baloot: { win: 70, play: 25, name: "بالوت" }
 };
 
 /* سقفٌ يوميّ لكل لعبة على حدة، وسقفٌ كلّيّ فوقها */
-const DAILY_CAP = { quiz: 400, bomb: 350, salfa: 350, draw: 300, uno: 300 };
+const DAILY_CAP = { quiz: 400, bomb: 350, salfa: 350, draw: 300, uno: 300, baloot: 420 };
 const DAILY_TOTAL = 900;
 
 /* الأرقام أعلاه هي الافتراضيّ. أمّا المطبَّق فعلًا فيأتي من الإعدادات الحيّة
@@ -61,9 +64,16 @@ function matchProblem(players) {
  * store: يحتاج move و earnedSince.
  * players: [{ userId, id, ip, isBot, spectator }]
  * winnerId: معرّف اللاعب الفائز داخل الغرفة (p.id لا userId)
+ * winnerIds: بديلُه حين يفوز فريقٌ لا فردٌ — كبالوت. أحدهما يكفي.
  * matchId: معرّفٌ فريد للمباراة — منه يُشتقّ مفتاح منع التكرار
  */
-async function awardMatch(store, { game, players, winnerId, matchId }) {
+async function awardMatch(store, { game, players, winnerId, winnerIds, matchId }) {
+  /* الفوز الجماعيّ ليس حالةً خاصّة، بل هو الأصل ومنه الفوز الفرديّ مجموعةٌ
+     من واحد. فنوحّدهما هنا مرّةً ولا نُكرّر الشرط في كلّ سطرٍ بعدها. */
+  const winSet = new Set(
+    (winnerIds && winnerIds.length ? winnerIds : (winnerId != null ? [winnerId] : []))
+      .map(String)
+  );
   const R = REWARDS[game];
   if (!R || !store || !store.move) return { granted: [], reason: "لعبة غير معروفة" };
 
@@ -75,7 +85,7 @@ async function awardMatch(store, { game, players, winnerId, matchId }) {
   const rw = rewardOf(game), cap = capOf(game), total = totalCap();
   for (const p of players) {
     if (!p.userId || p.isBot || p.spectator) continue;
-    const isWin = winnerId != null && p.id === winnerId;
+    const isWin = winSet.has(String(p.id));
     let amount = isWin ? rw.win : rw.play;
 
     try {
