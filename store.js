@@ -160,6 +160,107 @@ class JsonStore {
       .reduce((a, x) => a + x.delta, 0);
   }
 
+  /* ── الأصدقاء ──
+     الحالات: pending (طلبٌ خرج منّي) · accepted (صديقان) · blocked (حظرته).
+     والصفُّ لكلّ اتّجاه: الصداقة صفّان، والطلبُ والحظر صفٌّ واحد. */
+  _fr() { return (this.db.friends = this.db.friends || []); }
+  _frRow(a, b) { return this._fr().find(x => x.userId === Number(a) && x.otherId === Number(b)); }
+  _frSet(a, b, state) {
+    const r = this._frRow(a, b);
+    if (r) { r.state = state; r.updatedAt = Date.now(); return r; }
+    const row = { id: this._fr().length + 1, userId: Number(a), otherId: Number(b),
+                  state, createdAt: Date.now(), updatedAt: Date.now() };
+    this._fr().push(row);
+    return row;
+  }
+  _frDel(a, b) {
+    const i = this._fr().findIndex(x => x.userId === Number(a) && x.otherId === Number(b));
+    if (i >= 0) this._fr().splice(i, 1);
+  }
+  async friendState(a, b) {
+    const me = this._frRow(a, b), them = this._frRow(b, a);
+    if (me && me.state === "blocked") return "blocked";
+    if (them && them.state === "blocked") return "blocked-by";
+    if (me && me.state === "accepted") return "friends";
+    if (me && me.state === "pending") return "sent";
+    if (them && them.state === "pending") return "incoming";
+    return "none";
+  }
+  async friendRequest(a, b, max = 200) {
+    a = Number(a); b = Number(b);
+    if (!a || !b || a === b) return { ok: false, error: "طلبٌ غير صالح" };
+    const s = await this.friendState(a, b);
+    if (s === "friends") return { ok: false, error: "صديقكما بالفعل" };
+    if (s === "sent") return { ok: false, error: "أرسلتَ طلبًا من قبل" };
+    if (s === "blocked" || s === "blocked-by") return { ok: false, error: "تعذّر إرسال الطلب" };
+    /* الطلب المقابل يعني قبولًا: لا معنى لأن ينتظر كلٌّ منهما الآخر */
+    if (s === "incoming") return this.friendAccept(a, b);
+    const mine = this._fr().filter(x => x.userId === a && x.state !== "blocked").length;
+    if (mine >= max) return { ok: false, error: "بلغتَ حدّ الأصدقاء والطلبات" };
+    this._frSet(a, b, "pending");
+    this._save();
+    return { ok: true, state: "sent" };
+  }
+  async friendAccept(me, from) {
+    const r = this._frRow(from, me);
+    if (!r || r.state !== "pending") return { ok: false, error: "لا طلبَ من هذا اللاعب" };
+    this._frSet(from, me, "accepted");
+    this._frSet(me, from, "accepted");
+    this._save();
+    return { ok: true, state: "friends" };
+  }
+  async friendReject(me, from) {
+    this._frDel(from, me);
+    this._save();
+    return { ok: true, state: "none" };
+  }
+  async friendRemove(me, other) {
+    this._frDel(me, other); this._frDel(other, me);
+    this._save();
+    return { ok: true, state: "none" };
+  }
+  async friendBlock(me, other) {
+    me = Number(me); other = Number(other);
+    if (!me || !other || me === other) return { ok: false, error: "غير صالح" };
+    this._frDel(other, me);                 /* حظرُه يقطع صداقته وطلبه معًا */
+    this._frSet(me, other, "blocked");
+    this._save();
+    return { ok: true, state: "blocked" };
+  }
+  async friendUnblock(me, other) {
+    const r = this._frRow(me, other);
+    if (r && r.state === "blocked") this._frDel(me, other);
+    this._save();
+    return { ok: true, state: "none" };
+  }
+  async _frUsers(ids) {
+    const out = [];
+    for (const id of ids) {
+      const u = await this.getUserById(id);
+      if (!u) continue;
+      const lo = await this.getLoadout(u.id, "uno").catch(() => ({}));
+      out.push({ id: u.id, name: u.displayName || u.name,
+                 avatar: (lo && lo.avatars) || null, frame: (lo && lo.frames) || null });
+    }
+    return out;
+  }
+  async friendsOf(userId) {
+    return this._frUsers(this._fr().filter(x => x.userId === Number(userId) && x.state === "accepted")
+      .map(x => x.otherId));
+  }
+  async friendRequestsOf(userId) {
+    return this._frUsers(this._fr().filter(x => x.otherId === Number(userId) && x.state === "pending")
+      .map(x => x.userId));
+  }
+  async friendSentOf(userId) {
+    return this._frUsers(this._fr().filter(x => x.userId === Number(userId) && x.state === "pending")
+      .map(x => x.otherId));
+  }
+  async friendBlockedOf(userId) {
+    return this._frUsers(this._fr().filter(x => x.userId === Number(userId) && x.state === "blocked")
+      .map(x => x.otherId));
+  }
+
   /* مجموع ما خرج من محفظته بسببٍ بعينه — لسقف الرهان اليوميّ */
   async spentSince(userId, since, reasonPrefix = "") {
     return (this.db.ledger || [])
@@ -734,6 +835,133 @@ class PgStore {
        WHERE user_id = $1 AND created_at >= $2 AND delta < 0 AND reason LIKE $3`,
       [Number(userId), since, (reasonPrefix || "") + "%"]);
     return Number(r.rows[0].s);
+  }
+
+  /* ── الأصدقاء ── */
+  async _frState(a, b) {
+    const r = await this.pool.query(
+      "SELECT user_id, other_id, state FROM friends WHERE (user_id=$1 AND other_id=$2) OR (user_id=$2 AND other_id=$1)",
+      [Number(a), Number(b)]);
+    const me = r.rows.find(x => Number(x.user_id) === Number(a));
+    const them = r.rows.find(x => Number(x.user_id) === Number(b));
+    return { me, them };
+  }
+  async friendState(a, b) {
+    const { me, them } = await this._frState(a, b);
+    if (me && me.state === "blocked") return "blocked";
+    if (them && them.state === "blocked") return "blocked-by";
+    if (me && me.state === "accepted") return "friends";
+    if (me && me.state === "pending") return "sent";
+    if (them && them.state === "pending") return "incoming";
+    return "none";
+  }
+  async friendRequest(a, b, max = 200) {
+    a = Number(a); b = Number(b);
+    if (!a || !b || a === b) return { ok: false, error: "طلبٌ غير صالح" };
+    const s = await this.friendState(a, b);
+    if (s === "friends") return { ok: false, error: "صديقكما بالفعل" };
+    if (s === "sent") return { ok: false, error: "أرسلتَ طلبًا من قبل" };
+    if (s === "blocked" || s === "blocked-by") return { ok: false, error: "تعذّر إرسال الطلب" };
+    if (s === "incoming") return this.friendAccept(a, b);
+    const n = await this.pool.query(
+      "SELECT COUNT(*)::int AS n FROM friends WHERE user_id=$1 AND state <> 'blocked'", [a]);
+    if (n.rows[0].n >= max) return { ok: false, error: "بلغتَ حدّ الأصدقاء والطلبات" };
+    const t = Date.now();
+    await this.pool.query(
+      `INSERT INTO friends (user_id, other_id, state, created_at, updated_at)
+       VALUES ($1,$2,'pending',$3,$3)
+       ON CONFLICT (user_id, other_id) DO UPDATE SET state='pending', updated_at=$3`, [a, b, t]);
+    return { ok: true, state: "sent" };
+  }
+  async friendAccept(me, from) {
+    me = Number(me); from = Number(from);
+    const c = await this.pool.connect();
+    try {
+      await c.query("BEGIN");
+      const r = await c.query(
+        "SELECT state FROM friends WHERE user_id=$1 AND other_id=$2 FOR UPDATE", [from, me]);
+      if (!r.rowCount || r.rows[0].state !== "pending") {
+        await c.query("ROLLBACK");
+        return { ok: false, error: "لا طلبَ من هذا اللاعب" };
+      }
+      const t = Date.now();
+      await c.query("UPDATE friends SET state='accepted', updated_at=$3 WHERE user_id=$1 AND other_id=$2", [from, me, t]);
+      await c.query(
+        `INSERT INTO friends (user_id, other_id, state, created_at, updated_at)
+         VALUES ($1,$2,'accepted',$3,$3)
+         ON CONFLICT (user_id, other_id) DO UPDATE SET state='accepted', updated_at=$3`, [me, from, t]);
+      await c.query("COMMIT");
+      return { ok: true, state: "friends" };
+    } catch (e) { await c.query("ROLLBACK").catch(() => {}); throw e; }
+    finally { c.release(); }
+  }
+  async friendReject(me, from) {
+    await this.pool.query("DELETE FROM friends WHERE user_id=$1 AND other_id=$2 AND state='pending'",
+                          [Number(from), Number(me)]);
+    return { ok: true, state: "none" };
+  }
+  async friendRemove(me, other) {
+    await this.pool.query(
+      `DELETE FROM friends WHERE ((user_id=$1 AND other_id=$2) OR (user_id=$2 AND other_id=$1))
+       AND state <> 'blocked'`, [Number(me), Number(other)]);
+    return { ok: true, state: "none" };
+  }
+  async friendBlock(me, other) {
+    me = Number(me); other = Number(other);
+    if (!me || !other || me === other) return { ok: false, error: "غير صالح" };
+    const t = Date.now();
+    const c = await this.pool.connect();
+    try {
+      await c.query("BEGIN");
+      await c.query("DELETE FROM friends WHERE user_id=$1 AND other_id=$2", [other, me]);
+      await c.query(
+        `INSERT INTO friends (user_id, other_id, state, created_at, updated_at)
+         VALUES ($1,$2,'blocked',$3,$3)
+         ON CONFLICT (user_id, other_id) DO UPDATE SET state='blocked', updated_at=$3`, [me, other, t]);
+      await c.query("COMMIT");
+      return { ok: true, state: "blocked" };
+    } catch (e) { await c.query("ROLLBACK").catch(() => {}); throw e; }
+    finally { c.release(); }
+  }
+  async friendUnblock(me, other) {
+    await this.pool.query("DELETE FROM friends WHERE user_id=$1 AND other_id=$2 AND state='blocked'",
+                          [Number(me), Number(other)]);
+    return { ok: true, state: "none" };
+  }
+  async _frList(sql, args) {
+    const r = await this.pool.query(sql, args);
+    return r.rows.map(x => ({
+      id: Number(x.id), name: x.name,
+      avatar: x.avatar || null, frame: x.frame || null
+    }));
+  }
+  async friendsOf(userId) {
+    return this._frList(
+      `SELECT u.id, COALESCE(u.display_name, u.name) AS name,
+              (SELECT item_key FROM loadout WHERE user_id=u.id AND game='uno' AND kind='avatars') AS avatar,
+              (SELECT item_key FROM loadout WHERE user_id=u.id AND game='uno' AND kind='frames') AS frame
+       FROM friends f JOIN users u ON u.id = f.other_id
+       WHERE f.user_id = $1 AND f.state = 'accepted' ORDER BY u.id`, [Number(userId)]);
+  }
+  async friendRequestsOf(userId) {
+    return this._frList(
+      `SELECT u.id, COALESCE(u.display_name, u.name) AS name,
+              (SELECT item_key FROM loadout WHERE user_id=u.id AND game='uno' AND kind='avatars') AS avatar,
+              (SELECT item_key FROM loadout WHERE user_id=u.id AND game='uno' AND kind='frames') AS frame
+       FROM friends f JOIN users u ON u.id = f.user_id
+       WHERE f.other_id = $1 AND f.state = 'pending' ORDER BY f.updated_at DESC`, [Number(userId)]);
+  }
+  async friendSentOf(userId) {
+    return this._frList(
+      `SELECT u.id, COALESCE(u.display_name, u.name) AS name, NULL AS avatar, NULL AS frame
+       FROM friends f JOIN users u ON u.id = f.other_id
+       WHERE f.user_id = $1 AND f.state = 'pending' ORDER BY f.updated_at DESC`, [Number(userId)]);
+  }
+  async friendBlockedOf(userId) {
+    return this._frList(
+      `SELECT u.id, COALESCE(u.display_name, u.name) AS name, NULL AS avatar, NULL AS frame
+       FROM friends f JOIN users u ON u.id = f.other_id
+       WHERE f.user_id = $1 AND f.state = 'blocked' ORDER BY f.updated_at DESC`, [Number(userId)]);
   }
 
   /* ── الرهان المحجوز ──

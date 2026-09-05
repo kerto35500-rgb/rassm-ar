@@ -284,6 +284,28 @@ const STEPS = [
       await q(`CREATE UNIQUE INDEX IF NOT EXISTS escrow_room_user_uq
                ON escrow(room, user_id) WHERE state = 'held'`);
     }
+  },
+
+  {
+    id: 12,
+    name: "الأصدقاء وطلبات الصداقة",
+    async pg(q) {
+      /* صفٌّ لكلّ اتّجاه لا لكلّ زوج. الصداقةُ متبادلةٌ فصفّان، والطلبُ
+         والحظرُ من طرفٍ واحدٍ فصفٌّ واحد. هذا يجعل «من أصدقائي؟» و«من
+         حظرتُه؟» استعلامًا واحدًا بلا OR ولا ترتيبِ معرّفات — وهو السؤال
+         الذي يُطرَح في كلّ صفحة. */
+      await q(`CREATE TABLE IF NOT EXISTS friends (
+                 id BIGSERIAL PRIMARY KEY,
+                 user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                 other_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                 state TEXT NOT NULL,
+                 created_at BIGINT NOT NULL,
+                 updated_at BIGINT NOT NULL,
+                 CHECK (user_id <> other_id),
+                 UNIQUE (user_id, other_id))`);
+      await q(`CREATE INDEX IF NOT EXISTS friends_user_idx ON friends(user_id, state)`);
+      await q(`CREATE INDEX IF NOT EXISTS friends_other_idx ON friends(other_id, state)`);
+    }
   }
 ];
 

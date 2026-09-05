@@ -153,6 +153,10 @@ require("./support").setupSupport(app, {
   get store() { return store; },
   currentUser: accounts.currentUser, pubDir
 });
+require("./friends").setupFriends(app, {
+  get store() { return store; },
+  currentUser: accounts.currentUser
+});
 /* ═══ صفحات المختبرات ═══
    *-lab.html و_doors_preview.html أدواتُ ضبطٍ داخلية (إحداثيات، فخاخ، أقراص).
    تبقى متاحةً محلّيًّا للتطوير، وتُحجَب في الإنتاج إلا لصاحب جلسة الأدمن. */

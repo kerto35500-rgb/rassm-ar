@@ -34,6 +34,7 @@ function olConnect() {
   s.on("matchEnd", d => onMatchEnd(d));
   s.on("kicked", () => { toast("أُخرِجتَ من الطاولة"); olReset(); openScreen("main"); });
   s.on("err", d => { toast((d && d.msg) || "تعذّر الفعل"); });
+  s.on("invited", d => showInvite(d));
   s.on("disconnect", () => { if (ONL.on) toast("انقطع الاتّصال — نحاول العودة…"); });
   return s;
 }
@@ -217,6 +218,7 @@ function renderRoom() {
     });
   } else st.style.opacity = ".65";
 
+  renderRoomFriends();
   $("#rm-start").style.display = host ? "" : "none";
   const real = l.players.filter(p => p && !p.bot).length;
   $("#rm-note").textContent = host
@@ -226,6 +228,51 @@ function renderRoom() {
     : "بانتظار المضيف…";
 }
 const isHost = () => !!(ONL.lobby && ONL.lobby.host === ONL.me);
+
+/* ══════════ الأصدقاء: دعوةٌ من داخل الطاولة ══════════ */
+function renderRoomFriends() {
+  const box = $("#rm-friends");
+  if (!box || !ONL.sock) return;
+  ONL.sock.emit("friends", {}, d => {
+    if (!d || !d.ok || !d.list.length) { box.innerHTML = ""; return; }
+    const on = d.list.filter(f => f.online), off = d.list.filter(f => !f.online);
+    box.innerHTML =
+      '<div style="font-weight:900;margin:14px 0 6px">ادعُ صديقًا</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+      on.map(f => `<button class="btn sm g" onclick="olInvite(${f.id},this)">
+          ${esc(f.name)} <span style="color:var(--mint2)">●</span></button>`).join("") +
+      off.map(f => `<button class="btn sm k" disabled>${esc(f.name)} <span style="opacity:.5">○</span></button>`).join("") +
+      "</div>" +
+      (on.length ? "" : '<div style="color:var(--ink2);font-weight:700;font-size:13px;margin-top:6px">' +
+        "لا أحد من أصدقائك في اللعبة الآن — انسخ الرابط وأرسله</div>");
+  });
+}
+function olInvite(id, btn) {
+  ONL.sock.emit("invite", { id }, r => {
+    if (!r || !r.ok) return toast((r && r.error) || "تعذّرت الدعوة");
+    toast("أُرسلت الدعوة ✔");
+    if (btn) { btn.textContent = "أُرسلت ✔"; btn.disabled = true; }
+  });
+}
+function showInvite(d) {
+  if (!d || !d.code) return;
+  if (ONL.on && ONL.code === d.code) return;        /* أنا فيها أصلًا */
+  const t = $("#invite");
+  t.innerHTML =
+    `<b>${esc(d.from)}</b> يدعوك إلى طاولة <b>${esc(d.code)}</b>` +
+    (d.tier ? ` <span style="color:#b06070">(رهان ${d.bet})</span>` : "") +
+    `<div style="margin-top:8px"><button class="btn sm g" onclick="acceptInvite('${esc(d.code)}')">ادخل</button>` +
+    `<button class="btn sm k" onclick="$('#invite').classList.remove('show')">لاحقًا</button></div>`;
+  t.classList.add("show");
+  snd("bid");
+  clearTimeout(showInvite._t);
+  showInvite._t = setTimeout(() => t.classList.remove("show"), 30000);
+}
+function acceptInvite(code) {
+  $("#invite").classList.remove("show");
+  if (ONL.on) olQuit();
+  setTimeout(() => olJoinCode(code), 150);
+}
 
 /* ══════════ طابور الحالات ══════════ */
 function drain() {

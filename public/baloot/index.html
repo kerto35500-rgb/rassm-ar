@@ -288,6 +288,12 @@ body.mobile #fsbtn{display:block}
 #toast{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:var(--cream);color:var(--ink);
   padding:9px 22px;border-radius:20px;font-weight:900;z-index:300;opacity:0;transition:.3s;pointer-events:none;box-shadow:var(--soft)}
 #toast.show{opacity:1}
+/* الدعوة تصل في أيّ شاشة، فهي فوق كلّ شيءٍ ولا تُغلق نفسها بلمسةٍ عابرة */
+#invite{position:absolute;top:20px;left:50%;transform:translateX(-50%) translateY(-140%);
+  background:var(--cream);color:var(--ink);padding:14px 22px;border-radius:24px;font-weight:800;
+  z-index:400;box-shadow:var(--soft),var(--softn);transition:transform .3s cubic-bezier(.3,1.5,.5,1);
+  text-align:center;min-width:320px}
+#invite.show{transform:translateX(-50%) translateY(0)}
 
 /* ═══ النوافذ ═══ */
 .ov{position:absolute;inset:0;background:rgba(40,70,60,.5);backdrop-filter:blur(3px);display:none;
@@ -399,6 +405,7 @@ table.sc tr.win td{color:var(--mint2);font-weight:900}
       <input id="rm-link" readonly onclick="olCopyLink()">
       <div style="text-align:center;margin-top:8px"><button class="btn sm k" onclick="olCopyLink()">📋 انسخ الرابط</button></div>
       <div class="seatlist" id="rm-seats"></div>
+      <div id="rm-friends"></div>
       <div class="grid2" id="rm-settings"></div>
       <button class="play-btn" id="rm-start" onclick="olStart()">ابدأ الصكّة</button>
       <div id="rm-note" style="text-align:center;color:var(--ink2);font-weight:800;margin-top:10px;font-size:14px"></div>
@@ -495,6 +502,7 @@ table.sc tr.win td{color:var(--mint2);font-weight:900}
   </div>
 
   <div id="toast"></div>
+  <div id="invite"></div>
 
   <!-- ═════════ نوافذ ═════════ -->
   <div class="ov" id="ov-bid"><div class="box">

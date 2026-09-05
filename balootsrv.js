@@ -61,6 +61,9 @@ function setupBalootOnline(io, deps = {}) {
   const handPause = deps.handPause != null ? deps.handPause : HAND_PAUSE;
   const redealPause = deps.redealPause != null ? deps.redealPause : REDEAL_PAUSE;
   const rooms = new Map();
+  /* حضورٌ خفيف: من المتّصلُ الآن بأيّ مقبس. تُستعمَل لدعوة صديقٍ إلى طاولة
+     من داخل اللعبة — بلا هذه الخريطة لا تصل الدعوة إلا برابطٍ يُنسَخ يدويًّا. */
+  const online = new Map();              /* userId -> Set(socketId) */
   const st = () => deps.store;
 
   const ipOf = s =>
@@ -355,6 +358,46 @@ function setupBalootOnline(io, deps = {}) {
   /* ── الاتصال ── */
   nsp.on("connection", socket => {
     let room = null, meId = null;
+
+    if (socket.userId) {
+      const k = String(socket.userId);
+      if (!online.has(k)) online.set(k, new Set());
+      online.get(k).add(socket.id);
+      socket.on("disconnect", () => {
+        const s = online.get(k);
+        if (!s) return;
+        s.delete(socket.id);
+        if (!s.size) online.delete(k);
+      });
+    }
+
+    /* من من أصدقائي متّصلٌ الآن؟ لا نكشف حالةَ من ليس صديقًا. */
+    socket.on("friends", async (d, cb) => {
+      if (!socket.userId) return cb && cb({ ok: true, list: [] });
+      try {
+        const list = await st().friendsOf(socket.userId);
+        cb && cb({ ok: true, list: list.map(f => ({ ...f, online: online.has(String(f.id)) })) });
+      } catch (e) { cb && cb({ ok: false, error: "تعذّر جلب الأصدقاء" }); }
+    });
+
+    /* الدعوة لا تُرسَل إلا لصديقٍ مقبول: وإلا صارت بريدًا مزعجًا داخل اللعبة */
+    socket.on("invite", async (d, cb) => {
+      if (!socket.userId || !room) return cb && cb({ ok: false, error: "لستَ في طاولة" });
+      const to = Number(d && d.id);
+      if (!to) return cb && cb({ ok: false, error: "صديقٌ غير محدَّد" });
+      try {
+        if (await st().friendState(socket.userId, to) !== "friends")
+          return cb && cb({ ok: false, error: "الدعوة للأصدقاء وحدهم" });
+      } catch (e) { return cb && cb({ ok: false, error: "تعذّر التحقّق" }); }
+      const set = online.get(String(to));
+      if (!set || !set.size) return cb && cb({ ok: false, error: "صديقك غير متّصلٍ بالّلعبة الآن" });
+      for (const sid of set) {
+        const s = nsp.sockets.get(sid);
+        if (s) s.emit("invited", { code: room.code, from: socket.userName || "صديقك",
+                                   tier: room.tier, bet: room.bet });
+      }
+      cb && cb({ ok: true });
+    });
 
     const err = msg => socket.emit("err", { msg });
     const clean = (s, n) => String(s == null ? "" : s).trim().slice(0, n);

@@ -166,6 +166,17 @@
       <div id="gameRows"></div>
     </div>
 
+    <!-- الأصدقاء -->
+    <div class="me-card">
+      <h2>👥 أصدقائي</h2>
+      <div class="me-hint">ابحث باسم اللاعب وأرسل طلبًا. من قَبِلَك صار صديقًا، وتقدر تدعوه لطاولةٍ من داخل اللعبة.</div>
+      <input id="frq" maxlength="30" placeholder="اسم اللاعب…" autocomplete="off">
+      <div id="frSearch" style="margin-top:8px"></div>
+      <div id="frIncoming" style="margin-top:14px"></div>
+      <div id="frList" style="margin-top:14px"></div>
+      <div id="frMsg" class="me-msg"></div>
+    </div>
+
     <!-- البريد (اختياريّ) -->
     <div class="me-card">
       <h2>📧 البريد الإلكتروني</h2>
@@ -435,7 +446,65 @@ $("logoutAll").onclick = async () => {
   location.href = "/";
 };
 
-load();
+/* ── الأصدقاء ──
+   البحث يبدأ من حرفين ويُمهَل قليلًا بعد آخر ضغطة: من يكتب اسمًا من ستّة
+   أحرفٍ لا يُرسل ستّة استعلامات. */
+async function fapi(path, body) {
+  const o = body
+    ? { method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
+    : { credentials: "same-origin" };
+  try { return await (await fetch("/api/friends" + path, o)).json(); }
+  catch (e) { return { ok: false, error: "تعذّر الاتّصال" }; }
+}
+const FR_LBL = { none: "إضافة", sent: "أُرسل ✔", incoming: "اقبل", friends: "صديق ✔", blocked: "محظور" };
+function frRow(u, buttons) {
+  return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed rgba(0,0,0,.12)">' +
+    '<b style="flex:1">' + esc(u.name) + "</b>" + buttons + "</div>";
+}
+async function loadFriends() {
+  const d = await fapi("");
+  if (!d.ok) return;
+  $("frIncoming").innerHTML = d.incoming.length
+    ? "<b>طلباتٌ واردة</b>" + d.incoming.map(u => frRow(u,
+        '<button class="me-btn" onclick="frDo(\'accept\',' + u.id + ')">اقبل</button>' +
+        '<button class="me-btn me-ghost" onclick="frDo(\'reject\',' + u.id + ')">ارفض</button>')).join("")
+    : "";
+  $("frList").innerHTML = "<b>أصدقائي (" + d.friends.length + ")</b>" +
+    (d.friends.length
+      ? d.friends.map(u => frRow(u,
+          '<button class="me-btn me-ghost" onclick="frDo(\'remove\',' + u.id + ')">إزالة</button>' +
+          '<button class="me-btn me-warn" onclick="frDo(\'block\',' + u.id + ')">حظر</button>')).join("")
+      : '<div class="me-hint">لا أصدقاء بعد — ابحث عن اسمٍ أعلاه.</div>') +
+    (d.sent.length ? '<div class="me-hint" style="margin-top:8px">طلباتٌ بانتظار الردّ: ' +
+      d.sent.map(u => esc(u.name)).join("، ") + "</div>" : "") +
+    (d.blocked.length ? "<b style=\"display:block;margin-top:12px\">المحظورون</b>" +
+      d.blocked.map(u => frRow(u,
+        '<button class="me-btn me-ghost" onclick="frDo(\'unblock\',' + u.id + ')">رفع الحظر</button>')).join("") : "");
+}
+async function frDo(action, id) {
+  const r = await fapi("/" + action, { id });
+  say("frMsg", r.ok ? "تمّ ✔" : (r.error || "تعذّر الفعل"), r.ok);
+  loadFriends();
+  if ($("frq").value.trim().length >= 2) frSearch();
+}
+let frT = null;
+async function frSearch() {
+  const q = $("frq").value.trim();
+  if (q.length < 2) { $("frSearch").innerHTML = ""; return; }
+  const d = await fapi("/search?q=" + encodeURIComponent(q));
+  if (!d.ok) return;
+  $("frSearch").innerHTML = d.list.length
+    ? d.list.map(u => frRow(u, u.state === "none"
+        ? '<button class="me-btn" onclick="frDo(\'request\',' + u.id + ')">إضافة</button>'
+        : u.state === "incoming"
+        ? '<button class="me-btn" onclick="frDo(\'accept\',' + u.id + ')">اقبل طلبه</button>'
+        : '<span class="me-hint">' + (FR_LBL[u.state] || u.state) + "</span>")).join("")
+    : '<div class="me-hint">لا نتائج</div>';
+}
+$("frq").oninput = () => { clearTimeout(frT); frT = setTimeout(frSearch, 350); };
+
+load().then(() => { if (ME) loadFriends(); });
 </script>
 </body>
 </html>
