@@ -851,7 +851,11 @@ class PgStore {
       `SELECT currency, delta, balance_after AS "balanceAfter", reason,
               ref_type AS "refType", ref_id AS "refId", created_at AS "createdAt"
        FROM ledger WHERE user_id = $1 ORDER BY id DESC LIMIT $2`, [Number(userId), n]);
-    return r.rows.map(x => ({ ...x, delta: Number(x.delta), balanceAfter: Number(x.balanceAfter) }));
+    /* BIGINT يعود من pg نصًّا لا رقمًا. و`createdAt` نصًّا يعني أنّ كلّ حسابٍ
+       زمنيٍّ عليه يصير جمعَ نصوص — وهو ما أسقط حساب السلسلة اليوميّة. */
+    return r.rows.map(x => ({ ...x, delta: Number(x.delta),
+                              balanceAfter: Number(x.balanceAfter),
+                              createdAt: Number(x.createdAt) }));
   }
   async earnedSince(userId, since, reasonPrefix = "") {
     const r = await this.pool.query(

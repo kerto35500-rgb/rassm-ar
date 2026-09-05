@@ -200,6 +200,26 @@ function setupPanel(app, deps) {
     catch (e) { res.json({ ok: false, error: e.message }); }
   });
 
+  /* لقطةٌ حيّة من ذاكرة الخادم: من يلعب الآن، وأين، وبكم. لا أسماءَ حسابات
+     ولا أوراقَ يد — ما يلزم لمعرفة أنّ شيئًا عالقٌ أو أنّ رهانًا يجري. */
+  app.get(ADMIN_PATH + "/p/live", (req, res) => {
+    if (!guard(req, res)) return;
+    const snap = api => {
+      if (!api || !api.rooms) return { online: 0, rooms: [] };
+      const rooms = [];
+      for (const [code, r] of api.rooms) {
+        rooms.push({
+          code,
+          players: (r.seats || []).map(p => (p.bot ? "🤖 " : "") + (p.name || "?")),
+          playing: !!r.match, bet: r.bet || 0, since: r.createdAt || Date.now()
+        });
+      }
+      const s = api.liveStats ? api.liveStats() : {};
+      return { online: s.online || 0, rooms };
+    };
+    res.json({ ok: true, baloot: snap(deps.balootApi), uno: snap(deps.unoApi) });
+  });
+
   app.get(ADMIN_PATH + "/p/settings", (req, res) => {
     if (!guard(req, res)) return;
     res.json({ ok: true, settings: SET.describe() });
@@ -384,6 +404,7 @@ code{background:#0f1826;padding:1px 5px;border-radius:4px;font-size:12px}
   <button class="tab on" data-p="users">👥 اللاعبون</button>
   <button class="tab" data-p="sup">💬 الدعم <span id="supBadge"></span></button>
   <button class="tab" data-p="shop">🛍️ المتجر</button>
+  <button class="tab" data-p="live">🂡 الطاولات الحيّة</button>
   <button class="tab" data-p="set">⚙️ الإعدادات</button>
   <button class="tab" data-p="audit">📜 السجلّ</button>
 </div>
@@ -422,6 +443,9 @@ code{background:#0f1826;padding:1px 5px;border-radius:4px;font-size:12px}
     <div id="rlist"></div></div>
 </div>
 
+<div class="pane" id="p-live"><div class="card"><h2>🂡 طاولات بالوت واونو الآن</h2>
+  <div class="h">لقطةٌ حيّة من ذاكرة الخادم — لا تُخزَّن. تُحدَّث عند فتح التبويب.</div>
+  <div id="live"></div></div></div>
 <div class="pane" id="p-set"><div id="sets"></div></div>
 <div class="pane" id="p-audit"><div class="card"><h2>آخر ١٥٠ فعلًا</h2><div id="alog"></div></div></div>
 
@@ -439,6 +463,7 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   if(t.dataset.p==="shop"&&!ITEMS.length) loadItems();
   if(t.dataset.p==="set") loadSets();
   if(t.dataset.p==="audit") loadAudit();
+  if(t.dataset.p==="live") loadLive();
   if(t.dataset.p==="sup"){ loadTickets(); loadReports(); }
 });
 
@@ -573,6 +598,25 @@ async function toggleItem(id){
   const r=await post("/item",{id,active:!it.active});
   if(!r.ok) return alert(r.error);
   it.active=r.item.active; drawItems();
+}
+
+/* ── الطاولات الحيّة ── */
+async function loadLive(){
+  const r=await j("/live");
+  if(!r.ok) return $("#live").innerHTML='<div class="msg err">'+esc(r.error||"تعذّر")+'</div>';
+  const tbl=(name,rooms)=> '<h2 style="margin-top:10px">'+name+' — '+rooms.length+' طاولة</h2>'+
+    (rooms.length
+      ? '<table><tr><th>الرمز</th><th>اللاعبون</th><th>الحالة</th><th>الرهان</th><th>منذ</th></tr>'+
+        rooms.map(x=>'<tr><td><code>'+esc(x.code)+'</code></td>'+
+          '<td>'+esc(x.players.join(" · "))+'</td>'+
+          '<td>'+(x.playing?"تلعب":"انتظار")+'</td>'+
+          '<td>'+(x.bet?'<span class="warn">'+x.bet+'</span>':"—")+'</td>'+
+          '<td class="muted">'+Math.round((Date.now()-x.since)/60000)+' د</td></tr>').join('')+'</table>'
+      : '<div class="h">لا طاولات مفتوحة</div>');
+  $("#live").innerHTML =
+    '<div class="row"><b>'+r.baloot.online+'</b> متّصلٌ ببالوت · <b>'+r.uno.online+'</b> باونو'+
+    ' <button class="s" onclick="loadLive()">تحديث</button></div>'+
+    tbl("🂡 بالوت", r.baloot.rooms) + tbl("🃏 اونو", r.uno.rooms);
 }
 
 /* ── الإعدادات ── */

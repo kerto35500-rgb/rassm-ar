@@ -29,13 +29,19 @@ const cfg = (k, d) => {
 const RIYADH_OFFSET = 3 * 60 * 60 * 1000;   /* UTC+3 بلا توقيتٍ صيفيّ */
 const DAY = 24 * 60 * 60 * 1000;
 
-/** «٢٠٢٦-٠٩-٠٦» بتوقيت الرياض. */
+/** «٢٠٢٦-٠٩-٠٦» بتوقيت الرياض.
+    الطابع الزمنيّ قد يصل نصًّا من قاعدةٍ تُعيد BIGINT نصًّا — فنُرغمه رقمًا
+    هنا أيضًا، لأنّ تاريخًا فاسدًا في هذا السطر يُسقط الصفحة كلَّها. */
 function dayKey(ts = Date.now()) {
-  return new Date(ts + RIYADH_OFFSET).toISOString().slice(0, 10);
+  const n = Number(ts);
+  const d = new Date((Number.isFinite(n) ? n : Date.now()) + RIYADH_OFFSET);
+  return isNaN(d.getTime()) ? new Date(Date.now() + RIYADH_OFFSET).toISOString().slice(0, 10)
+                            : d.toISOString().slice(0, 10);
 }
 /** مفتاح الأسبوع «٢٠٢٦-W36» — الأسبوع يبدأ السبت كما هو العُرف هنا. */
 function weekKey(ts = Date.now()) {
-  const d = new Date(ts + RIYADH_OFFSET);
+  const n = Number(ts);
+  const d = new Date((Number.isFinite(n) ? n : Date.now()) + RIYADH_OFFSET);
   const day = d.getUTCDay();                 /* ٠ الأحد … ٦ السبت */
   const backToSat = (day + 1) % 7;           /* كم يومًا مضى منذ السبت */
   const sat = new Date(d.getTime() - backToSat * DAY);

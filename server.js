@@ -1301,7 +1301,12 @@ createStore()
       /* والبذر أعاد للتوّ أسعار الملفّ، فنُعيد فوقها ما سعّرته اللوحة —
          وإلا ضاع كل تسعيرٍ إداريّ مع كل نشرة. */
       await require("./padmin").applyPriceOverrides(store);
-      require("./padmin").setupPanel(app, { store, currentUser: accounts.currentUser });
+      require("./padmin").setupPanel(app, {
+        store, currentUser: accounts.currentUser,
+        /* قارئان كسولان: اللوحةُ تُركَّب قبل أن تُنشأ مساحاتُ الألعاب */
+        get unoApi() { return unoApi; },
+        get balootApi() { return balootApi; }
+      });
     } catch (e) { console.error("settings/panel:", e.message); }
 
     /* بلاغات الإشراف: كانت تُجمَع في الذاكرة ولا يقرؤها أحد ولا تنجو من

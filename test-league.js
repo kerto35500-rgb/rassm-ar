@@ -60,6 +60,19 @@ const DAY = 86400000;
     eq(L.streakFrom(mkRows([2, 3]), today), 0, "ومن فاته أمسِ بدأ من جديد");
     eq(L.streakFrom([{ reason: "لعب:baloot", createdAt: Date.now() - DAY }], today), 0,
        "وحركةٌ من نوعٍ آخر لا تُحسَب");
+
+    /* ⚠ انحدارٌ وقع فعلًا على الموقع الحيّ: Postgres يُعيد BIGINT نصًّا، فصار
+       `createdAt` نصًّا، فصار جمعُه مع الإزاحة جمعَ نصوصٍ لا أرقام، فتاريخًا
+       فاسدًا، فخمسَ مئةٍ في وجه اللاعب بعد أوّل استلام. */
+    const asText = [{ reason: "يوميّة:x", createdAt: String(Date.now() - DAY) }];
+    let threw = false;
+    try { L.streakFrom(asText, today); } catch (e) { threw = true; }
+    ok(!threw, "وطابعٌ زمنيٌّ نصّيّ (BIGINT من Postgres) لا يرمي استثناء");
+    eq(L.streakFrom(asText, today), 1, "بل يُحسَب كما لو كان رقمًا");
+    ok(typeof L.dayKey(String(Date.now())) === "string", "و`dayKey` تقبل النصّ");
+    ok(typeof L.weekKey(String(Date.now())) === "string", "و`weekKey` كذلك");
+    ok(/^\d{4}-\d{2}-\d{2}$/.test(L.dayKey("خربطة")), "وقيمةٌ فاسدةٌ تُردّ إلى اليوم لا إلى خطأ",
+       L.dayKey("خربطة"));
   }
 
   console.log("③ مقدار الجائزة");
