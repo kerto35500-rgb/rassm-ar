@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- أيقونة «بالوت» للصفحة الرئيسية: ورقتان متقاطعتان بستايل المارشميلو —
+       نجمةٌ ذهبيّةٌ على ورقةٍ زرقاء، وبستوني أسودُ على ورقةٍ بيضاء.
+       مرسومةٌ من الصفر بلا أيّ شعارٍ أو علامةٍ تجاريّة.
+
+       قاعدتان تعلّمناهما بالتجربة:
+       ① كلُّ ورقةٍ تدور حول **مركزها هي** لا حول مركز الصورة، وإلا انزلقت
+         خارج المربّع وقُصّت أطرافُها.
+       ② نقشُ كلِّ ورقةٍ يميل إلى **الجهة المكشوفة** منها؛ فالورقة السفلى
+         نصفُها مغطًّى، ولو وُضع البستوني في وسطها لاختفى خلف أختها. -->
+  <defs>
+    <linearGradient id="bwhite" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E4EAF9"/>
+    </linearGradient>
+    <linearGradient id="bblue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6C8AE4"/><stop offset="1" stop-color="#2E409A"/>
+    </linearGradient>
+    <linearGradient id="bgold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE79B"/><stop offset="1" stop-color="#EFB424"/>
+    </linearGradient>
+    <filter id="bsh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.6" flood-color="#000" flood-opacity=".28"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#bsh)" transform="translate(-3 -2)">
+    <!-- السفلى: بيضاءُ مائلةٌ يمينًا، والبستوني في نصفها المكشوف -->
+    <g transform="rotate(20 88 74)">
+      <rect x="63" y="37" width="50" height="74" rx="11"
+            fill="url(#bwhite)" stroke="#fff" stroke-width="6"/>
+      <path d="M96 58 c-8 11 -13 14.5 -13 21 a7 7 0 0 0 12 5 l-2.2 9 h7.4 l-2.2-9
+               a7 7 0 0 0 12-5 c0-6.5 -5-10.5 -13-21z"
+            fill="#2E3550"/>
+    </g>
+
+    <!-- العليا: زرقاءُ ملكيّةٌ مائلةٌ يسارًا، وعليها النجمة -->
+    <g transform="rotate(-18 46 58)">
+      <rect x="21" y="21" width="50" height="74" rx="11"
+            fill="url(#bblue)" stroke="#fff" stroke-width="6"/>
+      <rect x="28" y="28" width="36" height="60" rx="7"
+            fill="none" stroke="#fff" stroke-width="2.4" opacity=".5"/>
+      <path d="M46 41 L50.41 51.93 L62.17 52.75 L53.13 60.32 L55.99 71.75 L46 65.5
+               L36.01 71.75 L38.87 60.32 L29.83 52.75 L41.59 51.93 Z"
+            fill="url(#bgold)" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/>
+    </g>
+  </g>
+</svg>
