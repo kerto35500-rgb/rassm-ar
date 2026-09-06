@@ -47,14 +47,47 @@ function unoItems() {
   return rows;
 }
 
+/* ── بالوت ──
+   ثيماتُها مرسومةٌ لا مصوَّرة، ومعاينتُها SVG داخل العنوان — فلا ملفّاتٍ
+   تُرفَع ولا مساراتٍ تنكسر. والمصدرُ واحدٌ مع اللعبة: `public/baloot/catalog.js`. */
+const BALOOT_KINDS = [
+  { kind: "boards", list: "BOARDS", label: "الساحات", preview: "boardPreview" },
+  { kind: "backs",  list: "BACKS",  label: "ظهور البطاقات", preview: "backPreview" }
+];
+
+function balootItems() {
+  let cat;
+  try { cat = require(path.join(__dirname, "public", "baloot", "catalog.js")); }
+  catch (e) { console.error("🛍️  تعذّرت قراءة كتالوج بالوت:", e.message); return []; }
+
+  const rows = [];
+  for (const g of BALOOT_KINDS) {
+    (cat[g.list] || []).forEach((it, i) => {
+      const [key, name, descr, price] = it;
+      rows.push({
+        id: `baloot:${g.kind}:${key}`, game: "baloot", kind: g.kind, key,
+        name: String(name || key), descr: descr || null,
+        currency: "gold", price: Number(price) || 0,
+        rarity: rarityOf(Number(price) || 0),
+        preview: cat[g.preview](key), sort: i
+      });
+    });
+  }
+  return rows;
+}
+
 /** كل ما يُعرَض في المتجر اليوم. الهرم مجّانيّ حاليًّا فلا عناصر له بعد. */
-function allItems() { return [...unoItems()]; }
+function allItems() { return [...unoItems(), ...balootItems()]; }
 
 /** تسميات الأقسام للواجهة — عربيّةٌ في مكانٍ واحد. */
 const SECTIONS = {
   uno: {
     name: "اونو", icon: "🃏", href: "/uno/",
     kinds: { boards: "الطاولات", cards: "أطقم الكروت", avatars: "الصور الشخصية", frames: "الإطارات" }
+  },
+  baloot: {
+    name: "بالوت", icon: "♠️", href: "/baloot/",
+    kinds: { boards: "الساحات", backs: "ظهور البطاقات" }
   }
 };
 
@@ -74,4 +107,4 @@ async function seedShop(store, log = console.log) {
   }
 }
 
-module.exports = { seedShop, allItems, unoItems, SECTIONS, rarityOf, UNO_KINDS };
+module.exports = { seedShop, allItems, unoItems, balootItems, SECTIONS, rarityOf, UNO_KINDS, BALOOT_KINDS };

@@ -20,7 +20,12 @@ const { allItems, unoItems, rarityOf } = require("./shopseed");
   ok(rows.every(r=>/^[a-z]+:[a-z]+:.+$/.test(r.id)), "المعرّف بصيغة game:kind:key");
   ok(rows.every(r=>r.name && r.name.length>0), "لكل عنصرٍ اسم");
   ok(rows.every(r=>r.price>=0 && Number.isFinite(r.price)), "الأسعار أعدادٌ غير سالبة");
-  ok(rows.every(r=>r.preview && r.preview.startsWith("/uno/")), "لكل عنصرٍ معاينة");
+  /* معاينةُ «وحدة» ملفٌّ تحت ‎/uno/‎، ومعاينةُ بالوت SVG داخل العنوان
+     (ثيماتُها مرسومةٌ لا مصوَّرة) — وكلتاهما معاينةٌ صالحة. */
+  ok(rows.every(r => r.preview && (r.preview.startsWith("/uno/") || r.preview.startsWith("data:image/svg+xml"))),
+     "لكل عنصرٍ معاينة");
+  ok(rows.filter(r => r.game === "baloot").every(r => r.preview.startsWith("data:image/svg+xml")),
+     "ومعاينات بالوت مرسومةٌ بلا ملفّات");
   const kinds = new Set(rows.map(r=>r.kind));
   ok(["boards","cards","avatars","frames"].every(k=>kinds.has(k)), "الأنواع الأربعة موجودة",[...kinds]);
   ok(rows.some(r=>r.price===0), "فيه عناصرُ مجّانيّة للبداية");

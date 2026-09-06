@@ -51,11 +51,22 @@ function cardFace(card, small) {
   return el;
 }
 
-/** ظهرُ الورقة — نقشُ الثيم المختار. */
+/** ظهرُ الورقة — نقشُ الثيم المُجهَّز.
+    الثيمُ يُطبَّق أنماطًا مباشرةً لا أصنافًا: الورقةُ الواحدة تُنسَخ إلى
+    عنصرٍ طائرٍ ثمّ تُرمى، ونسخُ النمط أضمنُ من تتبّع صنفٍ عبر النسخ. */
+let BACK_SKIN = "classic";
+function setBackSkin(k) { BACK_SKIN = k || "classic"; }
 function cardBack(small) {
   const el = document.createElement("div");
   el.className = "bc back" + (small ? " sm" : "");
-  el.innerHTML = '<span class="bk"></span>';
+  const t = (window.BCAT && BCAT.backCss) ? BCAT.backCss(BACK_SKIN) : null;
+  if (t) {
+    el.style.background = t.outer;
+    el.style.boxShadow = "0 5px 12px rgba(30,50,45,.34), inset 0 0 0 5px " + t.ring +
+                         ", inset 0 0 0 7px rgba(0,0,0,.05)";
+    el.innerHTML = '<span class="bk" style="background:' + t.inner + '"></span>' +
+      (t.glyph ? '<span class="bg-glyph" style="color:' + t.ring + '">' + t.glyph + "</span>" : "");
+  } else el.innerHTML = '<span class="bk"></span>';
   return el;
 }
 
@@ -65,4 +76,5 @@ function cardNode(card, small) {
 }
 const cardHTML = (card, small) => cardNode(card, small).outerHTML;
 
-window.BCARD = { SUIT_SYM, SUIT_AR, SUIT_RED, RANK_AR, cRank, cSuit, cardName, cardFace, cardBack, cardNode, cardHTML };
+window.BCARD = { SUIT_SYM, SUIT_AR, SUIT_RED, RANK_AR, cRank, cSuit, cardName,
+                 cardFace, cardBack, cardNode, cardHTML, setBackSkin };

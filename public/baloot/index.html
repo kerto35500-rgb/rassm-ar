@@ -217,6 +217,9 @@ body.mobile #fsbtn{display:block}
 .bc.back .bk{position:absolute;inset:11px;border-radius:8px;
   background:radial-gradient(circle,rgba(255,255,255,.85) 2.6px,transparent 3px) 0 0/17px 17px,
              linear-gradient(140deg,var(--pink),var(--lilac2))}
+.bc.back .bg-glyph{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+  text-align:center;font-size:calc(var(--cw)*.34);line-height:1;opacity:.92;
+  text-shadow:0 2px 4px rgba(0,0,0,.25)}
 .fly{position:absolute;left:0;top:0;z-index:200;width:var(--cw);height:var(--ch);border-radius:12px;
   pointer-events:none;will-change:transform;transform-origin:50% 50%}
 .fly .bc{position:absolute;inset:0;width:100%;height:100%}
@@ -356,6 +359,26 @@ body.mobile #fsbtn{display:block}
 #swaplist button:hover{transform:translateY(-3px);background:linear-gradient(#fff,var(--lemon))}
 #swaplist button img{display:block;width:64px;height:64px;border-radius:16px;margin:0 auto 6px;object-fit:cover}
 #swaplist button small{display:block;color:var(--ink2);font-weight:700;font-size:12px;margin-top:3px}
+
+/* ═══ المتجر ═══ */
+#st-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+.stItem{background:#f6f2fa;border-radius:22px;padding:10px;text-align:center;transition:.15s}
+.stItem:hover{transform:translateY(-3px)}
+.stItem.on{box-shadow:inset 0 0 0 3px var(--mint2)}
+.stItem img{width:100%;border-radius:14px;display:block;background:#fff}
+.stItem .nm{font-weight:900;font-size:14px;margin-top:7px}
+.stItem .ds{font-size:11px;color:var(--ink2);font-weight:700;min-height:15px}
+.stItem .pr{font-weight:900;font-size:13px;color:#c9821a;margin:5px 0}
+.stItem button{width:100%;border-radius:14px;padding:8px;font-family:inherit;
+  font-weight:900;font-size:13px;cursor:pointer;color:var(--ink);
+  background:linear-gradient(#fff,var(--lemon));box-shadow:0 4px 0 rgba(0,0,0,.10)}
+.stItem button.own{background:linear-gradient(#fff,var(--mint))}
+.stItem button.eq{background:#e6e0ee;color:var(--ink2);box-shadow:none}
+.stItem button[disabled]{opacity:.5;cursor:default}
+.stItem .rar{font-size:10px;font-weight:900;border-radius:9px;padding:2px 8px;display:inline-block}
+.rar.free{background:#e2f7ec;color:#2a7d55} .rar.common{background:#e7eefb;color:#3a5a94}
+.rar.rare{background:#f1e6ff;color:#6b3fa8} .rar.epic{background:#ffeede;color:#a86a1d}
+.rar.legend{background:#ffe3e9;color:#a83f5c}
 table.sc{width:100%;border-collapse:collapse;margin:10px 0 14px;font-size:15px}
 table.sc td,table.sc th{padding:8px 14px;border-bottom:2px solid #f1ecf6}
 table.sc th{color:var(--ink2);font-size:13px}
@@ -415,8 +438,8 @@ table.sc tr.win td{color:var(--mint2);font-weight:900}
       <div class="tile c" onclick="openScreen('bet')">
         <div class="pl">💰 طاولات رهان</div><div class="ic">🎲</div><div class="lbl">الرهان</div>
       </div>
-      <div class="tile d" onclick="location.href='/shop'">
-        <div class="pl">🛍️ صور وبراويز</div><div class="ic">🎁</div><div class="lbl">المتجر</div>
+      <div class="tile d" onclick="openScreen('store')">
+        <div class="pl">🛍️ ساحات وظهور بطاقات</div><div class="ic">🎁</div><div class="lbl">المتجر</div>
       </div>
     </div>
   </div>
@@ -476,6 +499,21 @@ table.sc tr.win td{color:var(--mint2);font-weight:900}
   <div id="scr-profile" class="fe">
     <div class="backbtn" onclick="openScreen('main')">◀ رجوع</div>
     <div class="pane" style="width:700px"><h2>ملفّي</h2><div id="prof-body"></div></div>
+  </div>
+
+  <!-- ═════════ المتجر ═════════ -->
+  <div id="scr-store" class="fe">
+    <div class="backbtn" onclick="openScreen('main')">◀ رجوع</div>
+    <div class="pane" style="width:900px">
+      <h2>🛍️ متجر بالوت</h2>
+      <p class="sub" id="st-wallet"></p>
+      <div class="seg" id="st-tabs" style="justify-content:center;margin-bottom:14px">
+        <button data-k="boards" class="on">🟩 الساحات</button>
+        <button data-k="backs">🂠 ظهور البطاقات</button>
+      </div>
+      <div id="st-grid"></div>
+      <div id="st-msg" style="text-align:center;font-weight:800;margin-top:10px"></div>
+    </div>
   </div>
 
   <!-- ═════════ الرهان ═════════ -->
@@ -602,6 +640,7 @@ table.sc tr.win td{color:var(--mint2);font-weight:900}
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="catalog.js"></script>
 <script src="cards.js"></script>
 <script src="arena.js"></script>
 <script src="menu.js"></script>

@@ -18,19 +18,45 @@ try { Object.assign(SET, JSON.parse(localStorage.getItem("bl-set") || "{}")); } 
 const saveSet = () => { try { localStorage.setItem("bl-set", JSON.stringify(SET)); } catch (e) {} };
 
 /* ── ملفّ اللاعب ── */
-const P = { name: "لاعب", avatar: "Adult_1", frame: "Classic", coins: 0, xp: 0, level: 1, guest: true };
+const P = { name: "لاعب", avatar: "Adult_1", frame: "Classic", coins: 0, xp: 0, level: 1, guest: true,
+            board: "classic", back: "classic", owned: new Set() };
+
+/* الثيم يُطبَّق على الجسم كلِّه: الساحةُ خلفيّةُ المسرح، والظهرُ يُحقَن في
+   كلّ ورقةٍ تُرسَم بعد الآن. ويُحفَظ محلّيًّا كي لا يومض الافتراضيُّ لحظةَ
+   الفتح قبل أن يردّ الخادم. */
+function applyTheme() {
+  try { localStorage.setItem("bl-theme", JSON.stringify({ board: P.board, back: P.back })); } catch (e) {}
+  const app = document.getElementById("app");
+  if (app && window.BCAT) app.style.background = BCAT.boardCss(P.board);
+  if (window.BCARD) BCARD.setBackSkin(P.back);
+  if (typeof G !== "undefined" && G) { try { renderAll(); } catch (e) {} }
+}
+try {
+  const t = JSON.parse(localStorage.getItem("bl-theme") || "{}");
+  if (t.board) P.board = t.board;
+  if (t.back) P.back = t.back;
+} catch (e) {}
 
 const ACC = {
   async load() {
     try {
-      const r = await fetch("/api/shop/mine?game=uno", { credentials: "same-origin" });
+      const r = await fetch("/api/shop/mine?game=baloot", { credentials: "same-origin" });
       const j = await r.json();
       if (!j.ok || j.guest) return false;
       P.guest = false;
       P.coins = (j.wallet || {}).gold || 0;
+      P.owned = new Set(j.owned || []);
       const lo = j.loadout || {};
-      if (lo.avatars) P.avatar = lo.avatars;
-      if (lo.frames) P.frame = lo.frames;
+      if (lo.boards) P.board = lo.boards;
+      if (lo.backs) P.back = lo.backs;
+      applyTheme();
+      /* الصورةُ والبرواز مشتركان بين ألعاب الموقع، فيُقرآن من تجهيز «اونو» */
+      try {
+        const u = await (await fetch("/api/shop/mine?game=uno", { credentials: "same-origin" })).json();
+        const ul = (u && u.loadout) || {};
+        if (ul.avatars) P.avatar = ul.avatars;
+        if (ul.frames) P.frame = ul.frames;
+      } catch (e) {}
       return true;
     } catch (e) { return false; }
   },
@@ -54,7 +80,8 @@ const ACC = {
 let curScreen = "main";
 const SCREENS = {
   main: "#main", online: "#scr-online", room: "#scr-room", rules: "#scr-rules",
-  options: "#scr-options", leader: "#scr-leader", profile: "#scr-profile", bet: "#scr-bet"
+  options: "#scr-options", leader: "#scr-leader", profile: "#scr-profile",
+  bet: "#scr-bet", store: "#scr-store"
 };
 function openScreen(name) {
   snd("click");
@@ -70,6 +97,78 @@ function openScreen(name) {
   if (name === "profile") renderProfile();
   if (name === "online") renderOnlineMe();
   if (name === "bet") renderBet();
+  if (name === "store") renderStore();
+}
+
+/* ══════════ المتجر ══════════
+   المفاتيحُ تُبنى من الكتالوج نفسه الذي يبذر المتجرَ على الخادم، فلا يظهر
+   في اللعبة عنصرٌ لا يُباع ولا يُباع عنصرٌ لا تعرفه اللعبة. */
+let stTab = "boards";
+function stKind(k) { return k === "boards" ? BCAT.BOARDS : BCAT.BACKS; }
+function stPrev(k, key) { return k === "boards" ? BCAT.boardPreview(key) : BCAT.backPreview(key); }
+const stId = (k, key) => "baloot:" + k + ":" + key;
+const RAR = p => p <= 0 ? "free" : p < 800 ? "common" : p < 1600 ? "rare" : p < 2200 ? "epic" : "legend";
+const RAR_AR = { free: "مجّانيّ", common: "عاديّ", rare: "نادر", epic: "ملحميّ", legend: "أسطوريّ" };
+
+function renderStore() {
+  $("#st-wallet").innerHTML = P.guest
+    ? "أنت ضيف — <b>سجّل حسابك</b> لتشتري وتحتفظ بمشترياتك"
+    : `رصيدك <b style="color:#c9821a">${P.coins}</b> ذهبًا`;
+  $$("#st-tabs button").forEach(b => {
+    b.classList.toggle("on", b.dataset.k === stTab);
+    b.onclick = () => { stTab = b.dataset.k; snd("click"); renderStore(); };
+  });
+  const cur = stTab === "boards" ? P.board : P.back;
+  $("#st-grid").innerHTML = stKind(stTab).map(([key, name, ds, price]) => {
+    const id = stId(stTab, key);
+    const own = price === 0 || P.owned.has(id);
+    const on = cur === key;
+    const btn = on ? '<button class="eq" disabled>✔ مُجهَّز</button>'
+      : own ? `<button class="own" data-eq="${key}">جهّزه</button>`
+      : `<button data-buy="${key}" ${P.guest ? "disabled" : ""}>شراء · ${price}</button>`;
+    return `<div class="stItem ${on ? "on" : ""}">
+      <img src="${stPrev(stTab, key)}" alt="${esc(name)}">
+      <div class="nm">${esc(name)}</div>
+      <div class="ds">${esc(ds || "")}</div>
+      <div class="pr"><span class="rar ${RAR(price)}">${RAR_AR[RAR(price)]}</span>
+        ${price ? " · " + price + " 🪙" : ""}</div>
+      ${btn}</div>`;
+  }).join("");
+  $("#st-grid").querySelectorAll("[data-eq]").forEach(b => b.onclick = () => stEquip(b.dataset.eq));
+  $("#st-grid").querySelectorAll("[data-buy]").forEach(b => b.onclick = () => stBuy(b.dataset.buy));
+}
+
+function stEquip(key) {
+  snd("click");
+  if (stTab === "boards") P.board = key; else P.back = key;
+  applyTheme();
+  renderStore();
+  $("#st-msg").textContent = "تم التجهيز ✔";
+  /* التجهيز يُرسَل ولا يُنتظَر: الواجهة تتحرّك فورًا والخادم يلحق */
+  if (!P.guest) fetch("/api/shop/equip", {
+    method: "POST", credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: stId(stTab, key) })
+  }).catch(() => {});
+}
+
+async function stBuy(key) {
+  const id = stId(stTab, key);
+  const el = $("#st-msg");
+  el.textContent = "جارٍ الشراء…";
+  try {
+    const r = await (await fetch("/api/shop/buy", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id })
+    })).json();
+    if (!r.ok) { el.textContent = r.error || "تعذّر الشراء"; return; }
+    P.owned.add(id);
+    if (r.wallet) P.coins = r.wallet.gold;
+    snd("win");
+    el.textContent = "تمّ الشراء 🎉";
+    stEquip(key);                    /* ما اشتريتَه تريده الآن لا لاحقًا */
+    renderMain();
+  } catch (e) { el.textContent = "تعذّر الاتّصال"; }
 }
 function showBoard() {
   Object.values(SCREENS).forEach(s => $(s) && $(s).classList.remove("show"));
@@ -259,6 +358,7 @@ async function boot() {
     try { await screen.orientation.lock("landscape"); } catch (e) {}
     setTimeout(fitStage, 400);
   };
+  applyTheme();                       /* الثيمُ المحفوظ قبل أن يردّ الخادم */
   await ACC.me();
   await ACC.load();
   renderMain();
