@@ -474,7 +474,7 @@ async function animate(e, v, next) {
       b.classList.add("show"); b.innerHTML = "";
       /* ورقةُ الشراء تهبط على الطاولة كغيرها: بمقاس الورقة وميلِ الطاولة */
       const from = cardBox($("#deck"));
-      await flyCard(from, cardBox(b), BCARD.cardBack(),
+      await flyCard(from, landing(b), BCARD.cardBack(),
                     { flipTo: BCARD.cardFace(e.card), dur: 520, tiltTo: tableTilt(), persp: 1500 });
       b.appendChild(BCARD.cardFace(e.card));
       snd("bid");
@@ -520,7 +520,7 @@ async function animate(e, v, next) {
       const bpi = phys(e.buyer);
       const bc = $("#bidcard");
       if (bc.classList.contains("show")) {
-        const from = cardBox(bc);   /* ومنها تنطلق بالمقاس نفسه */
+        const from = landing(bc);   /* ومنها تنطلق بالمقاس نفسه */
         /* وتغادر بميل الطاولة وزاويتها ثمّ تستوي في الطريق إلى اليد */
         const off = { rotFrom: elRot(bc), tiltFrom: tableTilt(), persp: 1500 };
         bc.classList.remove("show"); bc.innerHTML = "";

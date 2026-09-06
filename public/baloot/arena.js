@@ -29,6 +29,7 @@ function fitStage() {
   const app = $("#app");
   app.style.width = APP.w + "px"; app.style.height = APP.h + "px"; app.style.transform = `scale(${s})`;
   fitTrail();
+  fitCache.clear();          /* المنظورُ يتغيّر مع المقاس، فتُعاد المسحة */
   /* `G` تعريفٌ معجميّ لا خاصّيّةٌ على window — فلا تُفحَص بـwindow.G */
   if (typeof G !== "undefined" && G) { try { renderHand(); } catch (e) {} }
 }
@@ -67,6 +68,46 @@ function elRot(el) {
 /** ميلُ الطاولة كما في CSS. */
 const tableTilt = () =>
   parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tilt")) || 50;
+
+/* ── تصحيحُ المنظور لكلّ خانة ──
+ *
+ * المنظورُ مُعرَّفٌ على `#world` ومركزُه ٥٠٪/٤٠٪ من المسرح، فمسافةُ كلّ خانةٍ
+ * عن الناظر تختلف: القريبةُ منه تكبر والبعيدةُ تنحسر. أمّا الورقةُ الطائرة
+ * فمُعلَّقةٌ على المسرح وتحمل منظورَها حول مركزها هي، فتصل بمقاسٍ واحدٍ أينما
+ * نزلت. والفرقُ ليس نظريًّا: قسناه على الطاولة نفسها فكان ‎+١٢٪‎ في الخانة
+ * اليسرى و‎−٧٪‎ في العليا — عُشرٌ يُرى وكأنّ الورقة تكبر أو تصغر لحظةَ نزولها.
+ *
+ * ولا نحسبه بالمصفوفات: نقيسه. عنصرٌ صامتٌ يُوضَع بالوضعيّة النهائيّة، ونقارن
+ * صندوقَه بصندوق الخانة، فنخرج بمعاملَين. تكفي مسحةٌ واحدةٌ للوصول إلى فرق
+ * بكسلٍ أو بكسلين. والخاناتُ ثابتة، فنقيس مرّةً ونخزّن — وتُمسح الذاكرةُ حين
+ * يتغيّر مقاس الشاشة.
+ */
+const fitCache = new Map();
+function slotFit(el) {
+  const key = el.id + "@" + Math.round(APP.s * 1000);
+  const hit = fitCache.get(key);
+  if (hit) return hit;
+  const box = cardBox(el);
+  const p = document.createElement("div");
+  p.className = "fly";
+  p.style.visibility = "hidden";
+  p.style.width = box.w + "px"; p.style.height = box.h + "px";
+  p.style.transform = `translate(${box.x}px,${box.y}px) perspective(1500px) ` +
+                      `rotateX(${tableTilt()}deg) rotate(${elRot(el)}deg)`;
+  $("#app").appendChild(p);
+  const pb = rect(p), tb = rect(el);
+  p.remove();
+  const fit = { kx: pb.w ? tb.w / pb.w : 1, ky: pb.h ? tb.h / pb.h : 1 };
+  fitCache.set(key, fit);
+  return fit;
+}
+
+/** مستطيلُ الهبوط على عنصرٍ داخل الطاولة: مقاسُ ورقةٍ مصحَّحٌ بمنظور موضعه. */
+function landing(el) {
+  const b = cardBox(el), f = slotFit(el);
+  const w = b.w * f.kx, h = b.h * f.ky;
+  return { x: b.x + (b.w - w) / 2, y: b.y + (b.h - h) / 2, w, h };
+}
 
 /* ── الصوت: نغماتٌ مركَّبة لا ملفّات، فلا تُحمَّل شيئًا ── */
 let AC = null;
@@ -147,14 +188,7 @@ function flyCard(from, to, node, opts = {}) {
     /* requestAnimationFrame يتوقّف حين يُخفى اللسان (تبديل تبويب، قفل الجوّال).
        أونلاين يعني أن طابور الحالات يقف والخادم يواصل — فيعود اللاعب ودورُه
        قد مضى. صمّامٌ زمنيّ يُنهي الطيران مهما حدث. */
-    /* `hold` يُبقي العنصرَ الطائر بعد الوصول ويُسلّمه للمنادي.
-       ولمَ؟ لأنّ الورقةَ الطائرة مسطّحةٌ على المسرح والورقةَ المستقرّة مائلةٌ
-       داخل الطاولة، فشكلاهما لا يتطابقان مهما ضبطنا. فبدل أن نمحوَ هذه
-       ونُظهر تلك في إطارٍ واحدٍ (فتُرى قفزة) نُذيب إحداهما في الأخرى. */
-    const finish = () => {
-      if (done) return; done = true; tr.live = false;
-      if (opts.hold) res(f); else { f.remove(); res(null); }
-    };
+    const finish = () => { if (done) return; done = true; tr.live = false; f.remove(); res(); };
     const guard = setTimeout(finish, dur + 350);
     const step = () => {
       if (done) return;
@@ -234,41 +268,24 @@ async function flyPlay(pi, card) {
   /* ورقةُ الخصم تصل مكشوفة: تنقلب في الهواء كما تنقلب على الطاولة حقيقةً.
      ولا زاويةَ عشوائيّةً بعد اليوم: تصل بزاوية خانتها وميلِ الطاولة، فتحلّ
      الورقةُ الحقيقيّةُ محلَّها بلا قفزة. */
-  const opts = { rotTo: elRot(slot), tiltTo: tableTilt(), persp: 1500, hold: true };
+  const opts = { rotTo: elRot(slot), tiltTo: tableTilt(), persp: 1500 };
   if (pi !== 0) { opts.flipTo = BCARD.cardFace(card); }
-  const f = await flyCard(from, cardBox(slot), pi === 0 ? BCARD.cardFace(card) : BCARD.cardBack(), opts);
+  await flyCard(from, landing(slot), pi === 0 ? BCARD.cardFace(card) : BCARD.cardBack(), opts);
   G.trick.push({ pi, card });
   if (pi === 0) G.hand = G.hand.filter(c => c !== card);
   else G.players[pi].n = Math.max(0, G.players[pi].n - 1);
   renderTrick(); renderSeat(pi); if (pi === 0) renderHand();
-  handoff(f);
 }
 
-/* ── تسليمُ الورقة من الطائرة إلى المستقرّة ──
- *
- * الطائرةُ وحدَها تذوب؛ المستقرّةُ تبقى ظاهرةً تمامًا من اللحظة الأولى.
- *
- * والمحاولةُ الأولى أذابت الاثنتين معًا — واحدةً تظهر وأُخرى تختفي — فوَلَدت
- * وميضًا. والسببُ حسابيٌّ لا أكثر: شفّافان فوق بعضهما لا يجمعان واحدًا.
- * عند منتصف الذوبان كلٌّ منهما بنصف عتمة، والمرئيُّ ‎1-(0.5×0.5)=0.75‎ لا ‎1‎.
- * فالورقة تخفت الربعَ في منتصف الطريق ثمّ تعود — ومع ورقةٍ بيضاءَ على أزرقَ
- * يُرى ذلك وميضًا لا انسيابًا.
- *
- * أمّا الآن فالمستقرّةُ عاتمةٌ دائمًا، والطائرةُ فوقها تخفت حتى تزول: المجموع
- * لا ينزل عن الواحد لحظةً واحدة.
+/* لا تسليمَ ولا ذوبان: الطائرةُ تُحذَف واحدةً تحلّ محلَّها الأخرى في الإطار
+ * نفسه. جرّبنا الذوبانَ مرّتين وكلتاهما أسوأ من الاستبدال:
+ *   ١) ذوبانُ الاثنتين معًا يُخفت المرئيَّ إلى ٧٥٪ في المنتصف ⇒ وميض.
+ *   ٢) ذوبانُ الطائرة وحدَها يُبقيها فوق المستقرّة تسعين ملّي ثانية، وبينهما
+ *      فرقُ زاويةٍ صغير ⇒ **تُرى ورقتان لا واحدة**، فتبدو كأنّها تكبر وتصغر.
+ * والذوبانُ إنّما كان علاجًا لاختلاف الشكل بين الطائرة والمستقرّة، وقد زال
+ * ذلك الاختلافُ حين صارت تهبط بمقاس خانتها وزاويتها وميلها — فلم يبقَ ما
+ * يُخفى. والاستبدالُ في إطارٍ واحدٍ لا يُرى.
  */
-const HANDOFF_MS = 90;
-function handoff(fly) {
-  if (!fly) return;
-  if (!fly.animate) { fly.remove(); return; }
-  try {
-    const a = fly.animate([{ opacity: 1 }, { opacity: 0 }],
-                          { duration: HANDOFF_MS, fill: "forwards" });
-    a.onfinish = () => fly.remove();
-    /* صمّامٌ: لو جُمّد الإطار (تبديل لسان) لا تبقى ورقةٌ معلّقةٌ للأبد */
-    setTimeout(() => fly.remove(), HANDOFF_MS + 200);
-  } catch (e) { fly.remove(); }
-}
 
 /** جمعُ الأكلة: الأوراق الأربع تطير معًا إلى مقعد الفائز ثمّ تختفي. */
 async function flyTrick(winPi) {
@@ -279,7 +296,7 @@ async function flyTrick(winPi) {
   for (const t of G.trick) {
     const slot = $("#tk-" + t.pi);
     /* تنطلق من حيث كانت مستقرّةً بالضبط: مقاسُها وزاويتُها وميلُها */
-    const from = cardBox(slot);
+    const from = landing(slot);
     const rotFrom = elRot(slot);
     slot.innerHTML = "";
     flights.push(flyCard(from, to, BCARD.cardFace(t.card),
