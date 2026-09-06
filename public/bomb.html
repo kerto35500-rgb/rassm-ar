@@ -278,14 +278,29 @@
   /* لوحة مفاتيح عربية: نافذة عائمة فوق الشاشة — لا تزحزح اللاعبين ولا الحروف */
   #vkb { display:none; position:fixed; left:50%; bottom:10px; transform:translateX(-50%);
          width:min(660px, calc(100vw - 16px)); z-index:80;
-         padding:8px 8px 10px; background:#e7edf4; border:2px solid #cfd9e4; border-radius:16px;
-         flex-direction:column; gap:5px; box-shadow:0 -6px 26px rgba(20,40,70,.22); }
+         padding:8px 8px 9px; background:#e7edf4; border:2px solid #cfd9e4; border-radius:16px;
+         flex-direction:column; gap:5px; box-shadow:0 -6px 26px rgba(20,40,70,.22);
+         overflow:visible; }
   #vkb.on { display:flex; }
-  #vkbBar { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 2px 4px; }
-  #vkbBar .ttl { font-size:12.5px; font-weight:800; color:#5b6a7d; }
-  #vkbClose { border:none; border-radius:10px; background:#e5484d; color:#fff;
-              font-weight:900; font-size:13.5px; padding:7px 14px; cursor:pointer;
-              display:flex; align-items:center; gap:6px; }
+  /* حين تُسحَب: موضعٌ صريحٌ بالبكسل، فنُلغي التوسيط والإرساءَ في الأسفل */
+  #vkb.moved { bottom:auto; transform:none; }
+  /* أدواتُ اللوحة تطفو **فوقها** على فراغ الصفحة، لا داخلها.
+     كان لها صفٌّ من خلفيّة اللوحة فيه مَقبضٌ ممتدٌّ و«✕» — سطرٌ كاملٌ من
+     ارتفاعها لزرَّين. الآن هما زرّان صغيران معلّقان في الهواء فوق الحافّة:
+     لا يأخذان من ارتفاع اللوحة شيئًا، وما وراءهما شفّافٌ يُرى منه اللعب. */
+  #vkbBar { position:absolute; top:-32px; inset-inline-start:2px;
+            display:flex; align-items:center; gap:6px;
+            background:none; padding:0; }
+  #vkbGrip { width:46px; height:26px; border:none; border-radius:9px;
+             background:rgba(30,58,95,.6); color:#fff; font-size:13px; line-height:1;
+             cursor:grab; touch-action:none; padding:0;
+             display:flex; align-items:center; justify-content:center;
+             box-shadow:0 3px 10px rgba(20,40,70,.28); }
+  #vkbGrip:active { cursor:grabbing; }
+  #vkbClose { width:26px; height:26px; border:none; border-radius:9px; background:#e5484d; color:#fff;
+              font-weight:900; font-size:14px; padding:0; cursor:pointer; line-height:1;
+              display:flex; align-items:center; justify-content:center;
+              box-shadow:0 3px 10px rgba(20,40,70,.28); }
   #vkbClose:active { transform:scale(.95); }
   #vkb .krow { display:flex; gap:4px; justify-content:center; }
   #vkb .k { flex:1 1 0; min-width:0; padding:9px 0; background:#fff; border:1px solid #c4d0dc;
@@ -1573,17 +1588,91 @@
     i.value += ch;                                  // الإضافة في النهاية دائماً (يمنع انعكاس الحروف)
     i.dispatchEvent(new Event("input"));
   }
+  /* ── تحريك لوحة الحروف وحفظ مكانها ──
+   *
+   * اللوحة تغطّي أسفل الشاشة، وأسفلُ الشاشة فيه ما يحتاجه اللاعب: حقلُ
+   * الكتابة، وأحيانًا اسمُه أو حروفُه. فبدل أن نخمّن مكانًا يناسب الجميع
+   * نجعله بيده — ونحفظه، فلا يُعيد الترتيب مع كلّ جولة.
+   *
+   * الموضع يُحفظ **بالبكسل** ويُقصّ إلى داخل النافذة عند كلّ وضعٍ وعند كلّ
+   * تغيّرِ مقاس: من حرّكها على شاشةٍ عريضةٍ ثمّ فتح اللعبة على الجوّال لا
+   * تختفي لوحتُه خارج الحافّة.
+   */
+  const KB_POS = "bombKBPos";
+  /* الزرّان معلّقان فوق حافّة اللوحة، فلو لصقناها بأعلى الشاشة خرجا منها.
+     نحجز لهما هذا الهامش في أعلى المدى. */
+  const KB_TOP_GAP = 34;
+  function kbClamp(x, y){
+    const v = $("vkb");
+    const maxX = Math.max(0, innerWidth - v.offsetWidth);
+    const maxY = Math.max(KB_TOP_GAP, innerHeight - v.offsetHeight);
+    return { x: Math.min(Math.max(0, x), maxX),
+             y: Math.min(Math.max(KB_TOP_GAP, y), maxY) };
+  }
+  function kbPlace(x, y, save = true){
+    const v = $("vkb"), p = kbClamp(x, y);
+    v.classList.add("moved");
+    v.style.left = p.x + "px"; v.style.top = p.y + "px";
+    if (save) { try { localStorage.setItem(KB_POS, JSON.stringify(p)); } catch(e){} }
+  }
+  function kbReset(){
+    const v = $("vkb");
+    v.classList.remove("moved");
+    v.style.left = ""; v.style.top = "";
+    try { localStorage.removeItem(KB_POS); } catch(e){}
+  }
+  function kbRestore(){
+    let p = null;
+    try { p = JSON.parse(localStorage.getItem(KB_POS) || "null"); } catch(e){}
+    if (p && typeof p.x === "number" && typeof p.y === "number") kbPlace(p.x, p.y, false);
+  }
+  function makeKbDraggable(bar){
+    let drag = null;
+    bar.addEventListener("pointerdown", e => {
+      if (e.target.closest("#vkbClose")) return;      /* الزرُّ ليس مَقبضًا */
+      const v = $("vkb"), r = v.getBoundingClientRect();
+      drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+      /* نُثبّت الموضع الحاليّ بالبكسل قبل أن نبدأ، وإلا قفزت اللوحة أوّلَ
+         حركةٍ من موضعها المُوسَّط إلى الزاوية. */
+      kbPlace(r.left, r.top, false);
+      try { bar.setPointerCapture(e.pointerId); } catch(_){}
+      e.preventDefault();
+    });
+    bar.addEventListener("pointermove", e => {
+      if (!drag) return;
+      kbPlace(e.clientX - drag.dx, e.clientY - drag.dy);
+    });
+    const end = e => {
+      if (!drag) return;
+      drag = null;
+      try { bar.releasePointerCapture(e.pointerId); } catch(_){}
+    };
+    bar.addEventListener("pointerup", end);
+    bar.addEventListener("pointercancel", end);
+    bar.addEventListener("dblclick", kbReset);       /* نقرتان ⇒ ترجع مكانها */
+    addEventListener("resize", () => {
+      const v = $("vkb");
+      if (!v.classList.contains("moved")) return;
+      kbPlace(parseFloat(v.style.left) || 0, parseFloat(v.style.top) || 0, false);
+    });
+  }
+
   function buildVKB(){
     const v = $("vkb");
     v.innerHTML = "";
     const bar = document.createElement("div");
     bar.id = "vkbBar";
-    bar.innerHTML = '<span class="ttl">⌨️ لوحة الحروف العربية</span>';
+    const grip = document.createElement("button");
+    grip.id = "vkbGrip"; grip.type = "button"; grip.textContent = "☰";
+    grip.title = "اسحب لتحريك اللوحة · نقرتان لإرجاعها مكانها";
+    grip.setAttribute("aria-label", "حرّك لوحة الحروف");
     const close = document.createElement("button");
-    close.id = "vkbClose"; close.type = "button"; close.textContent = "✕ إغلاق";
+    close.id = "vkbClose"; close.type = "button"; close.textContent = "✕";
+    close.setAttribute("aria-label", "إغلاق لوحة الحروف");
     close.onclick = () => $("kbBtn").click();
-    bar.appendChild(close);
+    bar.appendChild(grip); bar.appendChild(close);
     v.appendChild(bar);
+    makeKbDraggable(grip);
     KB_ROWS.forEach(row => {
       const r = document.createElement("div"); r.className = "krow";
       row.forEach(ch => {
@@ -1620,7 +1709,7 @@
     $("kbBtn").classList.toggle("on", kbOpen);
     // مع الكيبورد الداخلي لا نحتاج كيبورد الجهاز — نمنعه من الظهور
     const i = $("wordInput");
-    if (kbOpen) { i.blur(); i.readOnly = true; }
+    if (kbOpen) { i.blur(); i.readOnly = true; kbRestore(); }
     else { i.readOnly = false; }
     // اللوحة عائمة فوق الشاشة ⇒ لا حاجة لإعادة ترتيب اللاعبين والحروف
     try { localStorage.setItem("bombKB", kbOpen ? "1" : "0"); } catch(e){}

@@ -174,6 +174,56 @@ const turnOf = s => (s.st && s.st.players && s.st.players.find(p => p.id === s.s
        "و`explode` تتعافى بدل أن تخرج صامتةً");
   }
 
+  console.log("⑤ لوحة الحروف: تُحرَّك وتُحفَظ وتبقى داخل الشاشة");
+  {
+    const fs = require("fs"), path = require("path");
+    const html = fs.readFileSync(path.join(__dirname, "public", "bomb.html"), "utf8");
+
+    /* ① الشريطُ نحيف: مَقبضٌ و«✕» — لا عنوانَ ولا أيقونةَ ولا كلمةَ «إغلاق» */
+    ok(!/لوحة الحروف العربية</.test(html), "لا عنوانَ يشغل سطرًا فوق اللوحة");
+    ok(!/textContent = "✕ إغلاق"/.test(html), "ولا كلمةَ «إغلاق» مع العلامة");
+    ok(/textContent = "✕"/.test(html), "بل «✕» وحدها");
+    const cls = (html.match(/#vkbClose \{[^}]*\}/) || [""])[0];
+    const sq = (cls.match(/width:(\d+)px/) || [])[1];
+    ok(sq && +sq <= 28, "بمربّعٍ صغير لا شريط", sq);
+    ok(/aria-label/.test(html), "ومعناها في وصفٍ للقارئ الصوتيّ لا في نصٍّ يشغل مكانًا");
+    ok(/id = "vkbGrip"/.test(html), "ومَقبضٌ صغيرٌ للسحب مكانَ الخطّ الممتدّ");
+
+    /* ② الزرّان **فوق** اللوحة على فراغ الصفحة لا داخلها */
+    const barCss = (html.match(/#vkbBar \{[^}]*\}/) || [""])[0];
+    ok(/position:absolute/.test(barCss), "شريطُ الأدوات معلّقٌ لا في تدفّق اللوحة", barCss);
+    ok(/top:-\d+px/.test(barCss), "فوق حافّتها العليا", barCss);
+    ok(/background:none/.test(barCss), "وما وراءه شفّافٌ لا خلفيّةَ لوحة", barCss);
+    const kbCss = (html.match(/#vkb \{[^}]*\}/) || [""])[0];
+    ok(/overflow:visible/.test(kbCss), "واللوحةُ لا تقصّ ما خرج عنها", kbCss);
+    ok(/const KB_TOP_GAP/.test(html), "ويُحجَز لهما هامشٌ أعلى الشاشة");
+    ok(/Math\.max\(KB_TOP_GAP, y\)/.test(html),
+       "فلا يخرجان منها إن لُصقت اللوحةُ بالأعلى");
+
+    /* ② السحبُ يعمل ويُحفَظ */
+    ok(/function makeKbDraggable/.test(html), "ثمّة دالّةُ سحب");
+    ok(/makeKbDraggable\(grip\)/.test(html), "مربوطةٌ بالمَقبض وحده");
+    const drag = (html.match(/function makeKbDraggable[\s\S]*?\n  }/) || [""])[0];
+    ok(/pointerdown/.test(drag) && /pointermove/.test(drag) && /pointerup/.test(drag),
+       "بأحداث المؤشّر — فتعمل باللمس والفأرة معًا");
+    ok(/setPointerCapture/.test(drag), "وتلتقط المؤشّر فلا تنفلت اللوحةُ خارج الشريط");
+    ok(/e\.target\.closest\("#vkbClose"\)/.test(drag), "وزرُّ الإغلاق ليس مَقبضًا");
+    ok(/kbPlace\(r\.left, r\.top, false\)/.test(drag),
+       "وتُثبَّت بالبكسل قبل أوّل حركة — وإلا قفزت من موضعها المُوسَّط");
+    ok(/dblclick/.test(drag), "ونقرتان تُرجعانها مكانها");
+
+    /* ③ الحفظ والاستعادة والقصّ */
+    ok(/localStorage\.setItem\(KB_POS/.test(html), "الموضعُ يُحفَظ");
+    ok(/function kbRestore/.test(html) && /kbRestore\(\)/.test(html), "ويُستعاد عند الفتح");
+    const clamp = (html.match(/function kbClamp[\s\S]*?\n  }/) || [""])[0];
+    ok(/innerWidth - v\.offsetWidth/.test(clamp) && /innerHeight - v\.offsetHeight/.test(clamp),
+       "ويُقصّ إلى داخل النافذة", clamp);
+    ok(/addEventListener\("resize"[\s\S]{0,200}kbPlace/.test(drag),
+       "ويُعاد قصُّه عند تغيّر المقاس — فمن حرّكها على شاشةٍ عريضةٍ لا تختفي عنه على الجوّال");
+    ok(/#vkb\.moved \{[^}]*transform:none/.test(html),
+       "والتوسيطُ يُلغى حين تُحرَّك، وإلا انزاحت بنصف عرضها");
+  }
+
   console.log(`\n═══ ${P} نجحت · ${F} فشلت ═══\n`);
   process.exit(F ? 1 : 0);
 })().catch(e => { console.error("💥", e); process.exit(1); });
