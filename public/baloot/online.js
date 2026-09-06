@@ -472,8 +472,10 @@ async function animate(e, v, next) {
       renderDeck();
       const b = $("#bidcard");
       b.classList.add("show"); b.innerHTML = "";
-      const from = rect($("#deck"));
-      await flyCard(from, rect(b), BCARD.cardBack(), { flipTo: BCARD.cardFace(e.card), dur: 520 });
+      /* ورقةُ الشراء تهبط على الطاولة كغيرها: بمقاس الورقة وميلِ الطاولة */
+      const from = cardBox($("#deck"));
+      await flyCard(from, cardBox(b), BCARD.cardBack(),
+                    { flipTo: BCARD.cardFace(e.card), dur: 520, tiltTo: tableTilt(), persp: 1500 });
       b.appendChild(BCARD.cardFace(e.card));
       snd("bid");
       break;
@@ -518,12 +520,14 @@ async function animate(e, v, next) {
       const bpi = phys(e.buyer);
       const bc = $("#bidcard");
       if (bc.classList.contains("show")) {
-        const from = rect(bc);
+        const from = cardBox(bc);   /* ومنها تنطلق بالمقاس نفسه */
+        /* وتغادر بميل الطاولة وزاويتها ثمّ تستوي في الطريق إلى اليد */
+        const off = { rotFrom: elRot(bc), tiltFrom: tableTilt(), persp: 1500 };
         bc.classList.remove("show"); bc.innerHTML = "";
         if (bpi === 0) {
           const c = added.length ? added.splice(added.indexOf(G.bidCard) >= 0 ? added.indexOf(G.bidCard) : 0, 1)[0] : null;
           if (c) { G.hand.push(c); renderHand(c); const el = handCardEl(c);
-            await flyCard(from, el ? rect(el) : from, BCARD.cardFace(c), { small: true });
+            await flyCard(from, el ? rect(el) : from, BCARD.cardFace(c), { small: true, ...off });
             renderHand(); renderSeat(0); }
         } else {
           G.players[bpi].n++;
@@ -531,7 +535,7 @@ async function animate(e, v, next) {
           const kids = $("#" + ohandId(bpi)).children, el = kids[kids.length - 1];
           if (el) el.style.visibility = "hidden";
           await flyCard(from, el ? rect(el) : rect($("#" + SEAT_IDS[bpi] + " .av")),
-                        BCARD.cardFace(G.bidCard), { small: true, flipTo: BCARD.cardBack(true) });
+                        BCARD.cardFace(G.bidCard), { small: true, flipTo: BCARD.cardBack(true), ...off });
           if (el) el.style.visibility = "";
         }
       }

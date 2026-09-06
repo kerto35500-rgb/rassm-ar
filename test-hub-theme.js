@@ -59,6 +59,30 @@ console.log("\n── بالوت لها هويّتُها ──");
   ok((svg.match(/<rect/g) || []).length >= 2, "وفيها ورقتان على الأقلّ");
 }
 
+console.log("\n── نزولُ الورقة على الطاولة بلا قفزة ──");
+{
+  /* العطب: الورقةُ الطائرة تُقاس بـ`getBoundingClientRect` للخانة، وهو
+     الصندوقُ المحاذي للمحاور — أكبرُ من الورقة بدورانها وأقصرُ منها بميل
+     الطاولة (١٢٦×١٩٥ صارت ١٧٠×١٤٦ في الخانة اليسرى). فتصل الورقةُ بمقاسٍ
+     وزاويةٍ غيرِ اللذين ستُرسَم بهما، ثمّ تُستبدَل في إطارٍ واحد ⇒ قلتشة. */
+  const AR = fs.readFileSync(pub("baloot/arena.js"), "utf8");
+  const BL = fs.readFileSync(pub("baloot/index.html"), "utf8");
+  ok(/function cardBox\(el\)/.test(AR), "ثمّة قياسٌ بمقاس الورقة لا بصندوقها");
+  ok(/el\.offsetWidth/.test(AR), "يعتمد مقاسَ التخطيط");
+  ok(/function elRot\(el\)/.test(AR), "وقراءةٌ لزاوية الخانة من تحويلها");
+  ok(/--tilt/.test(BL) && /getPropertyValue\("--tilt"\)/.test(AR),
+     "وميلُ الطاولة متغيّرٌ واحدٌ يقرؤه CSS والسكربت معًا");
+  ok(/rotateX\(var\(--tilt\)\)/.test(BL), "والطاولةُ تميل به");
+
+  const fp = (AR.match(/async function flyPlay[\s\S]*?\n}/) || [""])[0];
+  ok(/cardBox\(slot\)/.test(fp), "ولعبُ الورقة يهبط على مقاس الورقة", fp.slice(0, 60));
+  ok(/rotTo: elRot\(slot\)/.test(fp), "بزاوية خانتها");
+  ok(/tiltTo: tableTilt\(\)/.test(fp), "وميلِ الطاولة");
+  ok(!/rot:\s*true/.test(fp), "ولا زاويةَ عشوائيّةٌ تُخالف الخانة");
+  ok(/handoff\(/.test(fp), "ثمّ تُسلَّم بذوبانٍ لا باستبدالٍ مفاجئ");
+  ok(/hold: true/.test(fp), "فتبقى الطائرةُ لحظةً بعد الوصول");
+}
+
 console.log("\n── قوائمُ بالوت تتناسق مع بطاقتها في الرئيسيّة ──");
 {
   const BL = fs.readFileSync(pub("baloot/index.html"), "utf8");

@@ -13,6 +13,9 @@
    ═══════════════════════════════════════════════════════════ */
 :root{
   --cw:126px; --ch:195px;
+  /* ميلُ الطاولة. مكتوبٌ متغيّرًا لأنّ الجافاسكربت يقرؤه ليُنزل الورقةَ
+     الطائرةَ بالميل نفسه — ولو بقي رقمًا في مكانين لافترقا يومًا. */
+  --tilt:50deg;
   --cream:#fff9f4; --ink:#4e4356; --ink2:#7c7089;
   --pink:#ffb7cd; --pink2:#ff8fb1; --mint:#a9e7cd; --mint2:#6fd0ab;
   --sky:#a9d8ff; --sky2:#6bb6f5; --lemon:#ffe6a8; --lemon2:#ffcf5c;
@@ -160,7 +163,7 @@ body.mobile #fsbtn{display:block}
 /* ═══ الطاولة ثلاثيّة الأبعاد (منقولةٌ من اونو) ═══ */
 #world{position:absolute;inset:0;perspective:1500px;perspective-origin:50% 40%;pointer-events:none}
 #floor{position:absolute;left:50%;top:51%;width:1700px;height:1300px;margin:-650px 0 0 -850px;
-  transform:rotateX(50deg);transform-style:preserve-3d}
+  transform:rotateX(var(--tilt));transform-style:preserve-3d}
 .fl{position:absolute;transform-style:preserve-3d}
 #glow{left:50%;top:50%;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;
   box-shadow:0 0 130px 46px transparent;transition:box-shadow .6s;opacity:.7}

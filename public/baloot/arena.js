@@ -37,6 +37,37 @@ function rect(el) {
   return { x: (r.left - APP.ox) / APP.s, y: (r.top - APP.oy) / APP.s, w: r.width / APP.s, h: r.height / APP.s };
 }
 
+/* ── مستطيلُ ورقةٍ لا صندوقُها المحيط ──
+ *
+ * `getBoundingClientRect` يرجع الصندوقَ **المحاذيَ للمحاور**، وهو أكبرُ من
+ * الورقة كلّما دارت، وأقصرُ منها كلّما مالت الطاولةُ في العمق. فخانةُ الأكلة
+ * اليسرى مثلًا مقاسُها ١٢٦×١٩٥ لكنّ صندوقَها على الشاشة ١٧٠×١٤٦.
+ *
+ * والورقةُ الطائرة تُعلَّق على المسرح لا داخل الطاولة، فكانت تُقاس إلى ذلك
+ * الصندوق: تصل عريضةً قصيرةً بزاويةٍ عشوائيّة، ثمّ تحلّ محلَّها الورقةُ
+ * الحقيقيّةُ داخل الطاولة فتقفز فجأةً إلى مقاسها وميلها — وهي «القلتشة»
+ * التي تُرى لحظةَ نزول كلّ ورقة.
+ *
+ * فنقيس هنا إلى **مقاس التخطيط** (١٢٦×١٩٥) في مركز الصندوق، ونُنزل الورقة
+ * بميل الطاولة وزاويةِ الخانة نفسها — فتستقرّ في الموضع الذي ستُرسَم فيه
+ * تمامًا، ولا يبقى شيءٌ ليقفز.
+ */
+function cardBox(el) {
+  const r = rect(el);
+  const w = el.offsetWidth || r.w, h = el.offsetHeight || r.h;
+  return { x: r.x + (r.w - w) / 2, y: r.y + (r.h - h) / 2, w, h };
+}
+/** زاويةُ عنصرٍ في مستواه (درجات) — تُقرأ من التحويل لا من رقمٍ مكرَّر. */
+function elRot(el) {
+  try {
+    const m = new DOMMatrixReadOnly(getComputedStyle(el).transform);
+    return Math.atan2(m.b, m.a) * 180 / Math.PI;
+  } catch (e) { return 0; }
+}
+/** ميلُ الطاولة كما في CSS. */
+const tableTilt = () =>
+  parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--tilt")) || 50;
+
 /* ── الصوت: نغماتٌ مركَّبة لا ملفّات، فلا تُحمَّل شيئًا ── */
 let AC = null;
 document.addEventListener("pointerdown", () => {
@@ -107,6 +138,7 @@ function flyCard(from, to, node, opts = {}) {
     const dur = opts.dur || (opts.small ? 250 : 460);
     const arc = opts.arc == null ? Math.min(220, Math.hypot(to.x - from.x, to.y - from.y) * .32) : opts.arc;
     const rotEnd = opts.rot ? (Math.random() * 26 - 13) : (opts.rotTo || 0);
+    const rotFrom = opts.rotFrom || 0;
     const tiltFrom = opts.tiltFrom || 0, tiltTo = opts.tiltTo || 0;
     const tr = { pts: [], w: opts.small ? 10 : 16, live: true };
     trails.push(tr); if (!trailRaf) trailRaf = requestAnimationFrame(trailTick);
@@ -115,7 +147,14 @@ function flyCard(from, to, node, opts = {}) {
     /* requestAnimationFrame يتوقّف حين يُخفى اللسان (تبديل تبويب، قفل الجوّال).
        أونلاين يعني أن طابور الحالات يقف والخادم يواصل — فيعود اللاعب ودورُه
        قد مضى. صمّامٌ زمنيّ يُنهي الطيران مهما حدث. */
-    const finish = () => { if (done) return; done = true; tr.live = false; f.remove(); res(); };
+    /* `hold` يُبقي العنصرَ الطائر بعد الوصول ويُسلّمه للمنادي.
+       ولمَ؟ لأنّ الورقةَ الطائرة مسطّحةٌ على المسرح والورقةَ المستقرّة مائلةٌ
+       داخل الطاولة، فشكلاهما لا يتطابقان مهما ضبطنا. فبدل أن نمحوَ هذه
+       ونُظهر تلك في إطارٍ واحدٍ (فتُرى قفزة) نُذيب إحداهما في الأخرى. */
+    const finish = () => {
+      if (done) return; done = true; tr.live = false;
+      if (opts.hold) res(f); else { f.remove(); res(null); }
+    };
     const guard = setTimeout(finish, dur + 350);
     const step = () => {
       if (done) return;
@@ -133,8 +172,11 @@ function flyCard(from, to, node, opts = {}) {
         }
       }
       f.style.width = w + "px"; f.style.height = h + "px";
-      f.style.transform = `translate(${cx - w / 2}px,${cy - h / 2}px) perspective(900px) ` +
-        `rotateX(${tiltFrom + (tiltTo - tiltFrom) * e}deg) scale(${sc}) scaleX(${flip}) rotate(${rotEnd * e}deg)`;
+      /* المنظورُ نفسُه الذي على ‎#world‎ حين ننزل على الطاولة، وإلا اختلف
+         انحسارُ الورقة عن انحسار الخانة التي ستحلّ فيها. */
+      f.style.transform = `translate(${cx - w / 2}px,${cy - h / 2}px) perspective(${opts.persp || 900}px) ` +
+        `rotateX(${tiltFrom + (tiltTo - tiltFrom) * e}deg) scale(${sc}) scaleX(${flip}) ` +
+        `rotate(${rotFrom + (rotEnd - rotFrom) * e}deg)`;
       tr.pts.push({ x: cx, y: cy, t: performance.now() });
       if (u < 1) requestAnimationFrame(step); else { clearTimeout(guard); finish(); }
     };
@@ -148,7 +190,8 @@ const ohandId = pi => ({ 1: "ohand-right", 2: "ohand-top", 3: "ohand-left" })[pi
 const handCardEl = card => $('#hand .bc[data-card="' + card + '"]');
 
 async function flyDeal(pi, card, ms) {
-  const from = rect($("#deck"));
+  /* من الرزمة: مقاسُ ورقةٍ في مركزها، لا صندوقُها المائل */
+  const from = cardBox($("#deck"));
   snd("deal");
   if (pi === 0) {
     renderHand(card);                       /* نحجز مكانها ثمّ نُطيّرها إليه */
@@ -188,14 +231,31 @@ async function flyPlay(pi, card) {
     if (el) el.style.visibility = "hidden";
   }
   snd("card");
-  /* ورقةُ الخصم تصل مكشوفة: تنقلب في الهواء كما تنقلب على الطاولة حقيقةً */
-  const opts = { rot: true };
+  /* ورقةُ الخصم تصل مكشوفة: تنقلب في الهواء كما تنقلب على الطاولة حقيقةً.
+     ولا زاويةَ عشوائيّةً بعد اليوم: تصل بزاوية خانتها وميلِ الطاولة، فتحلّ
+     الورقةُ الحقيقيّةُ محلَّها بلا قفزة. */
+  const opts = { rotTo: elRot(slot), tiltTo: tableTilt(), persp: 1500, hold: true };
   if (pi !== 0) { opts.flipTo = BCARD.cardFace(card); }
-  await flyCard(from, rect(slot), pi === 0 ? BCARD.cardFace(card) : BCARD.cardBack(), opts);
+  const f = await flyCard(from, cardBox(slot), pi === 0 ? BCARD.cardFace(card) : BCARD.cardBack(), opts);
   G.trick.push({ pi, card });
   if (pi === 0) G.hand = G.hand.filter(c => c !== card);
   else G.players[pi].n = Math.max(0, G.players[pi].n - 1);
   renderTrick(); renderSeat(pi); if (pi === 0) renderHand();
+  handoff(f, slot.firstChild);
+}
+
+/* ── تسليمُ الورقة من الطائرة إلى المستقرّة ──
+   ذوبانٌ في تسعين جزءًا من الثانية: أقصرُ من أن يُقرأ ذوبانًا، وأطولُ من أن
+   تُرى قفزة. ولو لم تدعم النافذةُ `animate` رجعنا إلى الحذف المباشر. */
+const HANDOFF_MS = 90;
+function handoff(fly, laid) {
+  if (!fly) return;
+  if (!laid || !fly.animate) { fly.remove(); return; }
+  try {
+    laid.animate([{ opacity: 0 }, { opacity: 1 }], { duration: HANDOFF_MS });
+    fly.animate([{ opacity: 1 }, { opacity: 0 }], { duration: HANDOFF_MS });
+    setTimeout(() => fly.remove(), HANDOFF_MS + 20);
+  } catch (e) { fly.remove(); }
 }
 
 /** جمعُ الأكلة: الأوراق الأربع تطير معًا إلى مقعد الفائز ثمّ تختفي. */
@@ -206,9 +266,12 @@ async function flyTrick(winPi) {
   const flights = [];
   for (const t of G.trick) {
     const slot = $("#tk-" + t.pi);
-    const from = rect(slot);
+    /* تنطلق من حيث كانت مستقرّةً بالضبط: مقاسُها وزاويتُها وميلُها */
+    const from = cardBox(slot);
+    const rotFrom = elRot(slot);
     slot.innerHTML = "";
-    flights.push(flyCard(from, to, BCARD.cardFace(t.card), { small: true, dur: 420, rot: true, arc: 90 }));
+    flights.push(flyCard(from, to, BCARD.cardFace(t.card),
+      { small: true, dur: 420, rot: true, arc: 90, rotFrom, tiltFrom: tableTilt(), persp: 1500 }));
   }
   await Promise.all(flights);
   $("#tk-" + winPi).classList.remove("win");
