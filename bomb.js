@@ -6,7 +6,9 @@ const { nameFromSocket } = require("./account");
 const mod = require("./moderation");
 
 const GRACE_MS = 500;          // فترة سماح خفية عند وصول العداد للصفر
-const RECONNECT_MS = 180000;   // مهلة العودة بعد انقطاع الاتصال — ٣ دقائق (تبديل التطبيقات في الجوال)
+/* مهلة العودة بعد انقطاع الاتصال — ٣ دقائق (تبديل التطبيقات في الجوال).
+   قابلةٌ للحقن كي لا ينتظرها الاختبار ثلاث دقائق. */
+const RECONNECT_MS = Number(process.env.BOMB_RECONNECT_MS) || 180000;
 const CHAT_MAX = 200;
 const ALPHABET = dict.ALPHABET;
 
@@ -321,11 +323,43 @@ function setupBomb(io, deps) {
     broadcast(room);
   }
 
+  /* ── إخراجُ لاعبٍ من المصفوفة بلا كسر الدور ──
+     `turnIdx` فهرسٌ في `players`، فحذفُ أيّ لاعبٍ قبله يُزحزح كلَّ من بعده.
+     كان مسارُ الانقطاع يحذف بلا إصلاح، فيصير الفهرس يشير إلى لاعبٍ آخر —
+     أو يتجاوز طول المصفوفة. وحينها `explode` تجد المقعد فارغًا فتخرج
+     صامتةً **بعد أن ألغت المؤقّتات**، فلا ينفجر شيءٌ ولا ينتقل دور: تتجمّد
+     الغرفة إلى الأبد ولا يستطيع أحدٌ أن يكتب كلمة.
+     الحلّ: نتذكّر **معرّف** صاحب الدور قبل الحذف ونستعيد فهرسه بعده. */
+  function dropPlayer(room, p) {
+    const curId = (room.players[room.turnIdx] || {}).id;
+    const wasTurn = curId === p.id;
+    room.players = room.players.filter(x => x !== p);
+    if (!room.players.length) { clearTimers(room); rooms.delete(room.id); return false; }
+    if (room.ownerId === p.id) room.ownerId = room.players[0].id;
+    if (!wasTurn) {
+      const at = room.players.findIndex(x => x.id === curId);
+      room.turnIdx = at >= 0 ? at : 0;
+    } else if (room.turnIdx >= room.players.length) room.turnIdx = 0;
+
+    if (room.state !== "playing") { broadcast(room); return true; }
+    if (alivePlayers(room).length <= 1) { endGame(room); return true; }
+    /* خرج وهو صاحبُ الدور ⇒ ننقل القنبلة فورًا بدل انتظار انفجارٍ لا صاحب له */
+    if (wasTurn) advanceTurn(room, 0);
+    else broadcast(room);
+    return true;
+  }
+
   function explode(room) {
     if (room.state !== "playing") return;
     clearTimers(room);
     const p = room.players[room.turnIdx];
-    if (!p) return;
+    /* صمّامُ أمان: لو ضاع صاحبُ الدور رغم كلّ شيء، لا نخرج صامتين —
+       الخروجُ الصامت بعد إلغاء المؤقّتات هو التجمّد بعينه. */
+    if (!p) {
+      if (alivePlayers(room).length <= 1) return endGame(room);
+      room.turnIdx = 0;
+      return newRound(room, nextAliveIdx(room, 0));
+    }
     p.lives--;
     nsp.to(room.id).emit("boom", { id: p.id, name: p.name, lives: p.lives });
     if (p.lives <= 0) {
@@ -461,29 +495,23 @@ function setupBomb(io, deps) {
     function leaveRoom(hard) {
       if (!room || !player) return;
       const r = room, p = player;
+      socket.leave(r.id);
       if (hard) {
-        r.players = r.players.filter(x => x.id !== p.id);
+        /* المسار نفسه الذي يسلكه الانقطاع — إصلاحُ الدور في مكانٍ واحد */
+        const before = r.ownerId;
+        if (dropPlayer(r, p) && r.ownerId !== before) {
+          const nxt = r.players.find(x => x.id === r.ownerId);
+          if (nxt) sys(r, `👑 ${nxt.name} صار مدير الغرفة`, "system");
+        }
       } else {
         p.connected = false;
         p.disconnectedAt = Date.now();
-      }
-      socket.leave(r.id);
-      // نقل الملكية
-      if (r.ownerId === p.id) {
-        const nxt = r.players.find(x => x.connected);
-        if (nxt) { r.ownerId = nxt.id; sys(r, `👑 ${nxt.name} صار مدير الغرفة`, "system"); }
-      }
-      // إذا كان دوره أثناء اللعب وخرج نهائياً
-      if (r.state === "playing" && hard) {
-        const stillAlive = alivePlayers(r);
-        if (stillAlive.length <= 1) endGame(r);
-        else if (r.players[r.turnIdx] === undefined || !r.players[r.turnIdx].alive) {
-          if (r.turnIdx >= r.players.length) r.turnIdx = 0;
-          advanceTurn(r, 0);
+        if (r.ownerId === p.id) {
+          const nxt = r.players.find(x => x.connected);
+          if (nxt) { r.ownerId = nxt.id; sys(r, `👑 ${nxt.name} صار مدير الغرفة`, "system"); }
         }
+        broadcast(r);
       }
-      if (!r.players.length) { clearTimers(r); rooms.delete(r.id); }
-      else broadcast(r);
       room = null; player = null;
     }
 
@@ -702,11 +730,9 @@ function setupBomb(io, deps) {
       broadcast(r);
       setTimeout(() => {
         if (p.connected) return;
-        r.players = r.players.filter(x => x !== p);
-        if (!r.players.length) { clearTimers(r); rooms.delete(r.id); return; }
-        if (r.ownerId === p.id) r.ownerId = r.players[0].id;
-        if (r.state === "playing" && alivePlayers(r).length <= 1) endGame(r);
-        else broadcast(r);
+        if (!rooms.has(r.id)) return;
+        try { dropPlayer(r, p); }
+        catch (e) { console.error("bomb drop:", e && e.message); }
       }, RECONNECT_MS);
       room = null; player = null;
     });
