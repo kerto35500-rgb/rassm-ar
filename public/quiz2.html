@@ -776,18 +776,25 @@ body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
 /* ═══ لوحة الصوت ═══
    تنسدل من زرّ 🔊 في الشريط العلويّ. المستوى محفوظٌ في المتصفّح فلا
    يُعاد ضبطه كلّ جولة. */
-#sndPop{position:absolute;z-index:98;display:none;flex-direction:column;gap:8px;
-  padding:11px 13px;border-radius:14px;min-width:230px;
+/* شريطٌ نحيفٌ تحت الزرّ لا صندوقٌ فيه شريط: زرُّ كتمٍ صغير، ومقبضُ مستوى،
+   ونسبة. وموضعُه يُحسَب بـ`left/top` صريحين لا بحوافَّ منطقيّة — لأنّ
+   `inset-inline-end` في صفحةٍ من اليمين لليسار هو الحافّةُ **اليسرى**،
+   فكان يُطرَح من عرض النافذة فيُقذَف الشريطُ خارج الشاشة. */
+#sndPop{position:fixed;z-index:98;display:none;align-items:center;gap:8px;
+  padding:6px 9px;border-radius:999px;
   border:1px solid rgba(255,255,255,.16)}
 #sndPop.on{display:flex}
-#sndPop .row{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:800;color:#fff}
-#sndPop .note{font-size:10.5px;color:var(--dim);line-height:1.5}
-#sndPop button{font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;flex:1;
-  padding:7px 10px;border-radius:10px;color:#fff;
-  border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08)}
-#sndPop button.off{background:rgba(255,90,90,.22);border-color:rgba(255,120,120,.4)}
-#sndPop input[type=range]{flex:1;accent-color:var(--gold)}
-#sndPop b{min-width:38px;text-align:center;color:var(--gold)}
+/* الألوان مأخوذةٌ من لون نصّ اللوحة نفسها لا مثبَّتةً بيضاءَ أو ذهبيّة:
+   سمةُ «المارشميلو» تجعل اللوحة بيضاءَ تقريبًا، فالأبيضُ عليها يختفي
+   والذهبيُّ نسبةُ تباينه ١٫٤٧ — أي لا يُقرأ. و`inherit` تعطي ١٢٫٠٩. */
+#sndPop #sndMute{font:inherit;font-size:13px;line-height:1;cursor:pointer;
+  width:26px;height:26px;padding:0;flex:0 0 auto;border-radius:50%;color:inherit;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  border:1px solid rgba(128,128,160,.34);background:rgba(128,128,160,.16)}
+#sndPop #sndMute.off{background:rgba(255,90,90,.24);border-color:rgba(220,80,80,.5)}
+#sndPop input[type=range]{width:120px;flex:0 0 auto;accent-color:var(--gold);margin:0}
+#sndPop .pct{min-width:34px;text-align:center;color:inherit;opacity:.85;
+  font-size:11.5px;font-weight:800}
 
 /* ═══ نافذة التبليغ عن سؤال ═══ */
 #rpModal{position:fixed;inset:0;z-index:96;display:none;align-items:center;
@@ -1558,9 +1565,9 @@ body.pyOn #stage{border-radius:24px}
 
   <!-- لوحةُ الصوت: كتمٌ ومستوى. تنسدل من زرّ 🔊 وتُغلق بالنقر خارجها -->
   <div id="sndPop" class="glass">
-    <div class="row"><button id="sndMute">🔊 الصوت مفتوح</button></div>
-    <div class="row"><span>المستوى</span><input id="sndVol" type="range" min="0" max="100" step="5"><b id="sndVolN">100٪</b></div>
-    <div class="note">يشمل صوت المعلّق وقراءة الأسئلة والمؤثّرات</div>
+    <button id="sndMute" type="button" title="كتم / فتح">🔊</button>
+    <input id="sndVol" type="range" min="0" max="100" step="5" title="مستوى الصوت">
+    <b class="pct" id="sndVolN">100٪</b>
   </div>
 
   <div id="roster"></div>
@@ -1859,18 +1866,30 @@ function sndApply(){
   const b=$("sndB");
   if(b)b.textContent=SND.muted||SND.vol===0?"🔇":(SND.vol<.5?"🔉":"🔊");
   const m=$("sndMute");
-  if(m){m.textContent=SND.muted?"🔇 الصوت مكتوم":"🔊 الصوت مفتوح";m.classList.toggle("off",SND.muted);}
+  if(m){m.textContent=SND.muted?"🔇":"🔊";m.title=SND.muted?"الصوت مكتوم — اضغط للفتح":"الصوت مفتوح — اضغط للكتم";
+        m.classList.toggle("off",SND.muted);}
   const r=$("sndVol"); if(r)r.value=String(Math.round(SND.vol*100));
   const n=$("sndVolN"); if(n)n.textContent=Math.round(SND.vol*100)+"٪";
 }
+/* موضعُ الشريط: تحت الزرّ ومتوسّطٌ عليه، ثمّ يُقصّ إلى داخل الشاشة.
+   ولو لم يبقَ تحته متّسعٌ صعد فوقه. والقياسُ بعد إظهاره، فالمخفيُّ بلا مقاس. */
+function placeSndPop(){
+  const p=$("sndPop"),b=$("sndB").getBoundingClientRect();
+  const w=p.offsetWidth,h=p.offsetHeight;
+  let x=b.left+b.width/2-w/2;
+  x=Math.min(Math.max(8,x),Math.max(8,innerWidth-w-8));
+  let y=b.bottom+8;
+  if(y+h>innerHeight-8) y=Math.max(8,b.top-h-8);
+  p.style.left=x+"px"; p.style.top=y+"px";
+}
 $("sndB").onclick=e=>{
   e.stopPropagation();
-  const p=$("sndPop"),b=$("sndB").getBoundingClientRect();
-  p.style.top=(b.bottom+8)+"px";
-  p.style.insetInlineEnd=Math.max(8,innerWidth-b.right)+"px";
-  p.classList.toggle("on");
+  const p=$("sndPop"),open=!p.classList.contains("on");
+  p.classList.toggle("on",open);
   sndApply();
+  if(open) placeSndPop();
 };
+addEventListener("resize",()=>{ if($("sndPop").classList.contains("on")) placeSndPop(); });
 $("sndMute").onclick=()=>{ SND.muted=!SND.muted; if(!SND.muted&&SND.vol===0)SND.vol=.6; sndSave();sndApply(); if(SND.muted)vStop(),voStop(); };
 $("sndVol").oninput=e=>{ SND.vol=(+e.target.value||0)/100; if(SND.vol>0)SND.muted=false; sndSave();sndApply(); };
 document.addEventListener("pointerdown",e=>{

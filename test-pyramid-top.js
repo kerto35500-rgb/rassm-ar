@@ -132,5 +132,49 @@ console.log("⑫ التحكّم بالصوت");
   ok(!/a\.volume=1;/.test(CL) && !/a\.volume=\.92;/.test(CL), "ولا مستوًى ثابتٌ باقٍ");
 }
 
+console.log("\n── شريط الصوت: نحيفٌ وتحت الزرّ وداخل الشاشة ──");
+{
+  const fs = require("fs"), path = require("path");
+  const H = fs.readFileSync(path.join(__dirname, "public", "quiz2.html"), "utf8");
+  const css = (H.match(/#sndPop\{[^}]*\}/) || [""])[0];
+
+  /* العطب: كان `position:absolute` ويُوضَع بـ`inset-inline-end` محسوبةً من
+     عرض **النافذة**. والحافّةُ المنطقيّة في صفحةٍ عربيّةٍ هي اليسرى، والمرجعُ
+     في `absolute` أقربُ سلفٍ موضوع لا النافذة — فيُقذَف الشريطُ إلى الحافّة
+     ويخرج نصفُه عن الشاشة. */
+  ok(/position:fixed/.test(css), "الشريط مرجعُه النافذة لا سلفُه", css.slice(0, 60));
+  ok(!/inset-inline-end:\s*\d/.test(css), "ولا يُوضَع بحافّةٍ منطقيّة");
+  ok(!/insetInlineEnd\s*=/.test(H), "ولا في الجافاسكربت أيضًا");
+  ok(/function placeSndPop/.test(H), "بل بدالّةِ وضعٍ صريحة");
+  const fn = (H.match(/function placeSndPop\(\)\{[\s\S]*?\n}/) || [""])[0];
+  ok(/b\.left\+b\.width\/2-w\/2/.test(fn), "تُوسّطه على الزرّ", fn);
+  ok(/Math\.min\(Math\.max\(8,x\)/.test(fn), "ثمّ تقصّه إلى داخل الشاشة أفقيًّا");
+  ok(/innerHeight-8\) y=Math\.max\(8,b\.top-h-8\)/.test(fn),
+     "وتصعد فوق الزرّ إن ضاق ما تحته");
+  ok(/addEventListener\("resize",\(\)=>\{ if\(\$\("sndPop"\)\.classList\.contains\("on"\)\) placeSndPop/.test(H),
+     "وتُعيد الوضعَ عند تغيّر المقاس");
+
+  /* شريطٌ لا صندوق */
+  ok(!/min-width:230px/.test(css), "ولم يعد صندوقًا بعرضٍ أدنى");
+  ok(/border-radius:999px/.test(css), "بل كبسولةٌ نحيفة", css);
+  ok(!/flex-direction:column/.test(css), "بصفٍّ واحدٍ لا أعمدة");
+  ok(!/الصوت مفتوح<\/button>/.test(H) && !/🔊 الصوت مفتوح/.test(H),
+     "ولا نصَّ طويلًا في زرّ الكتم");
+  ok(/id="sndMute" type="button"/.test(H) && />🔊</.test(H), "بل أيقونةٌ وحدها");
+  ok(!/يشمل صوت المعلّق وقراءة الأسئلة والمؤثّرات/.test(H), "ولا سطرَ شرحٍ تحته");
+  ok(/m\.title=SND\.muted/.test(H), "والشرحُ في تلميحةٍ لا في مساحة");
+
+  /* والألوان مأخوذةٌ من اللوحة لا مثبَّتة: سمةُ «المارشميلو» تجعلها بيضاءَ
+     تقريبًا، فالأبيضُ يختفي عليها والذهبيُّ تباينُه ١٫٤٧ — قِسناه فوجدناه
+     غيرَ مقروء، و`inherit` تعطي ١٢٫٠٩. */
+  const mute = (H.match(/#sndPop #sndMute\{[^}]*\}/) || [""])[0];
+  ok(/color:inherit/.test(mute), "لونُ زرّ الكتم من اللوحة", mute);
+  ok(!/color:#fff/.test(mute), "لا أبيضَ مثبَّتًا يختفي على الأبيض");
+  ok(/overflow:hidden/.test(mute), "ولا يفيض نصُّه خارج دائرته مهما طال");
+  const pct = (H.match(/#sndPop \.pct\{[^}]*\}/) || [""])[0];
+  ok(/color:inherit/.test(pct), "والنسبةُ كذلك", pct);
+  ok(!/var\(--gold\)/.test(pct), "لا ذهبيًّا لا يُقرأ على الفاتح");
+}
+
 console.log(`\n═══ ${P} نجحت · ${F} فشلت ═══\n`);
 process.exit(F ? 1 : 0);
