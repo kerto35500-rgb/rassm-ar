@@ -167,7 +167,11 @@ body.mobile #fsbtn{display:block}
 #tablering{left:50%;top:50%;width:700px;height:700px;margin:-350px 0 0 -350px;border-radius:50%;
   box-shadow:inset 0 0 0 10px rgba(255,255,255,.14),inset 0 0 70px rgba(0,0,0,.16)}
 #deck{left:calc(50% - 430px);top:calc(50% - 380px);width:var(--cw);height:var(--ch);transform:rotate(-24deg)}
-#deck .lay{position:absolute;inset:0;border-radius:12px;background:linear-gradient(140deg,#fff,#efe9f4);
+/* طبقاتُ الرزمة أوراقٌ مقلوبةٌ حقيقيّة (‎.bc.back‎) يبنيها ‎renderDeckSkin‎،
+   فتحمل ظهرَ البطاقة الذي جهّزه اللاعب. والقاعدةُ البيضاء تحتها احتياطٌ
+   لو لم يعمل السكربت — رزمةٌ بيضاءُ أفضلُ من فراغ. */
+#deck .lay{position:absolute;inset:0;width:100%;height:100%;border-radius:12px}
+#deck .lay:not(.bc){background:linear-gradient(140deg,#fff,#efe9f4);
   box-shadow:0 0 0 1px rgba(0,0,0,.08)}
 #deck .cnt{position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);font-size:14px;font-weight:900;
   background:rgba(255,255,255,.85);color:var(--ink);padding:3px 13px;border-radius:12px;white-space:nowrap}

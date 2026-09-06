@@ -223,8 +223,34 @@ function renderAll() {
   renderHand(); renderScore();
 }
 
+/* ظهرُ رزمة التوزيع.
+   كانت الرزمةُ ثلاثَ طبقاتٍ بيضاءَ ثابتةً في الـCSS، فبدت ورقًا بلا غلاف،
+   ولم تتبدّل مع الظهر الذي يشتريه اللاعب — وهو أوّلُ ما تقع عليه العين في
+   طور المزايدة. الآن كلُّ طبقةٍ ورقةٌ مقلوبةٌ حقيقيّة.
+   ونُعيد البناء **فقط حين يتغيّر الظهر** لا مع كلّ رسمة: `renderDeck` يُنادى
+   عشراتِ المرّات في اليد الواحدة، وبناءُ ثلاث عقدٍ في كلّ مرّةٍ إسرافٌ. */
+let deckSkinSig = null;
+const DECK_LAYERS = [[0, 0], [-3, -4], [-6, -8]];
+function renderDeckSkin() {
+  const d = $("#deck");
+  if (!d || !window.BCARD || !window.BCAT) return;
+  const key = (window.P && P.back) || "classic";
+  const sig = key + "|" + ((BCAT.IMG && BCAT.IMG.backs[key]) || "");
+  if (sig === deckSkinSig) return;
+  deckSkinSig = sig;
+  d.querySelectorAll(".lay").forEach(el => el.remove());
+  const cnt = d.querySelector(".cnt");
+  DECK_LAYERS.forEach(([x, y]) => {
+    const c = BCARD.cardBack();
+    c.classList.add("lay");
+    c.style.transform = `translate(${x}px,${y}px)`;
+    d.insertBefore(c, cnt);
+  });
+}
+
 function renderDeck() {
   const d = $("#deck");
+  renderDeckSkin();
   d.classList.toggle("hide", !G || !G.deckN);
   if (G && G.deckN) d.querySelector(".cnt").textContent = G.deckN;
 }
