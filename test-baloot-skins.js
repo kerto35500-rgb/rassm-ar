@@ -226,6 +226,25 @@ const PNG = Buffer.from(
     ok(CAT.boardPreview("carbon").startsWith("data:image"), "ولا تختلط ساحةٌ بظهرٍ يشاركها المفتاح");
   }
 
+  console.log("⑪ الساحةُ للطاولة لا للموقع كلِّه");
+  {
+    /* طلبُ صاحب الموقع بالحرف: الخلفيّةُ المشتراة تخصّ الساحة، والصفحةُ
+       الرئيسة تبقى على خلفيّتها الأصليّة. فالسمةُ تُطبَّق حين تُعرَض الطاولة
+       وتُرفَع حين نخرج منها — لا مرّةً واحدةً عند الإقلاع. */
+    const menu = fs.readFileSync(path.join(__dirname, "public", "baloot", "menu.js"), "utf8");
+    ok(/function applyBoardBg\(\)/.test(menu), "ثمّة دالّةٌ واحدةٌ تحكم خلفيّة الساحة");
+    const fn = (menu.match(/function applyBoardBg\(\)[\s\S]*?\n}/) || [""])[0];
+    ok(/classList\.contains\("show"\)/.test(fn), "تسأل: هل الطاولةُ معروضة؟", fn.slice(0, 80));
+    ok(/\?\s*BCAT\.boardCss\(P\.board\)\s*:\s*""/.test(fn), "فإن نعم فالساحة، وإلا فالأصليّة", fn);
+    /* وتُنادى عند الدخول والخروج معًا — واحدةٌ بلا الأخرى تترك الخلفيّة عالقة */
+    const enter = menu.match(/classList\.add\("show"\);\s*\n\s*applyBoardBg\(\)/);
+    const leave = menu.match(/classList\.remove\("show"\);\s*\n\s*applyBoardBg\(\)/);
+    ok(enter, "تُنادى عند الجلوس على الطاولة");
+    ok(leave, "وعند الخروج منها");
+    ok(!/getElementById\("app"\)[\s\S]{0,120}?boardCss/.test(menu.replace(fn, "")),
+       "ولا تُصبَغ ‎#app‎ من مكانٍ آخر — مصدرٌ واحدٌ للحقيقة");
+  }
+
   try { fs.unlinkSync(file); } catch (e) {}
   try { fs.rmSync(path.join(path.dirname(file), "blobs"), { recursive: true, force: true }); } catch (e) {}
   console.log(`\n═══ ${P} نجحت · ${F} فشلت ═══\n`);

@@ -26,10 +26,19 @@ const P = { name: "لاعب", avatar: "Adult_1", frame: "Classic", coins: 0, xp:
    الفتح قبل أن يردّ الخادم. */
 function applyTheme() {
   try { localStorage.setItem("bl-theme", JSON.stringify({ board: P.board, back: P.back })); } catch (e) {}
-  const app = document.getElementById("app");
-  if (app && window.BCAT) app.style.background = BCAT.boardCss(P.board);
+  applyBoardBg();
   if (window.BCARD) BCARD.setBackSkin(P.back);
   if (typeof G !== "undefined" && G) { try { renderAll(); } catch (e) {} }
+}
+
+/* الساحةُ المشتراة تخصّ **الطاولة** لا الموقعَ كلَّه: القوائمُ والصفحةُ
+   الرئيسة تبقى على خلفيّتها الأصليّة، ولا تتبدّل إلا حين تجلس تلعب.
+   ونضعُها على ‎#app‎ لا على ‎#board‎ عمدًا: طبقةُ الظلّ والنقاط (‎#bg‎) تسبق
+   الساحةَ في الترتيب، فلو صبغنا ‎#board‎ لاختفت تحتها ومعها عمقُ الطاولة. */
+function applyBoardBg() {
+  const app = document.getElementById("app"), b = document.getElementById("board");
+  if (!app || !window.BCAT) return;
+  app.style.background = (b && b.classList.contains("show")) ? BCAT.boardCss(P.board) : "";
 }
 try {
   const t = JSON.parse(localStorage.getItem("bl-theme") || "{}");
@@ -87,6 +96,7 @@ function openScreen(name) {
   snd("click");
   curScreen = name;
   $("#board").classList.remove("show");
+  applyBoardBg();                     /* خرجنا من الطاولة: تعود الخلفيّة الأصليّة */
   Object.values(SCREENS).forEach(s => $(s) && $(s).classList.remove("show"));
   const el = $(SCREENS[name]);
   if (el) el.classList.add("show");
@@ -173,6 +183,7 @@ async function stBuy(key) {
 function showBoard() {
   Object.values(SCREENS).forEach(s => $(s) && $(s).classList.remove("show"));
   $("#board").classList.add("show");
+  applyBoardBg();                     /* جلسنا على الطاولة: تظهر الساحةُ المُجهَّزة */
   curScreen = "board";
 }
 function toMenu() {
