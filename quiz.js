@@ -87,7 +87,11 @@ const DEFAULTS = {
      لو صار سبعة لصارت ثمانيةُ مواضع على سبعة مراسٍ، فيقف موضعان
      على درجةٍ واحدة ولا تُرى الحركة عند الإجابة الصحيحة. */
   pyramidHeight: 6,
-  pyramidTime: 7,       // ثواني سؤال الهرم
+  /* وقتُ سؤال الهرم كوقت السؤال العاديّ (كان سبعًا).
+     في الهرم تنهال الفخاخ: وحلٌ يُمسَح وجليدٌ يُكسَر وقنابل تُتجنَّب — وكلُّها
+     تأكل من الثواني نفسها التي يُفترَض أن تُقرأ فيها الأسئلة. سبعُ ثوانٍ
+     كانت تكفي للفخّ وحده لا للسؤال. */
+  pyramidTime: 15,      // ثواني سؤال الهرم
   pyramidPenalty: false,// الإجابة الخاطئة تُنزل درجة (مطفأ = لا تحرّك)
   headStart: true,      // بداية متدرجة حسب النقاط
   cats: [],             // الفئات المفعّلة (فارغ = الكل)
@@ -126,7 +130,8 @@ function sanitize(s = {}, old = DEFAULTS) {
   /* الارتفاع ستٌّ دائمًا: صورة الهرم فيها سبع درجات ثابتة، فسبعةُ مواضع
      (٠..٦). أيّ قيمةٍ أخرى تجعل خطوةً واحدة تُرسَم درجتين أو صفرًا. */
   if (s.pyramidHeight !== undefined) o.pyramidHeight = 6;
-  if (s.pyramidTime !== undefined) o.pyramidTime = clampInt(s.pyramidTime, MIN_P, 15, old.pyramidTime);
+  /* السقف ثلاثون كسقف السؤال العاديّ — كان خمس عشرة فلا يبلغه المضيف */
+  if (s.pyramidTime !== undefined) o.pyramidTime = clampInt(s.pyramidTime, MIN_P, 30, old.pyramidTime);
   if (s.pyramidPenalty !== undefined) o.pyramidPenalty = !!s.pyramidPenalty;
   if (s.headStart !== undefined) o.headStart = !!s.headStart;
   if (Array.isArray(s.cats)) o.cats = s.cats.filter(c => qbank.categories().includes(c));
@@ -1068,6 +1073,16 @@ function setupQuiz(io, deps) {
     /* من يصعد؟ الأسرعُ وحده إن كان اللاعبون أربعةً أو أقلّ، والأسرعان إن كانوا خمسةً أو أكثر */
     const climbN = N >= 5 ? 2 : 1;
     const climbers = new Set(corrects.slice(0, climbN).map(p => p.id));
+
+    /* ── الدرجة الأخيرة للأوّل وحده ──
+       صعودُ اثنين معًا مقبولٌ في وسط الهرم، أمّا القمّة فلا تُقتَسَم: كان
+       من على الدرجة قبل الأخيرة يقفز مع صاحبه إلى القمّة في اللحظة نفسها،
+       فتنتهي المباراة بفائزٍ يُختار بفارق أجزاء الثانية بينهما لا بجهدٍ
+       زائد. الآن: من كان على وشك القمّة لا يبلغها إلا إن كان الأسرع. */
+    corrects.forEach(p => {
+      if (p.id === fastest) return;
+      if (climbers.has(p.id) && p.pyPos + 1 >= H) climbers.delete(p.id);
+    });
 
     const moves = [];
     alive(room).forEach(p => {

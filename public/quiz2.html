@@ -19,6 +19,11 @@
   --spring:cubic-bezier(.34,1.56,.44,1);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* لا تحديدَ نصٍّ في لعبةٍ تُلعَب بالنقر السريع: كانت النقرةُ المتعجّلة على
+   زرِّ إجابةٍ أو على «اختر شخصيتك» تُظلِّل النصَّ بالأزرق فيبدو كأنّ شيئًا
+   تعطّل. يُستثنى ما يُكتَب فيه وما يُنسَخ منه عمدًا (رمز الغرفة مثلًا). */
+body{user-select:none;-webkit-user-select:none;-ms-user-select:none}
+input,textarea,[contenteditable],.selectable{user-select:text;-webkit-user-select:text}
 html,body{height:100%;overflow:hidden}
 body{
   font-family:'Segoe UI',Tahoma,Arial,sans-serif;
@@ -768,20 +773,21 @@ body.noTop:not(.topOpen) #hudQ{display:none}
 body.topOpen #topTab i{display:inline-block;transform:rotate(180deg)}
 #topTab i{display:inline-block;font-style:normal;transition:transform .25s}
 
-/* ═══ شريط القفز التجريبي — مؤقّت ═══
-   يعيش داخل الشريط المنسدل نفسه، فينطوي معه بالسهم ولا يزاحم المسرح. */
-#devBar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;
-  padding:7px 10px;margin-bottom:9px;border-radius:14px;flex-shrink:0;
-  border:1px dashed rgba(255,203,46,.55);background:rgba(255,203,46,.07)}
-#devBar .lbl{font-size:11.5px;font-weight:900;color:var(--gold);white-space:nowrap}
-#devBar .hint{font-size:10.5px;color:var(--dim);margin-inline-start:auto}
-.djb{font:inherit;font-size:12px;font-weight:800;cursor:pointer;
-  padding:5px 11px;border-radius:9px;color:#fff;
-  border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);
-  transition:background .15s,transform .15s}
-.djb:hover{background:rgba(255,203,46,.28);transform:translateY(-1px)}
-.djb:disabled{opacity:.35;cursor:not-allowed;transform:none}
-body.noTop:not(.topOpen) #devBar{display:none}
+/* ═══ لوحة الصوت ═══
+   تنسدل من زرّ 🔊 في الشريط العلويّ. المستوى محفوظٌ في المتصفّح فلا
+   يُعاد ضبطه كلّ جولة. */
+#sndPop{position:absolute;z-index:98;display:none;flex-direction:column;gap:8px;
+  padding:11px 13px;border-radius:14px;min-width:230px;
+  border:1px solid rgba(255,255,255,.16)}
+#sndPop.on{display:flex}
+#sndPop .row{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:800;color:#fff}
+#sndPop .note{font-size:10.5px;color:var(--dim);line-height:1.5}
+#sndPop button{font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;flex:1;
+  padding:7px 10px;border-radius:10px;color:#fff;
+  border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08)}
+#sndPop button.off{background:rgba(255,90,90,.22);border-color:rgba(255,120,120,.4)}
+#sndPop input[type=range]{flex:1;accent-color:var(--gold)}
+#sndPop b{min-width:38px;text-align:center;color:var(--gold)}
 
 /* ═══ نافذة التبليغ عن سؤال ═══ */
 #rpModal{position:fixed;inset:0;z-index:96;display:none;align-items:center;
@@ -1543,20 +1549,18 @@ body.pyOn #stage{border-radius:24px}
     <a class="ic" href="/" title="رجوع لكل الألعاب" style="text-decoration:none">
       <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.8V20h14V9.8"/><path d="M9.5 20v-6h5v6"/></svg>
     </a>
+    <button class="ic" id="sndB" title="الصوت">🔊</button>
     <button class="ic" id="rpB" title="التبليغ عن السؤال">🚩</button>
     <button class="ic" id="cpB" title="نسخ الرابط">🔗</button>
     <button class="ic" id="cfgOpen" title="الإعدادات">⚙</button>
     <button class="ic" id="exB" title="خروج">✕</button>
   </div>
 
-  <!-- ═══ شريط القفز التجريبي — مؤقّت، يُحذف بعد التجربة ═══ -->
-  <div id="devBar" class="glass">
-    <span class="lbl">⏩ قفزٌ تجريبيّ</span>
-    <button class="djb" data-k="q">الأسئلة</button>
-    <button class="djb" data-k="link">التوصيل</button>
-    <button class="djb" data-k="sort">التصنيف</button>
-    <button class="djb" data-k="pyramid">الهرم</button>
-    <span class="hint" id="devHint">للمدير فقط</span>
+  <!-- لوحةُ الصوت: كتمٌ ومستوى. تنسدل من زرّ 🔊 وتُغلق بالنقر خارجها -->
+  <div id="sndPop" class="glass">
+    <div class="row"><button id="sndMute">🔊 الصوت مفتوح</button></div>
+    <div class="row"><span>المستوى</span><input id="sndVol" type="range" min="0" max="100" step="5"><b id="sndVolN">100٪</b></div>
+    <div class="note">يشمل صوت المعلّق وقراءة الأسئلة والمؤثّرات</div>
   </div>
 
   <div id="roster"></div>
@@ -1756,7 +1760,7 @@ body.pyOn #stage{border-radius:24px}
       <div class="cp" data-p="y">
         <div class="tgl"><span>النهائي: الهرم<small>أول من يصل القمة يفوز</small></span><label class="sw"><input type="checkbox" id="cPyOn"><i></i></label></div>
         <div class="f"><label>ارتفاع الهرم</label><div class="vv"><input type="range" id="sPH" min="4" max="6"><output id="oPH"></output></div></div>
-        <div class="f"><label>مهلة سؤال الهرم</label><div class="vv"><input type="range" id="sPT" min="4" max="15"><output id="oPT"></output></div></div>
+        <div class="f"><label>مهلة سؤال الهرم</label><div class="vv"><input type="range" id="sPT" min="4" max="30"><output id="oPT"></output></div></div>
         <div class="tgl"><span>بداية متدرجة<small>الأعلى نقاطاً يبدأ أقرب</small></span><label class="sw"><input type="checkbox" id="sHS"><i></i></label></div>
         <div class="tgl"><span>أسئلة الصور<small>السماح بالأسئلة التي تعرض صورة</small></span><label class="sw"><input type="checkbox" id="sIM"><i></i></label></div>
         <div class="tgl"><span>قراءة صوتية<small>صوت يقرأ السؤال في مرحلة القراءة</small></span><label class="sw"><input type="checkbox" id="sVO"><i></i></label></div>
@@ -1822,21 +1826,57 @@ function introVideo(src){
   return n;
 }
 /* التبليغ: يلتقط السؤال المعروض حاليًا إن وُجد، ويُرسل لصفحة بلاغات الأدمن */
-/* ═══ القفز التجريبي — مؤقّت، يُحذف بعد التجربة ═══ */
-[...document.querySelectorAll(".djb")].forEach(b=>{
-  b.onclick=()=>{
-    if(!ST||ST.ownerId!==ME) return;
-    socket.emit("devJump",b.dataset.k);
-    document.body.classList.remove("topOpen");
-  };
-});
-function devBarSync(){
-  const host=!!(ST&&ST.ownerId===ME);
-  [...document.querySelectorAll(".djb")].forEach(b=>b.disabled=!host);
-  $("devHint").textContent = host
-    ? "يبدأ المرحلة فورًا مع شرحها وتعليقها"
-    : "للمدير فقط";
+/* شريط «القفز التجريبيّ» حُذف بعد أن أدّى غرضه — كان يُقفز به بين المراحل
+   أثناء التطوير. الحدثُ `devJump` باقٍ على الخادم محروسًا بالمدير وحده. */
+
+/* ═══ الصوت: كتمٌ ومستوى، محفوظان في المتصفّح ═══
+   كان صوت المعلّق وقراءة السؤال ثابتَين (1 و.92) بلا أيّ تحكّم، فيصرخ
+   المقطعُ في وجه من يلعب بجانب نائم. الآن مستوًى واحدٌ يحكم كلّ شيء:
+   المقاطع، والقراءة، والفيديو، والمؤثّرات المولَّدة. */
+const SND={vol:1,muted:false};
+try{
+  const v=localStorage.getItem("qzVol"); if(v!==null)SND.vol=Math.max(0,Math.min(1,+v||0));
+  SND.muted=localStorage.getItem("qzMute")==="1";
+}catch(e){}
+const sndGain=()=>SND.muted?0:SND.vol;
+function sndSave(){
+  try{localStorage.setItem("qzVol",String(SND.vol));localStorage.setItem("qzMute",SND.muted?"1":"0");}catch(e){}
 }
+/* كلُّ عنصر صوتٍ حيٍّ يُسجَّل هنا ليتبع المستوى فورًا لا عند التالي */
+const sndLive=new Set();
+function sndAttach(a,base){
+  a.__base=base==null?1:base;
+  a.volume=a.__base*sndGain();
+  sndLive.add(a);
+  const drop=()=>sndLive.delete(a);
+  a.addEventListener("ended",drop);a.addEventListener("error",drop);
+  return a;
+}
+function sndApply(){
+  sndLive.forEach(a=>{ try{ a.volume=(a.__base==null?1:a.__base)*sndGain(); }catch(e){ sndLive.delete(a); } });
+  document.querySelectorAll("video").forEach(v=>{ if(!v.__silent) v.volume=sndGain(); });
+  vMute=SND.muted;
+  const b=$("sndB");
+  if(b)b.textContent=SND.muted||SND.vol===0?"🔇":(SND.vol<.5?"🔉":"🔊");
+  const m=$("sndMute");
+  if(m){m.textContent=SND.muted?"🔇 الصوت مكتوم":"🔊 الصوت مفتوح";m.classList.toggle("off",SND.muted);}
+  const r=$("sndVol"); if(r)r.value=String(Math.round(SND.vol*100));
+  const n=$("sndVolN"); if(n)n.textContent=Math.round(SND.vol*100)+"٪";
+}
+$("sndB").onclick=e=>{
+  e.stopPropagation();
+  const p=$("sndPop"),b=$("sndB").getBoundingClientRect();
+  p.style.top=(b.bottom+8)+"px";
+  p.style.insetInlineEnd=Math.max(8,innerWidth-b.right)+"px";
+  p.classList.toggle("on");
+  sndApply();
+};
+$("sndMute").onclick=()=>{ SND.muted=!SND.muted; if(!SND.muted&&SND.vol===0)SND.vol=.6; sndSave();sndApply(); if(SND.muted)vStop(),voStop(); };
+$("sndVol").oninput=e=>{ SND.vol=(+e.target.value||0)/100; if(SND.vol>0)SND.muted=false; sndSave();sndApply(); };
+document.addEventListener("pointerdown",e=>{
+  const p=$("sndPop");
+  if(p&&p.classList.contains("on")&&!p.contains(e.target)&&e.target!==$("sndB")) p.classList.remove("on");
+},true);
 
 $("rpB").onclick=()=>{
   const q=ST&&ST.question&&ST.question.text;
@@ -1891,11 +1931,15 @@ function avatar(name,color,size){
 /* ═══ صوت ═══ */
 let AC=null;
 function tone(f,d,ty,v,slide){
+  /* المستوى يُضرَب في قيمة البداية لا بعد جدولة الانحدار: `gain.value`
+     بعد `setValueAtTime` لا أثر له، والأتمتة المجدولة هي التي تحكم. */
+  const gv=(v||.05)*sndGain();
+  if(gv<=0)return;
   try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();
     const o=AC.createOscillator(),g=AC.createGain();
     o.type=ty||"sine";o.frequency.setValueAtTime(f,AC.currentTime);
     if(slide)o.frequency.exponentialRampToValueAtTime(slide,AC.currentTime+d);
-    g.gain.setValueAtTime(v||.05,AC.currentTime);
+    g.gain.setValueAtTime(gv,AC.currentTime);
     g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+d);
     o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d);
   }catch(e){}
@@ -2311,7 +2355,6 @@ function render(){
   if(!ST)return;
   const host=ST.ownerId===ME;
   $("cfgOpen").style.display=host?"":"none";
-  devBarSync();
   $("stgChip").textContent=ST.state==="playing"?`${ST.stage}/${ST.totalStages}`:"";
   renderRoster();
   if(previewMode)return;   // معاينة فخ جارية — لا نبدّل المشهد
@@ -2877,7 +2920,7 @@ function vPlay(id,force){
   if(!force && (vMute || id===vLast)) return;   /* لا يُعاد تشغيله مع كل تحديث حالة */
   vLast=id; vStop();
   const a=new Audio("/tts/"+id);
-  a.preload="auto"; a.volume=1;
+  a.preload="auto"; sndAttach(a,1);
   a.onended=()=>{ if(b) b.classList.remove("on"); };
   a.onerror=()=>{ if(b) b.classList.remove("on"); };
   VA=a;
@@ -2887,15 +2930,16 @@ function vPlay(id,force){
 document.addEventListener("click",e=>{
   const b=e.target.closest && e.target.closest("#vBtn");
   if(!b) return;
-  if(vMute){ vMute=false; try{localStorage.setItem("qzMute","0");}catch(x){} b.classList.remove("mute"); }
+  /* الكتمُ واحدٌ في الموقع كلّه: زرُّ القراءة يفكّه من مصدره لا من نسخته */
+  if(vMute||SND.muted){ SND.muted=false; sndSave(); sndApply(); b.classList.remove("mute"); }
   const id=(ST.question&&ST.question.voice)||vLast;
   if(id) vPlay(id,true);
 });
 $("vBtn") && ($("vBtn").oncontextmenu=e=>{   /* ضغطة يمين/مطوّلة = كتم */
   e.preventDefault();
-  vMute=!vMute; try{localStorage.setItem("qzMute",vMute?"1":"0");}catch(x){}
-  $("vBtn").classList.toggle("mute",vMute);
-  if(vMute) vStop();
+  SND.muted=!SND.muted; sndSave(); sndApply();
+  $("vBtn").classList.toggle("mute",SND.muted);
+  if(SND.muted){ vStop(); voStop(); }
 });
 
 /* ════ تعليق المعلّق ════
@@ -2928,7 +2972,7 @@ function voFile(key,i){
   if(vMute||!key||!i)return;
   vStop(); voStop();                 /* لا يتداخل التعليق مع قراءة السؤال */
   const a=new Audio("/vo/"+(VO_FILE[key+"-"+i]||key+"-"+i)+".mp3");
-  a.volume=.92; VOA=a;
+  sndAttach(a,.92); VOA=a;
   a.onended=a.onerror=()=>{ if(VOA===a)VOA=null; };
   a.play().catch(()=>{});
 }
@@ -3054,7 +3098,7 @@ function rOpen(fresh){
   voStop(); vStop();
   const v=$("opVid");
   v.src = opSrc();
-  v.muted=vMute; v.volume=1; v.currentTime=0;
+  v.muted=vMute||SND.muted; v.volume=sndGain(); v.currentTime=0;
   const tap=$("opTap");
   v.play().then(()=>{ tap.classList.remove("show"); }).catch(()=>{
     /* مُنع التشغيل: نبدأ صامتين ونعرض زر إعادة الصوت */
@@ -4253,13 +4297,15 @@ function fireworks(){
    الفخاخ — كل فخ يغطي منطقة الإجابات فقط
    ══════════════════════════════════════════ */
 function noise(dur,vol,hp){
+  vol=(vol||.12)*sndGain();
+  if(vol<=0)return;
   try{
     AC=AC||new (window.AudioContext||window.webkitAudioContext)();
     const n=Math.floor(AC.sampleRate*dur),b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);
     for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.2);
     const s=AC.createBufferSource();s.buffer=b;
     const f=AC.createBiquadFilter();f.type=hp?"highpass":"lowpass";f.frequency.value=hp||900;
-    const g=AC.createGain();g.gain.value=vol||.12;
+    const g=AC.createGain();g.gain.value=vol;
     s.connect(f);f.connect(g);g.connect(AC.destination);s.start();
   }catch(e){}
 }
@@ -4405,8 +4451,15 @@ const FX={
         paint();sGlass();
         el.classList.remove("shakeFx");void el.offsetWidth;el.classList.add("shakeFx");
         if(taps>=3){
-          /* تناثر الشظايا ثم يتحرر هذا الخيار وحده */
+          /* ── الطبقة تُخلي الطريق فورًا، وشظاياها زينةٌ لا حاجز ──
+             كانت `onpointerdown` تُلغى وحدها، فيبقى العنصرُ فوق الزرّ
+             أربعًا وثلاثين إطارًا (~نصف ثانية) و`onclick` فيه يبتلع النقر.
+             فمن كسر طبقةً وأراد أن يكسر التي تحتها وجد ضغطَه معطَّلًا —
+             ومع طبقاتٍ متراكمة يتضاعف الانتظار. الآن: تُرفَع من اختبار
+             النقر في اللحظة نفسها، وتُكمل الشظايا سقوطها فوق كل شيء. */
           el.onpointerdown=null;
+          el.onclick=null;
+          el.style.pointerEvents="none";
           const shards=[];
           for(let i=0;i<14;i++)shards.push({x:Math.random()*w,y:Math.random()*h,
             vx:(Math.random()-.5)*6,vy:-2-Math.random()*4,r:Math.random()*6.28,
@@ -4436,6 +4489,8 @@ const FX={
      متقطّعة، والنسبة تُحسب بعدّ البكسلات الشفافة فعليًا من قناع الألفا. */
   fx_gloop(){
     const btns=this.buttons(); if(!btns.length)return;
+    /* نسبةُ المسح المطلوبة — خُفِّضت من ٨٠٪ */
+    const GLOOP_DONE=.70;
     /* فخّ متكرر؟ الطبقة الجديدة (الأعلى) أغمق فيميّزها اللاعب */
     const deep=document.querySelectorAll(".fxGoo").length>0;
     this.els=[];
@@ -4464,12 +4519,17 @@ const FX={
       }
       const self=this;
       let last=null,moves=0,done=false;
-      /* فرشاة أعرض: المسح كان يطول أكثر ممّا ينبغي */
-      /* فرشاة الوحل: كانت تُحسب من ارتفاع الزرّ وحده فتخرج نحيلةً على
-         الحاسوب حيث الأزرار عريضة ومنخفضة. صارت تأخذ العرض في حسبانها. */
-      const wide=innerWidth>699;
-      const BRUSH=wide ? Math.max(74,Math.min(132,Math.max(h*1.25,w*.16)))
-                       : Math.max(46,Math.min(74,h*.85));
+      /* ── الفرشاة: نسبةٌ من ارتفاع الزرّ، لا رقمٌ يختلف بالشاشة ──
+         كانت معادلتان مختلفتان: على الحاسوب `max(74,min(132,max(h*1.25,w*.16)))`
+         وعلى الجوّال `max(46,min(74,h*.85))`. وحدودُهما المطلقة (٧٤ و٤٦) لا
+         تتناسب مع الزرّ، فتختلف نسبةُ الفرشاة إلى ارتفاعه بين الجهازين
+         (١.٢٥ مقابل ٠.٨٨ تقريبًا) — أي كلفةُ مسحٍ مختلفة على الجهازين.
+
+         والحساب: ما يُمسَح بمسحةٍ عرضيّةٍ واحدة ≈ (عرضُ الفرشاة × طولُ
+         المسار) ÷ مساحة الزرّ ≈ B×w ÷ (w×h) = B/h. فالعرضُ يسقط من
+         المعادلة، وتبقى **نسبةُ الفرشاة إلى الارتفاع** وحدها هي التي
+         تحكم. فنثبّتها فتتساوى الكلفةُ على الجهازين. */
+      const BRUSH=Math.max(42,Math.min(150,h*1.15));
       /* عدّ البكسلات الشفافة من قناع الألفا — «كشف البكسلات» حرفيًا */
       function pct(){
         const d=cx.getImageData(0,0,cv.width,cv.height).data;
@@ -4510,11 +4570,13 @@ const FX={
         const r=cv.getBoundingClientRect();
         stroke(e.clientX-r.left,e.clientY-r.top);
         if(Math.random()<.2)sSquish();
-        if(++moves%7===0&&pct()>=.8)finish();
+        /* العتبة ٧٠٪ بدل ٨٠٪، والفحص كلّ ٤ حركاتٍ بدل ٧ — كان اللاعب
+           يُتمّ المسح ثمّ ينتظر ثلاث حركاتٍ زائدة حتى يُلاحَظ. */
+        if(++moves%4===0&&pct()>=GLOOP_DONE)finish();
       }
       el.onpointerdown=e=>{e.stopPropagation();last=null;onMove(e);};
       el.onpointermove=e=>{if(e.buttons)onMove(e);};
-      el.onpointerup=()=>{last=null;if(!done&&pct()>=.8)finish();};
+      el.onpointerup=()=>{last=null;if(!done&&pct()>=GLOOP_DONE)finish();};
       el.onclick=e=>{e.preventDefault();e.stopPropagation();};
     });
   },
