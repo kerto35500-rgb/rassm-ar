@@ -288,6 +288,54 @@ const spyOf = s => (s.ev.role || []).slice(-1)[0];
     g.socks.forEach(s => s.close());
   }
 
+  /* ══════════ الواجهة ══════════
+     أربعُ شكاوى بصريّة، وثلاثٌ منها من علّةٍ واحدة: سمةُ «المارشميلو»
+     (`kawaii.css`) أعلى أسبقيّةً من قواعد الصفحة، فكلُّ ما نكتبه في
+     `salfa.html` تدهسه هي في صمت. فنفحص **الغالبَ** لا المكتوب. */
+  console.log("⑥ الواجهة: التمرير والألوان والأسماء");
+  {
+    const fs = require("fs"), path = require("path");
+    const html = fs.readFileSync(path.join(__dirname, "public", "salfa.html"), "utf8");
+    const kw = fs.readFileSync(path.join(__dirname, "public", "kawaii.css"), "utf8");
+    const rule = (css, sel) => {
+      const i = css.indexOf(sel + " {") >= 0 ? css.indexOf(sel + " {") : css.indexOf(sel + "{");
+      return i < 0 ? "" : css.slice(i, css.indexOf("}", i) + 1);
+    };
+
+    /* ① اللوبي يمرَّر: السمةُ كانت تُلغي التمرير فيُقصّ نصفُ الإعدادات */
+    const lob = rule(kw, "body.kw-salfa #lobby");
+    ok(lob, "للسمة قاعدةٌ للوبي", lob.slice(0, 60));
+    ok(!/overflow:\s*visible/.test(lob), "لا تُلغي التمرير");
+    ok(/overflow:\s*auto/.test(lob), "بل تُبقيه");
+    ok(/flex:\s*1/.test(lob) && /min-height:\s*0/.test(lob),
+       "وتترك اللوبي يتقيّد بارتفاع الشاشة لا بمحتواه", lob);
+
+    /* ② صفُّ برّا السالفة أحمرُ فاتح — والسمةُ هي مَن كانت تُخضّره */
+    const spy = rule(kw, "body.kw-salfa .scoreRow.wasSpy");
+    ok(spy, "وللسمة قاعدةٌ لصفّ برّا السالفة", spy);
+    ok(/#FFDEDB/i.test(spy), "خلفيّتُه حمراءُ فاتحة", spy);
+    const rowIdx = kw.indexOf("body.kw-salfa .scoreRow {");
+    ok(kw.indexOf("body.kw-salfa .scoreRow.wasSpy") > rowIdx,
+       "ومكتوبةٌ بعد العامّة فتغلبها");
+
+    /* ③ السائل أخضر والمسؤول أحمر، ويسبقان تمييزَ «أنا» */
+    ok(/body\.kw-salfa \.pl\.asker/.test(kw), "للسائل قاعدةٌ في السمة");
+    ok(/body\.kw-salfa \.pl\.target/.test(kw), "وللمسؤول");
+    ok(/\.pl\.me\.asker/.test(kw) && /\.pl\.me\.target/.test(kw),
+       "وتسبقان تمييزَ «أنا» صراحةً");
+    const me = rule(kw, "body.kw-salfa .pl.me");
+    ok(!/#6CCB93/.test(me), "و«أنا» لم يعد أخضرَ فيلتبس بالسائل", me);
+    ok(/asker/.test(html) && /target/.test(html), "والصفحةُ تُلبس الصنفين");
+    ok(/const askerId = talking \? s\.turnId/.test(html), "من الدور الذي يبثّه الخادم");
+    ok(/const targetId = talking \? s\.targetId/.test(html), "ومن المسؤول كذلك");
+    ok(/state === "talking"/.test(html), "وفي طور النقاش وحده");
+
+    /* ④ لا «(أنت)» — في الكود لا في التعليقات التي تشرح إزالتها */
+    const code = html.replace(/\/\*[\s\S]*?\*\//g, "");
+    ok(!/\(\u0623\u0646\u062a\)/.test(code), "ولا يُكتب «(أنت)» بعد الاسم في أيّ قائمة",
+       (code.match(/.{0,40}\(\u0623\u0646\u062a\).{0,20}/) || [])[0]);
+  }
+
   console.log(`\n═══ ${P} نجحت · ${F} فشلت ═══\n`);
   process.exit(F ? 1 : 0);
 })().catch(e => { console.error("💥", e); process.exit(1); });

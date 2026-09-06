@@ -1096,7 +1096,17 @@ body.kw-salfa #clock { border:2px solid var(--sg-line); border-radius:999px; bac
 body.kw-salfa .h { color:var(--sg-ink); }
 body.kw-salfa .pl { background:#fff; border:2px solid #C99A72; border-radius:14px; }
 body.kw-salfa .pl .av { background:#D9F2DF; }
-body.kw-salfa .pl.me { border-color:#6CCB93; background:#EAF7EC; }
+/* «أنا» أزرقُ هادئ لا أخضر: الأخضرُ صار لمن دورُه أن يسأل، ولونٌ واحدٌ
+   لمعنيين لا يُقرأ. */
+body.kw-salfa .pl.me { border-color:#66BEE8; background:#EAF3FB; }
+/* دورُ السؤال: أخضرُ للسائل، أحمرُ للمسؤول — ويسبقان تمييزَ «أنا» لأنّ ما
+   يعني اللاعبَ في هذه اللحظة دورُه لا هويّتُه. */
+body.kw-salfa .pl.asker, body.kw-salfa .pl.me.asker {
+  border-color:#2FA666; background:#DCF6E6; box-shadow:0 0 0 3px rgba(47,166,102,.22); }
+body.kw-salfa .pl.target, body.kw-salfa .pl.me.target {
+  border-color:#E86F63; background:#FFE0DD; box-shadow:0 0 0 3px rgba(232,111,99,.22); }
+body.kw-salfa .pl.asker .role { background:#2FA666; }
+body.kw-salfa .pl.target .role { background:#E86F63; }
 body.kw-salfa .pl .sc { color:var(--sg-deep); }
 body.kw-salfa #qr { border:2px solid var(--sg-line); border-radius:16px; }
 body.kw-salfa .setRow { background:var(--sg-soft); border-radius:14px; }
@@ -1158,6 +1168,11 @@ body.kw-salfa .revealWord .c { color:#7C9474; }
 body.kw-salfa .vcard { border:2px solid #C99A72; border-radius:14px; }
 body.kw-salfa .scoreRow { background:var(--sg-soft); border-radius:12px; }
 body.kw-salfa .scoreRow .g { color:var(--sg-deep); }
+/* صفُّ برّا السالفة أحمرُ فاتحٌ كلُّه. وكانت السمةُ تصبغه بأخضرها الفاتح
+   فوق القاعدة العامّة (أسبقيّتُها أعلى)، فلا يبقى إلا شارةٌ صغيرةٌ حمراء —
+   واللونُ يُقرأ قبل أن تقرأ الشارة. */
+body.kw-salfa .scoreRow.wasSpy { background:#FFDEDB; border:2px solid #F3B0AC; box-shadow:none; }
+body.kw-salfa .scoreRow.wasSpy .g { color:#C1332E; }
 
 /* ───── النوافذ ───── */
 body.kw-salfa .sheet { background:var(--sg-white); border:2px solid var(--sg-line); border-radius:22px; }
@@ -1228,7 +1243,17 @@ body.kw-salfa .actions .btn { padding:13px 22px; font-size:15.5px; }
 
 /* ═════════ v17: السالفة — لوبي ملتف حول المحتوى + بطاقات منفصلة + إعدادات مضغوطة + فصل الشات ═════════ */
 /* ١) اللوبي: الحاوية شفافة وتلتف حول المحتوى — يختفي الفراغ الكبير والإطار الممتد */
-body.kw-salfa #lobby { background:none; border:none; box-shadow:none; padding:2px; flex:0 0 auto; overflow:visible; gap:10px; }
+/* السمةُ تنزع عن اللوبي هيئةَ البطاقة (خلفيّةً وحدًّا وظلًّا) — وهذا كلُّ
+   المقصود. وكانت تنزع معها **قابليّةَ التمرير** (`flex:0 0 auto; overflow:visible`)،
+   فيتمدّد اللوبي بطول محتواه داخل `‎.wrap‎` وهي `overflow:hidden`، فيُقصّ ما
+   تحت الطيّة ولا يُوصَل إليه: المضيفُ يفتح الإعدادات فلا يرى نصفَها ولا
+   يستطيع النزول. نُبقي التمرير ونكتفي بنزع الهيئة. */
+body.kw-salfa #lobby { background:none; border:none; box-shadow:none; padding:2px;
+  flex:1 1 0; min-height:0; overflow:auto; gap:10px; }
+/* وشريطُ التمرير ناعمٌ يوافق السمة لا شريطًا رماديًّا فجًّا */
+body.kw-salfa #lobby::-webkit-scrollbar { width:9px; }
+body.kw-salfa #lobby::-webkit-scrollbar-thumb { background:var(--sg-line, #e6cfc4); border-radius:999px; }
+body.kw-salfa #lobby::-webkit-scrollbar-track { background:transparent; }
 body.kw-salfa #lobby .players {
   background:var(--sg-white); border:2px solid var(--sg-line); border-radius:18px;
   padding:12px; box-shadow:var(--sg-shadow);

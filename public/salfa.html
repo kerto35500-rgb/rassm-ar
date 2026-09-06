@@ -108,8 +108,20 @@
           font-size:17px; flex-shrink:0; background:#dbe7f3;}
   .pl .nm{font-weight:800; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .pl .sc{margin-inline-start:auto; font-weight:900; color:var(--green); font-size:14px;}
-  .pl.me{border-color:var(--green); background:#eafaf0;}
+  /* أنا: تمييزٌ **أزرقُ هادئ** لا أخضر. كان الأخضرُ لي، وصار الأخضرُ لمن
+     دورُه أن يسأل — ولونٌ واحدٌ لمعنيين لا يُقرأ. */
+  .pl.me{border-color:#1668c7; background:#eaf2fc;}
   .pl.off{opacity:.45;}
+  /* دورُ السؤال والإجابة: أخضرُ للسائل، أحمرُ للمسؤول. يسبقان تمييزَ «أنا»
+     لأنّ ما يعني اللاعبَ في هذه اللحظة هو الدور لا هويّتُه. */
+  .pl.asker, .pl.me.asker{border-color:var(--green); background:#dcf6e6;
+    box-shadow:0 0 0 3px rgba(46,158,91,.22);}
+  .pl.target, .pl.me.target{border-color:var(--red); background:#ffe0dd;
+    box-shadow:0 0 0 3px rgba(229,72,77,.20);}
+  .pl .role{position:absolute; top:-9px; left:50%; transform:translateX(-50%);
+    font-size:10.5px; font-weight:900; padding:1px 8px; border-radius:999px; color:#fff; white-space:nowrap;}
+  .pl.asker .role{background:var(--green);}
+  .pl.target .role{background:var(--red);}
   .pl .crown{position:absolute; top:-8px; inset-inline-start:-4px; font-size:14px;}
   .pl .kick{position:absolute; top:-8px; inset-inline-end:-6px; width:20px; height:20px; border:none;
             border-radius:50%; background:#ffe0e0; color:var(--red); cursor:pointer; font-size:11px; line-height:1;}
@@ -217,7 +229,10 @@
   .vcard.spyTarget{border-color:var(--red); background:#fff3f3;}
   .scoreRow{display:flex; align-items:center; gap:8px; background:var(--soft); border-radius:10px; padding:8px 10px; flex-wrap:wrap;}
   .scoreRow .g{margin-inline-start:auto; font-weight:900; color:var(--green);}
-  .scoreRow.wasSpy{background:#ffeceb; box-shadow:inset 4px 0 0 var(--red);}
+  /* صفُّ برّا السالفة: الصفُّ كلُّه أحمرُ فاتح لا شريطٌ على حافّته. اللونُ
+     يُقرأ قبل أن تقرأ الاسم، والشريطُ الرفيع لا يُرى أصلًا. */
+  .scoreRow.wasSpy{background:#ffdedb; border:2px solid #f3b0ac;}
+  .scoreRow.wasSpy .g{color:#c0392b;}
   .scoreRow .voters{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700;
                     color:#6b7b8f; background:#fff; border:1.5px solid var(--line); border-radius:999px; padding:3px 10px;}
   .scoreRow .voters.none{opacity:.6; font-weight:600;}
@@ -1137,7 +1152,7 @@ function buildVote(s){
     const picked = myVotes.includes(p.id);
     b.className = "vc" + (picked ? " picked" : "");
     b.disabled = (p.id === ME);
-    b.innerHTML = '<div class="nm">'+esc(p.name)+(p.id===ME?" (أنت)":"")+'</div>'+(picked?'<div class="pk">✔</div>':'');
+    b.innerHTML = '<div class="nm">'+esc(p.name)+'</div>'+(picked?'<div class="pk">✔</div>':'');
     b.onclick = () => socket.emit("vote", p.id);   // الخادم يقرّر (إضافة/إلغاء)
     grid.appendChild(b);
   });
@@ -1199,15 +1214,25 @@ function buildResult(s){
 function paintPlayers(container, s, opts){
   const el = $(container); if (!el) return;
   el.innerHTML = "";
+  /* من يسأل ومن يُسأل: يُلوَّنان في طور النقاش وحده. والدورُ يتبع الخادم:
+     `turnId` صاحبُ السؤال و`targetId` المسؤول، فإذا ضغط المسؤولُ «أجبت»
+     صار هو صاحبَ الدور فانتقل إليه الأخضرُ وزال عمّن سبقه. */
+  const talking = s.state === "talking";
+  const askerId = talking ? s.turnId : null;
+  const targetId = talking ? s.targetId : null;
   s.players.forEach(p => {
     const d = document.createElement("div");
-    d.className = "pl" + (p.id === ME ? " me" : "") + (p.connected ? "" : " off");
+    const isAsker = p.id === askerId, isTarget = p.id === targetId;
+    d.className = "pl" + (p.id === ME ? " me" : "") + (p.connected ? "" : " off")
+                + (isAsker ? " asker" : "") + (isTarget ? " target" : "");
     let tick = "";
     if (s.state === "reveal") tick = p.ready ? "✅" : "⏳";
     else if (s.state === "voting") tick = p.voted ? "✅" : "⏳";
     else if (s.state === "talking" && s.settings.flow === "circle") tick = p.asked ? "❓" : "";
     d.innerHTML = (p.id === s.ownerId ? '<span class="crown">👑</span>' : "")
-      + '<div class="nm">' + esc(p.name) + (p.id === ME ? " (أنت)" : "") + '</div>'
+      + (isAsker ? '<span class="role">يسأل</span>' : isTarget ? '<span class="role">يُسأل</span>' : "")
+      /* بلا «(أنت)»: بطاقتُك مميّزةٌ بلونها، والاسمُ يكفي. */
+      + '<div class="nm">' + esc(p.name) + '</div>'
       + '<div class="sc">' + p.score + '</div>'
       + (tick ? '<span class="tick">' + tick + '</span>' : "")
       ;
