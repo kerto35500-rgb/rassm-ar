@@ -204,6 +204,28 @@ const PNG = Buffer.from(
     ok(/radial-gradient/.test(CAT.boardCss("لا-وجود")), "ومفتاحٌ مجهولٌ يرجع للكلاسيكيّ لا يكسر");
   }
 
+  console.log("⑩ معاينةُ الظهر المصوَّر — العطب الذي رآه صاحب الموقع");
+  {
+    /* رفعنا صورةً لظهر «كربون» فظهرت في اللوحة ولم تظهر في متجر اللعبة:
+       `backPreview` كانت ترسم الثيم دائمًا ولا تسأل عن الصورة، بخلاف
+       `boardPreview`. والمتجرُ في اللعبة يعرض بـ`backPreview` لا بمعاينة
+       الخادم — فبقي الرسمُ القديم مكانَ الصورة. */
+    const url = "/api/baloot/skin/backs/carbon?v=9";
+    CAT.applyOverrides({
+      boards: [{ key: "classic", name: "الجوخ", descr: "", price: 0, img: null, theme: CAT.BOARD_THEME.classic }],
+      backs: [
+        { key: "carbon", name: "كربون", descr: "", price: 600, img: url, theme: CAT.BACK_THEME.carbon },
+        { key: "gold", name: "ذهبيّ", descr: "", price: 1200, img: null, theme: CAT.BACK_THEME.gold }
+      ]
+    });
+    eq(CAT.backPreview("carbon"), url, "معاينةُ الظهر المصوَّر هي الصورة");
+    ok(CAT.backPreview("gold").startsWith("data:image/svg+xml"), "وما لا صورةَ له يبقى مرسومًا");
+    ok(CAT.backCss("carbon").img, "وسمةُ الورقة تعرف أنّها صورة");
+    ok(/^url\("\/api\//.test(CAT.backCss("carbon").outer), "وتُطبَّق خلفيّةً", CAT.backCss("carbon").outer);
+    /* والعكس: ساحةٌ بلا صورة لا تلتقط صورةَ ظهرٍ يحمل المفتاح نفسه */
+    ok(CAT.boardPreview("carbon").startsWith("data:image"), "ولا تختلط ساحةٌ بظهرٍ يشاركها المفتاح");
+  }
+
   try { fs.unlinkSync(file); } catch (e) {}
   try { fs.rmSync(path.join(path.dirname(file), "blobs"), { recursive: true, force: true }); } catch (e) {}
   console.log(`\n═══ ${P} نجحت · ${F} فشلت ═══\n`);

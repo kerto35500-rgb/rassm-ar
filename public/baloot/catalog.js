@@ -58,7 +58,7 @@ const IMG = { boards: {}, backs: {} };
 const svg = s => "data:image/svg+xml;utf8," + encodeURIComponent(s);
 
 function boardPreview(key) {
-  if (typeof IMG !== "undefined" && IMG.boards[key]) return IMG.boards[key];
+  if (IMG.boards[key]) return IMG.boards[key];
   const t = BOARD_THEME[key] || BOARD_THEME.classic;
   return svg(
     `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="150" viewBox="0 0 240 150">` +
@@ -74,6 +74,7 @@ function boardPreview(key) {
 }
 
 function backPreview(key) {
+  if (IMG.backs[key]) return IMG.backs[key];
   const t = BACK_THEME[key] || BACK_THEME.classic;
   return svg(
     `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="170" viewBox="0 0 120 170">` +

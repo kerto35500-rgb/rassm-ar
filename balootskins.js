@@ -26,7 +26,9 @@ const SIZE = {
   backs:  { w: 252,  h: 390, note: "ظهرُ الورقة — نسبة ١٢٦:١٩٥ (ضعفُ مقاس اللعبة)" }
 };
 
-const MAX_IMG = 1.5 * 1024 * 1024;           /* ١٫٥ ميغا: أكبرُ من هذا يُبطئ الفتح */
+/* ٣ ميغا. كان الحدّ ١٫٥ فردّ صورةَ ساحةٍ عاديّة: خلفيّةُ ١٦٠٠×٩٠٠ بصيغة PNG
+   تتجاوز ذلك بسهولة. والصورةُ تُحمَّل مرّةً وتُخبَّأ أسبوعًا، فالثمن مقبول. */
+const MAX_IMG = 3 * 1024 * 1024;
 const OK_MIME = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
 const okKey = k => /^[a-z0-9][a-z0-9_-]{0,23}$/.test(String(k || ""));
 const okKind = k => k === "boards" || k === "backs";
@@ -135,7 +137,8 @@ async function putImage(store, kind, key, mime, buf, by) {
   if (!okKey(key)) throw new Error("مفتاحٌ غير صالح");
   if (!OK_MIME.includes(mime)) throw new Error("الصيغ المقبولة: PNG أو JPG أو WEBP أو SVG");
   if (!buf || !buf.length) throw new Error("ملفٌّ فارغ");
-  if (buf.length > MAX_IMG) throw new Error("أقصى حجمٍ ١٫٥ ميغابايت");
+  if (buf.length > MAX_IMG)
+    throw new Error("الصورة " + (buf.length / 1048576).toFixed(1) + " ميغا — والحدّ ٣ ميغا. اضغطها أو صدّرها JPG.");
   await store.putBlob(blobKey(kind, key), mime, buf);
   await patch(store, kind, key, { img: mime }, by);
   await syncItem(store, kind, key);

@@ -240,7 +240,7 @@ function setupPanel(app, deps) {
 
   /* رفعُ الصورة يأتي خامًا لا JSON: الصورة بايتاتٌ، وتغليفُها في base64
      يزيدها الثلث ويُجبرنا على حدٍّ أكبر في محلّل الطلب. */
-  const raw = require("express").raw({ type: () => true, limit: "2mb" });
+  const raw = require("express").raw({ type: () => true, limit: "4mb" });
   app.post(ADMIN_PATH + "/p/bskin-img", raw, async (req, res) => {
     if (!guard(req, res)) return;
     const kind = String(req.query.kind || ""), key = String(req.query.key || "").toLowerCase();
@@ -752,7 +752,7 @@ async function loadSkins(){
   if(!r.ok) return $("#skwrap").innerHTML='<div class="msg err">'+esc(r.error||"تعذّر")+'</div>';
   SK={boards:r.boards,backs:r.backs}; SKZ=r.size||{};
   $("#skmeta").textContent=SK.boards.length+" ساحة · "+SK.backs.length+" ظهرًا · "+
-    "أقصى حجمٍ للصورة "+Math.round((r.maxImg||0)/104858)/10+" ميغا";
+    "أقصى حجمٍ للصورة "+Math.round((r.maxImg||0)/1048576)+" ميغا";
   $("#skwrap").innerHTML=["boards","backs"].map(k=>skSection(k,r.kindAr[k])).join("");
 }
 function skSection(kind,title){
@@ -804,16 +804,40 @@ async function skNew(kind){
   if(!r.ok) return say("#skMsg",r);
   say("#skMsg",r,()=>{loadSkins();alert("أُضيف. الآن ارفع له صورةً من زرّ «ارفع صورة».")});
 }
+/* قياسُ الصورة في المتصفّح قبل إرسالها: أرخصُ من رحلةٍ إلى الخادم، وأصدقُ
+   في التنبيه — «مقاسُك ٨٠٠×٦٠٠ والمطلوب ١٦٠٠×٩٠٠» أوضحُ من «تعذّر». */
+function skDims(f){
+  return new Promise(res=>{
+    const u=URL.createObjectURL(f), im=new Image();
+    im.onload=()=>{res({w:im.naturalWidth,h:im.naturalHeight});URL.revokeObjectURL(u)};
+    im.onerror=()=>{res(null);URL.revokeObjectURL(u)};
+    im.src=u;
+  });
+}
 async function skUp(kind,key,inp){
   const f=inp.files&&inp.files[0]; inp.value="";
   if(!f) return;
-  say("#skMsg",{ok:true}); $("#skMsg").textContent="جارٍ الرفع…"; $("#skMsg").className="msg";
+  const m=$("#skMsg"); m.className="msg";
+  const z=SKZ[kind]||{w:0,h:0};
+  const mb=(f.size/1048576).toFixed(2);
+  if(f.size>3*1048576)
+    return say("#skMsg",{ok:false,error:"الصورة "+mb+" ميغا والحدّ ٣. اضغطها أو صدّرها JPG."});
+  const d=await skDims(f);
+  if(d&&z.w){
+    const want=z.w/z.h, got=d.w/d.h;
+    if(Math.abs(want-got)/want>0.03 &&
+       !confirm("مقاسُ صورتك "+d.w+"×"+d.h+" ونسبتُها لا توافق المطلوب ("+z.w+"×"+z.h+").\\n"+
+                "ستُمدَّد لتملأ المكان وقد تُقصّ أطرافُها. أرفعها؟")) return;
+  }
+  m.textContent="جارٍ رفع "+mb+" ميغا…";
   try{
     const res=await fetch(B+"/bskin-img?kind="+kind+"&key="+encodeURIComponent(key),
       {method:"POST",credentials:"same-origin",headers:{"Content-Type":f.type||"image/png"},body:f});
-    const r=await res.json();
+    /* ٤١٣ من محلّل الجسم يرجع HTML لا JSON — فلا نُسقط الرسالة في هوّة */
+    let r; try{ r=await res.json(); }
+    catch(e){ r={ok:false,error:res.status===413?"الملفّ أكبر مما يقبله الخادم":"ردٌّ غير مفهوم ("+res.status+")"}; }
     say("#skMsg",r,loadSkins);
-  }catch(e){ say("#skMsg",{ok:false,error:"تعذّر الرفع"}); }
+  }catch(e){ say("#skMsg",{ok:false,error:"تعذّر الرفع — تحقّق من اتّصالك"}); }
 }
 
 /* ── الطاولات الحيّة ── */
