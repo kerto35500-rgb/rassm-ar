@@ -59,5 +59,31 @@ console.log("\n── بالوت لها هويّتُها ──");
   ok((svg.match(/<rect/g) || []).length >= 2, "وفيها ورقتان على الأقلّ");
 }
 
+console.log("\n── قوائمُ بالوت تتناسق مع بطاقتها في الرئيسيّة ──");
+{
+  const BL = fs.readFileSync(pub("baloot/index.html"), "utf8");
+  ok(/--menu1:\s*#[0-9A-Fa-f]{6}/.test(BL), "ثمّة متغيّراتُ لونٍ للقوائم مستقلّةٌ عن الجوخ");
+  const app = (BL.match(/#app\{[^}]*\}/) || [""])[0];
+  ok(/var\(--menu1\)/.test(app), "وخلفيّةُ الواجهة منها", app.slice(-90));
+  ok(!/var\(--felt/.test(app), "لا من ألوان الجوخ الأخضر");
+  ok(/--felt1:\s*#9adcbe/.test(BL), "والجوخُ باقٍ لأنّه الساحةُ الافتراضيّة لا الواجهة");
+
+  /* التناسق: لونُ القوائم يجب أن يكون **أزرق** كبطاقة بالوت في الرئيسيّة
+     (الأزرقُ أعلى قناةً من الأحمر والأخضر)، لا أخضرَ كما كان. */
+  const hex = h => [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16));
+  const menu2 = (BL.match(/--menu2:\s*(#[0-9A-Fa-f]{6})/) || [])[1];
+  ok(menu2, "للقوائم لونٌ أوسط", menu2);
+  const [r, g, b] = hex(menu2);
+  ok(b > g && b > r, "وهو أزرقُ الغلبة لا أخضر", { r, g, b });
+
+  const card = (KW.match(/\.g\.c-indigo\s*\{[^}]*\}/) || [""])[0];
+  const cardBlue = (card.match(/#([0-9A-Fa-f]{6})/g) || [])[1];
+  ok(cardBlue, "ولبطاقة بالوت لونُها", cardBlue);
+  const [r2, g2, b2] = hex(cardBlue);
+  /* لا نشترط التطابق — نشترط القرابة: فرقٌ صغيرٌ في كلّ قناة */
+  const near = Math.abs(r - r2) < 60 && Math.abs(g - g2) < 60 && Math.abs(b - b2) < 60;
+  ok(near, "واللونان من عائلةٍ واحدة — لا قفزةَ بين الصفحتين", { menu2, cardBlue });
+}
+
 console.log(`\n═══ ${P} نجحت · ${F} فشلت ═══\n`);
 process.exit(F ? 1 : 0);
