@@ -190,6 +190,82 @@ function setupPanel(app, deps) {
     } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
   });
 
+  // ═══════════════ مظاهر بالوت ═══════════════
+  //
+  // هنا يرى صاحبُ الموقع ساحاتِه وظهورَ بطاقاته **بصورها**، فيُعدّل اسمًا أو
+  // سعرًا، أو يرفع صورةً تحلّ محلّ الرسم، أو يُضيف مظهرًا جديدًا. والمقاسُ
+  // المطلوب مكتوبٌ تحت كلّ نوع، ومعه قالبٌ يُنزَّل ليُبنى عليه.
+
+  const SKN = require("./balootskins");
+
+  app.get(ADMIN_PATH + "/p/bskins", async (req, res) => {
+    if (!guard(req, res)) return;
+    try {
+      const all = await SKN.listAll(st());
+      res.json({ ok: true, ...all, size: SKN.SIZE, kindAr: SKN.KIND_AR, maxImg: SKN.MAX_IMG });
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  });
+
+  app.post(ADMIN_PATH + "/p/bskin", json, async (req, res) => {
+    if (!guard(req, res)) return;
+    const kind = String(req.body?.kind || ""), key = String(req.body?.key || "").toLowerCase();
+    try {
+      if (!SKN.okKind(kind)) return res.status(400).json({ ok: false, error: "نوعٌ غير معروف" });
+      if (!SKN.okKey(key))
+        return res.status(400).json({ ok: false, error: "المفتاح: حروفٌ لاتينيّةٌ صغيرةٌ وأرقامٌ و - _ فقط" });
+
+      /* «حذف الصورة» فعلٌ مستقلّ: المظهرُ يبقى ويعود إلى رسمه الأصليّ. */
+      if (req.body?.dropImage) {
+        await SKN.delImage(st(), kind, key, "admin");
+        note(req, "bskin-img-del", kind + ":" + key, {});
+        return res.json({ ok: true });
+      }
+
+      const f = {};
+      for (const k of ["name", "descr", "price", "active", "sort"])
+        if (req.body[k] !== undefined) f[k] = req.body[k];
+      if (f.price !== undefined) {
+        const p = Math.round(Number(f.price));
+        if (!Number.isFinite(p) || p < 0 || p > PRICE_MAX)
+          return res.status(400).json({ ok: false, error: `السعر بين ٠ و${PRICE_MAX}` });
+        f.price = p;
+      }
+      if (!Object.keys(f).length) return res.status(400).json({ ok: false, error: "لا تغيير" });
+      await SKN.patch(st(), kind, key, f, "admin");
+      const s = await SKN.syncItem(st(), kind, key);
+      note(req, "bskin", kind + ":" + key, f);
+      res.json({ ok: true, skin: s });
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  });
+
+  /* رفعُ الصورة يأتي خامًا لا JSON: الصورة بايتاتٌ، وتغليفُها في base64
+     يزيدها الثلث ويُجبرنا على حدٍّ أكبر في محلّل الطلب. */
+  const raw = require("express").raw({ type: () => true, limit: "2mb" });
+  app.post(ADMIN_PATH + "/p/bskin-img", raw, async (req, res) => {
+    if (!guard(req, res)) return;
+    const kind = String(req.query.kind || ""), key = String(req.query.key || "").toLowerCase();
+    try {
+      const mime = String(req.headers["content-type"] || "").split(";")[0].trim();
+      const r = await SKN.putImage(st(), kind, key, mime, req.body, "admin");
+      note(req, "bskin-img", kind + ":" + key, { mime, bytes: r.bytes });
+      res.json({ ok: true, bytes: r.bytes });
+    } catch (e) {
+      note(req, "bskin-img-failed", kind + ":" + key, { error: e.message });
+      res.status(400).json({ ok: false, error: e.message });
+    }
+  });
+
+  /* قالبٌ فارغٌ بالمقاس الصحيح — يُنزَّل ويُفتَح في أيّ محرّر ويُستبدَل. */
+  app.get(ADMIN_PATH + "/p/bskin-template/:kind", (req, res) => {
+    if (!guard(req, res)) return;
+    const kind = req.params.kind;
+    if (!SKN.okKind(kind)) return res.status(404).end();
+    const z = SKN.SIZE[kind];
+    res.type("image/svg+xml")
+       .set("Content-Disposition", `attachment; filename="baloot-${kind}-${z.w}x${z.h}.svg"`)
+       .send(templateSvg(kind, z));
+  });
+
   // ═══════════════ الإعدادات ═══════════════
 
   /* صحّة الرهان: كم ذهبٍ محجوزٌ الآن، وكم صفًّا سُوّي. الرقم «المحجوز» يجب
@@ -347,6 +423,50 @@ function setupPanel(app, deps) {
   return { note };
 }
 
+/* قالبٌ بالمقاس الصحيح ومعه أدلّةُ الأمان — لا يُنشَر في اللعبة، إنّما يُفتَح
+   في محرّرٍ ليُرسَم فوقه ثمّ يُصدَّر بالمقاس نفسه.
+   ولماذا SVG؟ لأنّه يُفتح في فوتوشوب وفيغما وإنكسكيب معًا بلا مكتبةِ صور
+   على الخادم، ويحمل الأدلّة كطبقاتٍ يسهل حذفها. */
+function templateSvg(kind, z) {
+  const G = "#ff3b6b", T = "#0f1826";
+  const head =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${z.w}" height="${z.h}" viewBox="0 0 ${z.w} ${z.h}">` +
+    `<rect width="${z.w}" height="${z.h}" fill="#20304a"/>`;
+  const label = (x, y, s, size) =>
+    `<text x="${x}" y="${y}" font-family="sans-serif" font-size="${size}" fill="${G}" text-anchor="middle">${s}</text>`;
+
+  if (kind === "backs") {
+    /* الورقةُ تُقصّ بزوايا مستديرة نصفُ قطرها ١٢px في مقاس اللعبة (١٢٦px
+       عرضًا)، أي ٢٤ هنا. وما خرج عن الاستدارة يُقتطع. */
+    return head +
+      `<rect x="0" y="0" width="${z.w}" height="${z.h}" rx="24" fill="#2f7bd6"/>` +
+      `<rect x="0" y="0" width="${z.w}" height="${z.h}" rx="24" fill="none" stroke="${G}" stroke-width="3"/>` +
+      `<rect x="18" y="18" width="${z.w - 36}" height="${z.h - 36}" rx="14" fill="none" ` +
+      `stroke="${G}" stroke-width="2" stroke-dasharray="8 8" opacity=".8"/>` +
+      label(z.w / 2, z.h / 2 - 6, `${z.w}×${z.h}`, 30) +
+      label(z.w / 2, z.h / 2 + 26, "ظهر الورقة", 20) +
+      label(z.w / 2, z.h - 30, "الخطُّ المتقطّع = منطقةٌ آمنة", 14) +
+      `</svg>`;
+  }
+
+  /* الساحة: خلفيّةُ المسرح ١٦٠٠×٩٠٠. الدائرةُ الوسطى موضعُ حلقة الطاولة،
+     والمستطيلاتُ مواضعُ اليد والمقاعد — ما تحتها يختفي خلف الأوراق. */
+  const cx = z.w / 2, cy = z.h * 0.51;
+  return head +
+    `<rect width="${z.w}" height="${z.h}" fill="#3d9276"/>` +
+    `<circle cx="${cx}" cy="${cy}" r="350" fill="none" stroke="${G}" stroke-width="3" opacity=".9"/>` +
+    `<circle cx="${cx}" cy="${cy}" r="260" fill="none" stroke="${G}" stroke-width="2" stroke-dasharray="10 10" opacity=".7"/>` +
+    `<rect x="0" y="${z.h - 230}" width="${z.w}" height="230" fill="${T}" opacity=".28"/>` +
+    label(cx, z.h - 130, "يدُ اللاعب تغطّي هذا الشريط", 22) +
+    `<rect x="24" y="24" width="330" height="150" rx="18" fill="${T}" opacity=".28"/>` +
+    label(189, 108, "بطاقةُ اللاعب", 20) +
+    `<rect x="${z.w - 354}" y="24" width="330" height="110" rx="18" fill="${T}" opacity=".28"/>` +
+    label(z.w - 189, 92, "شريطُ الأيقونات", 20) +
+    label(cx, cy - 380, `${z.w}×${z.h} — الساحة`, 32) +
+    label(cx, cy + 6, "وسطُ الطاولة", 22) +
+    `</svg>`;
+}
+
 /** يُعيد تطبيق أسعار اللوحة بعد بذر الكتالوج (البذر يُرجع سعر الملفّ). */
 async function applyPriceOverrides(store, log = console.log) {
   try {
@@ -398,12 +518,22 @@ tr:hover td{background:#16223a}
 .set b{display:block;font-size:13px;margin-bottom:3px}
 .set .h{font-size:11.5px;color:#8fa3bd;line-height:1.6;margin-bottom:6px}
 code{background:#0f1826;padding:1px 5px;border-radius:4px;font-size:12px}
+.skgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:11px;margin-top:10px}
+.skit{background:#0f1826;border:1px solid #2d4160;border-radius:11px;padding:9px}
+.skit.off{opacity:.55}
+.skb{background:#0b1220;border-radius:9px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.skb img{max-width:100%;max-height:100%;display:block}
+.skb.wide{aspect-ratio:16/9} .skb.tall{aspect-ratio:126/195;max-height:230px;margin:0 auto;width:auto}
+.skb.tall img{height:100%;width:auto}
+.up{background:#334665;border-radius:7px;padding:8px 12px;font-weight:700;cursor:pointer;font-size:13px}
+a.dl{background:#1f6f45;color:#fff;border-radius:7px;padding:8px 14px;font-weight:700;text-decoration:none;font-size:13px}
 </style></head><body>
 <h1>🎛️ الإدارة <a href="ADMIN_URL" style="font-size:13px;font-weight:400">← المراقبة</a></h1>
 <div class="tabs">
   <button class="tab on" data-p="users">👥 اللاعبون</button>
   <button class="tab" data-p="sup">💬 الدعم <span id="supBadge"></span></button>
   <button class="tab" data-p="shop">🛍️ المتجر</button>
+  <button class="tab" data-p="skins">🎨 مظاهر بالوت</button>
   <button class="tab" data-p="live">🂡 الطاولات الحيّة</button>
   <button class="tab" data-p="set">⚙️ الإعدادات</button>
   <button class="tab" data-p="audit">📜 السجلّ</button>
@@ -424,6 +554,17 @@ code{background:#0f1826;padding:1px 5px;border-radius:4px;font-size:12px}
       <span class="muted" id="icount"></span></div>
     <div id="ilist" style="max-height:70vh;overflow:auto"></div>
   </div>
+</div>
+
+<div class="pane" id="p-skins">
+  <div class="card"><h2>🎨 ساحات بالوت وظهور بطاقاتها</h2>
+    <div class="h">ما تراه هنا هو ما يراه اللاعب في متجر بالوت. عدّل الاسم أو السعر،
+      أو ارفع صورةً تحلّ محلّ الرسم، أو أضف مظهرًا جديدًا. التغيير فوريّ — بلا نشرِ كود.</div>
+    <div class="row"><button class="s" onclick="loadSkins()">تحديث</button>
+      <span class="muted" id="skmeta"></span></div>
+    <div class="msg" id="skMsg"></div>
+  </div>
+  <div id="skwrap"></div>
 </div>
 
 <div class="pane" id="p-sup">
@@ -464,6 +605,7 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   if(t.dataset.p==="set") loadSets();
   if(t.dataset.p==="audit") loadAudit();
   if(t.dataset.p==="live") loadLive();
+  if(t.dataset.p==="skins") loadSkins();
   if(t.dataset.p==="sup"){ loadTickets(); loadReports(); }
 });
 
@@ -598,6 +740,80 @@ async function toggleItem(id){
   const r=await post("/item",{id,active:!it.active});
   if(!r.ok) return alert(r.error);
   it.active=r.item.active; drawItems();
+}
+
+/* ── مظاهر بالوت ── */
+let SK={boards:[],backs:[]}, SKZ={};
+/* نموذجان جاهزان بالمقاس الصحيح — تُنزَّل وتُفتح وتُبدَّل بما يُراد. */
+const SAMPLE={boards:"/baloot/samples/board-sample-1600x900.png",
+              backs:"/baloot/samples/cardback-sample-252x390.png"};
+async function loadSkins(){
+  const r=await j("/bskins");
+  if(!r.ok) return $("#skwrap").innerHTML='<div class="msg err">'+esc(r.error||"تعذّر")+'</div>';
+  SK={boards:r.boards,backs:r.backs}; SKZ=r.size||{};
+  $("#skmeta").textContent=SK.boards.length+" ساحة · "+SK.backs.length+" ظهرًا · "+
+    "أقصى حجمٍ للصورة "+Math.round((r.maxImg||0)/104858)/10+" ميغا";
+  $("#skwrap").innerHTML=["boards","backs"].map(k=>skSection(k,r.kindAr[k])).join("");
+}
+function skSection(kind,title){
+  const z=SKZ[kind]||{w:0,h:0,note:""};
+  return '<div class="card"><h2>'+esc(title)+'</h2>'+
+    '<div class="h">المقاس المطلوب <b>'+z.w+'×'+z.h+'</b> بكسل — '+esc(z.note)+
+      '. الصيغ: PNG أو JPG أو WEBP أو SVG.</div>'+
+    '<div class="row"><a class="dl" href="'+B+'/bskin-template/'+kind+'">⬇️ قالبٌ بالمقاس (SVG)</a>'+
+      '<a class="dl" style="background:#334665" download href="'+SAMPLE[kind]+'">⬇️ نموذجٌ جاهز (PNG)</a>'+
+      '<button class="g" onclick="skNew(\\''+kind+'\\')">➕ أضف '+(kind==="boards"?"ساحة":"ظهرًا")+'</button></div>'+
+    '<div class="skgrid">'+SK[kind].map(s=>skCard(kind,s)).join("")+'</div></div>';
+}
+function skCard(kind,s){
+  const box=kind==="boards"?'skb wide':'skb tall';
+  return '<div class="skit'+(s.active?'':' off')+'">'+
+    '<div class="'+box+'"><img src="'+esc(s.preview)+'" alt=""></div>'+
+    '<div class="row" style="margin:6px 0 2px"><code>'+esc(s.key)+'</code>'+
+      (s.img?'<span class="pill ok">صورة</span>':'<span class="pill">رسم</span>')+
+      (s.builtin?'':'<span class="pill">مُضاف</span>')+'</div>'+
+    '<input value="'+esc(s.name)+'" placeholder="الاسم" style="width:100%;margin-bottom:5px" '+
+      'onchange="skSet(\\''+kind+'\\',\\''+s.key+'\\',{name:this.value})">'+
+    '<input value="'+esc(s.descr||"")+'" placeholder="وصفٌ قصير" style="width:100%;margin-bottom:5px" '+
+      'onchange="skSet(\\''+kind+'\\',\\''+s.key+'\\',{descr:this.value})">'+
+    '<div class="row"><input type="number" value="'+s.price+'" style="width:96px" '+
+      'onchange="skSet(\\''+kind+'\\',\\''+s.key+'\\',{price:+this.value})"><span class="muted">🪙 السعر</span></div>'+
+    '<div class="row">'+
+      '<label class="up">🖼️ '+(s.img?'بدّل الصورة':'ارفع صورة')+
+        '<input type="file" accept="image/*" hidden onchange="skUp(\\''+kind+'\\',\\''+s.key+'\\',this)"></label>'+
+      (s.img?'<button class="s" onclick="skDropImg(\\''+kind+'\\',\\''+s.key+'\\')">أعِد الرسم</button>':'')+
+      '<button class="'+(s.active?'g':'s')+'" onclick="skSet(\\''+kind+'\\',\\''+s.key+'\\',{active:'+(!s.active)+'})">'+
+        (s.active?'ظاهر':'مخفيّ')+'</button></div></div>';
+}
+async function skSet(kind,key,f){
+  const r=await post("/bskin",Object.assign({kind,key},f));
+  say("#skMsg",r,loadSkins);
+  if(!r.ok) loadSkins();
+}
+async function skDropImg(kind,key){
+  if(!confirm("حذف الصورة؟ سيعود المظهر إلى رسمه الأصليّ.")) return;
+  const r=await post("/bskin",{kind,key,dropImage:true});
+  say("#skMsg",r,loadSkins);
+}
+async function skNew(kind){
+  const key=(prompt("مفتاحٌ لاتينيٌّ قصير (مثل hilal2):")||"").trim().toLowerCase();
+  if(!key) return;
+  const name=(prompt("اسمُه بالعربيّة:")||key).trim();
+  const price=+(prompt("سعرُه بالذهب:","900")||0);
+  const r=await post("/bskin",{kind,key,name,price,active:true,descr:""});
+  if(!r.ok) return say("#skMsg",r);
+  say("#skMsg",r,()=>{loadSkins();alert("أُضيف. الآن ارفع له صورةً من زرّ «ارفع صورة».")});
+}
+async function skUp(kind,key,inp){
+  const f=inp.files&&inp.files[0]; inp.value="";
+  if(!f) return;
+  say("#skMsg",{ok:true}); $("#skMsg").textContent="جارٍ الرفع…"; $("#skMsg").className="msg";
+  try{
+    const res=await fetch(B+"/bskin-img?kind="+kind+"&key="+encodeURIComponent(key),
+      {method:"POST",credentials:"same-origin",headers:{"Content-Type":f.type||"image/png"},body:f});
+    const r=await res.json();
+    say("#skMsg",r,loadSkins);
+  }catch(e){ say("#skMsg",{ok:false,error:"تعذّر الرفع"}); }
 }
 
 /* ── الطاولات الحيّة ── */

@@ -49,10 +49,16 @@ const BACKS = [
   ["palm",    "نخيل", "أخضرُ الواحة", 600]
 ];
 
+/* ── صورٌ من لوحة الإدارة ──
+   المظهرُ قد يكون **صورةً** رفعها صاحبُ الموقع بدل الرسم. نحفظ عناوينها هنا،
+   ويسبق العنوانُ الرسمَ حيثما وُجد — والرسمُ يبقى احتياطًا لو تعذّرت الصورة. */
+const IMG = { boards: {}, backs: {} };
+
 /* ── المعاينات: SVG داخل عنوانٍ، بلا أيّ ملفّ يُحمَّل ── */
 const svg = s => "data:image/svg+xml;utf8," + encodeURIComponent(s);
 
 function boardPreview(key) {
+  if (typeof IMG !== "undefined" && IMG.boards[key]) return IMG.boards[key];
   const t = BOARD_THEME[key] || BOARD_THEME.classic;
   return svg(
     `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="150" viewBox="0 0 240 150">` +
@@ -83,14 +89,39 @@ function backPreview(key) {
     `</svg>`);
 }
 
+/**
+ * يدمج ما ردّه `/api/baloot/skins` فوق الكتالوج المضمَّن.
+ * المصفوفات تُعدَّل في مكانها لأنّ الصفحة تحمل مرجعًا إليها أصلًا.
+ */
+function applyOverrides(d) {
+  if (!d) return;
+  const put = (arr, theme, imgs, list) => {
+    if (!Array.isArray(list) || !list.length) return;
+    arr.length = 0;
+    list.forEach(s => {
+      if (!s || !s.key) return;
+      arr.push([s.key, s.name || s.key, s.descr || "", Number(s.price) || 0]);
+      if (s.theme) theme[s.key] = s.theme;
+      if (s.img) imgs[s.key] = s.img; else delete imgs[s.key];
+    });
+  };
+  put(BOARDS, BOARD_THEME, IMG.boards, d.boards);
+  put(BACKS, BACK_THEME, IMG.backs, d.backs);
+}
+
 /* ── ما تحتاجه الصفحة لترسم الثيم المُجهَّز ── */
 function boardCss(key) {
+  if (IMG.boards[key]) return `url("${IMG.boards[key]}") center/cover no-repeat`;
   const t = BOARD_THEME[key] || BOARD_THEME.classic;
   return `radial-gradient(ellipse at 50% 42%, ${t.felt[0]}, ${t.felt[1]} 55%, ${t.felt[2]})`;
 }
 function backCss(key) {
+  if (IMG.backs[key])
+    return { img: true, outer: `url("${IMG.backs[key]}") center/cover no-repeat`,
+             inner: "", ring: "rgba(255,255,255,.55)", glyph: "" };
   const t = BACK_THEME[key] || BACK_THEME.classic;
   return {
+    img: false,
     outer: `linear-gradient(140deg, ${t.bg[0]}, ${t.bg[1]})`,
     inner: `radial-gradient(circle, ${t.pat} 2.6px, transparent 3px) 0 0/17px 17px, ` +
            `linear-gradient(140deg, ${t.bg[1]}, ${t.bg[0]})`,
@@ -98,7 +129,8 @@ function backCss(key) {
   };
 }
 
-if (typeof module !== "undefined" && module.exports)
-  module.exports = { BOARDS, BACKS, BOARD_THEME, BACK_THEME, boardPreview, backPreview, boardCss, backCss };
-if (typeof window !== "undefined")
-  window.BCAT = { BOARDS, BACKS, BOARD_THEME, BACK_THEME, boardPreview, backPreview, boardCss, backCss };
+const API = { BOARDS, BACKS, BOARD_THEME, BACK_THEME, IMG,
+              boardPreview, backPreview, boardCss, backCss, applyOverrides };
+
+if (typeof module !== "undefined" && module.exports) module.exports = API;
+if (typeof window !== "undefined") window.BCAT = API;

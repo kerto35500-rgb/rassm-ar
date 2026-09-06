@@ -60,7 +60,13 @@ function cardBack(small) {
   const el = document.createElement("div");
   el.className = "bc back" + (small ? " sm" : "");
   const t = (window.BCAT && BCAT.backCss) ? BCAT.backCss(BACK_SKIN) : null;
-  if (t) {
+  if (t && t.img) {
+    /* ظهرٌ مصوَّر: الصورةُ تملأ الورقة ولا نرسم فوقها نقشًا ولا رمزًا —
+       من رفع صورةً يريدها كما هي، وإطارٌ رفيعٌ يكفي لتُقرَأ حافّةُ الورقة. */
+    el.style.background = t.outer;
+    el.style.boxShadow = "0 5px 12px rgba(30,50,45,.34), inset 0 0 0 3px " + t.ring;
+    el.innerHTML = "";
+  } else if (t) {
     el.style.background = t.outer;
     el.style.boxShadow = "0 5px 12px rgba(30,50,45,.34), inset 0 0 0 5px " + t.ring +
                          ", inset 0 0 0 7px rgba(0,0,0,.05)";

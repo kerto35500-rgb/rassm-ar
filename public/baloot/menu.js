@@ -347,6 +347,15 @@ function renderProfile() {
   fitFrames($("#prof-body"));
 }
 
+/* المظاهرُ المعدَّلة من اللوحة: أسماءٌ وأسعارٌ وصور. لو تعذّر النداء بقي
+   الكتالوجُ المضمَّن كما هو — فاللعبة لا تنتظر المتجر كي تفتح. */
+async function loadSkins() {
+  try {
+    const j = await (await fetch("/api/baloot/skins", { credentials: "same-origin" })).json();
+    if (j && j.ok && window.BCAT) { BCAT.applyOverrides(j); applyTheme(); }
+  } catch (e) {}
+}
+
 /* ══════════ الإقلاع ══════════ */
 async function boot() {
   document.body.classList.toggle("mobile",
@@ -359,6 +368,7 @@ async function boot() {
     setTimeout(fitStage, 400);
   };
   applyTheme();                       /* الثيمُ المحفوظ قبل أن يردّ الخادم */
+  await loadSkins();                  /* ثمّ ما عدّلته الإدارة من مظاهر */
   await ACC.me();
   await ACC.load();
   renderMain();

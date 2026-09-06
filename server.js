@@ -175,6 +175,8 @@ require("./league").setupLeague(app, {
   get store() { return store; },
   currentUser: accounts.currentUser
 });
+/* مظاهر بالوت: قائمتُها وصورُها. عامّةٌ للقراءة — التعديل في اللوحة وحدها. */
+require("./balootskins").setupBalootSkins(app, { get store() { return store; } });
 /* ═══ صفحات المختبرات ═══
    *-lab.html و_doors_preview.html أدواتُ ضبطٍ داخلية (إحداثيات، فخاخ، أقراص).
    تبقى متاحةً محلّيًّا للتطوير، وتُحجَب في الإنتاج إلا لصاحب جلسة الأدمن. */
@@ -1602,6 +1604,9 @@ createStore()
       /* والبذر أعاد للتوّ أسعار الملفّ، فنُعيد فوقها ما سعّرته اللوحة —
          وإلا ضاع كل تسعيرٍ إداريّ مع كل نشرة. */
       await require("./padmin").applyPriceOverrides(store);
+      /* وكذلك مظاهرُ بالوت: أسماءٌ وصورٌ رفعتها اللوحة، يمحوها البذر ما لم
+         نُعِدْها — والصورُ في المخزن لا في الكود، فتنجو من كلّ نشر. */
+      await require("./balootskins").applySkins(store);
       require("./padmin").setupPanel(app, {
         store, currentUser: accounts.currentUser,
         /* قارئان كسولان: اللوحةُ تُركَّب قبل أن تُنشأ مساحاتُ الألعاب */
