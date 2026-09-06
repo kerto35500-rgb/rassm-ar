@@ -241,20 +241,32 @@ async function flyPlay(pi, card) {
   if (pi === 0) G.hand = G.hand.filter(c => c !== card);
   else G.players[pi].n = Math.max(0, G.players[pi].n - 1);
   renderTrick(); renderSeat(pi); if (pi === 0) renderHand();
-  handoff(f, slot.firstChild);
+  handoff(f);
 }
 
 /* ── تسليمُ الورقة من الطائرة إلى المستقرّة ──
-   ذوبانٌ في تسعين جزءًا من الثانية: أقصرُ من أن يُقرأ ذوبانًا، وأطولُ من أن
-   تُرى قفزة. ولو لم تدعم النافذةُ `animate` رجعنا إلى الحذف المباشر. */
+ *
+ * الطائرةُ وحدَها تذوب؛ المستقرّةُ تبقى ظاهرةً تمامًا من اللحظة الأولى.
+ *
+ * والمحاولةُ الأولى أذابت الاثنتين معًا — واحدةً تظهر وأُخرى تختفي — فوَلَدت
+ * وميضًا. والسببُ حسابيٌّ لا أكثر: شفّافان فوق بعضهما لا يجمعان واحدًا.
+ * عند منتصف الذوبان كلٌّ منهما بنصف عتمة، والمرئيُّ ‎1-(0.5×0.5)=0.75‎ لا ‎1‎.
+ * فالورقة تخفت الربعَ في منتصف الطريق ثمّ تعود — ومع ورقةٍ بيضاءَ على أزرقَ
+ * يُرى ذلك وميضًا لا انسيابًا.
+ *
+ * أمّا الآن فالمستقرّةُ عاتمةٌ دائمًا، والطائرةُ فوقها تخفت حتى تزول: المجموع
+ * لا ينزل عن الواحد لحظةً واحدة.
+ */
 const HANDOFF_MS = 90;
-function handoff(fly, laid) {
+function handoff(fly) {
   if (!fly) return;
-  if (!laid || !fly.animate) { fly.remove(); return; }
+  if (!fly.animate) { fly.remove(); return; }
   try {
-    laid.animate([{ opacity: 0 }, { opacity: 1 }], { duration: HANDOFF_MS });
-    fly.animate([{ opacity: 1 }, { opacity: 0 }], { duration: HANDOFF_MS });
-    setTimeout(() => fly.remove(), HANDOFF_MS + 20);
+    const a = fly.animate([{ opacity: 1 }, { opacity: 0 }],
+                          { duration: HANDOFF_MS, fill: "forwards" });
+    a.onfinish = () => fly.remove();
+    /* صمّامٌ: لو جُمّد الإطار (تبديل لسان) لا تبقى ورقةٌ معلّقةٌ للأبد */
+    setTimeout(() => fly.remove(), HANDOFF_MS + 200);
   } catch (e) { fly.remove(); }
 }
 
