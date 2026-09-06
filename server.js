@@ -1291,6 +1291,13 @@ io.on("connection", (socket) => {
   socket.on("chooseWord", (word) => { if (room) chooseWord(room, socket.id, word); });
 
   /* ── وضع «الكلّ يرسم» ── */
+  /* بنكُ الكلمات يُرسَل مرّةً حين تبدأ الحالة. ومن حدّث صفحتَه أو دخل متأخّرًا
+     يفقد تلك الرسالة، فيبقى قائدًا مطالَبًا باختيارٍ بلا قائمةٍ يختار منها.
+     فليطلبها متى شاء ما دامت الحالةُ قائمة. */
+  socket.on("wantVoteWords", () => {
+    if (!room || socket.id !== room.ownerId || room.state !== "votePick") return;
+    socket.emit("votePickWord", { words: wordPool(room).slice(0, 400), time: room.timeLeft });
+  });
   socket.on("chooseVoteWord", (word) => {
     if (!room || socket.id !== room.ownerId || room.state !== "votePick") return;
     const w = String(word || "").trim().slice(0, 40);

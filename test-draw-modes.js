@@ -330,6 +330,39 @@ async function until(fn, ms = 4000, step = 40) {
     await sleep(200);
   }
 
+  /* ── الطبقات: كلُّ ما يُعرَض يجب أن يكون مسجَّلًا ──
+     `showOverlay` تُخفي كلَّ ما في قائمة `overlays` ثمّ تُظهر واحدةً منها.
+     فالطبقةُ الغائبةُ عن القائمة **لا تظهر أبدًا** ولا يشتكي أحد: النداء
+     ينجح صامتًا. وهذا ما أصاب لوحَ اختيار كلمة «الكلّ يرسم» — القائدُ يُبلَّغ
+     أنّ عليه أن يختار ولا يُعطى ما يختار به. نفحص الصلةَ كلَّها لا تلك
+     الطبقةَ وحدها، فأيُّ طبقةٍ جديدةٍ تُنسى غدًا يصرخ هذا الاختبار. */
+  console.log("④ طبقاتُ الواجهة مسجَّلةٌ كلُّها");
+  {
+    const fs = require("fs"), path = require("path");
+    const html = fs.readFileSync(path.join(__dirname, "public", "index.html"), "utf8");
+
+    const listed = new Set(
+      ((html.match(/const overlays\s*=\s*\[([\s\S]*?)\]/) || [])[1] || "")
+        .match(/"([^"]+)"/g)?.map(s => s.slice(1, -1)) || []);
+    ok(listed.size >= 7, `القائمةُ فيها ${listed.size} طبقة`, [...listed]);
+
+    /* ① كلُّ ما يُنادى به موجودٌ في القائمة */
+    const used = new Set([...html.matchAll(/showOverlay\("([^"]+)"\)/g)].map(m => m[1]));
+    const missing = [...used].filter(id => !listed.has(id));
+    ok(missing.length === 0, "كلُّ طبقةٍ تُعرَض مسجَّلةٌ في القائمة", missing);
+
+    /* ② وكلُّ ما في القائمة موجودٌ في الصفحة فعلًا */
+    const absent = [...listed].filter(id => !html.includes(`id="${id}"`));
+    ok(absent.length === 0, "وكلُّ ما في القائمة له عنصرٌ في الصفحة", absent);
+
+    ok(listed.has("votePickOverlay"), "ولوحُ اختيار كلمة «الكلّ يرسم» منها");
+    ok(/socket\.emit\("wantVoteWords"\)/.test(html), "والقائدُ يطلب البنكَ إن فاتته الرسالة");
+    const srv = fs.readFileSync(path.join(__dirname, "server.js"), "utf8");
+    ok(/socket\.on\("wantVoteWords"/.test(srv), "والخادمُ يُجيب الطلب");
+    ok(/room\.state !== "votePick"\) return;[\s\S]{0,120}votePickWord/.test(srv),
+       "ولا يُجيبه إلا في حالته وللقائد وحده");
+  }
+
   console.log(`\n═══ ${P} نجحت · ${F} فشلت ═══\n`);
   process.exit(F ? 1 : 0);
 })().catch(e => { console.error("💥", e); process.exit(1); });

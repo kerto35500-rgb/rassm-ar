@@ -1241,8 +1241,16 @@ $("catAddBtn").onclick = addNewCat;
 $("catAddInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addNewCat(); } });
 
 // ===== حالة الغرفة =====
-const overlays = ["pickOverlay","waitOverlay","turnEndOverlay","gameEndOverlay","lobbyOverlay","galleryOverlay","roundGalleryOverlay"];
-function showOverlay(id) { overlays.forEach(o => $(o).style.display = (o === id ? "flex" : "none")); }
+/* كلُّ طبقةٍ تُعرَض بـ`showOverlay` يجب أن تكون هنا. الغائبةُ عن القائمة لا
+   تظهر أبدًا: النداءُ يُخفي البقيّة ثمّ لا يجد ما يُظهره. (وهذا ما حدث مع
+   طبقة اختيار كلمة «الكلّ يرسم»: القائدُ يُبلَّغ أنّ عليه أن يختار ولا يُعطى
+   ما يختار به.) */
+const overlays = ["pickOverlay","waitOverlay","turnEndOverlay","gameEndOverlay","lobbyOverlay",
+                  "galleryOverlay","roundGalleryOverlay","votePickOverlay"];
+function showOverlay(id) {
+  if (id && !overlays.includes(id)) console.warn("طبقةٌ خارج القائمة:", id);
+  overlays.forEach(o => $(o).style.display = (o === id ? "flex" : "none"));
+}
 
 /* ===== قائمة اللاعبين =====
    في وضع الفرق تُقسَم القائمة قسمين تحت لافتتين ملوّنتين، فيرى اللاعب من
@@ -1419,6 +1427,13 @@ socket.on("roomState", s => {
   } else if (s.state === "votePick") {
     setRound("القائد يختار الكلمة… ✍️", "✍️");
     if (!me?.isOwner) { $("waitText").textContent = "القائد يختار الكلمة… ✍️"; showOverlay("waitOverlay"); }
+    /* والقائدُ يرى لوحَ الاختيار دائمًا ما دامت الحالةُ قائمة — لا مرّةً
+       واحدةً عند وصول الحدث. فلو حدّث الصفحةَ أو تأخّر الحدثُ عن الحالة
+       بقي أمام شاشةٍ تقول له «اختر» بلا ما يختار به. */
+    else if ($("votePickOverlay").style.display !== "flex") {
+      if (vpWords.length) { renderVpList($("vpSearch").value || ""); showOverlay("votePickOverlay"); }
+      else socket.emit("wantVoteWords");
+    }
   } else if (s.state === "drawAll") {
     const humans = s.players.filter(p => p.connected && !p.isBot).length;
     setRound(`الكلمة ${s.round + 1} من ${s.totalRounds} — الجميع يرسم! (${s.doneCount}/${humans} انتهوا)`,
