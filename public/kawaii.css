@@ -108,7 +108,7 @@ body.theme-kawaii .live { background:#fff; border:2.5px solid var(--kw-line); co
 body.theme-kawaii #accBtn {
   background:#fff; border:2.5px solid var(--kw-line); color:var(--kw-ink);
   box-shadow:var(--kw-3d); backdrop-filter:none; -webkit-backdrop-filter:none;
-  transition:all .2s var(--kw-spring);
+  transition:transform .2s var(--kw-spring), background-color .2s var(--kw-spring);
 }
 body.theme-kawaii #accBtn:hover { transform:scale(1.06) translateY(-2px); background:var(--kw-players); border-color:var(--kw-line); }
 body.theme-kawaii #accBtn:active { transform:scale(.94) translateY(2px); box-shadow:0 1px 0 var(--kw-line); }
@@ -127,7 +127,10 @@ body.theme-kawaii #accStats b { color:#8D4B42; }
 body.theme-kawaii:not(.kw-quiz) .g {
   background:var(--kw-g-white); border:2.5px solid var(--kw-line) !important; border-radius:24px;
   box-shadow:var(--kw-puff), 0 5px 0 var(--kw-line);
-  transition:all .2s var(--kw-spring);
+  /* لا `transition:all`. كانت تُحرّك **كلَّ** خاصّيّة: تدرّجَ الخلفيّة،
+     واللون، والحدّ، وقائمةَ الظلال. وتدرّجُ الخلفيّة يُعاد توليدُه في كلّ
+     إطار، فتُعاد رسمُ البطاقة كاملةً — ومن هنا الوميض. نُسمّي ما يتحرّك. */
+  transition:transform .2s var(--kw-spring), box-shadow .2s var(--kw-spring);
 }
 body.theme-kawaii:not(.kw-quiz) .g:hover { transform:scale(1.03) translateY(-4px); box-shadow:0 8px 0 var(--kw-line); }
 body.theme-kawaii:not(.kw-quiz) .g:active { transform:scale(.97) translateY(2px); box-shadow:0 2px 0 var(--kw-line); }
@@ -621,6 +624,28 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    { background:linear
 /* بالوت: نيليٌّ ملكيّ. كانت البطاقة تخرج بيضاء لأنّ سمة المارشميلو لم تكن
    تعرف الصنف، فتسقط على خلفيّة البطاقة الافتراضيّة ويختفي نصُّها الأبيض. */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo { background:linear-gradient(180deg,#7C9BF0 0%,#4A63C8 100%); }
+
+/* ── ومضةُ البطاقة عند مرور المؤشّر ──
+ *
+ * كانت البطاقة تومض جزءًا من الثانية فتُرى مستطيلًا مصمتًا بلا نصٍّ ولا
+ * أيقونة. والسبب أنّ المتصفّح ينشئ للبطاقة **طبقةً جديدة** لحظةَ الوقوف
+ * عليها (لأنّها تتحرّك بـ`transform`) ويُلغيها عند المغادرة؛ وبين الإنشاء
+ * وأوّل رسمٍ إطارٌ أو إطاران تُعرَض فيهما خلفيّةُ الطبقة وحدها.
+ *
+ * فنُهيّئ الطبقةَ مُقدَّمًا بـ`will-change`. وستُّ بطاقاتٍ ثابتةٌ عددُها لا
+ * تُثقل شيئًا — والقاعدةُ العامّة «لا تُسرف في will-change» تخصّ الصفحات
+ * التي تُنشئ عناصرَ بلا حدّ.
+ *
+ * ونمنعُ التقريبَ الكسريّ للطبقة بـ`translateZ(0)` في السكون، فتبقى
+ * الخطوطُ والأيقونات محسوبةً على الشبكة نفسها قبل التكبير وبعده.
+ */
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g {
+  will-change:transform;
+  backface-visibility:hidden;
+  transform:translateZ(0);
+}
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g:hover  { transform:scale(1.03) translateY(-4px) translateZ(0); }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g:active { transform:scale(.97) translateY(2px) translateZ(0); }
 /* الأيقونة: كبيرة حرة على البطاقة */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g .ic {
   background:transparent !important; border:none !important;

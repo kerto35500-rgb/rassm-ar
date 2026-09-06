@@ -125,5 +125,36 @@ console.log("\n── قوائمُ بالوت تتناسق مع بطاقتها �
   ok(near, "واللونان من عائلةٍ واحدة — لا قفزةَ بين الصفحتين", { menu2, cardBlue });
 }
 
+console.log("\n── بطاقات الرئيسيّة لا تومض عند المرور ──");
+{
+  /* العطب: تومض البطاقةُ جزءًا من الثانية فتُرى مستطيلًا مصمتًا بلا نصٍّ ولا
+     أيقونة. سببان: `transition:all` تُحرّك كلَّ خاصّيّة ومنها تدرّجُ الخلفيّة
+     فيُعاد توليدُه كلَّ إطار؛ وطبقةُ العرض تُنشَأ لحظةَ المرور وتُلغى بعده،
+     وبين الإنشاء وأوّل رسمٍ إطارٌ فارغ. */
+  /* نفحص الكودَ لا التعليقات: شرحُ العطب داخل القاعدة يذكر `transition:all`
+     بنصّه، فلو فحصنا الخام لظنّ الاختبارُ أنّ العطب قائم. */
+  const bare = css => css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const gRule = bare((KW.match(/body\.theme-kawaii:not\(\.kw-quiz\) \.g \{[^}]*\}/) || [""])[0]);
+  ok(gRule, "ثمّة قاعدةٌ لبطاقات الألعاب", gRule.slice(0, 50));
+  ok(!/transition:\s*all/.test(gRule), "لا تُحرَّك كلُّ خاصّيّة", gRule);
+  ok(/transition:transform[^;]*box-shadow/.test(gRule), "بل ما يتحرّك مُسمًّى", gRule);
+  ok(!/transition:\s*all\s+[\d.]+s/.test(bare(KW.match(/#accBtn \{[^}]*\}/)?.[0] || "")),
+     "وكذلك زرُّ الحساب");
+
+  /* الطبقةُ مُهيَّأةٌ مُقدَّمًا — وفي نطاق الرئيسيّة وحدها */
+  const hub = bare((KW.match(/body\.theme-kawaii:has\(#grid\):not\(:has\(#pyScene\)\) \.g \{[^}]*will-change[^}]*\}/) || [""])[0]);
+  ok(hub, "وللبطاقة في الرئيسيّة قاعدةُ تهيئة", hub);
+  ok(/will-change:transform/.test(hub), "تُهيّئ الطبقة قبل المرور");
+  ok(/backface-visibility:hidden/.test(hub), "وتُثبّتها");
+  ok(/transform:translateZ\(0\)/.test(hub), "وتضعها على الشبكة نفسها في السكون");
+  ok(/\.g:hover  \{ transform:scale\(1\.03\) translateY\(-4px\) translateZ\(0\)/.test(KW),
+     "والمرورُ يبقى على الطبقة ذاتها");
+
+  /* ولا نُغيّر الشكل: ظلال الرئيسيّة الثلاثُ باقيةٌ كما هي */
+  ok(/\.g:hover \{ box-shadow: 0 16px 0 #E9DFD2/.test(KW) ||
+     /0px 16px 0px/.test(KW) || /0 16px 0 /.test(KW),
+     "وظلُّ المرور لم يُمَسّ");
+}
+
 console.log(`\n═══ ${P} نجحت · ${F} فشلت ═══\n`);
 process.exit(F ? 1 : 0);
