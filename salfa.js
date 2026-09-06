@@ -156,7 +156,12 @@ function setupSalfa(io, deps) {
       id: p.id, name: p.name, avatar: p.avatar, score: p.score,
       connected: p.connected, spectator: p.spectator,
       ready: !!p.ready, asked: !!p.asked, answered: !!p.answered,
-      voted: room.state === "voting" ? ((room.votes[p.id] || []).length > 0) : false,
+      /* «صوّت» تعني: أكمل أصواته كلَّها. حين يكون الجواسيس اثنين فمن اختار
+         واحدًا لم ينتهِ بعد — وكانت الواجهة تعدّه منتهيًا فيظنّ أنه فرغ
+         وينتظر الجميعُ من لم يبدأ. */
+      voted: room.state === "voting"
+        ? ((room.votes[p.id] || []).length >= (room.voteMax || 1)) : false,
+      votesCast: room.state === "voting" ? (room.votes[p.id] || []).length : 0,
       registered: !!p.userName
     };
   }
@@ -165,7 +170,8 @@ function setupSalfa(io, deps) {
   function state(room) {
     const cur = room.players.find(p => p.id === room.turnId);
     const tgt = room.players.find(p => p.id === room.targetId);
-    const votesDone = Object.values(room.votes || {}).filter(v => v && v.length).length;
+    const need = room.voteMax || 1;
+    const votesDone = Object.values(room.votes || {}).filter(v => v && v.length >= need).length;
     return {
       id: room.id,
       state: room.state,
@@ -185,7 +191,8 @@ function setupSalfa(io, deps) {
       voteMax: room.state === "voting" ? (room.voteMax || 1) : 0,
       emergency: room.emergency && {
         byId: room.emergency.byId, byName: room.emergency.byName,
-        yes: room.emergency.yes.length, need: room.emergency.need,
+        yes: room.emergency.yes.length, no: (room.emergency.no || []).length,
+        need: room.emergency.need, total: room.emergency.total || 0,
         endsAt: room.emergency.endsAt
       },
       votesCount: votesDone,
@@ -216,6 +223,10 @@ function setupSalfa(io, deps) {
     clearTimeout(room.phaseTimer); room.phaseTimer = null;
     clearInterval(room.tickTimer); room.tickTimer = null;
     clearTimeout(room.emgTimer); room.emgTimer = null;
+    /* الكشفُ مؤقّتٌ لكلّ جاسوسٍ على حدة — فمع جاسوسَين لا يُلغي ثانيهما
+       كشفَ أوّلهما. لذلك مصفوفةٌ لا متغيّرٌ واحد. */
+    (room.revealTimers || []).forEach(t => clearTimeout(t));
+    room.revealTimers = [];
   }
 
   function setPhase(room, phase, seconds, done) {
@@ -387,23 +398,26 @@ function setupSalfa(io, deps) {
       gains, picks: {}, phase: "votes"
     };
 
-    // 😈 بعد كل تصويت: كل برّا السالفة (مكشوفاً كان أو ناجياً) يحاول اكتشاف
-    // السالفة من قائمة كلمات — الاختيار الصحيح = نقطتان، الخطأ = لا شيء
+    /* 😈 بعد التصويت: برّا السالفة يحاول اكتشاف السالفة — والجميع يشاهدون.
+       الخيارات تُبَثّ للغرفة كلّها لا للجاسوس وحده: الترقّبُ نصفُ المتعة،
+       والعارفون يعرفون الكلمة أصلًا فلا شيء يُكشَف لهم. */
     const guessers = room.spyIds.filter(id => {
       const p = room.players.find(x => x.id === id);
       return p && p.connected && !p.spectator;
     });
     if (guessers.length) {
-      room.guessRound = { ids: [...guessers], answered: {} };
+      const choices = guessChoices(room);
+      room.guessRound = { ids: [...guessers], answered: {}, choices };
       room.result.phase = "spyGuess";
+      room.result.choices = choices;
       broadcast(room);
       setPhase(room, "spyGuess", Math.round(GUESS_MS / 1000), () => finishRound(room));
-      guessers.forEach(id => {
-        nsp.to(id).emit("yourGuess", {
-          category: room.category,
-          choices: guessChoices(room),
-          seconds: Math.round(GUESS_MS / 1000)
-        });
+      nsp.to(room.id).emit("guessBoard", {
+        category: room.category,
+        choices,
+        spies: guessers.map(id => ({ id, name: room.players.find(p => p.id === id)?.name || "—" })),
+        seconds: Math.round(GUESS_MS / 1000),
+        caught: room.result.caught
       });
       sys(room, room.result.caught
         ? "تم كشف برّا السالفة! أمامه فرصة أخيرة يختار فيها السالفة 😈"
@@ -449,7 +463,11 @@ function setupSalfa(io, deps) {
         if (pick && normalize(pick) === normalize(room.word)) { add(id, 1); stolen = true; }
       });
     }
-    if (room.emergencyStarterId && r.caught) add(room.emergencyStarterId, 1);
+    /* لا مكافأة لفتح البلاغ الطارئ.
+       كانت تُضاف نقطةٌ لمن ضغط الجرس إن انكشف الجاسوس، فيخرج العارفُ
+       الذي صوّت صحيحًا **وفتح البلاغ** بنقطتين — وهو ما لا تُجيزه قاعدةُ
+       اللعبة: النقطتان لبرّا السالفة وحده (نجا + خمّن صحيحًا). والجرسُ
+       خدمةٌ للجماعة لا مزادٌ على النقاط. */
 
     r.stolen = stolen;
     r.outcome = r.escapedIds.length ? "spyEscaped" : (stolen ? "spyStole" : "insidersWin");
@@ -640,8 +658,17 @@ function setupSalfa(io, deps) {
       if (["reveal", "talking", "voting", "spyGuess"].includes(r.state) && !p.spectator) {
         const spy = r.spyIds.includes(p.id);
         nsp.to(p.id).emit("role", { spy, category: r.category, word: spy ? null : r.word, spies: r.spyIds.length, roundNo: r.roundNo });
-        if (r.state === "spyGuess" && r.guessRound && r.guessRound.ids.includes(p.id) && !r.guessRound.answered[p.id]) {
-          nsp.to(p.id).emit("yourGuess", { category: r.category, choices: guessChoices(r), seconds: Math.max(3, Math.round((r.endsAt - Date.now()) / 1000)) });
+        /* من عاد أثناء التخمين يرى اللوحة نفسها — بخياراتها التي وُلّدت
+           مرّةً واحدة. كانت تُولَّد له من جديد، فيرى الجاسوسُ العائد شبكةً
+           مختلفة عن شبكة الغرفة. */
+        if (r.state === "spyGuess" && r.guessRound) {
+          nsp.to(p.id).emit("guessBoard", {
+            category: r.category, choices: r.guessRound.choices || [],
+            spies: r.guessRound.ids.map(id => ({ id, name: r.players.find(x => x.id === id)?.name || "—" })),
+            seconds: Math.max(3, Math.round((r.endsAt - Date.now()) / 1000)),
+            caught: !!(r.result && r.result.caught),
+            picked: { ...r.guessRound.answered }
+          });
         }
       }
       broadcast(r);
@@ -682,12 +709,25 @@ function setupSalfa(io, deps) {
       startRound(room);
     });
 
-    socket.on("backToLobby", () => {
+    /* الرجوع للوبي لم يعد يمحو النقاط من تلقائه.
+       كان يصفّرها دائمًا، فمن رجع ليغيّر إعدادًا خسر تعبَ جولاتٍ كاملة.
+       الآن التصفير قرارٌ صريح: `reset:true` من المضيف بعد أن يُسأل. */
+    socket.on("backToLobby", (opts) => {
       if (!room || !player || room.ownerId !== player.id) return;
       clearTimers(room);
       room.state = "lobby"; room.winner = null; room.result = null;
       room.category = null; room.word = null; room.spyIds = []; room.endsAt = 0;
-      room.players.forEach(p => { p.spectator = false; p.score = 0; });
+      const reset = !!(opts && opts.reset);
+      room.players.forEach(p => { p.spectator = false; if (reset) p.score = 0; });
+      if (reset) sys(room, "🔄 لعبة جديدة — صُفِّرت النقاط", "system");
+      broadcast(room);
+    });
+
+    socket.on("resetScores", () => {
+      if (!room || !player || room.ownerId !== player.id) return;
+      if (!["lobby", "result", "gameEnd"].includes(room.state)) return;
+      room.players.forEach(p => { p.score = 0; });
+      sys(room, "🔄 صُفِّرت النقاط", "system");
       broadcast(room);
     });
 
@@ -729,7 +769,8 @@ function setupSalfa(io, deps) {
       if (list.length < 3) return;
       room.emergency = {
         byId: player.id, byName: player.name,
-        yes: [player.id], need: Math.floor(list.length / 2) + 1,
+        yes: [player.id], no: [], total: list.length,
+        need: Math.floor(list.length / 2) + 1,
         endsAt: Date.now() + 20000
       };
       sys(room, `🚨 ${player.name} طلب اتهاماً طارئاً — هل توافقون على التصويت الآن؟`, "warn");
@@ -743,14 +784,31 @@ function setupSalfa(io, deps) {
     socket.on("emergencyVote", (agree) => {
       if (!room || !player || !room.emergency || room.state !== "talking") return;
       const e = room.emergency;
-      if (agree) { if (!e.yes.includes(player.id)) e.yes.push(player.id); }
-      else e.yes = e.yes.filter(id => id !== player.id);
+      e.no = e.no || [];
+      if (agree) {
+        e.no = e.no.filter(id => id !== player.id);
+        if (!e.yes.includes(player.id)) e.yes.push(player.id);
+      } else {
+        e.yes = e.yes.filter(id => id !== player.id);
+        if (!e.no.includes(player.id)) e.no.push(player.id);
+      }
       if (e.yes.length >= e.need) {
         room.emergencyStarterId = e.byId;
         clearTimeout(room.emgTimer);
         room.emergency = null;
         sys(room, "وافقت الأغلبية — التصويت الآن! 🗳️", "good");
         return beginVoting(room);
+      }
+      /* ── الرفض يُسقط البلاغ ──
+         كان الرفضُ مجرّدَ سحبِ موافقة، فلا شيء يُنهي البلاغ إلا انقضاء
+         عشرين ثانية — يجلس ستّةٌ ثلاثتُهم رافضون ينتظرون مؤقّتًا لا معنى
+         له. الآن: متى صار بلوغُ النصاب مستحيلًا رياضيًّا سقط فورًا. */
+      const left = Math.max(0, (e.total || playing(room).length) - e.yes.length - e.no.length);
+      if (e.yes.length + left < e.need) {
+        clearTimeout(room.emgTimer);
+        room.emergency = null;
+        sys(room, `رفضت الأغلبية (${e.no.length} رفضًا) — نكمل النقاش`, "system");
+        return broadcast(room);
       }
       broadcast(room);
     });
@@ -778,11 +836,27 @@ function setupSalfa(io, deps) {
       const gr = room.guessRound;
       if (!gr || !gr.ids.includes(player.id) || gr.answered[player.id]) return;
       const w = String(word || "").trim().slice(0, 40);
+      if (gr.choices && !gr.choices.includes(w)) return;   /* لا يُقبَل إلا من الشبكة */
       gr.answered[player.id] = w;
       const hit = normalize(w) === normalize(room.word);
-      sys(room, hit ? `😈 ${player.name} اختار «${room.word}» — سرق الفوز!` : `${player.name} اختار «${w}» — غلط`, hit ? "warn" : "good");
-      if (gr.ids.every(id => gr.answered[id])) finishRound(room);
-      else broadcast(room);
+
+      /* ثلاث مراحل يراها الجميع: اختار → (ثانية ترقّب) → كُشف صوابُه.
+         الإعلان النصّيّ يتأخّر معها كي لا يسبق الكشفُ الترقّبَ. */
+      nsp.to(room.id).emit("spyPicked", { id: player.id, name: player.name, word: w });
+      const done = gr.ids.every(id => gr.answered[id]);
+      room.revealTimers = room.revealTimers || [];
+      room.revealTimers.push(setTimeout(() => {
+        if (!rooms.has(room.id) || room.state !== "spyGuess") return;
+        nsp.to(room.id).emit("spyReveal", { id: player.id, word: w, hit, answer: room.word });
+        sys(room, hit ? `😈 ${player.name} اختار «${room.word}» — سرق الفوز!`
+                      : `${player.name} اختار «${w}» — غلط`, hit ? "warn" : "good");
+        /* مهلةٌ بعد الكشف كي تُقرأ النتيجة قبل أن تقفز شاشةُ النقاط */
+        if (done) room.revealTimers.push(setTimeout(() => {
+          if (rooms.has(room.id) && room.state === "spyGuess") finishRound(room);
+        }, 2200));
+        else broadcast(room);
+      }, 1100));
+      if (!done) broadcast(room);
     });
 
     socket.on("forceVote", () => {

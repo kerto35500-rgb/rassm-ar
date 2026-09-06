@@ -16,10 +16,19 @@
   body{
     font-family:"Segoe UI",Tahoma,system-ui,sans-serif; color:var(--ink);
     background:radial-gradient(1200px 700px at 50% -10%,#1d3a5c,var(--bg1));
-    min-height:100vh; display:flex; flex-direction:column; align-items:center;
-    padding:10px; gap:10px;
+    /* ارتفاعٌ **محدَّد** لا أدنى فقط.
+       كان `min-height:100vh` وحده، فسلسلةُ الـflex كلُّها (wrap ← play ←
+       side ← chatCard ← msgs) تُحلّ إلى ارتفاع المحتوى لا إلى ارتفاع
+       الشاشة — فلا يعمل `overflow:auto` في الشات، بل يتمدّد الشاتُ فيطول
+       الصفحةَ كلَّها ويهبط مربّعُ الكتابة تحت الطيّة. مع ارتفاعٍ محدَّدٍ
+       يصير التمرير داخل الشات كما ينبغي. و`dvh` من أجل شريط متصفّح
+       الجوّال الذي يظهر ويختفي. */
+    height:100vh; height:100dvh; max-height:100dvh;
+    display:flex; flex-direction:column; align-items:center;
+    padding:10px; gap:10px; overflow:hidden;
   }
-  .wrap{width:100%; max-width:1180px; display:flex; flex-direction:column; gap:10px; flex:1; min-height:0;}
+  .wrap{width:100%; max-width:1180px; display:flex; flex-direction:column; gap:10px;
+        flex:1; min-height:0; overflow:hidden;}
   .card{background:var(--panel); border-radius:16px; box-shadow:0 10px 30px rgba(6,14,26,.28);}
 
   /* ===== الشريط العلوي ===== */
@@ -126,7 +135,8 @@
   .seg button.on{background:var(--green); color:#fff;}
 
   /* ===== كشف الدور: ضغط مطوّل ===== */
-  #reveal{display:none; flex-direction:column; gap:12px; align-items:center; padding:18px 14px; flex:1;}
+  #reveal{display:none; flex-direction:column; gap:12px; align-items:center; padding:18px 14px;
+          flex:1; min-height:0; overflow:auto;}
   .catPill{background:#eef4fb; border:2px solid #cfe0f2; color:#1668c7; border-radius:999px;
            padding:7px 16px; font-weight:900; font-size:15px;}
   #holdBtn{width:min(100%,420px); aspect-ratio:1/.72; border-radius:22px; border:3px dashed #cbd6e2;
@@ -149,7 +159,8 @@
 
   /* ===== النقاش ===== */
   #play{display:none; gap:10px; flex:1; min-height:0;}
-  #playMain{flex:1; min-width:0; display:flex; flex-direction:column; gap:10px;}
+  #playMain{flex:1; min-width:0; display:flex; flex-direction:column; gap:10px;
+            min-height:0; overflow:auto;}
   #ringWrap{display:flex; flex-direction:column; align-items:center; gap:8px; padding:12px;}
   .ring{position:relative; width:min(58vw,230px); aspect-ratio:1;}
   .ring svg{width:100%; height:100%; transform:rotate(-90deg);}
@@ -206,6 +217,7 @@
   .vcard.spyTarget{border-color:var(--red); background:#fff3f3;}
   .scoreRow{display:flex; align-items:center; gap:8px; background:var(--soft); border-radius:10px; padding:8px 10px; flex-wrap:wrap;}
   .scoreRow .g{margin-inline-start:auto; font-weight:900; color:var(--green);}
+  .scoreRow.wasSpy{background:#ffeceb; box-shadow:inset 4px 0 0 var(--red);}
   .scoreRow .voters{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700;
                     color:#6b7b8f; background:#fff; border:1.5px solid var(--line); border-radius:999px; padding:3px 10px;}
   .scoreRow .voters.none{opacity:.6; font-weight:600;}
@@ -266,6 +278,23 @@
   .gch:hover{border-color:var(--amber); background:#fff8e8;}
   .gch.chosen{border-color:var(--red); background:#fff0f0;}
   .gch:disabled{opacity:.45; cursor:default;}
+  /* ===== شاشة التخمين المشتركة ===== */
+  #guessScreen{position:fixed; inset:0; z-index:70; display:none; align-items:center;
+    justify-content:center; padding:16px; background:rgba(10,20,34,.86); backdrop-filter:blur(4px);}
+  #guessScreen.on{display:flex;}
+  #gsBox{background:var(--card,#fff); border:3px solid var(--line); border-radius:22px;
+    padding:20px 22px; max-width:640px; width:100%; text-align:center;
+    box-shadow:0 26px 60px rgba(0,0,0,.4); animation:gsIn .3s cubic-bezier(.3,1.4,.5,1);}
+  @keyframes gsIn{from{transform:scale(.85); opacity:0}}
+  #gsBox h2{font-size:24px; font-weight:900; margin-bottom:4px;}
+  #gsBox .guessGrid{margin:14px 0;}
+  /* الاختيار: يومض أوّلًا (ترقّب) ثمّ يُكشف أخضر أو أحمر */
+  .gch.picked{border-color:var(--amber); background:#fff6df; animation:gsPulse .55s infinite alternate;}
+  @keyframes gsPulse{to{transform:scale(1.05)}}
+  .gch.right{border-color:#2e9e5b; background:#e7f8ee; color:#17663c; animation:none;}
+  .gch.wrong{border-color:#d9484a; background:#fdeaea; color:#a02427; animation:none;}
+  .gch .who{display:block; font-size:11px; font-weight:800; color:var(--muted); margin-top:4px;}
+  #gsWho b{color:var(--red);}
   .modeBox{display:flex; flex-direction:column; gap:8px; border:2px dashed var(--line);
            border-radius:12px; padding:9px; background:#fbfdff;}
   .modeTag{font-size:12px; font-weight:900; color:var(--muted);}
@@ -366,6 +395,7 @@
         <button class="btn btn-ghost" id="setOpen" style="width:auto;">⚙️ إعدادات اللعبة</button>
         <div id="setBox"></div>
         <button class="btn btn-green" id="startBtn">▶️ ابدأ اللعبة</button>
+        <button class="btn btn-ghost" id="resetScoresBtn" style="width:auto;" hidden>🔄 صفّر النقاط</button>
       </div>
       <div id="waitHost" class="sub">بانتظار مدير الغرفة يبدأ اللعبة…</div>
       <div id="lobbySummary" class="sub"></div>
@@ -462,13 +492,29 @@
   </div><!-- /game -->
 </div><!-- /wrap -->
 
-<!-- نافذة تخمين برّا السالفة -->
-<div class="modal" id="guessModal">
-  <div class="sheet">
-    <h3>😈 فرصتك الأخيرة!</h3>
-    <div class="sub" style="max-width:none;">كُشفت! أيّ واحدة كانت السالفة؟ التصنيف: <b id="guessCat">—</b></div>
+<!-- ══ شاشة التخمين: صفحةٌ يراها الجميع، لا نافذةٌ للجاسوس وحده ══
+     الترقّبُ نصفُ المتعة: الكلُّ ينظر إلى الشبكة نفسها، وحين يختار برّا
+     السالفة يضيء اختيارُه للجميع، ثمّ يُكشَف صوابُه بعد لحظة. -->
+<div id="guessScreen">
+  <div id="gsBox">
+    <h2 id="gsTitle">😈 برّا السالفة يخمّن…</h2>
+    <div class="sub" id="gsWho">—</div>
+    <div class="sub">التصنيف: <b id="guessCat">—</b></div>
     <div class="guessGrid" id="guessGrid"></div>
-    <div class="sub" id="guessTimer">اختر كلمة واحدة — الصحيحة تسرق الفوز بنقطتين</div>
+    <div class="sub" id="guessTimer"></div>
+  </div>
+</div>
+
+<!-- الرجوع للوبي: نسأل قبل أن نمحو تعب جولات -->
+<div class="modal" id="lobbyAskModal">
+  <div class="sheet">
+    <h3>🏁 الرجوع للوبي</h3>
+    <div class="sub" style="max-width:none;">تبي تبدأ لعبةً جديدة بنقاطٍ صفر، أو ترجع للإعدادات وتُكمل بالنقاط الحالية؟</div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn btn-green" id="lobbyKeep">↩️ أكمل بالنقاط</button>
+      <button class="btn btn-red" id="lobbyReset">🔄 لعبة جديدة (تصفير)</button>
+    </div>
+    <button class="btn btn-ghost" id="lobbyCancel">إلغاء</button>
   </div>
 </div>
 
@@ -727,7 +773,15 @@ $("setOpen").onclick = () => $("setBox").classList.toggle("open");
 $("setBtn").onclick = () => { $("setBox").classList.toggle("open"); $("setBox").scrollIntoView({behavior:"smooth"}); };
 $("startBtn").onclick = () => socket.emit("startGame");
 $("nextRoundBtn").onclick = () => socket.emit("newRound");
-$("toLobbyBtn").onclick = () => socket.emit("backToLobby");
+/* الرجوع للوبي كان يمحو النقاط بلا سؤال، فمن رجع ليغيّر إعدادًا خسر
+   تعبَ جولاتٍ كاملة. الآن يُسأل: لعبةٌ جديدة أم إكمالٌ بالنقاط. */
+$("toLobbyBtn").onclick = () => $("lobbyAskModal").classList.add("on");
+$("lobbyKeep").onclick  = () => { socket.emit("backToLobby", { reset: false }); $("lobbyAskModal").classList.remove("on"); };
+$("lobbyReset").onclick = () => { socket.emit("backToLobby", { reset: true });  $("lobbyAskModal").classList.remove("on"); };
+$("lobbyCancel").onclick= () => $("lobbyAskModal").classList.remove("on");
+$("resetScoresBtn").onclick = () => {
+  if (confirm("تصفير نقاط الجميع؟")) socket.emit("resetScores");
+};
 $("forceVoteBtn").onclick = () => socket.emit("forceVote");
 $("doneBtn").onclick = () => socket.emit("answered");
 
@@ -744,24 +798,36 @@ $("doneBtn").onclick = () => socket.emit("answered");
 })();
 $("readyBtn").onclick = () => { socket.emit("ready"); $("readyBtn").disabled = true; };
 
-/* زر مراجعة الكلمة أثناء النقاش — أيضاً بالضغط المطوّل */
+/* زر مراجعة الكلمة أثناء النقاش — بالضغط المطوّل.
+   ⚠ كان هنا عطبٌ لزج: اللمسةُ الواحدة تُطلق pointerdown وmousedown
+   وtouchstart معًا، فيُنادى «أظهِر» ثلاث مرّات، وفي الثانية يُحفظ النصُّ
+   **المستبدَل** (الكلمة) على أنّه الأصل. فيعود «الإخفاء» بالكلمة نفسها —
+   فتبقى معروضةً للأبد، وتبقى كلمةَ الجولة الماضية في الجولة التالية.
+   الحلّ: نصٌّ أصليٌّ ثابتٌ لا يُلتقَط من الزرّ، وعلَمٌ يمنع الإظهار مرّتين. */
+const REVIEW_LABEL = "👁️ راجع الكلمة (اضغط مطولاً)";
 (function holdReview(){
-  const mk = (btn) => {
-    if (!btn) return;
-    const showIt = () => {
-      if (!MYROLE) return;
-      btn._old = btn.textContent;
-      btn.textContent = MYROLE.spy ? "🕵️ أنت برّا السالفة!" : ("🔑 " + MYROLE.word);
-      btn.style.background = MYROLE.spy ? "#ffe6e6" : "#eafaf0";
-    };
-    const hideIt = () => { if (btn._old){ btn.textContent = btn._old; btn.style.background=""; btn._old=null; } };
-    ["mousedown","touchstart","pointerdown"].forEach(e => btn.addEventListener(e, showIt, {passive:true}));
-    ["mouseup","mouseleave","touchend","touchcancel","pointerup","pointercancel"].forEach(e =>
-      btn.addEventListener(e, hideIt, {passive:true}));
-    window.addEventListener("blur", hideIt);
-    btn.addEventListener("contextmenu", e => e.preventDefault());
+  const btn = $("reviewBtn");
+  if (!btn) return;
+  let shown = false;
+  const showIt = () => {
+    if (shown || !MYROLE) return;
+    shown = true;
+    btn.textContent = MYROLE.spy ? "🕵️ أنت برّا السالفة!" : ("🔑 " + MYROLE.word);
+    btn.style.background = MYROLE.spy ? "#ffe6e6" : "#eafaf0";
   };
-  mk($("reviewBtn"));
+  const hideIt = () => {
+    if (!shown) return;
+    shown = false;
+    btn.textContent = REVIEW_LABEL;
+    btn.style.background = "";
+  };
+  window.resetReview = hideIt;
+  ["mousedown","touchstart","pointerdown"].forEach(e => btn.addEventListener(e, showIt, {passive:true}));
+  ["mouseup","mouseleave","touchend","touchcancel","pointerup","pointercancel"].forEach(e =>
+    btn.addEventListener(e, hideIt, {passive:true}));
+  window.addEventListener("blur", hideIt);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) hideIt(); });
+  btn.addEventListener("contextmenu", e => e.preventDefault());
 })();
 
 /* ============ الاتهام الطارئ ============ */
@@ -769,24 +835,71 @@ $("emgBtn").onclick = () => socket.emit("emergency");
 $("emgYes").onclick = () => { socket.emit("emergencyVote", true); $("emgModal").classList.remove("on"); };
 $("emgNo").onclick  = () => { socket.emit("emergencyVote", false); $("emgModal").classList.remove("on"); };
 
-/* ============ تخمين برّا السالفة ============ */
-socket.on("yourGuess", d => {
+/* ============ تخمين برّا السالفة — شاشةٌ يراها الجميع ============
+   كان الجاسوس يختار في نافذةٍ خاصّةٍ به والبقيّة ينتظرون على شاشة النقاش
+   لا يرون شيئًا. الآن الكلُّ على الشبكة نفسها: هو يضغط، فيضيء اختيارُه
+   للجميع، ثمّ يُكشَف بعد لحظةٍ أخضرَ أو أحمرَ ومعه الصحيحة. */
+let GS = { mine: false, done: false };
+socket.on("guessBoard", d => {
+  const names = (d.spies || []).map(s => s.name).join(" و");
+  GS.mine = (d.spies || []).some(s => s.id === ME);
+  GS.done = !!(d.picked && d.picked[ME]);
+  $("gsTitle").textContent = GS.mine ? "😈 فرصتك الأخيرة!" : "😈 لحظة الحقيقة";
+  $("gsWho").innerHTML = GS.mine
+    ? (d.caught ? "كُشفتَ! اختر السالفة لتسرق الفوز" : "اختر السالفة لتسرق نقطةً إضافية")
+    : "برّا السالفة <b>" + esc(names) + "</b> يحاول أن يخمّن السالفة… ترقّبوا";
   $("guessCat").textContent = d.category || "—";
+  $("guessTimer").textContent = GS.mine
+    ? "اختر كلمةً واحدة — الصحيحة تكسبك نقطة"
+    : "لا تستطيع الاختيار — أنت تشاهد فقط";
+
   const g = $("guessGrid");
   g.innerHTML = "";
   (d.choices || []).forEach(w => {
     const b = document.createElement("button");
     b.className = "gch";
+    b.dataset.w = w;
     b.textContent = w;
-    b.onclick = () => {
+    b.disabled = !GS.mine || GS.done;
+    if (GS.mine && !GS.done) b.onclick = () => {
       [...g.children].forEach(x => x.disabled = true);
-      b.classList.add("chosen");
+      b.classList.add("picked");
+      GS.done = true;
       socket.emit("spyPick", w);
-      setTimeout(() => $("guessModal").classList.remove("on"), 500);
     };
     g.appendChild(b);
   });
-  $("guessModal").classList.add("on");
+  /* من اختار قبل أن نصل (إعادة اتصال) نُظهر اختياره فورًا */
+  Object.entries(d.picked || {}).forEach(([id, w]) => markPick(id, w, d.spies));
+  $("guessScreen").classList.add("on");
+});
+
+function gchOf(word) {
+  return [...$("guessGrid").children].find(b => b.dataset.w === word) || null;
+}
+function markPick(id, word, spies) {
+  const b = gchOf(word);
+  if (!b) return;
+  b.classList.add("picked");
+  const nm = (spies || []).find(s => s.id === id);
+  if (nm && !b.querySelector(".who")) {
+    const s = document.createElement("span");
+    s.className = "who"; s.textContent = nm.name;
+    b.appendChild(s);
+  }
+}
+socket.on("spyPicked", d => {
+  markPick(d.id, d.word, [{ id: d.id, name: d.name }]);
+  if (d.id !== ME) $("guessTimer").textContent = d.name + " اختار… ننتظر النتيجة";
+});
+socket.on("spyReveal", d => {
+  const b = gchOf(d.word);
+  if (b) { b.classList.remove("picked"); b.classList.add(d.hit ? "right" : "wrong"); }
+  if (!d.hit) {
+    const good = gchOf(d.answer);
+    if (good) good.classList.add("right");
+  }
+  $("guessTimer").textContent = d.hit ? "✅ صحيحة! سرق الفوز" : "❌ غلط — السالفة كانت: " + d.answer;
 });
 
 
@@ -959,6 +1072,8 @@ $("catAddInput").addEventListener("keydown", e => { if (e.key === "Enter"){ e.pr
 /* ============ الدور السرّي ============ */
 socket.on("role", r => {
   MYROLE = r;
+  /* جولةٌ جديدة ⇒ الزرّ يعود لعنوانه، فلا تبقى كلمةُ الجولة الماضية معروضة */
+  if (window.resetReview) resetReview();
   $("revCat").textContent = "التصنيف: " + r.category;
   $("playCat").textContent = "التصنيف: " + r.category;
   const box = $("secretBox");
@@ -1066,7 +1181,9 @@ function buildResult(s){
     const g = r.gains[p.id] || 0;
     const vs = votersOf[p.id] || [];
     const el = document.createElement("div");
-    el.className = "scoreRow";
+    /* صفُّ برّا السالفة بخلفيّةٍ حمراء خفيفة: الشارةُ وحدها تُقرأ متأخّرًا،
+       واللونُ يُقرأ قبل أن تقرأ الاسم. */
+    el.className = "scoreRow" + (r.spyIds.includes(p.id) ? " wasSpy" : "");
     el.innerHTML = '<b>' + esc(p.name) + '</b>'
       + (r.spyIds.includes(p.id) ? ' <span class="spyTag">برّا السالفة</span>' : '')
       + (vs.length
@@ -1130,7 +1247,7 @@ socket.on("state", s => {
     if (s.state === "reveal"){ $("readyBtn").disabled = false; myVotes = []; }
     if (s.state === "voting") myVotes = [];
     keepAwake(["reveal","talking","voting","spyGuess"].includes(s.state));
-    if (s.state !== "spyGuess") $("guessModal").classList.remove("on");
+    if (s.state !== "spyGuess") $("guessScreen").classList.remove("on");
   }
 
   // الشاشات
@@ -1190,7 +1307,10 @@ socket.on("state", s => {
   // الاتهام الطارئ
   if (s.emergency && s.state === "talking"){
     $("emgWho").textContent = s.emergency.byName;
-    $("emgCount").textContent = "موافقون: " + s.emergency.yes + " / نحتاج " + s.emergency.need;
+    /* الرفض صار يُعَدّ ويُسقط البلاغ متى استحال بلوغُ النصاب — فيُعرَض */
+    $("emgCount").textContent =
+      "موافقون: " + s.emergency.yes + " / نحتاج " + s.emergency.need +
+      (s.emergency.no ? "  ·  رافضون: " + s.emergency.no : "");
     if (s.emergency.byId !== ME) $("emgModal").classList.add("on");
   } else $("emgModal").classList.remove("on");
 
@@ -1202,6 +1322,8 @@ socket.on("state", s => {
     const endish = (s.state === "result" || s.state === "gameEnd");
     $("nextRoundBtn").hidden = !(s.state === "result" && HOST);
     $("toLobbyBtn").hidden  = !(endish && HOST);
+    /* زرّ التصفير في اللوبي — لا يظهر إلا للمضيف ولو كانت هناك نقاط */
+    $("resetScoresBtn").hidden = !(HOST && s.state === "lobby" && s.players.some(p => p.score > 0));
   }
   if (s.state === "gameEnd" && s.winner){
     $("resBanner").className = "banner ins";
