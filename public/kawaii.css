@@ -624,6 +624,8 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    { background:linear
 /* بالوت: نيليٌّ ملكيّ. كانت البطاقة تخرج بيضاء لأنّ سمة المارشميلو لم تكن
    تعرف الصنف، فتسقط على خلفيّة البطاقة الافتراضيّة ويختفي نصُّها الأبيض. */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo { background:linear-gradient(180deg,#7C9BF0 0%,#4A63C8 100%); }
+/* لودو: فيروزيّ (لونُ صفحتها نفسه) */
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   { background:linear-gradient(180deg,#6ED6CC 0%,#26A69A 100%); }
 
 /* ── ومضةُ البطاقة عند مرور المؤشّر ──
  *
@@ -674,6 +676,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-violet .go { background:#C
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-green  .go { background:#2FA666 !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    .go { background:#C1332E !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo .go { background:#3F51B5 !important; }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   .go { background:#1F8E80 !important; }
 /* شارة عدد اللاعبين: كبسولة بيضاء */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .now {
   background:#fff; color:#3E6E8C; padding:4px 10px; border-radius:999px;
@@ -788,6 +791,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-violet .ic { background-im
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-green  .ic { background-image:url("/kw-g-salfa.webp") !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    .ic { background-image:url("/kw-g-uno.svg") !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo .ic { background-image:url("/kw-g-baloot.svg") !important; }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   .ic { background-image:url("/kw-g-ludo.svg") !important; }
 /* العناوين: أبيض عريض كبير بستروك بني حول الحروف */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g h2 {
   font-size:27px; letter-spacing:.5px;
@@ -808,6 +812,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-violet .go { box-shadow: i
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-green  .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #1F7A48, 0 9px 14px rgba(0,0,0,.2) !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #97231E, 0 9px 14px rgba(0,0,0,.2) !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #2C3A87, 0 9px 14px rgba(0,0,0,.2) !important; }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #17695F, 0 9px 14px rgba(0,0,0,.2) !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .now { color:#8A5A3E; box-shadow:0 2px 0 #E3D5C2; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .badge { color:#8A5A3E; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) #accPop { color:#6B4632; }
@@ -1746,6 +1751,110 @@ body.kw-quiz .kw-doodles .kw-palette {
 body.kw-quiz .kw-doodles .kw-brush {
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='16' fill='%23F1E7FF' stroke='%23B79BEC' stroke-width='2.6'/%3E%3Ctext x='20' y='27' text-anchor='middle' font-family='Arial' font-size='17' font-weight='900' fill='%236B49B8'%3E%3F%3C/text%3E%3C/svg%3E");
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   v50 — لودو: مارشميلو فيروزيّ 🎲🍡
+   ══════════════════════════════════════════════════════════════════
+   صفحةُ لودو مبنيّةٌ على هيكل «برّا السالفة» حرفيًّا (الدخول واللوبي
+   والإعدادات والدردشة بالمعرّفات نفسها)، فـtheme.js يعطيها kw-salfa وتلبس
+   قواعدَها كلَّها — وهذا مقصود: الواجهةُ واحدةٌ في الألعاب كلّها.
+   وهنا اللونُ وحده: متغيّراتُ السالفة بالفيروزيّ (لون بطاقة لودو في
+   الرئيسيّة)، ثمّ الأخضرُ المكتوب نصًّا في قواعد السالفة، ثمّ ما لا تعرفه
+   السالفة: المقاعدُ الأربعة وبطاقاتُ الأوضاع واللوحةُ والنرد.
+   الأسبقيّة: كلُّ قاعدةٍ هنا تحمل ‎.kw-ludo‎ فوق ‎.kw-salfa‎ فتغلبها. */
+body.theme-kawaii.kw-salfa.kw-ludo {
+  --sg-line:#A05F50; --sg-ink:#4A2E2B; --sg-deep:#1F8E80; --sg-soft:#E8F7F4;
+  --sg-white:linear-gradient(180deg,#FFFEFA 0%,#F0FAF8 100%);
+  --sg-band:linear-gradient(180deg,#D3F2EC 0%,#B5E8DE 100%);
+  --sg-btn:linear-gradient(180deg,#BDEBE2 0%,#8FD9CB 100%);
+  --sg-strong:linear-gradient(180deg,#6FD8C8 0%,#2FA898 100%);
+  --sg-shadow:0 4px 10px rgba(60,120,110,.22);
+  --kw-fab:#2FA898; --kw-fab-line:#1F6F65;
+  background:linear-gradient(165deg,#EDF9F6 0%,#DCF2EE 100%) !important;
+}
+
+/* ───── الأخضرُ المكتوب نصًّا في قواعد السالفة ⇒ فيروزيّ ───── */
+body.kw-salfa.kw-ludo .logo {
+  text-shadow:
+    -2px -2px 0 #1F6F65, 2px -2px 0 #1F6F65, -2px 2px 0 #1F6F65, 2px 2px 0 #1F6F65,
+    -2.5px 0 0 #1F6F65, 2.5px 0 0 #1F6F65, 0 -2.5px 0 #1F6F65, 0 2.5px 0 #1F6F65,
+    0 7px 14px rgba(40,110,100,.35);
+}
+body.kw-salfa.kw-ludo .tagline { color:#3F7F76; }
+body.kw-salfa.kw-ludo .backLink:hover { background:#E3F6F2; }
+body.kw-salfa.kw-ludo #joinScreen .card input:focus { box-shadow:0 0 0 3px rgba(80,190,175,.4); }
+body.kw-salfa.kw-ludo .btn-blue { background:linear-gradient(180deg,#C9E8F9 0%,#9CD3F0 100%); }
+body.kw-salfa.kw-ludo .divider, body.kw-salfa.kw-ludo #roomChip span { color:#6F9E97; }
+body.kw-salfa.kw-ludo .sub, body.kw-salfa.kw-ludo .setRow .hint,
+body.kw-salfa.kw-ludo .seg button, body.kw-salfa.kw-ludo .modeTag { color:#6F8E8A; }
+body.kw-salfa.kw-ludo .msg.system { background:#E3F6F2; }
+body.theme-kawaii.kw-salfa.kw-ludo #chatForm { background:linear-gradient(180deg,#F2FBF9 0%,#E3F5F1 100%); }
+body.theme-kawaii.kw-salfa.kw-ludo .msg.system::before {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect x='7' y='7' width='26' height='26' rx='7' fill='%23fff' stroke='%232FA898' stroke-width='2.6'/%3E%3Ccircle cx='15' cy='15' r='2.6' fill='%231F8E80'/%3E%3Ccircle cx='20' cy='20' r='2.6' fill='%231F8E80'/%3E%3Ccircle cx='25' cy='25' r='2.6' fill='%231F8E80'/%3E%3C/svg%3E");
+}
+
+/* خربشاتُ الخلفية: نردان، وبيدق، ونجمةُ المربّع الآمن */
+body.theme-kawaii.kw-salfa.kw-ludo .kw-doodles .kw-pencil {
+  opacity:.4;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 64'%3E%3Cg transform='rotate(-12 38 34)'%3E%3Crect x='16' y='12' width='44' height='44' rx='10' fill='%23FFFDF6' stroke='%23A05F50' stroke-width='3'/%3E%3Ccircle cx='28' cy='24' r='4' fill='%232FA898'/%3E%3Ccircle cx='38' cy='34' r='4' fill='%232FA898'/%3E%3Ccircle cx='48' cy='44' r='4' fill='%232FA898'/%3E%3C/g%3E%3Cg transform='rotate(14 84 30)'%3E%3Crect x='64' y='10' width='40' height='40' rx='9' fill='%23E3F6F2' stroke='%23A05F50' stroke-width='3'/%3E%3Ccircle cx='75' cy='21' r='3.6' fill='%23F28B82'/%3E%3Ccircle cx='93' cy='21' r='3.6' fill='%23F28B82'/%3E%3Ccircle cx='75' cy='39' r='3.6' fill='%23F28B82'/%3E%3Ccircle cx='93' cy='39' r='3.6' fill='%23F28B82'/%3E%3C/g%3E%3C/svg%3E");
+}
+body.theme-kawaii.kw-salfa.kw-ludo .kw-doodles .kw-palette {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Cellipse cx='22' cy='36' rx='13' ry='5' fill='%2382C6F2' stroke='%23A05F50' stroke-width='2.4'/%3E%3Cpath d='M15 35 L18.5 20 h7 L29 35z' fill='%2382C6F2' stroke='%23A05F50' stroke-width='2.4' stroke-linejoin='round'/%3E%3Ccircle cx='22' cy='14' r='7' fill='%2382C6F2' stroke='%23A05F50' stroke-width='2.4'/%3E%3Ccircle cx='19.5' cy='11.5' r='2' fill='%23fff' opacity='.8'/%3E%3C/svg%3E");
+}
+body.theme-kawaii.kw-salfa.kw-ludo .kw-doodles .kw-brush {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='16' fill='%23FFF4D0' stroke='%23E0A92E' stroke-width='2.6'/%3E%3Cpath d='M20 9l3.3 7.2 7.8.8-5.9 5.3 1.7 7.7L20 26l-6.9 4 1.7-7.7-5.9-5.3 7.8-.8z' fill='%23F4C95D' stroke='%23C98E12' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* ───── اللوبي: المقاعدُ الأربعة بألوانها (السالفة لا تعرفها) ───── */
+body.kw-salfa.kw-ludo #seatGrid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+body.kw-ludo .seat { border:2.5px solid var(--sd); border-radius:18px;
+  box-shadow:inset 0 3px 6px rgba(255,255,255,.85), 0 3px 8px rgba(140,75,60,.18); }
+body.kw-ludo .seat .who b { color:var(--sg-ink); }
+body.kw-ludo .seat.me { box-shadow:0 0 0 3px var(--sg-deep), inset 0 3px 6px rgba(255,255,255,.85); }
+body.kw-ludo .seat .sitBtn { border-radius:999px; }
+body.kw-ludo .teamTag { color:var(--sg-deep); }
+
+/* بطاقاتُ الأوضاع: بطاقاتٌ بيضاءُ بحدٍّ بنّيّ، والمختارُ فيروزيّ */
+body.kw-ludo .mode { border:2px solid #C99A72; border-radius:16px; background:#fff; color:var(--sg-ink);
+  transition:transform .15s var(--kw-spring), border-color .15s, background .15s; }
+body.kw-ludo .mode:hover { transform:translateY(-2px); }
+body.kw-ludo .mode b { color:var(--sg-ink); }
+body.kw-ludo .mode span { color:#6F8E8A; }
+body.kw-ludo .mode.on { border:2.5px solid var(--sg-deep); background:#E3F6F2;
+  box-shadow:0 0 0 3px rgba(47,168,152,.2); }
+
+/* ───── اللاعبون في المباراة ───── */
+body.kw-salfa.kw-ludo .pl .av { background:var(--sc); }
+body.kw-salfa.kw-ludo .pl.me { border-color:#C99A72; background:#fff; }
+/* دورُ اللاعب بلونه هو — يسبق تمييزَ «أنا» كما في السالفة */
+body.kw-salfa.kw-ludo .pl.turn, body.kw-salfa.kw-ludo .pl.me.turn {
+  border-color:var(--sd); background:var(--sl); box-shadow:0 0 0 3px var(--sc); }
+body.kw-salfa.kw-ludo .pl .fin { color:#6F8E8A; }
+
+/* ───── اللوحة: إطارٌ أبيضُ عريضٌ كبطاقات الرئيسيّة. الإطارُ على الصندوق
+   الثابت لا على اللوحة الدوّارة، وإلا دار ظلُّها معها فسقط جانبًا ───── */
+body.kw-ludo #boardBox { border-radius:26px; background:#FFFBF4;
+  box-shadow:0 0 0 7px #fff, 0 0 0 9px #A05F50, 0 14px 26px rgba(60,120,110,.25); }
+
+/* النرد والوقت: الشريطُ فاتحٌ الآن، فالنصُّ الأبيضُ ذو الظلّ لا يُقرأ */
+body.kw-salfa.kw-ludo #turnLine { color:var(--sg-ink); text-shadow:none; font-size:17px; }
+body.kw-ludo #diceBtn .tap { color:var(--sg-deep); text-shadow:none; }
+body.kw-ludo #timerBar { height:12px; background:#F1E8D9; border:2px solid #C99A72; }
+body.kw-ludo #timerBar i { background:var(--sg-strong); }
+body.kw-ludo #goldTag { border:2px solid #C99A72; }
+body.kw-ludo #promptBar { border-radius:999px; border:2px solid #E8A39B; }
+
+/* القطعُ القابلة للحركة: حلقةٌ ثابتةٌ تحت النبض — فمن أطفأ الحركة في جهازه
+   (تقليل الحركة يوقف كلَّ animation أدناه) يرى ما يُحرَّك مع ذلك */
+body.kw-ludo .tok.can { box-shadow:0 0 0 1.5px var(--sd), 0 3px 0 var(--sd), 0 0 0 5px rgba(255,255,255,.95), 0 0 12px 4px var(--sc); }
+body.kw-ludo .tok.target { box-shadow:0 0 0 1.5px var(--sd), 0 0 0 5px #ff6b6b, 0 0 14px 4px #ff9f9f; }
+
+/* النوافذ */
+body.kw-ludo .winBanner { border:2px solid var(--sg-line); border-radius:18px; }
+body.kw-ludo .rule { background:var(--sg-soft); border-radius:14px; color:var(--sg-ink); }
+body.kw-ludo .choice button { border:2px solid #C99A72; border-radius:999px; color:var(--sg-ink); background:#fff; }
+body.kw-ludo .choice button:hover { background:#E3F6F2; }
+body.kw-ludo .choice button.no { color:#C1332E; border-color:#F3B0AC; }
 
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {

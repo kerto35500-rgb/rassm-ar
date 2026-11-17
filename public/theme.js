@@ -54,6 +54,9 @@
     b.toggle("kw-hub", !!document.getElementById("grid") && !document.getElementById("pyScene"));
     /* برّا السالفة: نسخة خضراء (تُميَّز بوجود شاشة الدخول الخاصة بها) */
     b.toggle("kw-salfa", !!document.getElementById("joinScreen"));
+    /* لودو: هيكلُها هيكلُ السالفة نفسه (فتلبس قواعدها كلَّها: اللوبي والإعدادات
+       والدردشة) — ويُضاف فوقه لونُها الفيروزيّ. تُميَّز بلوحتها */
+    b.toggle("kw-ludo", !!document.getElementById("ludoBoard"));
     /* القنبلة: نسخة برتقالية */
     b.toggle("kw-bomb", !!document.getElementById("bombCircle"));
     /* قمّة الهرم: نسخة بنفسجية (تُميَّز بمشهد الهرم) */

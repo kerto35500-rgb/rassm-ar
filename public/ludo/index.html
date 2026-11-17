@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🎲 لودو — العب مع أصحابك</title>
+<style>
+  /* ═══ الأساس: نفس هيكل «برّا السالفة» حرفيًّا، فتلبسه سمةُ المارشميلو كما
+     تلبسها — اللوبي والإعدادات والأزرار والدردشة تُرسَم بالقواعد نفسها. ═══ */
+  :root{
+    --bg1:#0e1b2c; --panel:#ffffff; --ink:#12263c; --muted:#6b7b8f;
+    --green:#2e9e5b; --green2:#25834a; --red:#e5484d; --amber:#f5a524;
+    --line:#e3e9f0; --soft:#f4f7fa;
+    /* ألوان المقاعد الأربعة — باستيل الموقع */
+    --c0:#F28B82; --c0d:#D9534A; --c0l:#FFE3E0;
+    --c1:#77D3A0; --c1d:#2E9E5B; --c1l:#DFF6E9;
+    --c2:#FFD45E; --c2d:#DDA20C; --c2l:#FFF4D0;
+    --c3:#82C6F2; --c3d:#2F8FD3; --c3l:#DFF0FC;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:"Segoe UI",Tahoma,system-ui,sans-serif; color:var(--ink);
+    background:radial-gradient(1200px 700px at 50% -10%,#1d3a5c,var(--bg1));
+    height:100vh; height:100dvh; max-height:100dvh;
+    display:flex; flex-direction:column; align-items:center;
+    padding:10px; gap:10px; overflow:hidden;
+    -webkit-user-select:none; user-select:none;
+  }
+  input,textarea{-webkit-user-select:text; user-select:text;}
+  .wrap{width:100%; max-width:1180px; display:flex; flex-direction:column; gap:10px; flex:1; min-height:0; overflow:hidden;}
+  .card{background:var(--panel); border-radius:16px; box-shadow:0 10px 30px rgba(6,14,26,.28);}
+
+  /* الشريط العلويّ */
+  #topBar{display:flex; align-items:center; gap:8px; padding:8px 10px; flex-wrap:nowrap;}
+  #roomChip{display:flex; flex-direction:column; align-items:center; justify-content:center;
+            background:var(--soft); border:2px solid var(--line); border-radius:12px;
+            padding:4px 12px; cursor:pointer; flex-shrink:0; min-width:92px;}
+  #roomChip b{font-size:17px; letter-spacing:1px; color:#1668c7;}
+  #roomChip span{font-size:10px; color:var(--muted);}
+  #phaseInfo{flex:1; min-width:0; text-align:center; font-weight:800; font-size:15px;
+             white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .iconBtn{width:38px; height:38px; flex-shrink:0; border:2px solid var(--line); background:#fff;
+           border-radius:11px; cursor:pointer; font-size:17px; display:flex; align-items:center; justify-content:center;
+           text-decoration:none; color:inherit;}
+
+  /* شاشة الدخول */
+  #joinScreen{position:relative; display:flex; flex-direction:column; align-items:center;
+              justify-content:center; min-height:100%; gap:16px; padding:24px 16px; overflow:auto;}
+  .logo{font-size:clamp(42px,9vw,58px); font-weight:900; color:#fff; text-shadow:0 4px 14px rgba(0,0,0,.35); letter-spacing:1px;}
+  .logo span{color:#7ee8a5;}
+  .tagline{color:#cfe3f7; margin-top:-10px; font-size:clamp(14px,3.5vw,17px); text-align:center;}
+  #joinScreen .card{background:var(--panel); border-radius:18px; padding:20px; width:100%;
+        max-width:400px; box-shadow:0 12px 34px rgba(0,0,0,.28); display:flex; flex-direction:column; gap:10px;}
+  #joinScreen .card input{width:100%; min-width:0; padding:11px 13px; border:2px solid #e3e8ee;
+        border-radius:10px; font-size:16px; text-align:center; background:#f8fafc; font-family:inherit;}
+  .sub{color:var(--muted); font-size:14px; text-align:center; max-width:520px; line-height:1.7;}
+  .btn{border:none; border-radius:12px; padding:13px 18px; font-size:16px; font-weight:800;
+       cursor:pointer; font-family:inherit; color:#fff; width:100%;}
+  .btn-green{background:linear-gradient(180deg,var(--green),var(--green2));}
+  .btn-blue{background:linear-gradient(180deg,#3b8fe0,#1668c7);}
+  .btn-red{background:linear-gradient(180deg,#f4696d,var(--red));}
+  .btn-violet{background:linear-gradient(180deg,#9a6bff,#6a37e0);}
+  .btn-ghost{background:var(--soft); color:var(--ink); border:2px solid var(--line);}
+  .btn:active{transform:translateY(1px);}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .divider{text-align:center; color:#999; font-size:13px;}
+  #joinErr{color:var(--red); text-align:center; font-size:14px; min-height:16px; font-weight:700;}
+  #whoLine{display:none; text-align:center; font-size:13.5px; color:var(--green); font-weight:800; margin:-4px 0 4px;}
+  .row2{display:flex; gap:8px;}
+  .row2 > *{flex:1 1 0; min-width:0;}
+  .backLink{display:inline-flex; align-items:center; justify-content:center; gap:6px;
+            margin:2px auto 4px; padding:9px 20px; border-radius:999px;
+            background:rgba(255,255,255,.14); border:1.5px solid rgba(255,255,255,.32);
+            color:#fff; font-size:15.5px; font-weight:900; text-decoration:none;}
+
+  /* اللوبي */
+  #lobby{display:none; flex-direction:column; gap:10px; padding:14px; flex:1; min-height:0; overflow:auto;}
+  .h{font-size:18px; font-weight:900; display:flex; align-items:center; gap:8px;}
+  #setBox{display:none; flex-direction:column; gap:10px;}
+  #setBox.open{display:flex;}
+  .setRow{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+          background:var(--soft); border-radius:11px; padding:9px 11px;}
+  .setRow label{font-weight:800; font-size:14px;}
+  .setRow .hint{font-size:11px; color:var(--muted); width:100%;}
+  select{padding:9px 11px; border:2px solid var(--line); border-radius:10px; font-family:inherit; font-size:14px; background:#fff;}
+  .seg{display:flex; gap:0; border:2px solid var(--line); border-radius:11px; overflow:hidden; flex-wrap:wrap;}
+  .seg button{border:none; background:#fff; padding:9px 13px; font-size:13px; font-weight:800; cursor:pointer;
+              font-family:inherit; color:var(--muted);}
+  .seg button.on{background:var(--green); color:#fff;}
+  .modeBox{display:flex; flex-direction:column; gap:8px; border:2px dashed var(--line); border-radius:12px; padding:9px; background:#fbfdff;}
+  .modeTag{font-size:12px; font-weight:900; color:var(--muted);}
+
+  /* المقاعد الأربعة في اللوبي */
+  #seatGrid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
+  .seat{position:relative; border-radius:16px; padding:10px 12px; display:flex; align-items:center; gap:10px;
+        border:3px solid var(--sd); background:var(--sl); min-height:64px; transition:.18s;}
+  .seat .dot{width:34px; height:34px; border-radius:50%; background:var(--sc); flex-shrink:0;
+             border:3px solid #fff; box-shadow:0 0 0 2px var(--sd), 0 3px 0 rgba(0,0,0,.15);}
+  .seat .who{flex:1; min-width:0;}
+  .seat .who b{display:block; font-size:15px; font-weight:900; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .seat .who small{font-size:11.5px; font-weight:800; color:var(--sd);}
+  .seat .sitBtn{border:2px dashed var(--sd); background:#fff; color:var(--sd); border-radius:10px; padding:7px 12px;
+                font-family:inherit; font-weight:900; font-size:13px; cursor:pointer;}
+  .seat .kick{position:absolute; top:-8px; inset-inline-end:-6px; width:22px; height:22px; border:none;
+              border-radius:50%; background:#ffe0e0; color:var(--red); cursor:pointer; font-size:11px;}
+  .seat .crown{position:absolute; top:-12px; inset-inline-start:-4px; font-size:17px;}
+  .seat.me{box-shadow:0 0 0 3px #1668c7;}
+  .seat.off{opacity:.38; filter:grayscale(.6);}
+  .s0{--sc:var(--c0); --sd:var(--c0d); --sl:var(--c0l);} .s1{--sc:var(--c1); --sd:var(--c1d); --sl:var(--c1l);}
+  .s2{--sc:var(--c2); --sd:var(--c2d); --sl:var(--c2l);} .s3{--sc:var(--c3); --sd:var(--c3d); --sl:var(--c3l);}
+  .teamTag{grid-column:1/-1; font-size:12.5px; font-weight:900; color:var(--muted); text-align:center; margin-top:2px;}
+
+  /* بطاقات الأوضاع */
+  #modeGrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px;}
+  .mode{border:2.5px solid var(--line); background:#fff; border-radius:14px; padding:9px 10px; cursor:pointer;
+        font-family:inherit; text-align:start; display:flex; flex-direction:column; gap:3px; color:var(--ink);}
+  .mode b{font-size:14px; font-weight:900;}
+  .mode span{font-size:11.5px; color:var(--muted); line-height:1.5;}
+  .mode.on{border-color:var(--green); background:#eafaf0; box-shadow:0 0 0 3px rgba(46,158,91,.18);}
+  .mode:disabled{cursor:default;}
+
+  /* ═══ اللعب ═══ */
+  #play{display:none; gap:10px; flex:1; min-height:0;}
+  #boardCol{flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; align-items:center; min-height:0;}
+  #boardBox{position:relative; width:min(100%, calc(100dvh - 210px)); aspect-ratio:1; flex-shrink:0;}
+  #ludoBoard{position:absolute; inset:0; border-radius:22px; transform:rotate(var(--rot,0deg));
+             transition:transform .5s cubic-bezier(.3,1.2,.5,1);}
+  #ludoBoard svg{position:absolute; inset:0; width:100%; height:100%; display:block;}
+  #toks{position:absolute; inset:0; pointer-events:none;}
+  .counter{transform:rotate(calc(-1 * var(--rot,0deg)));}
+
+  /* القطع */
+  .tok{position:absolute; width:5.6%; height:5.6%; margin:-2.8% 0 0 -2.8%; border-radius:50%;
+       background:radial-gradient(circle at 35% 30%, #fff 0 14%, var(--sc) 16% 100%);
+       border:2.5px solid #fff; box-shadow:0 0 0 1.5px var(--sd), 0 3px 0 var(--sd), 0 6px 10px rgba(0,0,0,.25);
+       transition:left .16s ease-out, top .16s ease-out, transform .2s, opacity .3s;
+       display:flex; align-items:center; justify-content:center; pointer-events:auto; z-index:3;}
+  .tok .badge{font-size:min(2.1vw,15px); line-height:1; filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));}
+  .tok.king{width:6.6%; height:6.6%; margin:-3.3% 0 0 -3.3%; box-shadow:0 0 0 2px #f2c94c, 0 3px 0 var(--sd), 0 6px 12px rgba(0,0,0,.3);}
+  .tok.small{transform:scale(.72);}
+  .tok.can{cursor:pointer; animation:tokPulse .9s ease-in-out infinite; z-index:6;}
+  @keyframes tokPulse{50%{box-shadow:0 0 0 1.5px var(--sd), 0 3px 0 var(--sd), 0 0 0 7px rgba(255,255,255,.75), 0 0 16px 6px var(--sc);}}
+  .tok.target{cursor:pointer; animation:tokTarget .7s ease-in-out infinite; z-index:6;}
+  /* الملكُ المختار (النقرة الأولى): حلقةٌ ذهبيّةٌ ثابتة بدل النبض */
+  .tok.sel{animation:none; z-index:7; box-shadow:0 0 0 2px #f2c94c, 0 0 0 6px #fff, 0 0 0 8px #E2A90E, 0 0 18px 8px rgba(255,211,77,.75);}
+  @keyframes tokTarget{50%{box-shadow:0 0 0 1.5px var(--sd), 0 0 0 7px #ff5b5b, 0 0 18px 6px #ff8f8f;}}
+  /* القفزة تكبيرٌ لا إزاحة: اللوحة تدور، و«فوق» في اللوحة قد يكون يسارَ الشاشة */
+  .tok.hop{transform:scale(1.25);}
+  .tok.small.hop{transform:scale(.92);}
+  .tok.sh::after{content:""; position:absolute; inset:-28%; border-radius:50%;
+                 background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.75), rgba(160,215,255,.35) 55%, rgba(120,190,255,.15));
+                 border:2px solid rgba(140,200,255,.9); pointer-events:none;}
+  .tok .cd{position:absolute; top:-30%; inset-inline-end:-30%; background:#3b3b4f; color:#fff; border-radius:999px;
+           font-size:min(1.6vw,11px); font-weight:900; padding:1px 5px;}
+  .tok.dead{opacity:0; transform:scale(.2);}
+
+  /* حجرُ النرد */
+  #dock{display:flex; align-items:center; gap:10px; justify-content:center; width:min(100%, 640px); flex-wrap:wrap;}
+  #diceBtn{width:74px; height:74px; border-radius:20px; border:4px solid #fff; background:#fffdf7; cursor:pointer;
+           box-shadow:0 0 0 2.5px var(--dk,#c7b9a6), 0 6px 0 var(--dk,#c7b9a6), 0 10px 18px rgba(0,0,0,.2);
+           display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); padding:10px; gap:2px;
+           position:relative; transition:transform .12s;}
+  #diceBtn:disabled{cursor:default; filter:saturate(.6) brightness(.97);}
+  #diceBtn.ready{animation:diceCall 1s ease-in-out infinite;}
+  @keyframes diceCall{50%{transform:translateY(-5px) rotate(-4deg)}}
+  #diceBtn.rolling{animation:diceRoll .45s linear;}
+  @keyframes diceRoll{0%{transform:rotate(0)} 25%{transform:rotate(90deg) scale(.9)} 50%{transform:rotate(180deg)} 75%{transform:rotate(270deg) scale(.9)} 100%{transform:rotate(360deg)}}
+  #diceBtn i{border-radius:50%; background:transparent; width:100%; aspect-ratio:1; align-self:center;}
+  #diceBtn i.on{background:#3a2b2b;}
+  #diceBtn.gold{background:linear-gradient(160deg,#fff4c2,#ffd34d); --dk:#c99a15;}
+  #diceBtn .tap{position:absolute; bottom:-22px; left:50%; transform:translateX(-50%); white-space:nowrap;
+                font-size:11.5px; font-weight:900; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.4);}
+  #turnBox{display:flex; flex-direction:column; gap:3px; align-items:center; min-width:160px;}
+  #turnLine{font-weight:900; font-size:15px; text-align:center; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.35);}
+  #timerBar{width:160px; height:8px; border-radius:99px; background:rgba(255,255,255,.35); overflow:hidden;}
+  #timerBar i{display:block; height:100%; width:100%; background:#fff; border-radius:99px; transition:width .25s linear;}
+  #goldTag{display:none; background:linear-gradient(180deg,#fff4c2,#ffd34d); color:#6b4b00; border-radius:999px;
+           padding:4px 11px; font-weight:900; font-size:12.5px; border:2px solid #fff;}
+  #promptBar{display:none; width:min(100%,640px); border-radius:14px; padding:9px 12px; font-weight:900; text-align:center;
+             background:#fff3f0; border:2.5px solid #ffb3a7; color:#b3261e; font-size:14px;}
+
+  /* اللوحة الجانبيّة */
+  #side{width:300px; flex-shrink:0; display:flex; flex-direction:column; gap:10px; min-height:0; overflow:auto;}
+  #plist{display:flex; flex-direction:column; gap:7px; padding:10px;}
+  .pl{display:flex; align-items:center; gap:8px; background:var(--soft); border:2px solid var(--line);
+      border-radius:12px; padding:8px 10px; position:relative;}
+  .pl .av{width:28px; height:28px; border-radius:50%; flex-shrink:0; background:var(--sc); border:2.5px solid #fff; box-shadow:0 0 0 1.5px var(--sd);}
+  .pl .nm{font-weight:800; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0;}
+  .pl .fin{font-weight:900; font-size:12.5px; color:var(--muted); white-space:nowrap;}
+  .pl.turn{border-color:var(--sd); background:var(--sl); box-shadow:0 0 0 3px var(--sc);}
+  .pl.me .nm::after{content:" ●"; color:#1668c7; font-size:11px;}
+  .pl.off{opacity:.45; text-decoration:line-through;}
+  .pl .tag{font-size:10.5px; font-weight:900; padding:1px 7px; border-radius:999px; background:#fff; color:var(--sd); border:1.5px solid var(--sd);}
+  #missionCard{display:none; padding:11px 12px; flex-direction:column; gap:7px;}
+  .mis{border-radius:12px; padding:8px 10px; background:var(--sl, #f4f7fa); border:2px solid var(--sd, #e3e9f0);}
+  .mis .t{font-weight:900; font-size:13.5px; line-height:1.6;}
+  .mis .bar{height:8px; border-radius:99px; background:rgba(0,0,0,.08); overflow:hidden; margin-top:5px;}
+  .mis .bar i{display:block; height:100%; background:var(--sd, var(--green)); border-radius:99px;}
+  .mis.hid{opacity:.7; font-weight:800; font-size:12.5px;}
+  #chatCard{flex:1; display:flex; flex-direction:column; min-height:160px; overflow:hidden;}
+  #msgs{flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:5px; min-height:90px;}
+  .msg{background:var(--soft); border-radius:9px; padding:6px 9px; font-size:13px; word-break:break-word;}
+  .msg b{color:#1668c7;}
+  .msg.system{background:#eef4fb; color:#1668c7; text-align:center; font-weight:700;}
+  #chatForm{display:flex; gap:6px; padding:8px; border-top:2px solid var(--line);}
+  #chatForm input{flex:1; min-width:0; text-align:start; font-size:14px; padding:10px 12px; border:2px solid var(--line); border-radius:10px; font-family:inherit;}
+  #chatForm button{border:none; border-radius:10px; background:#1668c7; color:#fff; font-weight:800; padding:10px 14px; cursor:pointer; font-family:inherit;}
+
+  /* النوافذ */
+  .modal{position:fixed; inset:0; background:rgba(10,20,34,.72); z-index:60; display:none; align-items:center; justify-content:center; padding:14px;}
+  .modal.on{display:flex;}
+  .sheet{background:#fff; border-radius:18px; width:100%; max-width:520px; max-height:88vh; overflow:auto;
+         padding:16px; display:flex; flex-direction:column; gap:11px;}
+  .sheet h3{margin:0; font-size:19px;}
+  .rule{background:var(--soft); border-radius:12px; padding:9px 12px; font-size:13.5px; line-height:1.75;}
+  .rule b{display:block; font-size:14.5px; margin-bottom:2px;}
+  .pu{display:flex; gap:10px; align-items:center;}
+  .pu .ic{font-size:22px; width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:2px solid #fff; box-shadow:0 0 0 1.5px rgba(0,0,0,.08);}
+  .choice{display:flex; flex-direction:column; gap:8px;}
+  .choice button{border:2.5px solid var(--line); background:#fff; border-radius:12px; padding:11px; font-family:inherit; font-weight:900; font-size:14.5px; cursor:pointer;}
+  .choice button.no{color:var(--red); border-color:#ffd0cd;}
+  .winBanner{border-radius:14px; padding:16px; text-align:center; font-weight:900; font-size:20px; color:#fff;
+             background:linear-gradient(180deg,#38b06a,#22854b);}
+  .winBanner small{display:block; font-size:13px; font-weight:700; opacity:.9; margin-top:4px;}
+  #toast{position:fixed; left:50%; bottom:20px; transform:translateX(-50%) translateY(70px);
+         background:#12263c; color:#fff; padding:11px 18px; border-radius:12px; font-weight:800;
+         font-size:14px; z-index:90; opacity:0; transition:.25s; pointer-events:none; max-width:90vw; text-align:center;}
+  #toast.on{transform:translateX(-50%) translateY(0); opacity:1;}
+
+  /* الجوّال: اللوحة فوق، والجانب تحتها */
+  @media (max-width: 900px){
+    body{padding:6px; gap:6px;}
+    #play{flex-direction:column; overflow:auto;}
+    #boardBox{width:min(100%, 72dvh);}
+    #side{width:100%; overflow:visible;}
+    #chatCard{min-height:200px;}
+    #seatGrid{grid-template-columns:1fr 1fr;}
+  }
+</style>
+<link rel="stylesheet" href="/kawaii.css">
+<script src="/theme.js" defer></script>
+</head>
+<body class="theme-kawaii">
+<div class="wrap">
+
+  <!-- ═════════ الدخول (بترتيب شاشة «برّا السالفة» تمامًا) ═════════ -->
+  <div id="joinScreen">
+    <div class="logo">لودو<span>!</span></div>
+    <div class="tagline">ستّةُ أوضاعٍ ومعزّزاتٌ وفرق — العب مع أصحابك أو مع البوتات 🎲</div>
+    <a class="backLink" href="/">← رجوع لاختيار الألعاب</a>
+    <div class="card">
+      <input id="pName" maxlength="20" placeholder="اكتب اسمك هنا" autocomplete="off">
+      <div id="whoLine"></div>
+      <button class="btn btn-green" id="createBtn">إنشاء غرفة جديدة ➕</button>
+      <div class="divider">— أو انضم لغرفة موجودة —</div>
+      <div class="row2">
+        <input id="pRoom" maxlength="6" placeholder="رمز الغرفة" inputmode="numeric" autocomplete="off">
+        <button class="btn btn-blue" id="joinBtn">انضمام 🚪</button>
+      </div>
+      <div id="joinErr"></div>
+    </div>
+  </div>
+
+  <!-- ═════════ اللعبة ═════════ -->
+  <div id="game" style="display:none; flex-direction:column; gap:10px; flex:1; min-height:0;">
+    <div class="card" id="topBar">
+      <div id="roomChip" title="انسخ رابط الدعوة"><b id="roomCode">—</b><span>🔗 انسخ الرابط</span></div>
+      <div id="phaseInfo">في الانتظار…</div>
+      <button class="iconBtn" id="rulesBtn" title="القواعد">📖</button>
+      <button class="iconBtn" id="sndBtn" title="الصوت">🔊</button>
+      <a class="iconBtn" href="/" title="الصفحة الرئيسية">🏠</a>
+    </div>
+
+    <!-- اللوبي -->
+    <div class="card" id="lobby">
+      <div class="h">👥 المقاعد <span id="plCount" style="font-size:13px; color:var(--muted); font-weight:700;"></span></div>
+      <div class="players" id="seatGrid"></div>
+      <div id="hostArea" style="display:none; flex-direction:column; gap:10px;">
+        <button class="btn btn-ghost" id="setOpen" style="width:auto;">⚙️ إعدادات الغرفة</button>
+        <div id="setBox"></div>
+        <button class="btn btn-green" id="startBtn">▶️ ابدأ اللعبة</button>
+      </div>
+      <div id="waitHost" class="sub">بانتظار مدير الغرفة يبدأ اللعبة…</div>
+      <div id="lobbySummary" class="sub"></div>
+    </div>
+
+    <!-- اللعب -->
+    <div id="play">
+      <div id="boardCol">
+        <div id="promptBar"></div>
+        <div id="boardBox">
+          <div id="ludoBoard"><svg id="boardSvg" viewBox="0 0 15 15" aria-label="لوحة اللودو"></svg><div id="toks"></div></div>
+        </div>
+        <div id="dock">
+          <span id="goldTag">🎲✨ رميتك القادمة ٦</span>
+          <button id="diceBtn" disabled aria-label="ارمِ النرد"><span class="tap"></span></button>
+          <div id="turnBox"><div id="turnLine">—</div><div id="timerBar"><i></i></div></div>
+        </div>
+      </div>
+      <div id="side">
+        <div class="card" id="plist"></div>
+        <div class="card" id="missionCard"></div>
+        <div class="card" id="chatCard">
+          <div id="msgs"></div>
+          <form id="chatForm" autocomplete="off">
+            <input id="chatInput" type="text" placeholder="اكتب رسالة…" maxlength="140">
+            <button type="submit">إرسال</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- القواعد -->
+<div class="modal" id="rulesModal"><div class="sheet">
+  <h3>📖 قواعد اللودو</h3>
+  <div id="rulesBody"></div>
+  <button class="btn btn-ghost" data-close>حسنًا</button>
+</div></div>
+
+<!-- التضحية -->
+<div class="modal" id="sacModal" data-sticky><div class="sheet">
+  <h3>👑 ملكك في خطر!</h3>
+  <div class="sub" style="text-align:start">قطعةٌ للخصم هجمت على ملكك. ضحِّ بحارسٍ على اللوحة فيبقى الملك مكانه، ويعود الحارس إلى القاعدة محظورًا ٣ أدوار.</div>
+  <div class="choice" id="sacChoices"></div>
+</div></div>
+
+<!-- النتيجة -->
+<div class="modal" id="endModal"><div class="sheet">
+  <div class="winBanner" id="endBanner">—</div>
+  <div id="endMissions"></div>
+  <button class="btn btn-green" id="endAgain" style="display:none">🔄 جولة جديدة بالإعدادات نفسها</button>
+  <button class="btn btn-ghost" data-close>إلى اللوبي</button>
+</div></div>
+
+<div id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/ludo/geom.js"></script>
+<script src="/ludo/app.js"></script>
+</body>
+</html>

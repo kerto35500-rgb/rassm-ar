@@ -1,0 +1,504 @@
+// اختبار محرّك لودو: الهندسة، والقواعد الأساسيّة، والأوضاع الستّة، والمعزّزات،
+// والفرق، ثمّ آلافُ المباريات العشوائيّة مع فحص الثوابت في كلّ خطوة.
+//
+// كلُّ مشهدٍ يُبنى يدويًّا (نضع القطع حيث نريد ونحمّل النرد) لأنّ القاعدة
+// التي لا تُختبَر في مشهدها الدقيق تُختبَر بالحظّ — والحظُّ لا يجد الحوافّ.
+
+const L = require("./ludorules");
+const BOT = require("./ludobot");
+const G = L.G;
+const { FINISH, BASE, LAST_TRACK, HOME_FIRST, START, STARS, absOf, TRACK } = G;
+
+let P = 0, F = 0;
+const ok = (c, m, x) => { c ? P++ : F++; console.log((c ? "  ✅ " : "  ❌ ") + m + (c ? "" : " → " + JSON.stringify(x))); };
+const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
+
+const mk = (rules, seats, seed = 1) => { const m = new L.LudoMatch(rules, seats, seed); m.takeEvents(); return m; };
+const turnTo = (m, s) => { m.turn = s; m.phase = "roll"; m.dice = null; m.sixes = 0; m.legal = []; };
+const put = (m, seat, idx, p) => { m.pieces[seat][idx].p = p; };
+const rollAs = (m, seat, v) => { m._loaded = [v]; m.roll(seat); };
+const mv = (m, owner, idx) => m.legal.find(x => x.owner === owner && x.idx === idx);
+const go = (m, seat, owner, idx) => { const x = mv(m, owner, idx); if (!x) throw new Error("no move " + owner + ":" + idx); m.move(seat, x.id); };
+const rel = (seat, abs) => (abs - START[seat] + TRACK) % TRACK;
+const evs = (m, t) => m.takeEvents().filter(e => !t || e.t === t);
+
+console.log("\n═══ محرّك لودو ═══\n");
+
+/* ═══════════ ١) الهندسة ═══════════ */
+console.log("① الهندسة");
+{
+  const t = G.TRACK_RC;
+  eq(t.length, 52, "الطريق ٥٢ مربّعًا");
+  eq(new Set(t.map(x => x + "")).size, 52, "بلا تكرار");
+  let diag = 0, jump = 0;
+  for (let i = 0; i < 52; i++) {
+    const a = t[i], b = t[(i + 1) % 52], d = Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
+    if (d === 2 && a[0] !== b[0] && a[1] !== b[1]) diag++; else if (d !== 1) jump++;
+  }
+  eq(diag, 4, "أربعُ زوايا قطريّة حول المركز — كاللوحة الحقيقيّة");
+  eq(jump, 0, "ولا قفزةَ غيرها");
+  eq([0, 1, 2, 3].map(s => t[absOf(s, 50)].join(",")), ["7,0", "0,7", "7,14", "14,7"], "كلُّ مقعدٍ ينعطف عند رأس ذراعه");
+  ok(STARS.every(s => !START.includes(s)), "النجوم غيرُ مربّعات الانطلاق");
+  ok(G.HOME_RC.every(h => h.length === 5), "مسار النهاية خمسةُ مربّعات");
+}
+
+/* ═══════════ ٢) القواعد الأساسيّة ═══════════ */
+console.log("② القواعد الأساسيّة (من لعبة المرجع)");
+{
+  let m = mk({ mode: "classic" }, [0, 2]);
+  turnTo(m, 0); rollAs(m, 0, 3);
+  eq(m.turn, 2, "بلا ستّةٍ والقطعُ كلُّها في القاعدة ⇒ يمرّ الدور");
+
+  m = mk({ mode: "classic" }, [0, 2]);
+  turnTo(m, 0); rollAs(m, 0, 6);
+  ok(!!mv(m, 0, 0), "الستّة تُخرج قطعة");
+  eq(m.legal.length, 1, "وقطعُ القاعدة المتكافئة تُعرض مرّةً واحدة");
+  go(m, 0, 0, 0);
+  eq(m.pieces[0][0].p, 0, "تقف على مربّع الانطلاق");
+  ok(m.turn === 0 && m.phase === "roll", "والستّة تمنح رميةً أخرى");
+  rollAs(m, 0, 4); go(m, 0, 0, 0);
+  eq(m.turn, 2, "رميةٌ عاديّة ⇒ ينتقل الدور");
+
+  m = mk({ mode: "classic" }, [0, 2]);
+  turnTo(m, 0); put(m, 0, 0, 10);
+  rollAs(m, 0, 6); go(m, 0, 0, 0);
+  rollAs(m, 0, 6); go(m, 0, 0, 0);
+  rollAs(m, 0, 6);
+  eq(m.pieces[0][0].p, 22, "ثلاثُ ستّات: الثالثة لا تُحرّك شيئًا");
+  eq(m.turn, 2, "وتُنهي الدور");
+
+  /* الأكل */
+  m = mk({ mode: "classic" }, [0, 2]);
+  turnTo(m, 0); put(m, 0, 0, 26); put(m, 2, 0, rel(2, 30));
+  rollAs(m, 0, 4); go(m, 0, 0, 0);
+  eq(m.pieces[2][0].p, BASE, "النزولُ على خصمٍ يُعيده إلى قاعدته");
+  ok(m.turn === 0 && m.phase === "roll", "والأكلُ يمنح رميةً إضافيّة");
+
+  m = mk({ mode: "classic" }, [0, 2]);
+  turnTo(m, 0); put(m, 0, 0, 30); put(m, 2, 0, rel(2, 34));
+  rollAs(m, 0, 4); go(m, 0, 0, 0);
+  eq(m.pieces[2][0].p, rel(2, 34), "النجمة آمنة: لا أكل");
+  eq(m.turn, 2, "ولا رميةَ إضافيّة");
+
+  m = mk({ mode: "classic" }, [0, 2]);
+  turnTo(m, 0); put(m, 0, 0, 22); put(m, 2, 0, 0);
+  rollAs(m, 0, 4); go(m, 0, 0, 0);
+  eq(m.pieces[2][0].p, 0, "مربّعُ انطلاق الخصم آمنٌ كذلك");
+
+  m = mk({ mode: "classic" }, [0, 2]);
+  turnTo(m, 0); put(m, 0, 0, 54);
+  rollAs(m, 0, 3);
+  eq(m.turn, 2, "لا تجاوزَ للمركز: ٥٤+٣ لا تُلعب");
+  turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 0);
+  eq(m.pieces[0][0].p, FINISH, "والرميةُ المطابقة تُدخلها");
+
+  m = mk({ mode: "classic" }, [0, 2]);
+  turnTo(m, 0); [0, 1, 2].forEach(i => put(m, 0, i, FINISH)); put(m, 0, 3, 55);
+  rollAs(m, 0, 1); go(m, 0, 0, 3);
+  ok(m.winner && m.winner.seats[0] === 0 && m.winner.reason === "allHome", "الكلاسيكيّ: الفوز بالأربع", m.winner);
+}
+
+/* ═══════════ ٣) السريع ═══════════ */
+console.log("③ السريع");
+{
+  const m = mk({ mode: "rush" }, [0, 1, 2, 3]);
+  ok([0, 1, 2, 3].every(s => m.pieces[s][0].p === 0), "قطعةٌ لكلّ لاعبٍ على الطريق من البداية");
+  turnTo(m, 1); put(m, 1, 0, 53);
+  rollAs(m, 1, 3); go(m, 1, 1, 0);
+  ok(m.winner && m.winner.seats.join() === "1" && m.winner.reason === "first", "قطعةٌ واحدةٌ تكفي للفوز", m.winner);
+}
+
+/* ═══════════ ٤) الاحترافيّ ═══════════ */
+console.log("④ الاحترافيّ: الحواجز والارتداد");
+{
+  let m = mk({ mode: "master" }, [0, 2]);
+  put(m, 2, 0, rel(2, 30)); put(m, 2, 1, rel(2, 30));
+  eq(m.blockadeAt(30), 2, "قطعتان لك في مربّعٍ واحد = حاجز");
+  turnTo(m, 0); put(m, 0, 0, 27);
+  m._loaded = [5]; m.roll(0);
+  ok(!mv(m, 0, 0), "لا يُتخطّى الحاجز");
+  turnTo(m, 0); rollAs(m, 0, 3);
+  ok(!mv(m, 0, 0), "ولا يُنزَل عليه — فلا يُؤكل");
+  turnTo(m, 0); rollAs(m, 0, 2);
+  ok(!!mv(m, 0, 0), "وما قبله مشروع");
+
+  m = mk({ mode: "master" }, [0, 2]);
+  put(m, 2, 0, 4); put(m, 2, 1, 4); put(m, 2, 2, 1);
+  turnTo(m, 2); rollAs(m, 2, 5);
+  ok(!!mv(m, 2, 2), "صاحبُ الحاجز يعبر حاجزه");
+
+  m = mk({ mode: "master" }, [0, 2]);
+  put(m, 2, 0, rel(2, 34)); put(m, 2, 1, rel(2, 34));
+  eq(m.blockadeAt(34), null, "لا حاجزَ على مربّعٍ آمن (من لعبة المرجع) — فلا يُحبَس أحدٌ في قاعدته");
+
+  m = mk({ mode: "master", teams: true }, [0, 1, 2, 3]);
+  put(m, 0, 0, 5); put(m, 0, 1, 5);
+  put(m, 2, 0, rel(2, 3));
+  turnTo(m, 2); rollAs(m, 2, 3);
+  ok(!mv(m, 2, 0), "حاجزُ اللاعب يحجب زميلَه أيضًا");
+
+  m = mk({ mode: "master" }, [0, 2]);
+  turnTo(m, 0); put(m, 0, 0, 55);
+  rollAs(m, 0, 3);
+  const b = mv(m, 0, 0);
+  ok(b && b.to === 54 && b.bounce, "رميةٌ أكبر من المسافة ⇒ ترتدّ القطعة", b);
+  turnTo(m, 0); put(m, 0, 0, 53); rollAs(m, 0, 3);
+  eq(mv(m, 0, 0).to, FINISH, "والرقمُ المطابق يُدخلها");
+}
+
+/* ═══════════ ٥) الفرق ═══════════ */
+console.log("⑤ الفرق ٢ ضدّ ٢");
+{
+  let m = mk({ mode: "classic", teams: true }, [0, 1, 2, 3]);
+  ok(!m.opponent(0, 2) && m.opponent(0, 1), "المتقابلان فريق: (٠+٢) ضدّ (١+٣)");
+  put(m, 2, 0, rel(2, 30)); put(m, 0, 0, 26);
+  turnTo(m, 0); rollAs(m, 0, 4);
+  ok(!mv(m, 0, 0), "بلا «تأمينٍ مشترك» لا يقف زميلان في مربّعٍ غير آمن");
+
+  m = mk({ mode: "classic", teams: true, sharedSafe: true }, [0, 1, 2, 3]);
+  put(m, 2, 0, rel(2, 30)); put(m, 0, 0, 26);
+  turnTo(m, 0); rollAs(m, 0, 4); go(m, 0, 0, 0);
+  ok(m.isSafeAbs(30), "ومعه يقفان معًا فيصير المربّعُ آمنًا");
+  put(m, 1, 0, rel(1, 27)); turnTo(m, 1); rollAs(m, 1, 3); go(m, 1, 1, 0);
+  ok(m.pieces[0][0].p === 26 + 4 && m.pieces[2][0].p === rel(2, 30), "فلا يأكلهما الخصم");
+
+  m = mk({ mode: "classic", teams: true }, [0, 1, 2, 3]);
+  [0, 1, 2, 3].forEach(i => put(m, 0, i, FINISH));
+  put(m, 2, 0, 10);
+  eq(m.controlled(0), [2], "من أنهى قطعَه يرمي لزميله");
+  turnTo(m, 0); rollAs(m, 0, 3);
+  ok(m.legal.every(x => x.owner === 2) && m.legal.length > 0, "ويحرّك قطعَ زميله");
+  go(m, 0, 2, 0);
+  ok(!m.winner, "والفريقُ لا يفوز إلا بقطعه الثماني");
+}
+
+/* ═══════════ ٦) المهامّ السرّيّة ═══════════ */
+console.log("⑥ المهامّ السرّيّة");
+{
+  let distinct = true, foeOnly = true;
+  for (let seed = 1; seed < 80; seed++) {
+    const m = mk({ mode: "missions", teams: seed % 2 === 0, powerups: seed % 3 === 0 }, [0, 1, 2, 3], seed);
+    const ids = m.seats.map(s => m.missions[s].id);
+    if (new Set(ids).size !== ids.length) distinct = false;
+    for (const s of m.seats) if (m.missions[s].target != null && !m.opponent(s, m.missions[s].target)) foeOnly = false;
+    if (!m.rules.powerups && ids.some(id => id.startsWith("pu"))) foeOnly = false;
+  }
+  ok(distinct, "لا مهمّتان متطابقتان على اللوحة");
+  ok(foeOnly, "ومهمّةُ «كُل لونًا» تستهدف خصمًا لا زميلًا، ومهامُّ المعزّزات لا تُعطى بلا معزّزات");
+
+  let m = mk({ mode: "missions", teams: true }, [0, 1, 2, 3], 5);
+  let v = m.view(0);
+  ok(v.missions[1].hidden && v.missions[3].hidden, "مهمّةُ الخصم مخفيّة");
+  ok(!v.missions[0].hidden && !v.missions[2].hidden && v.missions[2].text, "ومهمّةُ الزميل مكشوفة");
+
+  m = mk({ mode: "missions" }, [0, 2], 5);
+  m.missions[0] = { id: "sixes", goal: 7, target: null };
+  m.stats[0].sixes = 6;
+  turnTo(m, 0); rollAs(m, 0, 6);
+  ok(m.winner && m.winner.reason === "mission" && m.winner.by === 0,
+     "مهمّةٌ تكتمل برميةٍ بلا حركة تفوز فورًا", m.winner);
+
+  m = mk({ mode: "missions", teams: true }, [0, 1, 2, 3], 6);
+  m.missions[2] = { id: "eat", goal: 2, target: null };
+  m.stats[2].capsTotal = 1;
+  put(m, 2, 0, 26 - 26 + 4); put(m, 1, 0, rel(1, 26 + 4 + 3));
+  turnTo(m, 2); rollAs(m, 2, 3); go(m, 2, 2, 0);
+  ok(m.winner && m.winner.seats.join() === "0,2", "إنجازُ الزميل فوزٌ للفريق", m.winner);
+}
+
+/* ═══════════ ٧) الظلام ═══════════ */
+console.log("⑦ الظلام");
+{
+  let m = mk({ mode: "night" }, [0, 2]);
+  put(m, 0, 0, 10);
+  put(m, 2, 0, rel(2, 20)); put(m, 2, 1, rel(2, 13)); put(m, 2, 2, FINISH);
+  let v = m.view(0);
+  ok(v.pieces[2][0].hidden && v.pieces[2][0].p === undefined, "الخصمُ خارج النطاق مخفيٌّ تمامًا — حتى موضعُه لا يُرسَل");
+  ok(!v.pieces[2][1].hidden, "وفي النطاق (٣ خطوات) ظاهر");
+  ok(!v.pieces[2][2].hidden && !v.pieces[2][3].hidden, "والقاعدة والمركز عامّان");
+  ok(v.visible.includes(14) && !v.visible.includes(15), "نطاقُ الرؤية ٤ خطوات حول قطعك");
+
+  /* حركةٌ في الظلام لا تصل لمن لا يراها */
+  turnTo(m, 2); rollAs(m, 2, 2); evs(m);
+  go(m, 2, 2, 0);
+  let raw = m.takeEvents();
+  ok(!m.eventsFor(raw, 0).some(e => e.t === "move"), "حركةُ خصمٍ في الظلام لا يُرسَل منها شيء");
+  ok(m.eventsFor(raw, 2).some(e => e.t === "move" && e.to != null), "وصاحبُها يراها كاملة");
+
+  /* حركةٌ تدخل النطاق: تصل مقصوصة */
+  m = mk({ mode: "night" }, [0, 2]);
+  put(m, 0, 0, 10); put(m, 2, 0, rel(2, 2));
+  turnTo(m, 2); rollAs(m, 2, 6); evs(m); go(m, 2, 2, 0);
+  raw = m.takeEvents();
+  const part = m.eventsFor(raw, 0).find(e => e.t === "move");
+  ok(part && part.partial && part.from === null && part.path[0] === null && part.path[5] != null,
+     "تظهر القطعةُ من الظلام: المسارُ مقصوصٌ إلى ما يُرى", part);
+
+  /* الأكلُ يكشف اللوحة حتى نهاية الدور */
+  m = mk({ mode: "night" }, [0, 2]);
+  put(m, 0, 0, 26); put(m, 2, 0, rel(2, 30)); put(m, 2, 1, rel(2, 45));
+  turnTo(m, 0); rollAs(m, 0, 4); go(m, 0, 0, 0);
+  eq(m.view(0).visible.length, 52, "من أكل انكشفت له اللوحةُ كلُّها");
+  rollAs(m, 0, 1); go(m, 0, 0, 0);
+  ok(m.view(0).visible.length < 52, "حتى نهاية دوره فقط");
+
+  m = mk({ mode: "night", teams: true }, [0, 1, 2, 3]);
+  put(m, 2, 0, rel(2, 40)); put(m, 1, 0, rel(1, 42));
+  ok(!m.view(0).pieces[1][0].hidden, "رؤيةُ الزميل مشتركة");
+
+  m = mk({ mode: "night", powerups: true }, [0, 2]);
+  m.powerups = [{ cell: 30, type: "gold" }, { cell: 5, type: "jump" }];
+  put(m, 0, 0, 3);
+  eq(m.view(0).powerups.map(x => x.cell), [5], "والمعزّزات تُرى في النطاق وحده");
+
+  m = mk({ mode: "night" }, [0, 2]);
+  turnTo(m, 0); put(m, 0, 0, 53); rollAs(m, 0, 3); go(m, 0, 0, 0);
+  ok(m.winner && m.winner.reason === "first", "الظلام يُكسَب بقطعةٍ واحدة (كلعبة المرجع)");
+}
+
+/* ═══════════ ٨) الملك ═══════════ */
+console.log("⑧ الملك");
+{
+  let m = mk({ mode: "king" }, [0, 2]);
+  eq(m.pieces[0].map(x => x.kind), ["guard", "guard", "guard", "king"], "ثلاثةُ حرّاسٍ وملك");
+  turnTo(m, 0); rollAs(m, 0, 6);
+  ok(!mv(m, 0, 3), "الملك مقفلٌ في القاعدة في البداية");
+  go(m, 0, 0, 0);
+  ok(!m.unlocked[0], "خروجُ الحارس وحده لا يفكّ القفل");
+  rollAs(m, 0, 2); go(m, 0, 0, 0);
+  ok(m.unlocked[0], "حتى يخطو خطوةً على الأقلّ");
+  turnTo(m, 0); rollAs(m, 0, 6);
+  ok(!!mv(m, 0, 3), "ثمّ يخرج الملك بستّة");
+  go(m, 0, 0, 3);
+  rollAs(m, 0, 3);
+  ok(!mv(m, 0, 3), "ولا يمشي إلى ما لم يمشِه حارس (الحارس عند ٢)");
+  turnTo(m, 0); rollAs(m, 0, 2);
+  ok(!!mv(m, 0, 3), "ويمشي على المسار المؤمَّن");
+
+  /* التضحية */
+  m = mk({ mode: "king" }, [0, 2]);
+  m.unlocked[0] = true;
+  for (let q = 0; q <= 20; q++) m.visited[0].add(m.key(0, q));
+  put(m, 0, 3, 18); put(m, 0, 0, 5);
+  put(m, 2, 0, rel(2, 15));
+  turnTo(m, 2); rollAs(m, 2, 3); go(m, 2, 2, 0);
+  ok(m.prompt && m.prompt.seat === 0 && m.prompt.kind === "sacrifice", "هجومٌ على الملك ⇒ يُسأل صاحبُه: تضحّي بحارس؟", m.prompt);
+  eq(m.actingSeat(), 0, "والقرارُ لصاحب الملك لا لصاحب الدور");
+  m.choose(0, 0);
+  eq(m.pieces[0][3].p, 18, "الملكُ يبقى مكانه");
+  eq(m.pieces[0][0].p, BASE, "والحارسُ يعود إلى القاعدة");
+  eq(m.pieces[0][0].cooldown, 3, "محظورًا ٣ أدوار");
+  ok(m.turn === 2 && m.phase === "roll", "والمهاجم يأخذ رميته الإضافيّة");
+
+  /* الحظر */
+  turnTo(m, 0); rollAs(m, 0, 6);
+  ok(!mv(m, 0, 0), "الحارسُ المضحّي لا ينزل في فترة الحظر");
+  for (let k = 0; k < 3; k++) { turnTo(m, 0); m.endOfTurn(0); }
+  turnTo(m, 0); rollAs(m, 0, 6);
+  ok(!!mv(m, 0, 0), "وبعد ثلاثة أدوارٍ يعود");
+
+  /* رفض التضحية ⇒ يسقط الملك ويخرج اللاعب */
+  m = mk({ mode: "king" }, [0, 2]);
+  m.unlocked[0] = true;
+  for (let q = 0; q <= 20; q++) m.visited[0].add(m.key(0, q));
+  put(m, 0, 3, 18); put(m, 0, 0, 5); put(m, 2, 0, rel(2, 15)); put(m, 2, 3, BASE);
+  turnTo(m, 2); rollAs(m, 2, 3); go(m, 2, 2, 0);
+  m.choose(0, "none");
+  ok(m.out[0] && m.pieces[0].every(x => x.p === L.DEAD), "بلا تضحية يسقط الملك ويخرج صاحبه بقطعه");
+  ok(m.winner && m.winner.seats.join() === "2" && m.winner.reason === "lastKing", "وآخرُ ملكٍ قائمٍ يفوز", m.winner);
+
+  /* الفرق: ملكان، ومسارٌ مشترك، وتضحيةٌ ذاتيّة فقط */
+  m = mk({ mode: "king", teams: true }, [0, 1, 2, 3]);
+  m.visited[2].add("t30"); m.visited[2].add("h2_1");
+  ok(m.secured(0).has("t30") && !m.secured(0).has("h2_1"), "الملك يمشي على ما عبّده حرّاسُ زميله على الطريق المشترك");
+  m.unlocked[0] = true;
+  for (let q = 0; q <= 20; q++) m.visited[0].add(m.key(0, q));
+  put(m, 0, 3, 18); put(m, 2, 0, 3);
+  put(m, 1, 0, rel(1, 15));
+  turnTo(m, 1); rollAs(m, 1, 3); go(m, 1, 1, 0);
+  ok(!m.prompt && m.pieces[0][3].p === L.DEAD, "لا يُضحّى بحارس الزميل: ملكٌ بلا حرّاسٍ له يسقط");
+  ok(!m.winner && !m.out[0], "والفريق باقٍ بملك الزميل");
+  put(m, 2, 3, 18 - 26 + 52); m.unlocked[2] = true; m.visited[2].add(m.key(2, 44));
+  put(m, 1, 1, rel(1, absOf(2, 44) - 2));
+  turnTo(m, 1); rollAs(m, 1, 2);
+  const kill = mv(m, 1, 1);
+  if (kill) { m.move(1, kill.id); }
+  ok(m.prompt && m.prompt.seat === 2 && m.prompt.options.every(i => m.pieces[2][i].kind === "guard"),
+     "ملكُ الزميل يُفدى بحرّاس صاحبه وحده", m.prompt);
+  m.choose(2, "none");
+  ok(m.winner && m.winner.seats.join() === "1,3", "سقوطُ الملكين معًا يُخسر الفريق", m.winner);
+
+  m = mk({ mode: "king" }, [0, 2]);
+  m.unlocked[0] = true;
+  for (let q = 0; q <= FINISH; q++) m.visited[0].add(m.key(0, q));
+  put(m, 0, 3, 54); turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 3);
+  ok(m.winner && m.winner.reason === "kingHome", "وصولُ الملك إلى المركز فوز", m.winner);
+}
+
+/* ═══════════ ٩) المعزّزات ═══════════ */
+console.log("⑨ المعزّزات");
+{
+  let m = mk({ mode: "classic", powerups: true, powerCount: 5 }, [0, 1, 2, 3]);
+  eq(m.powerups.length, 5, "العدد كما ضبطه المضيف");
+  ok(m.powerups.every(x => !L.SAFE.has(x.cell)), "لا معزّزَ على مربّعٍ آمن");
+
+  /* الالتقاط بالوقوف التامّ وحده، ويُولَد بديل */
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);
+  m.powerups = [{ cell: 12, type: "bubble" }, { cell: 40, type: "gold" }, { cell: 44, type: "gold" }];
+  put(m, 0, 0, 10); turnTo(m, 0); rollAs(m, 0, 4); go(m, 0, 0, 0);
+  ok(m.powerups.some(x => x.cell === 12), "المرورُ فوق المعزّز لا يلتقطه");
+  turnTo(m, 0); put(m, 0, 0, 10); rollAs(m, 0, 2); go(m, 0, 0, 0);
+  ok(!m.powerups.some(x => x.cell === 12) && m.powerups.length === 3, "والوقوفُ التامّ يلتقطه ويُولد بديلٌ فورًا");
+
+  /* النرد الذهبيّ */
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);
+  m.powerups = [{ cell: 12, type: "gold" }];
+  put(m, 0, 0, 10); turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 0);
+  ok(m.golden[0], "النرد الذهبيّ محفوظٌ للرمية القادمة");
+  turnTo(m, 0); m._loaded = [1]; m.roll(0);
+  eq(m.dice, 6, "والرميةُ القادمة ستّةٌ مضمونة");
+  eq(m.sixes, 0, "ولا تُحسَب في عقوبة الستّات");
+
+  /* درع الفقاعة */
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);
+  m.powerups = [{ cell: 12, type: "bubble" }];
+  put(m, 0, 0, 10); turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 0);
+  ok(m.pieces[0][0].shield > 0, "الفقاعة على القطعة");
+  put(m, 2, 0, rel(2, 9)); turnTo(m, 2); rollAs(m, 2, 3); go(m, 2, 2, 0);
+  eq(m.pieces[0][0].p, 12, "لا تُؤكل وهي محميّة");
+  eq(m.turn, 0, "ثمّ يعود الدور إلى صاحبها");
+  eq(m.pieces[0][0].shield, 0, "والحمايةُ دورةٌ واحدة: تنتهي حين يعود الدور إليه");
+
+  /* الرياح العكسيّة */
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 1, 2]);
+  m.powerups = [{ cell: 30, type: "wind" }];
+  put(m, 0, 0, 27);
+  put(m, 1, 0, rel(1, 29)); put(m, 2, 0, rel(2, 27 + 0));
+  turnTo(m, 0); rollAs(m, 0, 3); evs(m); go(m, 0, 0, 0);
+  eq(absOf(1, m.pieces[1][0].p), 26, "خصمٌ خلفك بمربّعٍ يرتدّ إلى المربّع الرابع");
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 1, 2]);
+  m.powerups = [{ cell: 33, type: "wind" }];
+  put(m, 0, 0, 28);
+  put(m, 1, 0, rel(1, 31)); put(m, 2, 0, rel(2, 30));
+  turnTo(m, 0); rollAs(m, 0, 5); go(m, 0, 0, 0);
+  ok(absOf(1, m.pieces[1][0].p) === 29 && m.pieces[2][0].p === BASE,
+     "خصمان على بُعد ٢ و٣ يرتدّان معًا إلى الرابع فيأكل الأقربُ الأبعد",
+     { s1: m.pieces[1][0].p, s2: m.pieces[2][0].p });
+  eq(m.pieces[0][0].p, 33, "وصاحبُ الريح ثابتٌ في مكانه");
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 1, 2]);
+  m.powerups = [{ cell: 30, type: "wind" }];
+  put(m, 0, 0, 25); put(m, 1, 0, rel(1, 28)); put(m, 2, 0, rel(2, 27));
+  turnTo(m, 0); rollAs(m, 0, 5); go(m, 0, 0, 0);
+  ok(m.pieces[2][0].p === 0 && absOf(1, m.pieces[1][0].p) === 26,
+     "واصطدامٌ على مربّعٍ آمن (انطلاق الأصفر) لا أكلَ فيه");
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 1, 2]);
+  m.powerups = [{ cell: 31, type: "wind" }];
+  put(m, 0, 0, 25);
+  put(m, 1, 0, rel(1, 30)); put(m, 2, 0, rel(2, 29));
+  turnTo(m, 0); rollAs(m, 0, 6); go(m, 0, 0, 0);
+  ok(absOf(1, m.pieces[1][0].p) === 27 && m.pieces[2][0].p === BASE,
+     "اصطدامٌ في الرابع: الأقربُ يأكل الأبعد", { s1: m.pieces[1][0].p, s2: m.pieces[2][0].p });
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);
+  m.powerups = [{ cell: 12, type: "wind" }];
+  put(m, 0, 0, 10); turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 0);
+  eq(m.pieces[0][0].p, 13, "ولا أحد خلفك ⇒ تتقدّم خطوة");
+
+  /* تبديل الأماكن */
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);
+  m.powerups = [{ cell: 12, type: "swap" }];
+  put(m, 0, 0, 10); put(m, 2, 0, rel(2, 16));
+  turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 0);
+  ok(m.pieces[0][0].p === 16 && absOf(2, m.pieces[2][0].p) === 12, "خصمٌ واحدٌ في النطاق ⇒ تبديلٌ فوريّ");
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 1, 2]);
+  m.powerups = [{ cell: 31, type: "swap" }];
+  put(m, 0, 0, 29); put(m, 2, 0, rel(2, 35)); put(m, 1, 0, rel(1, 28));
+  turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 0);
+  ok(m.prompt && m.prompt.kind === "swap" && m.prompt.options.length === 2, "أكثر من خصمٍ ⇒ يختار اللاعب", m.prompt);
+  m.choose(0, m.prompt.options.find(o => o.seat === 1).id);
+  ok(absOf(0, m.pieces[0][0].p) === 28 && absOf(1, m.pieces[1][0].p) === 31, "ويبدّل مع من اختار");
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 1]);
+  m.powerups = [{ cell: 12, type: "swap" }];
+  put(m, 0, 0, 12); put(m, 1, 0, rel(1, 9));
+  eq(m.swapOptions(0, 0).length, 0, "ولا يُبدَّل خصمٌ إن كان التبديل سيعبر به مدخلَ بيته");
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);
+  m.powerups = [{ cell: absOf(0, 48), type: "swap" }];
+  put(m, 0, 0, 46); put(m, 2, 0, rel(2, absOf(0, 48) + 4));
+  turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 0);
+  eq(m.pieces[0][0].p, 48, "لا تبديلَ يعبر بالقطعة مدخلَ بيتها فتلفّ الطريق مرّةً ثانية");
+  m = mk({ mode: "classic", teams: true, sharedSafe: true, powerups: true, powerCount: 3 }, [0, 1, 2, 3]);
+  m.powerups = [{ cell: 12, type: "swap" }];
+  put(m, 0, 0, 10); put(m, 2, 0, rel(2, 15));
+  turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 0);
+  eq(m.pieces[0][0].p, 12, "ولا يُبدَّل مع الزميل");
+}
+
+/* ═══════════ ١٠) آلافُ المباريات مع فحص الثوابت ═══════════ */
+console.log("⑩ مبارياتٌ عشوائيّة: الثوابت في كلّ خطوة");
+{
+  const issues = {};
+  const bad = (k, x) => { issues[k] = (issues[k] || 0) + 1; if (issues[k] === 1) console.log("     ⚠️", k, JSON.stringify(x).slice(0, 300)); };
+  let games = 0, steps = 0;
+  for (const mode of L.MODES) for (const teams of [false, true]) for (const pu of [false, true]) {
+    for (let g = 0; g < 45; g++) {
+      const seats = teams ? [0, 1, 2, 3] : [[0, 2], [0, 1, 2], [0, 1, 2, 3]][g % 3];
+      const m = new L.LudoMatch({ mode, teams, powerups: pu, sharedSafe: g % 2 === 0, powerCount: 3 + g % 4 }, seats, 20000 + g);
+      const rnd = L.rngFrom(g * 31 + 7);
+      let k = 0;
+      while (m.phase !== "over" && k++ < 50000) {
+        steps++;
+        /* الثوابت */
+        for (const s of m.seats) {
+          if (m.pieces[s].length !== 4) bad("pieces!=4", { s });
+          for (const pc of m.pieces[s]) if (!(pc.p === L.DEAD || (pc.p >= BASE && pc.p <= FINISH))) bad("p out of range", pc);
+        }
+        if (mode === "night") for (const v of m.seats) {
+          const view = m.view(v), vis = new Set(view.visible);
+          for (const s of m.seats) if (!m.allies(v).includes(s)) view.pieces[s].forEach(pc => {
+            if (pc.hidden) { if ("p" in pc) bad("hidden piece leaks p", pc); return; }
+            if (pc.p >= 0 && pc.p <= LAST_TRACK && !vis.has(absOf(s, pc.p))) bad("visible piece outside vision", { v, s, pc });
+            if (pc.p > LAST_TRACK && pc.p < FINISH) bad("opponent home column leaked", { v, s, pc });
+          });
+          for (const pu2 of view.powerups) if (!vis.has(pu2.cell)) bad("power-up outside vision", pu2);
+        }
+        if (mode === "missions") for (const v of m.seats) {
+          const view = m.view(v);
+          for (const s of m.seats) if (!m.allies(v).includes(s) && !view.missions[s].hidden && !m.winner) bad("mission leaked", { v, s });
+        }
+        if (m.phase === "move") for (const x of m.legal) {
+          if (mode === "master") for (const q of x.path) if (q <= LAST_TRACK) {
+            const b = m.blockadeAt(absOf(x.owner, q));
+            if (b !== null && b !== x.owner) bad("crosses blockade", x);
+          }
+          const pc = m.pieces[x.owner][x.idx];
+          if (pc.kind === "king") {
+            const sec = m.secured(x.owner);
+            for (const q of x.path) if (!sec.has(m.key(x.owner, q))) bad("king off path", x);
+          }
+        }
+        /* الحركة: بوتٌ أو عشوائيّ بالتناوب */
+        const a = m.actingSeat();
+        const useBot = (a + g) % 2 === 0;
+        if (useBot) {
+          const d = BOT.decide(m.view(a), 1 + (g % 2), rnd);
+          if (!d) { bad("bot returned nothing", { phase: m.phase }); break; }
+          if (d.kind === "roll") m.roll(a); else if (d.kind === "move") m.move(a, d.id); else m.choose(a, d.choice);
+        } else if (m.prompt) {
+          const o = m.prompt.options;
+          m.choose(a, m.prompt.kind === "sacrifice" ? (rnd() < 0.3 ? "none" : o[0]) : o[Math.floor(rnd() * o.length)].id);
+        } else if (m.phase === "roll") m.roll(a);
+        else m.move(a, m.legal[Math.floor(rnd() * m.legal.length)].id);
+        const raw = m.takeEvents();
+        if (mode === "night") for (const v of m.seats) for (const e of m.eventsFor(raw, v)) {
+          if (e._see) bad("internal field leaked", e.t);
+        }
+      }
+      games++;
+      if (m.phase !== "over") bad("game did not end", { mode, teams, pu, g });
+    }
+  }
+  console.log(`     ${games} مباراة · ${steps.toLocaleString()} خطوة`);
+  eq(issues, {}, "لا خرقَ لأيّ ثابتٍ في أيّ خطوة");
+}
+
+console.log(`\n═══ ${P} نجحت · ${F} فشلت ═══\n`);
+process.exit(F ? 1 : 0);

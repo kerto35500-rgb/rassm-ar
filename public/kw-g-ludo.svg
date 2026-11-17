@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- أيقونة «لودو» للصفحة الرئيسية بستايل المارشميلو: نردٌ أبيضُ على وجه
+       الستّة، وأمامه بيدقٌ ورديٌّ. مرسومةٌ من الصفر بلا شعارٍ ولا علامة.
+
+       على قاعدتَي أيقونة البالوت:
+       ① النردُ يدور حول **مركزه هو** (53،61) فلا ينزلق خارج المربّع.
+       ② البيدقُ يقف أمام الزاوية السفلى للنرد لا أمام نقاطه: عمودُ النقاط
+         الأيمن ينتهي عند x≈78 بعد الدوران، والبيدقُ يبدأ بعد x≈80 في
+         ارتفاعها — فتبقى النقاطُ الستّ كلُّها ظاهرة. -->
+  <defs>
+    <linearGradient id="ldie" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DDF3EF"/>
+    </linearGradient>
+    <linearGradient id="lpawn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFB3AB"/><stop offset="1" stop-color="#E0574D"/>
+    </linearGradient>
+    <filter id="lsh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.6" flood-color="#000" flood-opacity=".28"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#lsh)">
+    <!-- النرد: الستّة في عمودين -->
+    <g transform="rotate(-14 53 61)">
+      <rect x="22" y="30" width="62" height="62" rx="15"
+            fill="url(#ldie)" stroke="#fff" stroke-width="6"/>
+      <g fill="#1F8E80">
+        <circle cx="37" cy="45" r="6"/><circle cx="37" cy="61" r="6"/><circle cx="37" cy="77" r="6"/>
+        <circle cx="69" cy="45" r="6"/><circle cx="69" cy="61" r="6"/><circle cx="69" cy="77" r="6"/>
+      </g>
+    </g>
+
+    <!-- البيدق: قاعدةٌ ثمّ جسدٌ ثمّ رأس، بحدٍّ أبيضَ كالملصقات -->
+    <g stroke="#fff" stroke-width="5" stroke-linejoin="round">
+      <ellipse cx="96" cy="101" rx="22" ry="8" fill="url(#lpawn)"/>
+      <path d="M80 100 L89 71 H103 L112 100 Z" fill="url(#lpawn)"/>
+      <circle cx="96" cy="58" r="14" fill="url(#lpawn)"/>
+    </g>
+    <circle cx="91" cy="53" r="4.5" fill="#fff" opacity=".7"/>
+  </g>
+</svg>

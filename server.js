@@ -129,6 +129,15 @@ app.get("/baloot", (req, res) => {
   if (!req.originalUrl.split("?")[0].endsWith("/")) return res.redirect(301, "/baloot/");
   res.sendFile(path.join(pubDir, "baloot", "index.html"));
 });
+// 🎲 لودو: القواعد في ludorules.js والغرف في ludosrv.js
+app.get("/ludo", (req, res) => {
+  if (!req.originalUrl.split("?")[0].endsWith("/")) {
+    const q = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+    return res.redirect(301, "/ludo/" + q);
+  }
+  if (admin) admin.trackVisit();
+  res.sendFile(path.join(pubDir, "ludo", "index.html"));
+});
 app.get(["/barra", "/salfa"], (req, res) => {
   if (admin) admin.trackVisit();
   const f = pageFile("salfa.html");
@@ -138,18 +147,20 @@ app.get(["/barra", "/salfa"], (req, res) => {
 // نقطة إبقاء حيّة (تمنع السيرفر المجاني من النوم أثناء اللعب الطويل)
 app.get("/healthz", (req, res) => res.type("text").send("ok"));
 // حالة الألعاب المباشرة (تستعملها الصفحة الرئيسية)
-let bombApi = null, quizApi = null, salfaApi = null, ttsApi = null;
+let bombApi = null, quizApi = null, salfaApi = null, ttsApi = null, ludoApi = null;
 app.get("/api/status", (req, res) => {
   const draw = getLiveStats();
   const bomb = bombApi ? bombApi.liveStats() : { online: 0, rooms: [] };
   const quiz = quizApi ? quizApi.liveStats() : { online: 0, rooms: [] };
   const salfa = salfaApi ? salfaApi.liveStats() : { online: 0, rooms: [] };
+  const ludo = ludoApi ? ludoApi.liveStats() : { online: 0, rooms: [] };
   res.json({
     draw: { online: draw.online, rooms: draw.rooms.length },
     bomb: { online: bomb.online, rooms: bomb.rooms.length },
     quiz: { online: quiz.online, rooms: quiz.rooms.length },
     salfa: { online: salfa.online, rooms: salfa.rooms.length },
-    total: draw.online + bomb.online + quiz.online + salfa.online
+    ludo: { online: ludo.online, rooms: ludo.rooms.length },
+    total: draw.online + bomb.online + quiz.online + salfa.online + ludo.online
   });
 });
 // حساب واحد لكل الألعاب — يُسجّل الدخول من الصفحة الرئيسية فقط
@@ -1643,6 +1654,9 @@ createStore()
     let balootApi = null;
     try { balootApi = require("./balootsrv").setupBalootOnline(io, { store }); }
     catch (e) { console.error("baloot online:", e.message); }
+    /* لودو: ستّةُ أوضاعٍ ومعزّزاتٌ وفرق — القواعد في ludorules.js */
+    try { ludoApi = require("./ludosrv").setupLudoOnline(io, { store }); }
+    catch (e) { console.error("ludo online:", e.message); }
 
     /* رهانٌ محجوزٌ نجا من إقلاعٍ سابق يعني غرفةً ماتت مع الخادم: يُردّ لأهله
        قبل أن يُفتح الموقع. المال المحجوز بلا غرفةٍ تُطالب به مالٌ ضائع. */
@@ -1654,7 +1668,7 @@ createStore()
     /* هويّة موحّدة لكل مساحات الأسماء: تُحلّ الجلسة قبل أن يصل الاتصال إلى
        منطق أي لعبة، فتعرف اللعبةُ صاحبَها بلا أن تسأل عن كوكي. تُركَّب بعد
        إنشاء المساحات كلّها وقبل الاستماع، فلا اتصالَ يسبقها. */
-    attachSocketAuth(io, store, ["/", "/bomb", "/quiz", "/salfa", "/uno", "/baloot"]);
+    attachSocketAuth(io, store, ["/", "/bomb", "/quiz", "/salfa", "/uno", "/baloot", "/ludo"]);
 
     server.listen(PORT, () => {
       console.log(`🎨 لعبة ارسمها! تعمل على المنفذ ${PORT}`);
