@@ -626,6 +626,8 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    { background:linear
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo { background:linear-gradient(180deg,#7C9BF0 0%,#4A63C8 100%); }
 /* لودو: فيروزيّ (لونُ صفحتها نفسه) */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   { background:linear-gradient(180deg,#6ED6CC 0%,#26A69A 100%); }
+/* كلمة واحدة فقط: عبّادُ الشمس — أصفرُ صريحٌ لا برتقاليُّ القنبلة */
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sun    { background:linear-gradient(180deg,#FFDC6E 0%,#F2B51F 100%); }
 
 /* ── ومضةُ البطاقة عند مرور المؤشّر ──
  *
@@ -677,6 +679,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-green  .go { background:#2
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    .go { background:#C1332E !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo .go { background:#3F51B5 !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   .go { background:#1F8E80 !important; }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sun    .go { background:#C98A0A !important; }
 /* شارة عدد اللاعبين: كبسولة بيضاء */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .now {
   background:#fff; color:#3E6E8C; padding:4px 10px; border-radius:999px;
@@ -792,6 +795,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-green  .ic { background-im
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    .ic { background-image:url("/kw-g-uno.svg") !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo .ic { background-image:url("/kw-g-baloot.svg") !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   .ic { background-image:url("/kw-g-ludo.svg") !important; }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sun    .ic { background-image:url("/kw-g-justone.svg") !important; }
 /* العناوين: أبيض عريض كبير بستروك بني حول الحروف */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g h2 {
   font-size:27px; letter-spacing:.5px;
@@ -813,6 +817,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-green  .go { box-shadow: i
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #97231E, 0 9px 14px rgba(0,0,0,.2) !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #2C3A87, 0 9px 14px rgba(0,0,0,.2) !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #17695F, 0 9px 14px rgba(0,0,0,.2) !important; }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sun    .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #8A5C04, 0 9px 14px rgba(0,0,0,.2) !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .now { color:#8A5A3E; box-shadow:0 2px 0 #E3D5C2; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .badge { color:#8A5A3E; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) #accPop { color:#6B4632; }
@@ -1881,6 +1886,92 @@ body.kw-ludo .rule { background:var(--sg-soft); border-radius:14px; color:var(--
 body.kw-ludo .choice button { border:2px solid #C99A72; border-radius:999px; color:var(--sg-ink); background:#fff; }
 body.kw-ludo .choice button:hover { background:#E3F6F2; }
 body.kw-ludo .choice button.no { color:#C1332E; border-color:#F3B0AC; }
+
+/* ══════════════════════════════════════════════════════════════════
+   v51 — كلمة واحدة فقط: مارشميلو عبّاد الشمس 🔤🍡
+   ══════════════════════════════════════════════════════════════════
+   كلودو: الصفحةُ على هيكل «برّا السالفة» فتلبس kw-salfa كلَّها، وهنا لونُها
+   وحده (أصفرُ بطاقتها في الرئيسيّة) — وبطاقاتُ التلميح الباستيليّة الأربعة
+   (ورديّ، كهرمانيّ، لافندر، نعناعيّ) في صفحتها نفسها لأنّها هويّةُ اللعبة.
+   الأسبقيّة: كلُّ قاعدةٍ هنا تحمل ‎.kw-justone‎ فوق ‎.kw-salfa‎ فتغلبها. */
+body.theme-kawaii.kw-salfa.kw-justone {
+  --sg-line:#A05F50; --sg-ink:#4A2E2B; --sg-deep:#A86A08; --sg-soft:#FFF6DE;
+  --sg-white:linear-gradient(180deg,#FFFEFA 0%,#FFF8E8 100%);
+  --sg-band:linear-gradient(180deg,#FFEFC2 0%,#FFE194 100%);
+  --sg-btn:linear-gradient(180deg,#FFE9A8 0%,#FFD36B 100%);
+  --sg-strong:linear-gradient(180deg,#FFD45E 0%,#F2B33D 100%);
+  --sg-shadow:0 4px 10px rgba(160,110,40,.22);
+  --kw-fab:#F2B33D; --kw-fab-line:#A86A08;
+  --line:#EBD9BE; --soft:#FFF8EA; --muted:#8A7458;
+  background:linear-gradient(165deg,#FFFAEE 0%,#FFF0CE 100%) !important;
+}
+body.kw-salfa.kw-justone .logo {
+  text-shadow:
+    -2px -2px 0 #A86A08, 2px -2px 0 #A86A08, -2px 2px 0 #A86A08, 2px 2px 0 #A86A08,
+    -2.5px 0 0 #A86A08, 2.5px 0 0 #A86A08, 0 -2.5px 0 #A86A08, 0 2.5px 0 #A86A08,
+    0 7px 14px rgba(170,110,20,.35);
+}
+body.kw-salfa.kw-justone .logo span { color:#FFB8CC; }
+body.kw-salfa.kw-justone .tagline { color:#8A6420; }
+body.kw-salfa.kw-justone .backLink:hover { background:#FFF3D2; }
+body.kw-salfa.kw-justone #joinScreen .card input:focus { box-shadow:0 0 0 3px rgba(242,179,61,.4); }
+body.kw-salfa.kw-justone .btn-blue { background:linear-gradient(180deg,#E6DCFF 0%,#CDB8F5 100%); color:#4E3590; }
+body.kw-salfa.kw-justone .divider, body.kw-salfa.kw-justone #roomChip span { color:#A0845A; }
+body.kw-salfa.kw-justone .sub, body.kw-salfa.kw-justone .setRow .hint,
+body.kw-salfa.kw-justone .seg button { color:#8A7458; }
+/* المختار: أبيضُ على كهرمانٍ أعمق (لا رماديٌّ على أصفر — درسُ لودو) */
+body.theme-kawaii.kw-salfa.kw-justone .seg button.on {
+  color:#fff; background:linear-gradient(180deg,#F5B83E 0%,#C98510 100%);
+  text-shadow:0 1px 1px rgba(90,50,0,.35);
+}
+body.kw-salfa.kw-justone #lobby { overflow-x:hidden; }
+body.kw-salfa.kw-justone #hostArea > .btn:hover { transform:scale(1.012) translateY(-1px); }
+body.kw-salfa.kw-justone .msg.system { background:#FFF3D2; color:#8A5A00; }
+body.theme-kawaii.kw-salfa.kw-justone #chatForm { background:linear-gradient(180deg,#FFFBF0 0%,#FFF1D2 100%); }
+body.theme-kawaii.kw-salfa.kw-justone .msg.system::before {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect x='8' y='6' width='24' height='29' rx='6' fill='%23FFE7B3' stroke='%23C9850E' stroke-width='2.6'/%3E%3Cpath d='M14 16h12M14 22h8' stroke='%23C9850E' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+/* خربشاتُ الخلفية: بطاقةُ كلمة، وفقاعةُ كلام، ونجمة */
+body.theme-kawaii.kw-salfa.kw-justone .kw-doodles .kw-pencil {
+  opacity:.42;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 64'%3E%3Cg transform='rotate(-10 40 32)'%3E%3Crect x='14' y='10' width='54' height='44' rx='10' fill='%23FFD9E4' stroke='%23A05F50' stroke-width='3'/%3E%3Cpath d='M26 27h30M26 37h20' stroke='%23D95C84' stroke-width='3.4' stroke-linecap='round'/%3E%3C/g%3E%3Cg transform='rotate(12 88 30)'%3E%3Crect x='70' y='12' width='40' height='34' rx='9' fill='%23E8DEFF' stroke='%23A05F50' stroke-width='3'/%3E%3Cpath d='M80 26h20M80 34h12' stroke='%238462D2' stroke-width='3' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E");
+}
+body.theme-kawaii.kw-salfa.kw-justone .kw-doodles .kw-palette {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Cpath d='M8 8h28a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H20l-8 7v-7H8a5 5 0 0 1-5-5V13a5 5 0 0 1 5-5z' fill='%23D2F4E5' stroke='%23A05F50' stroke-width='2.4' stroke-linejoin='round'/%3E%3Ccircle cx='15' cy='20' r='2.3' fill='%232A9A70'/%3E%3Ccircle cx='22' cy='20' r='2.3' fill='%232A9A70'/%3E%3Ccircle cx='29' cy='20' r='2.3' fill='%232A9A70'/%3E%3C/svg%3E");
+}
+body.theme-kawaii.kw-salfa.kw-justone .kw-doodles .kw-brush {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='16' fill='%23FFF4D0' stroke='%23E0A92E' stroke-width='2.6'/%3E%3Cpath d='M20 9l3.3 7.2 7.8.8-5.9 5.3 1.7 7.7L20 26l-6.9 4 1.7-7.7-5.9-5.3 7.8-.8z' fill='%23F4C95D' stroke='%23C98E12' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+/* اللوبي والفريق */
+body.kw-justone .lp { border:2px solid #C99A72; box-shadow:inset 0 3px 6px rgba(255,255,255,.85), 0 3px 8px rgba(140,75,60,.14); }
+body.kw-justone .lp .nm { color:var(--sg-ink); }
+body.kw-justone .lp.me { box-shadow:0 0 0 3px #8462D2, inset 0 3px 6px rgba(255,255,255,.85); }
+body.kw-salfa.kw-justone .howTo { background:none; border:none; box-shadow:none; padding:0; }
+body.kw-justone .howTo div { border-color:#fff; color:var(--sg-ink); }
+body.kw-justone #needMore { color:#B5651D; }
+body.kw-justone .mate { border:2px solid #C99A72; background:var(--sg-white); box-shadow:var(--sg-shadow); }
+body.kw-justone .mate .nm { color:var(--sg-ink); }
+body.kw-justone .mate.guesser { background:linear-gradient(180deg,#FFFDF5,#FFEDBE); border-color:#E8B23A; box-shadow:0 0 0 2px #FFE08A, var(--sg-shadow); }
+body.kw-justone .stat { background:#FFF6DE; border:2px solid #EBD9BE; color:var(--sg-ink); }
+body.kw-justone #hud { border-radius:22px; }
+/* المسرح: بطاقةٌ كبيرةٌ دافئة، والحدودُ البيضاء للبطاقات داخله */
+body.kw-salfa.kw-justone #joStage { border-radius:26px; background:linear-gradient(180deg,#FFFEFA 0%,#FFF7E6 100%); }
+body.kw-justone .stTitle { color:var(--sg-ink); }
+body.kw-justone .stSub, body.kw-justone .stNote, body.kw-justone .secTag { color:#8A7458; }
+body.kw-justone .wrow { border:2px solid #C99A72; color:var(--sg-ink); }
+body.kw-justone .clueIn, body.kw-justone .guessBox input { border:2.5px solid var(--sg-line); border-radius:999px; color:var(--sg-ink); }
+body.kw-justone .clueIn.bad { border-color:#E86F63; }
+body.kw-justone .clueIn.warn { border-color:#E0A92E; }
+body.kw-justone .live { border-color:#C9B4F2; color:var(--sg-ink); }
+/* الدردشة العائمة (كلودو): السالفةُ تنزع عن ‎#chatCard‎ هيئةَ البطاقة */
+body.kw-justone .barBtn { width:50px; height:50px; }
+body.kw-justone #quickPop .phr button { border-color:#C99A72; color:var(--sg-ink); }
+body.kw-justone #quickPop .phr button:hover { background:#FFF3D2; border-color:#C9850E; }
+body.kw-salfa.kw-justone #chatCard { background:var(--sg-white); border:2px solid var(--sg-line);
+  box-shadow:0 12px 30px rgba(160,110,40,.28); overflow:hidden; border-radius:22px; }
+body.kw-justone .chatHead { color:var(--sg-ink); }
+body.kw-justone .rule { background:var(--sg-soft); border-radius:14px; color:var(--sg-ink); }
+body.kw-justone .hrow { background:var(--sg-soft); color:var(--sg-ink); }
 
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {

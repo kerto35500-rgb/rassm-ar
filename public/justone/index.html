@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🔤 كلمة واحدة فقط — لعبة تعاونيّة مع أصحابك</title>
+<style>
+  /* ═══ الأساس: هيكل «برّا السالفة» نفسه (كما في لودو)، فتلبسه سمةُ المارشميلو
+     كما تلبسها — الدخولُ واللوبي والإعدادات والأزرار والدردشة بالقواعد نفسها.
+     وفوقه ما لا تعرفه السالفة: البطاقاتُ الباستيليّة وشاشتا الدورين. ═══ */
+  :root{
+    --bg1:#0e1b2c; --panel:#ffffff; --ink:#3d2a26; --muted:#7d6f62;
+    --green:#2e9e5b; --green2:#25834a; --red:#e5484d; --amber:#f5a524;
+    --line:#ecdcc8; --soft:#fbf5ec;
+    /* بطاقاتُ وثيقة التصميم: ورديّ، كهرمانيّ دافئ، لافندر، نعناعيّ */
+    --pk:#FFD9E4; --pkd:#D95C84;
+    --am:#FFE7B3; --amd:#C9850E;
+    --lv:#E8DEFF; --lvd:#8462D2;
+    --mn:#D2F4E5; --mnd:#2A9A70;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:"Segoe UI",Tahoma,system-ui,sans-serif; color:var(--ink);
+    background:radial-gradient(1200px 700px at 50% -10%,#1d3a5c,var(--bg1));
+    height:100vh; height:100dvh; max-height:100dvh;
+    display:flex; flex-direction:column; align-items:center;
+    padding:10px; gap:10px; overflow:hidden;
+    -webkit-user-select:none; user-select:none;
+  }
+  input,textarea{-webkit-user-select:text; user-select:text;}
+  .wrap{width:100%; max-width:1100px; display:flex; flex-direction:column; gap:10px; flex:1; min-height:0; overflow:hidden;}
+  .card{background:var(--panel); border-radius:16px; box-shadow:0 10px 30px rgba(6,14,26,.28);}
+
+  /* الشريط العلويّ */
+  #topBar{display:flex; align-items:center; gap:8px; padding:8px 10px; flex-wrap:nowrap;}
+  #roomChip{display:flex; flex-direction:column; align-items:center; justify-content:center;
+            background:var(--soft); border:2px solid var(--line); border-radius:12px;
+            padding:4px 12px; cursor:pointer; flex-shrink:0; min-width:92px;}
+  #roomChip b{font-size:17px; letter-spacing:1px; color:#1668c7;}
+  #roomChip span{font-size:10px; color:var(--muted);}
+  #phaseInfo{flex:1; min-width:0; text-align:center; font-weight:800; font-size:15px;
+             white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .iconBtn{width:38px; height:38px; flex-shrink:0; border:2px solid var(--line); background:#fff;
+           border-radius:11px; cursor:pointer; font-size:17px; display:flex; align-items:center; justify-content:center;
+           text-decoration:none; color:inherit;}
+
+  /* شاشة الدخول */
+  #joinScreen{position:relative; display:flex; flex-direction:column; align-items:center;
+              justify-content:center; min-height:100%; gap:16px; padding:24px 16px; overflow:auto;}
+  .logo{font-size:clamp(40px,9vw,56px); font-weight:900; color:#fff; text-shadow:0 4px 14px rgba(0,0,0,.35); letter-spacing:1px; text-align:center; line-height:1.25;}
+  .logo span{color:#FFD45E;}
+  .tagline{color:#cfe3f7; margin-top:-10px; font-size:clamp(14px,3.5vw,17px); text-align:center; max-width:560px; line-height:1.7;}
+  #joinScreen .card{background:var(--panel); border-radius:18px; padding:20px; width:100%;
+        max-width:400px; box-shadow:0 12px 34px rgba(0,0,0,.28); display:flex; flex-direction:column; gap:10px;}
+  #joinScreen .card input{width:100%; min-width:0; padding:11px 13px; border:2px solid #e3e8ee;
+        border-radius:10px; font-size:16px; text-align:center; background:#f8fafc; font-family:inherit;}
+  .sub{color:var(--muted); font-size:14px; text-align:center; max-width:560px; line-height:1.7;}
+  .btn{border:none; border-radius:12px; padding:13px 18px; font-size:16px; font-weight:800;
+       cursor:pointer; font-family:inherit; color:#fff; width:100%;}
+  .btn-green{background:linear-gradient(180deg,var(--green),var(--green2));}
+  .btn-blue{background:linear-gradient(180deg,#3b8fe0,#1668c7);}
+  .btn-red{background:linear-gradient(180deg,#f4696d,var(--red));}
+  .btn-violet{background:linear-gradient(180deg,#9a6bff,#6a37e0);}
+  .btn-ghost{background:var(--soft); color:var(--ink); border:2px solid var(--line);}
+  .btn:active{transform:translateY(1px);}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .divider{text-align:center; color:#999; font-size:13px;}
+  #joinErr{color:var(--red); text-align:center; font-size:14px; min-height:16px; font-weight:700;}
+  #whoLine{display:none; text-align:center; font-size:13.5px; color:var(--green); font-weight:800; margin:-4px 0 4px;}
+  .row2{display:flex; gap:8px;}
+  .row2 > *{flex:1 1 0; min-width:0;}
+  .backLink{display:inline-flex; align-items:center; justify-content:center; gap:6px;
+            margin:2px auto 4px; padding:9px 20px; border-radius:999px;
+            background:rgba(255,255,255,.14); border:1.5px solid rgba(255,255,255,.32);
+            color:#fff; font-size:15.5px; font-weight:900; text-decoration:none;}
+  .facts{display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
+  .facts span{background:rgba(255,255,255,.85); border:2px solid #fff; border-radius:999px; padding:5px 13px;
+              font-size:13px; font-weight:900; color:var(--ink); box-shadow:0 3px 8px rgba(0,0,0,.1);}
+
+  /* اللوبي */
+  #lobby{display:none; flex-direction:column; gap:10px; padding:14px; flex:1; min-height:0; overflow:auto;}
+  .h{font-size:18px; font-weight:900; display:flex; align-items:center; gap:8px;}
+  #setBox{display:none; flex-direction:column; gap:10px;}
+  #setBox.open{display:flex;}
+  .setRow{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+          background:var(--soft); border-radius:11px; padding:9px 11px;}
+  .setRow label{font-weight:800; font-size:14px;}
+  .setRow .hint{font-size:11px; color:var(--muted); width:100%;}
+  .seg{display:flex; gap:0; border:2px solid var(--line); border-radius:11px; overflow:hidden; flex-wrap:wrap;}
+  .seg button{border:none; background:#fff; padding:9px 13px; font-size:13px; font-weight:800; cursor:pointer;
+              font-family:inherit; color:var(--muted);}
+  .seg button.on{background:var(--green); color:#fff;}
+  .players{display:flex; flex-direction:column; gap:10px;}
+  #plist{display:flex; flex-wrap:wrap; gap:9px;}
+  .lp{position:relative; display:flex; align-items:center; gap:8px; padding:6px 14px 6px 7px; border-radius:999px;
+      background:#fff; border:2px solid var(--line); font-weight:800; font-size:14.5px; max-width:100%;}
+  .lp .nm{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px;}
+  .lp small{font-size:11px; font-weight:800; color:var(--muted);}
+  .lp.me{box-shadow:0 0 0 2.5px var(--lvd);}
+  .lp.gone{opacity:.45;}
+  .lp .crown{position:absolute; top:-13px; inset-inline-start:-3px; font-size:16px;}
+  .lp .kick{width:22px; height:22px; border:none; border-radius:50%; background:#ffe0e0; color:var(--red);
+            cursor:pointer; font-size:11px; flex-shrink:0;}
+  .av{width:32px; height:32px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+      color:#fff; font-weight:900; font-size:15px; background:var(--ac,#8462D2); border:2.5px solid #fff;
+      box-shadow:0 0 0 1.5px var(--ac,#8462D2); text-shadow:0 1px 1px rgba(0,0,0,.2);}
+  #needMore{font-weight:800; color:#B5651D;}
+  .howTo{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px; padding:10px;}
+  .howTo div{background:var(--cb); border:4px solid #fff; border-radius:16px; padding:9px 11px; font-size:13px; line-height:1.65;
+             box-shadow:0 4px 10px rgba(120,80,40,.12);}
+  .howTo b{display:block; font-size:14.5px; margin-bottom:1px;}
+
+  /* ألوانُ البطاقات */
+  .k0{--cb:var(--pk); --cd:var(--pkd);} .k1{--cb:var(--am); --cd:var(--amd);}
+  .k2{--cb:var(--lv); --cd:var(--lvd);} .k3{--cb:var(--mn); --cd:var(--mnd);}
+
+  /* ═══ اللعب ═══ */
+  #play{display:none; flex-direction:column; gap:9px; flex:1; min-height:0; overflow:auto; position:relative;}
+  /* الشريط: رزمةُ البطاقات ونقاطُ الفريق والجولةُ ومؤقّتُ المرحلة */
+  #hud{display:flex; align-items:center; gap:10px; padding:8px 12px; flex-wrap:wrap; justify-content:center; flex-shrink:0;}
+  .stat{display:flex; align-items:center; gap:7px; font-weight:900; font-size:13px; background:var(--soft);
+        border-radius:999px; padding:4px 12px 4px 8px; white-space:nowrap;}
+  .stat b{font-size:19px;}
+  #deckStack{position:relative; width:30px; height:38px; flex-shrink:0;}
+  #deckStack i{position:absolute; width:26px; height:34px; border-radius:6px; border:2.5px solid #fff;
+               background:linear-gradient(160deg,#FFE7B3,#F5BE5A); box-shadow:0 2px 4px rgba(120,80,30,.25);}
+  #timer{flex:1 1 200px; min-width:160px; display:flex; align-items:center; gap:8px;}
+  #tbar{flex:1; height:13px; border-radius:99px; background:#EFE4D2; overflow:hidden; border:2px solid #fff;
+        box-shadow:inset 0 1px 2px rgba(0,0,0,.12), 0 0 0 1px #E2D3BC;}
+  #tbar i{display:block; height:100%; width:100%; border-radius:99px; background:linear-gradient(90deg,#8EE0BC,#45BF8B);
+          transition:width .25s linear;}
+  #tbar.hurry i{background:linear-gradient(90deg,#FFB38A,#EE6E52);}
+  #tbar.paused i{background:repeating-linear-gradient(45deg,#D9CCB8 0 8px,#E8DDCB 8px 16px);}
+  #tsec{font-weight:900; min-width:36px; text-align:center; font-size:15px;}
+
+  /* الفريق: من يخمّن ومن يلمّح ومن سلّم */
+  #team{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; padding:4px 2px 2px; flex-shrink:0;}
+  .mate{position:relative; display:flex; align-items:center; gap:7px; padding:4px 12px 4px 5px; border-radius:999px;
+        background:#fff; border:2px solid var(--line); font-weight:800; font-size:13.5px; max-width:210px;}
+  .mate .nm{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .mate .av{width:28px; height:28px; font-size:13px;}
+  .mate .role{font-size:13px;}
+  .mate.guesser{background:linear-gradient(180deg,#FFFDF5,#FFEDBE); border-color:#E8B23A; box-shadow:0 0 0 2px #FFE08A;}
+  .mate.done::after{content:"✓"; position:absolute; top:-8px; inset-inline-end:-6px; width:21px; height:21px; border-radius:50%;
+                    background:#3DBE84; color:#fff; font-size:12px; font-weight:900; display:flex; align-items:center;
+                    justify-content:center; border:2px solid #fff; box-shadow:0 2px 4px rgba(0,0,0,.15);}
+  .mate.off{opacity:.42; filter:grayscale(.6);}
+  .mate.me{outline:2.5px solid var(--lvd); outline-offset:1px;}
+  .mate .bub{position:absolute; bottom:calc(100% + 8px); inset-inline-start:0; max-width:230px; width:max-content;
+             background:#fff; border:2px solid var(--ac,#8462D2); border-radius:14px; padding:6px 10px; font-size:13px;
+             font-weight:800; color:var(--ink); line-height:1.5; box-shadow:0 4px 12px rgba(0,0,0,.14); opacity:0;
+             transform:translateY(6px) scale(.96); transition:opacity .2s, transform .2s; pointer-events:none; z-index:20;
+             word-break:break-word; white-space:normal;}
+  .mate .bub.on{opacity:1; transform:none;}
+  .mate .bub.big{font-size:28px; padding:0 10px; line-height:1.25;}
+
+  /* المسرح: شاشةُ الدور */
+  #joStage{flex:1 0 auto; display:flex; flex-direction:column; align-items:center; gap:14px; padding:16px 10px 20px;}
+  .stTitle{font-size:clamp(20px,4.8vw,26px); font-weight:900; text-align:center; line-height:1.45;}
+  .stSub{font-size:14px; color:var(--muted); text-align:center; line-height:1.75; max-width:560px; font-weight:700;}
+  .stNote{font-size:12.5px; color:var(--muted); text-align:center; line-height:1.7; max-width:560px;}
+
+  /* المخمّن يختار رقمًا: خمسُ بطاقاتٍ مقلوبة */
+  .picks{display:flex; gap:12px; flex-wrap:wrap; justify-content:center;}
+  .pcard{position:relative; width:84px; height:116px; border-radius:18px; border:5px solid #fff; background:var(--cb);
+         box-shadow:0 9px 18px rgba(120,80,40,.2), 0 0 0 1.5px rgba(0,0,0,.05); font:inherit; font-size:42px; font-weight:900;
+         color:var(--cd); cursor:pointer; transition:transform .18s, box-shadow .18s; overflow:hidden;}
+  .pcard::before{content:""; position:absolute; inset:7px; border-radius:11px; border:2px dashed rgba(255,255,255,.85);}
+  .pcard:hover:not(:disabled){transform:translateY(-6px) rotate(-2deg);}
+  .pcard:disabled{cursor:not-allowed; filter:grayscale(1); opacity:.42;}
+  .pcard.x::after{content:"✕"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+                  font-size:60px; color:#C1332E;}
+  .pcard.chosen{transform:translateY(-10px) scale(1.06); box-shadow:0 0 0 4px var(--cd), 0 14px 24px rgba(120,80,40,.28); opacity:1; filter:none;}
+
+  /* الملمّحون يرون البطاقة: خمسُ كلماتٍ مرقّمة */
+  .wlist{display:flex; flex-direction:column; gap:7px; width:min(100%,380px);}
+  .wrow{display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:16px; background:#fff;
+        border:2px solid var(--line); font-weight:900; font-size:16.5px;}
+  .wrow .n{width:30px; height:30px; border-radius:50%; background:var(--cb); color:var(--cd); flex-shrink:0;
+           display:flex; align-items:center; justify-content:center; font-weight:900; border:2.5px solid #fff;
+           box-shadow:0 0 0 1.5px var(--cd);}
+  .wrow.off{opacity:.38; text-decoration:line-through;}
+
+  /* الكلمةُ السرّيّة */
+  .secret{position:relative; background:#fff; border:6px solid #fff; border-radius:26px; padding:24px 34px 16px;
+          min-width:min(92%,320px); text-align:center; box-shadow:0 12px 28px rgba(150,100,40,.22), 0 0 0 2.5px #F2C46B;}
+  .secret .lbl{position:absolute; top:-16px; left:50%; transform:translateX(-50%); background:linear-gradient(180deg,#FFD66B,#F2B33D);
+               color:#5A3A08; font-size:12.5px; font-weight:900; padding:4px 14px; border-radius:999px; border:2.5px solid #fff;
+               white-space:nowrap; box-shadow:0 3px 6px rgba(150,100,40,.25);}
+  .secret .w{font-size:clamp(34px,9vw,48px); font-weight:900; line-height:1.3; word-break:break-word;}
+  .secret .no{font-size:12px; font-weight:800; color:var(--muted);}
+  .secret.mini{padding:12px 22px 8px; min-width:0; border-width:4px; border-radius:20px;}
+  .secret.mini .w{font-size:24px;}
+  .secret.mini .lbl{top:-13px; font-size:11px; padding:2px 11px;}
+
+  /* كتابةُ التلميح */
+  .clueBox{display:flex; flex-direction:column; gap:8px; width:min(100%,420px);}
+  .clueIn{width:100%; padding:14px 16px; font:inherit; font-size:23px; font-weight:900; text-align:center; color:var(--ink);
+          border-radius:20px; border:3px solid var(--line); background:#fff; outline:none; transition:border-color .15s, background .15s;}
+  .clueIn:focus{border-color:#C9B4F2; box-shadow:0 0 0 4px rgba(132,98,210,.15);}
+  .clueIn.bad{border-color:#F08A84; background:#FFF4F3;}
+  .clueIn.warn{border-color:#F2C46B; background:#FFFBEF;}
+  .cwarn{min-height:19px; font-size:13px; font-weight:800; color:#C1332E; text-align:center;}
+  .cwarn.w{color:#946208;}
+  .sentNote{display:none; font-size:14px; font-weight:900; color:#1F8A5B; text-align:center; background:#E6F8EF;
+            border:2px solid #9FE0C0; border-radius:999px; padding:6px 14px;}
+  .sentNote.on{display:block;}
+  .row2b{display:flex; gap:8px; width:min(100%,420px); flex-wrap:wrap;}
+  .row2b .btn{flex:1 1 150px; width:auto;}
+
+  /* بطاقاتُ التلميحات (المراجعة والتخمين والكشف) — حدٌّ أبيضُ عريضٌ وظلٌّ ناعم */
+  .clues{display:flex; flex-wrap:wrap; gap:16px 14px; justify-content:center; width:100%; max-width:820px; padding:6px 0;}
+  .clue{position:relative; min-width:118px; max-width:230px; padding:16px 18px 11px; border-radius:22px; background:var(--cb);
+        border:5px solid #fff; box-shadow:0 10px 22px rgba(120,80,40,.17), 0 0 0 1.5px rgba(0,0,0,.05); text-align:center;
+        transform:rotate(var(--r,0deg)) translateY(var(--y,0px)); transition:transform .25s, opacity .25s, box-shadow .2s;}
+  .clue .t{font-size:clamp(21px,5vw,28px); font-weight:900; color:#3d2a26; word-break:break-word; line-height:1.35;}
+  .clue .by{font-size:11.5px; font-weight:800; color:var(--cd); margin-top:3px;}
+  .clue.out{opacity:.55; filter:grayscale(.5); --r:0deg; --y:0px;}
+  .clue.out .t{text-decoration:line-through; text-decoration-thickness:3px; text-decoration-color:#E5484D;}
+  .clue .why{display:inline-block; margin-top:6px; font-size:11px; font-weight:900; background:#fff; color:#C1332E;
+             border-radius:999px; padding:2px 9px;}
+  .clue .hint{display:block; margin-top:5px; font-size:11px; font-weight:800; color:#8A5A00;}
+  .clue .strike{margin-top:8px; border:2px solid var(--cd); background:#fff; color:var(--cd); border-radius:999px;
+                padding:5px 12px; font:inherit; font-weight:900; font-size:12.5px; cursor:pointer;}
+  .clue .strike.on{background:#E5484D; border-color:#E5484D; color:#fff;}
+  .clue.voted{box-shadow:0 0 0 3px #F4A29C, 0 10px 22px rgba(120,80,40,.17);}
+  .clue.pop{animation:cluePop .5s cubic-bezier(.3,1.5,.5,1) backwards; animation-delay:var(--d,0s);}
+  @keyframes cluePop{from{transform:scale(.25) rotate(0deg); opacity:0;}}
+  .secTag{font-size:12.5px; font-weight:900; color:var(--muted); width:100%; text-align:center; margin-top:4px;}
+
+  /* التخمين */
+  .guessBox{display:flex; gap:8px; width:min(100%,480px); flex-wrap:wrap;}
+  .guessBox input{flex:1 1 100%; padding:14px 16px; font:inherit; font-size:23px; font-weight:900; text-align:center;
+                  border-radius:20px; border:3px solid #C9B4F2; background:#fff; color:var(--ink); outline:none;}
+  .guessBox input:focus{box-shadow:0 0 0 4px rgba(132,98,210,.18);}
+  .guessBox .btn{flex:1 1 140px; width:auto;}
+  .live{min-height:60px; padding:10px 22px; border-radius:20px; background:#fff; border:3px dashed #C9B4F2;
+        font-size:24px; font-weight:900; text-align:center; min-width:min(90%,300px); display:flex; align-items:center;
+        justify-content:center; gap:4px;}
+  .live .ph{font-size:14px; color:var(--muted); font-weight:800;}
+  .live .caret{display:inline-block; width:3px; height:1.05em; background:var(--lvd); border-radius:2px; animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0}}
+
+  /* انتظارُ المخمّن */
+  .wait{display:flex; flex-direction:column; align-items:center; gap:10px; padding:18px 10px;}
+  .wait .big{font-size:70px; line-height:1; animation:bob 1.8s ease-in-out infinite;}
+  @keyframes bob{50%{transform:translateY(-8px) rotate(-4deg)}}
+  .dots{display:flex; gap:7px; flex-wrap:wrap; justify-content:center;}
+  .dots i{width:14px; height:14px; border-radius:50%; background:#E6DCCB; border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.12);}
+  .dots i.on{background:#3DBE84;}
+
+  /* الكشف */
+  .resBanner{border-radius:24px; padding:14px 26px; font-size:clamp(21px,5vw,27px); font-weight:900; text-align:center;
+             color:#fff; border:5px solid #fff; box-shadow:0 10px 24px rgba(0,0,0,.15); text-shadow:0 1px 2px rgba(0,0,0,.18);}
+  .resBanner small{display:block; font-size:13.5px; font-weight:800; opacity:.95; margin-top:2px;}
+  .resBanner.correct{background:linear-gradient(180deg,#6FD49F,#33A86E);}
+  .resBanner.wrong{background:linear-gradient(180deg,#F79A92,#DB5248);}
+  .resBanner.skip{background:linear-gradient(180deg,#B9A6F0,#8462D2);}
+  .resBanner.empty{background:linear-gradient(180deg,#C9C0B2,#9A9082);}
+  .guessLine{font-size:15px; font-weight:800;}
+  .guessLine b{font-size:19px;}
+
+  /* ── شريطُ الدردشة تحت (كلودو) ── */
+  #chatBar{display:flex; gap:12px; justify-content:center; align-items:center; flex-shrink:0; padding:2px 0 4px;}
+  .barBtn{width:48px; height:48px; font-size:22px; position:relative;}
+  #unread{display:none; position:absolute; top:-6px; right:-6px; min-width:20px; height:20px; padding:0 5px; border-radius:999px;
+          background:#E5484D; color:#fff; font-size:11px; font-weight:900; line-height:17px; border:2px solid #fff; text-align:center;}
+  #unread.on{display:block;}
+  #quickPop{display:none; position:fixed; bottom:72px; left:50%; transform:translateX(-50%); width:min(94vw, 470px);
+            padding:10px; z-index:40; flex-direction:column; gap:8px;}
+  #quickPop.on{display:flex;}
+  #quickPop .phr{display:grid; grid-template-columns:repeat(2,1fr); gap:6px;}
+  #quickPop .phr button{border:2px solid var(--line); background:#fff; border-radius:999px; padding:8px 10px; font:inherit;
+                        font-weight:800; font-size:13.5px; cursor:pointer; color:var(--ink);}
+  #quickPop .emo{display:grid; grid-template-columns:repeat(8,1fr); gap:4px;}
+  #quickPop .emo button{border:none; background:transparent; font-size:25px; cursor:pointer; padding:4px 0; border-radius:10px;}
+  #chatCard{display:none; position:fixed; bottom:72px; left:50%; transform:translateX(-50%); width:min(94vw, 470px);
+            height:min(62vh, 440px); flex-direction:column; z-index:40; overflow:hidden; gap:8px; padding:10px;}
+  #chatCard.on{display:flex;}
+  .chatHead{display:flex; align-items:center; justify-content:space-between; font-weight:900;}
+  .chatHead button{border:none; background:transparent; font-size:18px; cursor:pointer; color:var(--muted);}
+  #msgs{flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:5px; min-height:90px;}
+  .msg{background:var(--soft); border-radius:9px; padding:6px 9px; font-size:13px; word-break:break-word;}
+  .msg b{color:#1668c7;}
+  .msg.system{background:#eef4fb; color:#1668c7; text-align:center; font-weight:700;}
+  #chatForm{display:flex; gap:6px; padding:8px; border-top:2px solid var(--line);}
+  #chatForm input{flex:1; min-width:0; text-align:start; font-size:14px; padding:10px 12px; border:2px solid var(--line); border-radius:10px; font-family:inherit;}
+  #chatForm button{border:none; border-radius:10px; background:#1668c7; color:#fff; font-weight:800; padding:10px 14px; cursor:pointer; font-family:inherit;}
+
+  /* النوافذ */
+  .modal{position:fixed; inset:0; background:rgba(10,20,34,.72); z-index:60; display:none; align-items:center; justify-content:center; padding:14px;}
+  .modal.on{display:flex;}
+  .sheet{background:#fff; border-radius:18px; width:100%; max-width:540px; max-height:88vh; overflow:auto;
+         padding:16px; display:flex; flex-direction:column; gap:11px;}
+  .sheet h3{margin:0; font-size:19px;}
+  .rule{background:var(--soft); border-radius:12px; padding:9px 12px; font-size:13.5px; line-height:1.8;}
+  .rule b{display:block; font-size:14.5px; margin-bottom:2px;}
+  .rating{text-align:center; border-radius:22px; padding:16px 12px 14px; border:5px solid #fff;
+          background:linear-gradient(180deg,#FFF6DA,#FFE3A0); box-shadow:0 8px 20px rgba(150,100,40,.2);}
+  .rating .ic{font-size:60px; line-height:1.1;}
+  .rating .ar{font-size:27px; font-weight:900;}
+  .rating .sc{font-size:16px; font-weight:900; margin-top:2px;}
+  .rating .ln{font-size:13.5px; font-weight:700; color:var(--muted); margin-top:3px;}
+  .rating.legend{background:linear-gradient(180deg,#FFF1C2,#FFD45E);}
+  .rating.amazing{background:linear-gradient(180deg,#F1EAFF,#D8C7FF);}
+  .rating.good{background:linear-gradient(180deg,#E8FAF1,#BDEED6);}
+  .rating.try{background:linear-gradient(180deg,#FFEFF3,#FFD0DC);}
+  .hist{display:flex; flex-direction:column; gap:6px; max-height:38vh; overflow:auto;}
+  .hrow{display:flex; gap:8px; align-items:center; padding:7px 11px; border-radius:13px; background:var(--soft);
+        font-size:13.5px; font-weight:800; line-height:1.5;}
+  .hrow .w{font-weight:900; font-size:15px;}
+  .hrow .g{color:var(--muted); font-size:12px; margin-inline-start:auto; text-align:end;}
+  #toast{position:fixed; left:50%; bottom:20px; transform:translateX(-50%) translateY(70px);
+         background:#12263c; color:#fff; padding:11px 18px; border-radius:12px; font-weight:800;
+         font-size:14px; z-index:90; opacity:0; transition:.25s; pointer-events:none; max-width:90vw; text-align:center;}
+  #toast.on{transform:translateX(-50%) translateY(0); opacity:1;}
+
+  @media (max-width: 700px){
+    body{padding:6px; gap:6px;}
+    #hud{gap:7px; padding:7px 9px;}
+    .stat{padding:3px 10px 3px 6px; font-size:12px;} .stat b{font-size:17px;}
+    .pcard{width:58px; height:84px; font-size:30px; border-width:4px; border-radius:14px;}
+    .picks{gap:8px;}
+    .clue{min-width:96px; padding:13px 13px 9px; border-width:4px;}
+    .clues{gap:12px 10px;}
+    #joStage{padding:12px 8px 16px; gap:12px;}
+    .mate{font-size:12.5px; padding:3px 10px 3px 4px;}
+  }
+</style>
+<link rel="stylesheet" href="/kawaii.css">
+<script src="/theme.js" defer></script>
+</head>
+<body class="theme-kawaii">
+<div class="wrap">
+
+  <!-- ═════════ الدخول (بترتيب شاشة «برّا السالفة» تمامًا) ═════════ -->
+  <div id="joinScreen">
+    <div class="logo">كلمة واحدة <span>فقط!</span></div>
+    <div class="tagline">لعبةٌ تعاونيّة: لمّحوا لصاحبكم بكلمةٍ واحدة ليخمّن السرّ… والتلميحاتُ المتطابقة تُحذف! 🤝</div>
+    <a class="backLink" href="/">← رجوع لاختيار الألعاب</a>
+    <div class="card">
+      <input id="pName" maxlength="20" placeholder="اكتب اسمك هنا" autocomplete="off">
+      <div id="whoLine"></div>
+      <button class="btn btn-green" id="createBtn">إنشاء غرفة جديدة ➕</button>
+      <div class="divider">— أو انضم لغرفة موجودة —</div>
+      <div class="row2">
+        <input id="pRoom" maxlength="6" placeholder="رمز الغرفة" inputmode="numeric" autocomplete="off">
+        <button class="btn btn-blue" id="joinBtn">انضمام 🚪</button>
+      </div>
+      <div id="joinErr"></div>
+    </div>
+    <div class="facts"><span>👥 ٣–٧ لاعبين</span><span>🎴 ١٣ بطاقة</span><span>🤝 فريقٌ واحد</span></div>
+  </div>
+
+  <!-- ═════════ اللعبة ═════════ -->
+  <div id="game" style="display:none; flex-direction:column; gap:10px; flex:1; min-height:0;">
+    <div class="card" id="topBar">
+      <div id="roomChip" title="انسخ رابط الدعوة"><b id="roomCode">—</b><span>🔗 انسخ الرابط</span></div>
+      <div id="phaseInfo">في الانتظار…</div>
+      <button class="iconBtn" id="rulesBtn" title="القواعد">📖</button>
+      <button class="iconBtn" id="sndBtn" title="الصوت">🔊</button>
+      <a class="iconBtn" href="/" title="الصفحة الرئيسية">🏠</a>
+    </div>
+
+    <!-- اللوبي -->
+    <div class="card" id="lobby">
+      <div class="players">
+        <div class="h">👥 الفريق <span id="plCount" style="font-size:13px; color:var(--muted); font-weight:700;"></span></div>
+        <div id="plist"></div>
+        <div id="needMore" class="sub"></div>
+      </div>
+      <div id="hostArea" style="display:none; flex-direction:column; gap:10px;">
+        <button class="btn btn-ghost" id="setOpen" style="width:auto;">⚙️ إعدادات الغرفة</button>
+        <div id="setBox"></div>
+        <button class="btn btn-green" id="startBtn">▶️ ابدأ اللعبة</button>
+      </div>
+      <div id="waitHost" class="sub">بانتظار مدير الغرفة يبدأ اللعبة…</div>
+      <div id="lobbySummary" class="sub"></div>
+      <div class="card howTo" id="howTo">
+        <div class="k0"><b>🎴 ١. الكلمة</b>المخمّنُ يختار رقمًا من خمسة دون أن يرى البطاقة.</div>
+        <div class="k1"><b>✏️ ٢. التلميح</b>كلُّ واحدٍ منكم يكتب كلمةً واحدةً سرًّا.</div>
+        <div class="k2"><b>✂️ ٣. الحذف</b>المتطابقُ يُحذف، ثمّ تشطبون المخالفَ بالتصويت.</div>
+        <div class="k3"><b>🎯 ٤. التخمين</b>يرى ما نجا ويخمّن — ونشاهده يكتب حرفًا حرفًا!</div>
+      </div>
+    </div>
+
+    <!-- اللعب -->
+    <div id="play">
+      <div class="card" id="hud">
+        <div class="stat" title="بطاقاتٌ لم تُسحب بعد"><span id="deckStack"></span><b id="deckN">١٣</b><span>في الرزمة</span></div>
+        <div class="stat" title="نقاط الفريق">⭐ <b id="scoreN">٠</b><span>نقطة</span></div>
+        <div class="stat" title="الجولة">🎴 <span>الجولة</span> <b id="roundN">١</b></div>
+        <div id="timer"><div id="tbar"><i></i></div><span id="tsec">—</span></div>
+      </div>
+      <div id="team"></div>
+      <div class="card" id="joStage"></div>
+      <div id="chatBar">
+        <button class="iconBtn barBtn" id="quickBtn" title="عبارات وإيموجي">😊</button>
+        <button class="iconBtn barBtn" id="chatBtn" title="الدردشة">💬<span id="unread"></span></button>
+      </div>
+      <div class="card" id="quickPop"></div>
+      <div class="card" id="chatCard">
+        <div class="chatHead"><span>💬 الدردشة</span><button type="button" id="chatClose" aria-label="إغلاق">✕</button></div>
+        <div id="msgs"></div>
+        <form id="chatForm" autocomplete="off">
+          <input id="chatInput" type="text" placeholder="اكتب رسالة…" maxlength="140">
+          <button type="submit">إرسال</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- القواعد -->
+<div class="modal" id="rulesModal"><div class="sheet">
+  <h3>📖 قواعد «كلمة واحدة فقط»</h3>
+  <div id="rulesBody"></div>
+  <button class="btn btn-ghost" data-close>حسنًا</button>
+</div></div>
+
+<!-- النهاية -->
+<div class="modal" id="endModal"><div class="sheet">
+  <div id="endRating" class="rating">—</div>
+  <div class="h" style="font-size:15px">📜 الجولات</div>
+  <div id="endHist" class="hist"></div>
+  <button class="btn btn-green" id="endAgain" style="display:none">🔄 لعبة جديدة بالفريق نفسه</button>
+  <button class="btn btn-ghost" data-close>إلى الانتظار</button>
+</div></div>
+
+<div id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/justone/norm.js"></script>
+<script src="/justone/app.js"></script>
+</body>
+</html>

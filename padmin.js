@@ -266,6 +266,35 @@ function setupPanel(app, deps) {
        .send(templateSvg(kind, z));
   });
 
+  // ═══════════════ كلمات «كلمة واحدة فقط» ═══════════════
+  // القائمةُ الأساس في الكود، وما يُضاف أو يُخفى من هنا يُحفظ في الإعدادات —
+  // فيعدّل صاحبُ الموقع الكلمات بلا نشرٍ جديد. وإخفاءُ كلمةٍ أساسيّةٍ لا يمحوها.
+  const JB = require("./justonebank");
+
+  app.get(ADMIN_PATH + "/p/jwords", (req, res) => {
+    if (!guard(req, res)) return;
+    res.json({ ok: true, ...JB.listAll() });
+  });
+
+  app.post(ADMIN_PATH + "/p/jword", json, async (req, res) => {
+    if (!guard(req, res)) return;
+    const op = String(req.body?.op || "add");
+    /* إضافةٌ بالجملة: كلماتٌ مفصولةٌ بفاصلةٍ أو سطرٍ جديد */
+    const list = op === "add"
+      ? String(req.body?.word || "").split(/[,،\n]+/).map(x => x.trim()).filter(Boolean).slice(0, 200)
+      : [String(req.body?.word || "")];
+    if (!list.length) return res.status(400).json({ ok: false, error: "اكتب كلمة" });
+    try {
+      const done = [], failed = [];
+      for (const w of list) {
+        const r = op === "remove" ? await JB.remove(st(), w, "admin") : await JB.add(st(), w, "admin");
+        (r.ok ? done : failed).push(r.ok ? r.word : r.error);
+      }
+      if (done.length) note(req, "jword-" + (op === "remove" ? "remove" : "add"), done.join("،").slice(0, 120), { n: done.length });
+      res.status(done.length ? 200 : 400).json({ ok: done.length > 0, done, failed, error: failed[0], ...JB.listAll() });
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  });
+
   // ═══════════════ الإعدادات ═══════════════
 
   /* صحّة الرهان: كم ذهبٍ محجوزٌ الآن، وكم صفًّا سُوّي. الرقم «المحجوز» يجب
@@ -534,6 +563,7 @@ a.dl{background:#1f6f45;color:#fff;border-radius:7px;padding:8px 14px;font-weigh
   <button class="tab" data-p="sup">💬 الدعم <span id="supBadge"></span></button>
   <button class="tab" data-p="shop">🛍️ المتجر</button>
   <button class="tab" data-p="skins">🎨 مظاهر بالوت</button>
+  <button class="tab" data-p="jw">🔤 كلمة واحدة</button>
   <button class="tab" data-p="live">🂡 الطاولات الحيّة</button>
   <button class="tab" data-p="set">⚙️ الإعدادات</button>
   <button class="tab" data-p="audit">📜 السجلّ</button>
@@ -565,6 +595,20 @@ a.dl{background:#1f6f45;color:#fff;border-radius:7px;padding:8px 14px;font-weigh
     <div class="msg" id="skMsg"></div>
   </div>
   <div id="skwrap"></div>
+</div>
+
+<div class="pane" id="p-jw">
+  <div class="card"><h2>🔤 كلمات «كلمة واحدة فقط» السرّيّة</h2>
+    <div class="h muted" style="margin-bottom:8px">كلُّ بطاقةٍ في اللعبة خمسُ كلماتٍ من هذه القائمة. أضف كلمةً واحدةً (بلا مسافات)
+      يعرفها الجميع — أو عدّة كلماتٍ تفصلها فاصلة. حذفُ كلمةٍ أساسيّةٍ يُخفيها فقط، وتعود بإضافتها من جديد.
+      والمقارنةُ بعد التطبيع: «التفاحة» و«تفاحة» واحدة.</div>
+    <div class="row"><textarea id="jwNew" rows="2" placeholder="كلمة، أو كلمات مفصولة بفاصلة…" style="flex:1;min-width:220px"></textarea>
+      <button class="g" onclick="jwAdd()">➕ أضف</button></div>
+    <div class="row"><input id="jwq" placeholder="ابحث في الكلمات…" style="flex:1;min-width:180px" oninput="jwDraw()">
+      <span class="muted" id="jwmeta"></span></div>
+    <div class="msg" id="jwMsg"></div>
+  </div>
+  <div id="jwwrap"></div>
 </div>
 
 <div class="pane" id="p-sup">
@@ -606,6 +650,7 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   if(t.dataset.p==="audit") loadAudit();
   if(t.dataset.p==="live") loadLive();
   if(t.dataset.p==="skins") loadSkins();
+  if(t.dataset.p==="jw") loadJW();
   if(t.dataset.p==="sup"){ loadTickets(); loadReports(); }
 });
 
@@ -747,6 +792,50 @@ let SK={boards:[],backs:[]}, SKZ={};
 /* نموذجان جاهزان بالمقاس الصحيح — تُنزَّل وتُفتح وتُبدَّل بما يُراد. */
 const SAMPLE={boards:"/baloot/samples/board-sample-1600x900.png",
               backs:"/baloot/samples/cardback-sample-252x390.png"};
+let JW=null;
+async function loadJW(){
+  const r=await j("/jwords");
+  if(!r.ok) return $("#jwwrap").innerHTML='<div class="msg err">'+esc(r.error||"تعذّر")+'</div>';
+  JW=r; jwDraw();
+}
+function jwDraw(){
+  if(!JW) return;
+  const q=($("#jwq").value||"").trim();
+  const hit=w=>!q||w.includes(q);
+  $("#jwmeta").textContent=JW.total+" كلمةً في اللعب · "+JW.base+" أساسيّة · "+JW.added.length+" مُضافة · "+JW.removed.length+" مُخفاة";
+  const chip=(w,cls,btn)=>'<span class="pill '+cls+'" style="margin:3px;display:inline-flex;gap:6px;align-items:center;font-size:13px">'+esc(w)+btn+'</span>';
+  const x=w=>'<a href="#" title="احذف" onclick="jwDel(\\''+esc(w).replace(/'/g,"")+'\\');return false" style="color:#fca5a5;text-decoration:none">✕</a>';
+  const back=w=>'<a href="#" title="أعِدها" onclick="jwBack(\\''+esc(w).replace(/'/g,"")+'\\');return false" style="color:#86efac;text-decoration:none">↺</a>';
+  let h='';
+  const add=JW.added.filter(hit);
+  if(add.length) h+='<div class="card"><h2>➕ مُضافة من اللوحة ('+add.length+')</h2>'+add.map(w=>chip(w,"ok",x(w))).join("")+'</div>';
+  for(const c in JW.cats){
+    const ws=JW.cats[c].filter(o=>hit(o.w));
+    if(!ws.length) continue;
+    h+='<div class="card"><h2>'+esc(c)+' ('+ws.length+')</h2>'+
+      ws.map(o=>o.hidden?chip(o.w,"bad",back(o.w)):chip(o.w,"",x(o.w))).join("")+'</div>';
+  }
+  $("#jwwrap").innerHTML=h||'<div class="card muted">لا نتائج</div>';
+}
+async function jwAdd(){
+  const w=$("#jwNew").value.trim(); if(!w) return;
+  const r=await post("/jword",{op:"add",word:w});
+  if(r.done&&r.done.length) $("#jwNew").value="";
+  const extra=r.failed&&r.failed.length?" — لم تُضف "+r.failed.length+": "+r.failed.slice(0,3).join("، "):"";
+  const m=$("#jwMsg");
+  if(r.ok){ m.className="msg ok"; m.textContent="أُضيفت "+r.done.length+extra; setTimeout(loadJW,600); }
+  else say("#jwMsg",r);
+}
+async function jwDel(w){
+  if(!confirm("حذف «"+w+"» من الكلمات؟")) return;
+  const r=await post("/jword",{op:"remove",word:w});
+  say("#jwMsg",r,loadJW);
+}
+async function jwBack(w){
+  const r=await post("/jword",{op:"add",word:w});
+  say("#jwMsg",r,loadJW);
+}
+
 async function loadSkins(){
   const r=await j("/bskins");
   if(!r.ok) return $("#skwrap").innerHTML='<div class="msg err">'+esc(r.error||"تعذّر")+'</div>';

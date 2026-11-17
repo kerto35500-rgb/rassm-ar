@@ -138,6 +138,15 @@ app.get("/ludo", (req, res) => {
   if (admin) admin.trackVisit();
   res.sendFile(path.join(pubDir, "ludo", "index.html"));
 });
+// 🔤 كلمة واحدة فقط: القواعد في justonerules.js والغرف في justonesrv.js
+app.get("/justone", (req, res) => {
+  if (!req.originalUrl.split("?")[0].endsWith("/")) {
+    const q = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+    return res.redirect(301, "/justone/" + q);
+  }
+  if (admin) admin.trackVisit();
+  res.sendFile(path.join(pubDir, "justone", "index.html"));
+});
 app.get(["/barra", "/salfa"], (req, res) => {
   if (admin) admin.trackVisit();
   const f = pageFile("salfa.html");
@@ -147,20 +156,22 @@ app.get(["/barra", "/salfa"], (req, res) => {
 // نقطة إبقاء حيّة (تمنع السيرفر المجاني من النوم أثناء اللعب الطويل)
 app.get("/healthz", (req, res) => res.type("text").send("ok"));
 // حالة الألعاب المباشرة (تستعملها الصفحة الرئيسية)
-let bombApi = null, quizApi = null, salfaApi = null, ttsApi = null, ludoApi = null;
+let bombApi = null, quizApi = null, salfaApi = null, ttsApi = null, ludoApi = null, justoneApi = null;
 app.get("/api/status", (req, res) => {
   const draw = getLiveStats();
   const bomb = bombApi ? bombApi.liveStats() : { online: 0, rooms: [] };
   const quiz = quizApi ? quizApi.liveStats() : { online: 0, rooms: [] };
   const salfa = salfaApi ? salfaApi.liveStats() : { online: 0, rooms: [] };
   const ludo = ludoApi ? ludoApi.liveStats() : { online: 0, rooms: [] };
+  const justone = justoneApi ? justoneApi.liveStats() : { online: 0, rooms: [] };
   res.json({
     draw: { online: draw.online, rooms: draw.rooms.length },
     bomb: { online: bomb.online, rooms: bomb.rooms.length },
     quiz: { online: quiz.online, rooms: quiz.rooms.length },
     salfa: { online: salfa.online, rooms: salfa.rooms.length },
     ludo: { online: ludo.online, rooms: ludo.rooms.length },
-    total: draw.online + bomb.online + quiz.online + salfa.online + ludo.online
+    justone: { online: justone.online, rooms: justone.rooms.length },
+    total: draw.online + bomb.online + quiz.online + salfa.online + ludo.online + justone.online
   });
 });
 // حساب واحد لكل الألعاب — يُسجّل الدخول من الصفحة الرئيسية فقط
@@ -1657,6 +1668,12 @@ createStore()
     /* لودو: ستّةُ أوضاعٍ ومعزّزاتٌ وفرق — القواعد في ludorules.js */
     try { ludoApi = require("./ludosrv").setupLudoOnline(io, { store }); }
     catch (e) { console.error("ludo online:", e.message); }
+    /* كلمة واحدة فقط: تعاونيّة، والكلماتُ قائمةٌ أساسٌ وفوقها تعديلاتُ الأدمن */
+    try {
+      const n = await require("./justonebank").load(store);
+      console.log(`🔤 بنك «كلمة واحدة»: ${n} كلمة`);
+      justoneApi = require("./justonesrv").setupJustOneOnline(io, { store });
+    } catch (e) { console.error("justone online:", e.message); }
 
     /* رهانٌ محجوزٌ نجا من إقلاعٍ سابق يعني غرفةً ماتت مع الخادم: يُردّ لأهله
        قبل أن يُفتح الموقع. المال المحجوز بلا غرفةٍ تُطالب به مالٌ ضائع. */
@@ -1668,7 +1685,7 @@ createStore()
     /* هويّة موحّدة لكل مساحات الأسماء: تُحلّ الجلسة قبل أن يصل الاتصال إلى
        منطق أي لعبة، فتعرف اللعبةُ صاحبَها بلا أن تسأل عن كوكي. تُركَّب بعد
        إنشاء المساحات كلّها وقبل الاستماع، فلا اتصالَ يسبقها. */
-    attachSocketAuth(io, store, ["/", "/bomb", "/quiz", "/salfa", "/uno", "/baloot", "/ludo"]);
+    attachSocketAuth(io, store, ["/", "/bomb", "/quiz", "/salfa", "/uno", "/baloot", "/ludo", "/justone"]);
 
     server.listen(PORT, () => {
       console.log(`🎨 لعبة ارسمها! تعمل على المنفذ ${PORT}`);

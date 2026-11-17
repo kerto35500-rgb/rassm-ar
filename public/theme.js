@@ -57,6 +57,8 @@
     /* لودو: هيكلُها هيكلُ السالفة نفسه (فتلبس قواعدها كلَّها: اللوبي والإعدادات
        والدردشة) — ويُضاف فوقه لونُها الفيروزيّ. تُميَّز بلوحتها */
     b.toggle("kw-ludo", !!document.getElementById("ludoBoard"));
+    /* كلمة واحدة فقط: الهيكلُ نفسه، ولونُها عبّاد الشمس. تُميَّز بمسرحها */
+    b.toggle("kw-justone", !!document.getElementById("joStage"));
     /* القنبلة: نسخة برتقالية */
     b.toggle("kw-bomb", !!document.getElementById("bombCircle"));
     /* قمّة الهرم: نسخة بنفسجية (تُميَّز بمشهد الهرم) */

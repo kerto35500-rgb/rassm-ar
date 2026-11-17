@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- أيقونة «كلمة واحدة فقط» للصفحة الرئيسيّة بستايل المارشميلو: ثلاثُ بطاقاتِ
+       تلميحٍ باستيليّة مروحيّةً كورقٍ في اليد (لافندر ونعناعيّ خلف، وورديّةٌ
+       أمامهما عليها سطرا «كلمة»)، بحدودٍ بيضاء عريضة، وفوقها فقاعةُ كلامٍ
+       صفراءُ فيها علامةُ استفهامٍ **مرسومة** لا مكتوبة (المحارفُ يختلف رسمُها
+       بين الأجهزة). مرسومةٌ من الصفر بلا شعارٍ ولا علامة.
+
+       المروحة تدور حول نقطةٍ واحدةٍ تحت الإطار (٦٤،١٤٠) بزاوية ٢٢°: أبعدُ
+       زاويةٍ للبطاقتين الجانبيّتين مع حدّهما ‎x≈9‎ و‎x≈119‎ — داخل المربّع.
+       والسطران على الأماميّة وحدها: ما على الخلفيّتين كان سيختفي تحتها. -->
+  <defs>
+    <linearGradient id="jl" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F1EAFF"/><stop offset="1" stop-color="#C7B0F2"/>
+    </linearGradient>
+    <linearGradient id="jm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E4FAF0"/><stop offset="1" stop-color="#9FE2C4"/>
+    </linearGradient>
+    <linearGradient id="jp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFEAF0"/><stop offset="1" stop-color="#FFB0C7"/>
+    </linearGradient>
+    <linearGradient id="jb" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFEB94"/><stop offset="1" stop-color="#F5B91C"/>
+    </linearGradient>
+    <filter id="jsh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.6" flood-color="#000" flood-opacity=".28"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#jsh)">
+    <!-- اليسرى: لافندر -->
+    <g transform="rotate(-22 64 140)">
+      <rect x="44" y="50" width="40" height="58" rx="10" fill="url(#jl)" stroke="#fff" stroke-width="5"/>
+      <circle cx="53" cy="59" r="3.2" fill="#fff" opacity=".7"/>
+    </g>
+    <!-- اليمنى: نعناعيّة -->
+    <g transform="rotate(22 64 140)">
+      <rect x="44" y="50" width="40" height="58" rx="10" fill="url(#jm)" stroke="#fff" stroke-width="5"/>
+      <circle cx="53" cy="59" r="3.2" fill="#fff" opacity=".7"/>
+    </g>
+    <!-- الأماميّة: ورديّة بسطرَي كلمة -->
+    <rect x="44" y="50" width="40" height="58" rx="10" fill="url(#jp)" stroke="#fff" stroke-width="6"/>
+    <path d="M52 76 H76" stroke="#D95C84" stroke-width="5.5" stroke-linecap="round"/>
+    <path d="M55 88 H73" stroke="#D95C84" stroke-width="4.5" stroke-linecap="round" opacity=".55"/>
+    <circle cx="53" cy="59" r="3.4" fill="#fff" opacity=".75"/>
+
+    <!-- فقاعةُ الكلام فوق المروحة، وذيلُها ينزل إلى البطاقة الأماميّة -->
+    <path d="M46 6 H82 A11 11 0 0 1 93 17 V30 A11 11 0 0 1 82 41 H70 L62 50 V41 H46 A11 11 0 0 1 35 30 V17 A11 11 0 0 1 46 6 Z"
+          fill="url(#jb)" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M58.2 19 A5.9 5.9 0 1 1 67.4 23.6 Q64 25.6 64 29.4" stroke="#8A5C04" stroke-width="4.4"
+          fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="64" cy="35" r="2.7" fill="#8A5C04"/>
+  </g>
+</svg>
