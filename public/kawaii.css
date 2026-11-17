@@ -1787,6 +1787,19 @@ body.kw-salfa.kw-ludo .btn-blue { background:linear-gradient(180deg,#C9E8F9 0%,#
 body.kw-salfa.kw-ludo .divider, body.kw-salfa.kw-ludo #roomChip span { color:#6F9E97; }
 body.kw-salfa.kw-ludo .sub, body.kw-salfa.kw-ludo .setRow .hint,
 body.kw-salfa.kw-ludo .seg button, body.kw-salfa.kw-ludo .modeTag { color:#6F8E8A; }
+/* الخيارُ المختار: أبيضُ على فيروزيٍّ أعمق. القاعدةُ أعلاه تلوّن أزرارَ
+   الشريط كلَّها بالرماديّ الفيروزيّ — وبأسبقيّةٍ تساوي قاعدةَ السالفة للمختار
+   وتأتي بعدها، فكان المختارُ رماديًّا على فيروزيّ لا يكاد يُقرأ. فللمختار
+   قاعدتُه هنا بأسبقيّةٍ أعلى، وتدرّجٌ أغمق قليلًا يحمل النصَّ الأبيض. */
+body.theme-kawaii.kw-salfa.kw-ludo .seg button.on {
+  color:#fff; background:linear-gradient(180deg,#4CC4B4 0%,#1F9688 100%);
+  text-shadow:0 1px 1px rgba(0,60,50,.35);
+}
+/* أزرارُ اللوبي بعرضه كلِّه: نفخةُ المرور (scale 1.04) تزيد الزرَّ العريض
+   ٤٧px فيفيض عن اللوبي ويظهر شريطُ تمريرٍ أفقيّ بنّيّ ما دام المؤشّر عليه.
+   نفخةٌ أخفّ للعريض، ولا تمريرَ أفقيّ في اللوبي أصلًا. */
+body.kw-salfa.kw-ludo #lobby { overflow-x:hidden; }
+body.kw-salfa.kw-ludo #hostArea > .btn:hover { transform:scale(1.012) translateY(-1px); }
 body.kw-salfa.kw-ludo .msg.system { background:#E3F6F2; }
 body.theme-kawaii.kw-salfa.kw-ludo #chatForm { background:linear-gradient(180deg,#F2FBF9 0%,#E3F5F1 100%); }
 body.theme-kawaii.kw-salfa.kw-ludo .msg.system::before {
@@ -1848,6 +1861,12 @@ body.kw-ludo #promptBar { border-radius:999px; border:2px solid #E8A39B; }
    (تقليل الحركة يوقف كلَّ animation أدناه) يرى ما يُحرَّك مع ذلك */
 body.kw-ludo .tok.can { box-shadow:0 0 0 1.5px var(--sd), 0 3px 0 var(--sd), 0 0 0 5px rgba(255,255,255,.95), 0 0 12px 4px var(--sc); }
 body.kw-ludo .tok.target { box-shadow:0 0 0 1.5px var(--sd), 0 0 0 5px #ff6b6b, 0 0 14px 4px #ff9f9f; }
+/* الملكُ المختار (النقرة الأولى): حلقتُه الذهبيّة تغلب حلقةَ «يتحرّك» أعلاه —
+   كانت تلك أعلى أسبقيّةً فيبدو المختارُ كبقيّة القطع المتوهّجة */
+body.kw-ludo .tok.can.sel, body.kw-ludo .tok.sel {
+  animation:none; z-index:7;
+  box-shadow:0 0 0 2px #f2c94c, 0 0 0 6px #fff, 0 0 0 8px #E2A90E, 0 0 18px 8px rgba(255,211,77,.75);
+}
 
 /* النوافذ */
 body.kw-ludo .winBanner { border:2px solid var(--sg-line); border-radius:18px; }

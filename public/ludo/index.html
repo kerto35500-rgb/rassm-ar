@@ -123,7 +123,9 @@
   /* ═══ اللعب ═══ */
   #play{display:none; gap:10px; flex:1; min-height:0;}
   #boardCol{flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; align-items:center; min-height:0;}
-  #boardBox{position:relative; width:min(100%, calc(100dvh - 210px)); aspect-ratio:1; flex-shrink:0;}
+  /* ٢٣٦ = الشريط العلويّ + حجرُ النرد + عنوانُ «اضغط للرمي» تحته + الفراغات؛
+     بـ٢١٠ كان العنوانُ يُقصّ أسفلَ الشاشة */
+  #boardBox{position:relative; width:min(100%, calc(100dvh - 236px)); aspect-ratio:1; flex-shrink:0;}
   #ludoBoard{position:absolute; inset:0; border-radius:22px; transform:rotate(var(--rot,0deg));
              transition:transform .5s cubic-bezier(.3,1.2,.5,1);}
   #ludoBoard svg{position:absolute; inset:0; width:100%; height:100%; display:block;}
@@ -232,6 +234,12 @@
   @media (max-width: 900px){
     body{padding:6px; gap:6px;}
     #play{flex-direction:column; overflow:auto;}
+    /* عمودان بطولهما الطبيعيّ والصفحةُ تُمرَّر: بـflex:1 وmin-height:0 كان
+       عمودُ اللوحة ينكمش إلى صفر فتعلو اللوحةُ الجانبيّةُ (اللاعبون والدردشة)
+       فوق اللوحة نفسها */
+    #boardCol, #side{flex:0 0 auto;}
+    /* وحشوةٌ لإطار اللوحة الأبيض: يُرسم خارج صندوقها فيُقصّ عند حافّة الشاشة */
+    #boardCol{padding:10px 10px 4px;}
     #boardBox{width:min(100%, 72dvh);}
     #side{width:100%; overflow:visible;}
     #chatCard{min-height:200px;}

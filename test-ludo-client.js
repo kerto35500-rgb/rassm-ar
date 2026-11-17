@@ -560,7 +560,25 @@ function freeze(room) {
     pa.stop(); pb.stop();
   }
 
-  console.log("⑥ لا استثناءَ في أيّ مسار");
+  console.log("⑥ ما وُجد في المتصفّح الحقيقيّ بعد النشر (لا يراه DOM بلا تخطيط)");
+  {
+    const IDX = fs.readFileSync(PUB("ludo/index.html"), "utf8");
+    const KW = fs.readFileSync(PUB("kawaii.css"), "utf8");
+    const mob = (IDX.match(/@media \(max-width: 900px\)\{([\s\S]*?)\n  \}/) || [])[1] || "";
+    ok(/#boardCol, #side\{flex:0 0 auto;\}/.test(mob),
+       "الجوال: عمودُ اللوحة لا ينكمش إلى صفر فتعلوه قائمةُ اللاعبين والدردشة");
+    ok(/#boardCol\{padding:/.test(mob), "الجوال: وإطارُ اللوحة لا يُقصّ عند حافّة الشاشة");
+    ok(/#boardBox\{[^}]*calc\(100dvh - 236px\)/.test(IDX), "الحاسوب: «اضغط للرمي» تحت النرد لا يُقصّ أسفلَ الشاشة");
+    ok(/body\.theme-kawaii\.kw-salfa\.kw-ludo \.seg button\.on \{[^}]*color:#fff/.test(KW),
+       "الخيارُ المختار في الإعدادات أبيضُ على فيروزيّ (كان رماديًّا لا يكاد يُقرأ)");
+    ok(/body\.kw-ludo \.tok\.can\.sel/.test(KW), "الملكُ المختار بحلقته الذهبيّة فوق حلقة «يتحرّك»");
+    ok(/body\.kw-salfa\.kw-ludo #lobby \{ overflow-x:hidden; \}/.test(KW), "ولا شريطَ تمريرٍ أفقيّ في اللوبي عند المرور على الأزرار العريضة");
+    const set = A.$("setBox").textContent;
+    ok(!/مفعّلة|مغلقة/.test(set) && /تشغيل/.test(set) && /إيقاف/.test(set),
+       "مفاتيحُ الإعدادات «تشغيل/إيقاف» — «مفعّلة» و«مغلقة» تتشابهان رسمًا فتُقرأ إحداهما للأخرى");
+  }
+
+  console.log("⑦ لا استثناءَ في أيّ مسار");
   ok(!errors.length, "صفرُ أخطاءٍ في الصفحتين والخادم", errors.slice(0, 3).map(e => String(e && e.stack || e).slice(0, 400)));
   ok(!A.ctx.alerts.length && !B.ctx.alerts.length, "ولا تنبيهاتِ alert", [A.ctx.alerts, B.ctx.alerts]);
 

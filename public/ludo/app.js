@@ -340,6 +340,10 @@
     let t = 0;
     const tick = () => { t += 1; n.setAttribute("r", .2 + t * .07); n.setAttribute("opacity", Math.max(0, 1 - t / 14)); if (t < 14) requestAnimationFrame(tick); else n.remove(); };
     requestAnimationFrame(tick);
+    /* المتصفّح يوقف requestAnimationFrame في التبويب المخفيّ — فلو وقعت ومضةٌ
+       والتبويبُ في الخلفيّة بقيت حلقتُها البيضاء عالقةً على المربّع. فمؤقّتٌ
+       احتياطيّ يزيلها في كلّ حال */
+    setTimeout(() => n.remove(), 700);
   }
 
   /* ══════════ النرد والشريط ══════════ */
@@ -621,7 +625,7 @@
 
   function summary(S) {
     return (MODE_ICON[S.mode] || "") + " <b>" + esc(NAMES.modes[S.mode] || S.mode) + "</b> — " + esc(MODE_DESC[S.mode] || "") +
-      "<br>" + (S.teams ? "فرق ٢ ضدّ ٢" + (S.sharedSafe ? " · تأمينٌ مشترك" : "") : AR_NUM(S.players) + " لاعبين") +
+      "<br>" + (S.teams ? "فرق ٢ ضدّ ٢" + (S.sharedSafe ? " · تأمينٌ مشترك" : "") : S.players === 2 ? "لاعبان" : AR_NUM(S.players) + " لاعبين") +
       (S.powerups ? " · " + AR_NUM(S.powerCount) + " معزّزات" : " · بلا معزّزات") + " · " + AR_NUM(S.turnSecs) + "ث للدور";
   }
 
@@ -634,18 +638,18 @@
         <div class="seg" id="sTeams"><button data-v="0">كلٌّ لنفسه</button><button data-v="1">فرق ٢ ضدّ ٢</button></div>
         <div class="hint">في الفرق: الأحمر والأصفر ضدّ الأخضر والأزرق، ومن أنهى قطعه يرمي لزميله.</div></div>
       <div class="setRow" id="rowShared"><label>التأمين المشترك</label>
-        <div class="seg" id="sShared"><button data-v="0">مغلق</button><button data-v="1">مفعّل</button></div>
+        <div class="seg" id="sShared"><button data-v="0">إيقاف</button><button data-v="1">تشغيل</button></div>
         <div class="hint">يقف الزميلان في مربّعٍ واحدٍ فيصير آمنًا لا يُؤكلان فيه.</div></div>
       <div class="setRow" id="rowPlayers"><label>عدد اللاعبين</label>
         <div class="seg" id="sPlayers"><button data-v="2">٢</button><button data-v="3">٣</button><button data-v="4">٤</button></div></div>
       <div class="setRow"><label>المعزّزات السحريّة</label>
-        <div class="seg" id="sPU"><button data-v="0">مغلقة</button><button data-v="1">مفعّلة</button></div>
+        <div class="seg" id="sPU"><button data-v="0">إيقاف</button><button data-v="1">تشغيل ✨</button></div>
         <select id="sPUc"><option value="3">٣ على اللوحة</option><option value="4">٤ على اللوحة</option><option value="5">٥ على اللوحة</option><option value="6">٦ على اللوحة</option></select>
         <div class="hint">🎲 نردٌ ذهبيّ · 🦘 قفزة الحظّ · 🫧 درع الفقاعة · 🌬️ الرياح العكسيّة · 🔄 تبديل الأماكن — تُلتقَط بالوقوف التامّ عليها.</div></div>
       <div class="setRow"><label>مهلة الدور</label>
         <select id="sSecs"><option value="10">١٠ث</option><option value="15">١٥ث</option><option value="20">٢٠ث</option><option value="30">٣٠ث</option></select></div>
       <div class="setRow"><label>البوتات في المقاعد الفارغة</label>
-        <div class="seg" id="sBots"><button data-v="1">مفعّلة</button><button data-v="0">مغلقة</button></div>
+        <div class="seg" id="sBots"><button data-v="1">تشغيل</button><button data-v="0">إيقاف</button></div>
         <div class="seg" id="sDiff"><button data-v="1">سهل</button><button data-v="2">عاديّ</button></div></div>`;
     const mg = $("modeGrid");
     for (const m of ["classic", "rush", "master", "missions", "night", "king"]) {
