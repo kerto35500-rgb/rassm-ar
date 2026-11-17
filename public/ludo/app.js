@@ -34,7 +34,7 @@
   let socket = null, ME = null, TOKEN = null, ROOM = null;
   let NAMES = { modes: {}, powers: {}, icons: {} }, DEFAULTS = null, settings = null;
   let LOBBY = null, VIEW = null, PLAYERS = [], SKEW = 0;
-  let mySeat = null, showPath = false, lastDice = 6;
+  let mySeat = null, showPath = false;
   /* انتهت المباراة ولم يُغلق اللاعبُ نافذةَ النتيجة بعد: اللوحةُ تبقى خلفها
      كما انتهت، واللوبي ينتظر حتى تُغلَق */
   let ended = false;
@@ -68,7 +68,8 @@
       const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
       o.connect(g); g.connect(AC.destination);
       const P = { roll: [300, .18, "triangle", .08], step: [520, .05, "sine", .05], cap: [140, .32, "sawtooth", .12],
-                  pow: [880, .3, "sine", .09], fin: [660, .5, "square", .07], turn: [740, .12, "sine", .08] }[kind] || [440, .1, "sine", .06];
+                  pow: [880, .3, "sine", .09], fin: [660, .5, "square", .07], turn: [740, .12, "sine", .08],
+                  tick: [1180, .045, "square", .035] }[kind] || [440, .1, "sine", .06];
       o.type = P[2]; o.frequency.setValueAtTime(P[0], t);
       if (kind === "roll") o.frequency.linearRampToValueAtTime(180, t + P[1]);
       if (kind === "cap") o.frequency.exponentialRampToValueAtTime(60, t + P[1]);
@@ -250,22 +251,23 @@
       if (o) { socket.emit("choose", { choice: o.id }); return; }
     }
     if (v.phase === "move" && v.turn === mySeat) {
-      let m = v.legal.find(x => x.owner === seat && x.idx === idx);
-      const pc = v.pieces[seat] && v.pieces[seat][idx];
-      if (!m && pc && pc.p === -1) m = v.legal.find(x => x.owner === seat && x.from === -1 && v.pieces[seat][x.idx].k === pc.k);
-      if (m) {
+      const opts = optionsFor(v, seat, idx);
+      if (opts.length) {
         /* الملك بنقرتين: الأولى تختاره فيظهر مسارُه المؤمَّن ووجهتُه، والثانية
            تحرّكه. مسارُه لا يُرسم إلا حين يُختار — كي لا تزدحم اللوحة —
            ولا يتحرّك الملكُ بلمسةٍ عابرة */
-        const key = m.owner + "-" + m.idx;
-        if (v.pieces[m.owner][m.idx].k === "king" && selKing !== key) {
+        const key = opts[0].owner + "-" + opts[0].idx;
+        if (v.pieces[opts[0].owner][opts[0].idx].k === "king" && selKing !== key) {
           selKing = key; showPath = true;
-          drawPath(v); markSel(); hintTo(m);
-          toast("👑 هذا مسارُ ملكك — اضغط عليه مرّةً أخرى ليتحرّك");
+          drawPath(v); markSel(); hintTo(opts);
+          if (opts.length > 1) showPicker(seat, idx, opts);
+          else toast("👑 هذا مسارُ ملكك — اضغط عليه مرّةً أخرى ليتحرّك");
           return;
         }
-        selKing = null; showPath = false;
-        socket.emit("move", { id: m.id }); clearHint(); drawPath(v); markSel();
+        /* قطعةٌ تمشي بأكثر من رقمٍ في البركة: فقاعةٌ فوقها تختار منها الرقم
+           (chooseStep في المرجع)؛ وبرقمٍ واحدٍ تمشي فورًا */
+        if (opts.length > 1) { showPicker(seat, idx, opts); hintTo(opts); return; }
+        playMove(opts[0]);
         return;
       }
     }
@@ -273,16 +275,57 @@
     if (v.rules.mode === "king" && v.pieces[seat] && v.pieces[seat][idx].k === "king" &&
         (v.controlled || []).includes(seat)) { showPath = !showPath; drawPath(v); }
   }
+  /** حركاتُ قطعةٍ بعينها (برقمٍ أو أكثر من البركة). وقطعُ القاعدة متكافئة:
+      النقرُ على أيّها يخرج بالحركة المعروضة لنوعها */
+  function optionsFor(v, seat, idx) {
+    let opts = v.legal.filter(x => x.owner === seat && x.idx === idx);
+    const pc = v.pieces[seat] && v.pieces[seat][idx];
+    if (!opts.length && pc && pc.p === -1)
+      opts = v.legal.filter(x => x.owner === seat && x.from === -1 && v.pieces[seat][x.idx].k === pc.k);
+    return opts;
+  }
+  function playMove(m) {
+    selKing = null; showPath = false; hidePicker();
+    socket.emit("move", { id: m.id }); clearHint(); drawPath(VIEW); markSel();
+  }
   let selKing = null;
   function markSel() {
     for (const k in toks) toks[k].classList.toggle("sel", k === selKing);
   }
 
-  /* تلميح الوجهة عند المرور على قطعةٍ متحرّكة */
-  function hintTo(m) {
+  /* فقاعةُ اختيار الرقم: فوق القطعة على الشاشة (خارج اللوحة الدوّارة كي لا
+     تدور أرقامُها معها) */
+  function showPicker(seat, idx, opts) {
+    const pk = $("picker");
+    pk.innerHTML = "";
+    for (const m of opts.slice().sort((a, b) => b.d - a.d)) {
+      const b = document.createElement("button");
+      b.className = "die"; b.type = "button";
+      b.setAttribute("aria-label", "حرّك " + m.d);
+      drawDie(b, m.d);
+      b.addEventListener("click", e => { e.stopPropagation(); playMove(m); });
+      pk.appendChild(b);
+    }
+    const t = tokEl(seat, idx).getBoundingClientRect(), box = $("boardBox").getBoundingClientRect();
+    pk.style.left = (t.left + t.width / 2 - box.left) + "px";
+    pk.style.top = (t.top - box.top) + "px";
+    pk.classList.add("on");
+  }
+  function hidePicker() { const pk = $("picker"); pk.classList.remove("on"); pk.innerHTML = ""; }
+  /* النقرُ خارج الفقاعة وخارج القطع يُغلقها */
+  document.addEventListener("pointerdown", e => {
+    if (!$("picker").classList.contains("on")) return;
+    if (e.target.closest && (e.target.closest("#picker") || e.target.closest(".tok"))) return;
+    hidePicker();
+  });
+
+  /* تلميح الوجهة: مربّعٌ منقّطٌ لكلّ رقمٍ تمشي به القطعة */
+  function hintTo(list) {
     clearHint();
-    const rc = rcFor(m.owner, m.to, m.idx);
-    el("rect", { x: rc[1] + .08, y: rc[0] + .08, width: .84, height: .84, rx: .18, fill: "none", stroke: "#fff", "stroke-width": .12, "stroke-dasharray": ".18 .1" }, layerHint);
+    for (const m of [].concat(list)) {
+      const rc = rcFor(m.owner, m.to, m.idx);
+      el("rect", { x: rc[1] + .08, y: rc[0] + .08, width: .84, height: .84, rx: .18, fill: "none", stroke: "#fff", "stroke-width": .12, "stroke-dasharray": ".18 .1" }, layerHint);
+    }
   }
   $("toks").addEventListener("mouseover", e => {
     const t = e.target.closest(".tok.can");
@@ -290,10 +333,10 @@
     const k = Object.keys(toks).find(x => toks[x] === t);
     if (!k) return;
     const [s, i] = k.split("-").map(Number);
-    const m = VIEW.legal.find(x => x.owner === s && x.idx === i) || VIEW.legal.find(x => x.owner === s && x.from === -1);
-    if (m) hintTo(m); else clearHint();
+    const opts = optionsFor(VIEW, s, i);
+    if (opts.length) hintTo(opts); else clearHint();
   });
-  $("toks").addEventListener("mouseout", () => { if (!selKing) clearHint(); });
+  $("toks").addEventListener("mouseout", () => { if (!selKing && !$("picker").classList.contains("on")) clearHint(); });
   function clearHint() { if (layerHint) layerHint.innerHTML = ""; }
 
   /* المعزّزات */
@@ -346,46 +389,66 @@
     setTimeout(() => n.remove(), 700);
   }
 
-  /* ══════════ النرد والشريط ══════════ */
+  /* ══════════ النرد: لكلّ لاعبٍ نردُه في زاويته ══════════ */
   const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
-  function drawDice(v, gold) {
-    const b = $("diceBtn");
+  function drawDie(b, v, gold) {
     [...b.querySelectorAll("i")].forEach(x => x.remove());
     for (let k = 0; k < 9; k++) {
       const i = document.createElement("i");
-      if (v && PIPS[v].includes(k)) i.className = "on";
-      b.insertBefore(i, b.querySelector(".tap"));
+      if (v && PIPS[v] && PIPS[v].includes(k)) i.className = "on";
+      b.appendChild(i);
     }
     b.classList.toggle("gold", !!gold);
   }
-  drawDice(6);
+  drawDie($("diceBtn"), 6);
   $("diceBtn").onclick = () => {
-    if (!VIEW || VIEW.turn !== mySeat || VIEW.phase !== "roll") return;
-    $("diceBtn").disabled = true;
-    $("diceBtn").classList.add("rolling");
+    if (!VIEW || VIEW.turn !== mySeat || VIEW.phase !== "roll" || VIEW.prompt) return;
+    const b = $("diceBtn");
+    b.disabled = true;
+    b.classList.remove("ready");
+    b.classList.add("rolling");
+    if (panels[mySeat]) panels[mySeat].classList.remove("ready");
     snd("roll");
     socket.emit("roll");
   };
-  async function animRoll(v, golden) {
-    const b = $("diceBtn");
+  /* آخرُ رقمٍ رماه كلُّ مقعد: يبقى على نرده حتى رميته التالية */
+  const lastRoll = {};
+  const dieOf = s => s === mySeat ? $("diceBtn") : (panels[s] && panels[s].querySelector(".die"));
+  async function animRoll(seat, v, golden) {
+    lastRoll[seat] = v;
+    const b = dieOf(seat);
+    if (!b) return;
     b.classList.remove("rolling"); void b.offsetWidth; b.classList.add("rolling");
-    for (let k = 0; k < 5; k++) { drawDice(1 + Math.floor(Math.random() * 6)); await sleep(70); }
-    drawDice(v, golden);
+    for (let k = 0; k < 5; k++) { drawDie(b, 1 + Math.floor(Math.random() * 6)); await sleep(70); }
+    drawDie(b, v, golden);
     b.classList.remove("rolling");
   }
 
-  let timerT = null;
-  function runTimer(deadline) {
-    clearInterval(timerT);
-    const bar = $("timerBar").firstElementChild;
-    if (!deadline) { bar.style.width = "0%"; return; }
-    const total = Math.max(1, deadline - (Date.now() + SKEW));
+  /* ══════════ المؤقّت: قطاعٌ يتناقص فوق صورة صاحب الدور ══════════
+     كمؤقّت المرجع (Ludo.CdAni): يبدأ دائرةً كاملة وينقص مع عقارب الساعة،
+     ويحمرّ في الثواني الخمس الأخيرة مع تكتكةٍ لصاحبه (last_sec). */
+  let pieT = null;
+  function startPie(st) {
+    clearInterval(pieT);
+    for (const s in panels) panels[s].classList.remove("timing", "hurry");
+    const seat = st.phase === "over" ? null : (st.prompt ? st.prompt.seat : st.turn);
+    if (seat == null || !st.deadline || !panels[seat]) return;
+    const pp = panels[seat];
+    const total = Math.max(1, st.deadline - (Date.now() + SKEW));
+    let lastSec = -1;
     const tick = () => {
-      const left = deadline - (Date.now() + SKEW);
-      bar.style.width = Math.max(0, Math.min(100, left / total * 100)) + "%";
-      if (left <= 0) clearInterval(timerT);
+      const left = st.deadline - (Date.now() + SKEW);
+      const used = Math.max(0, Math.min(1, 1 - left / total));
+      pp.style.setProperty("--e", (used * 360).toFixed(1) + "deg");
+      pp.classList.add("timing");
+      pp.classList.toggle("hurry", left <= 5000);
+      if (seat === mySeat && left > 0 && left <= 5000) {
+        const sec = Math.ceil(left / 1000);
+        if (sec !== lastSec) { lastSec = sec; snd("tick"); }
+      }
+      if (left <= 0) { clearInterval(pieT); pp.classList.remove("timing", "hurry"); }
     };
-    tick(); timerT = setInterval(tick, 250);
+    tick(); pieT = setInterval(tick, 100);
   }
 
   /* ══════════ الحالة والحركة ══════════ */
@@ -419,7 +482,13 @@
     const wait = ms => sleep(ms * speed);
     if (mySeat !== st.me) { mySeat = st.me; setRotation(mySeat); }
     for (const e of st.events || []) {
-      if (e.t === "roll") { snd("roll"); await animRoll(e.v, e.golden && e.seat === mySeat); await wait(140); }
+      if (e.t === "roll") {
+        snd("roll");
+        /* البركةُ تظهر عند صاحبها مع كلّ رمية (٦ ثمّ ٦ ثمّ ٤…) */
+        if (e.pool && panels[e.seat]) paintPool(panels[e.seat], e.pool);
+        await animRoll(e.seat, e.v, e.golden);
+        await wait(140);
+      }
       else if ((e.t === "move" || e.t === "jump") && e.path) {
         const d = tokEl(e.owner, e.idx);
         if (e.partial && d.style.display === "none") d.style.display = "";
@@ -452,9 +521,10 @@
       else if (e.t === "out" && e.seat === mySeat) toast("سقط ملكك — خرجت من المباراة");
       else if (e.t === "unlock" && e.seat === mySeat) toast("🔓 فُكّ قفلُ ملكك — يخرج بستّة على مسار حرّاسه");
       else if (e.t === "finish") { snd("fin"); await wait(150); }
-      else if (e.t === "again" && e.seat === mySeat) toast("🎲 رميةٌ إضافيّة!");
-      else if (e.t === "pass" && e.seat === mySeat) toast(e.why === "three6" ? "٣ ستّات متتالية — انتهى دورك" : "لا حركةَ ممكنة");
-      else if (e.t === "timeout" && e.seat === mySeat) toast("⏱️ انتهى وقتك — لُعب عنك");
+      else if (e.t === "again" && e.seat === mySeat)
+        toast(e.why === "six" ? "ستّة! ارمِ مرّةً أخرى 🎲" : e.why === "home" ? "🏁 دخلت قطعتك — رميةٌ إضافيّة!" : "💥 أكلت — رميةٌ إضافيّة!");
+      else if (e.t === "pass" && e.seat === mySeat) toast(e.why === "three6" ? "٣ ستّات متتالية — ضاع الدورُ كلُّه" : "لا حركةَ ممكنة");
+      else if (e.t === "timeout" && e.seat === mySeat) toast("⏱️ انتهى وقتك — اللعب التلقائيّ يلعب عنك");
       else if (e.t === "turn" && e.seat === mySeat) { snd("turn"); }
       else if (e.t === "spawn") flash(e.cell, "#fff");
     }
@@ -473,27 +543,21 @@
     drawPU(st); drawFog(st); drawPath(st);
     $("ludoBoard").classList.toggle("night", !!st.visible);
 
-    /* الشريط: النرد ودور من */
+    /* اللاعبون في زواياهم: صورٌ ونردٌ وبركةٌ ومؤقّت */
+    if (st.dice && st.turn != null && lastRoll[st.turn] == null) lastRoll[st.turn] = st.dice;
+    renderPanels(st);
+    startPie(st);
+    hidePicker();
     const myTurn = st.turn === mySeat;
-    const myRoll = myTurn && st.phase === "roll" && !st.prompt;
-    const b = $("diceBtn");
-    b.disabled = !myRoll;
-    b.classList.remove("rolling");
-    b.classList.toggle("ready", myRoll);
-    b.querySelector(".tap").textContent = myRoll ? "اضغط للرمي" : "";
-    /* النردُ يبقى على آخر رقمٍ رُمي حتى الرمية التالية؛ ويذهَّب حين تكون
-       رميتي القادمة ستّةً مضمونة (التقطتُ النرد الذهبيّ) */
-    if (st.dice) lastDice = st.dice;
-    drawDice(lastDice, myRoll && st.golden);
-    $("goldTag").style.display = st.golden ? "" : "none";
     const tn = (PLAYERS[st.turn] && PLAYERS[st.turn].name) || G.COLOR_AR[st.turn];
-    $("turnLine").textContent = st.phase === "over" ? "انتهت المباراة"
-      : myTurn ? (st.phase === "roll" ? "دورك — ارمِ النرد 🎲" : st.phase === "move" ? "اختر قطعةً تتحرّك" : "…")
+    const status = st.phase === "over" ? "انتهت المباراة"
+      : myTurn ? (st.phase === "roll" ? "دورك — ارمِ النرد" : st.phase === "move" ? "اختر قطعة" : "…")
       : "دور " + tn;
-    $("dock").style.setProperty("--dk", DEEP[st.turn]);
-    runTimer(st.deadline);
     $("phaseInfo").textContent = (MODE_ICON[st.rules.mode] || "") + " " + (NAMES.modes[st.rules.mode] || "") +
-      (st.rules.teams ? " · فرق" : "") + (st.rules.powerups ? " · معزّزات" : "");
+      (st.rules.teams ? " · فرق" : "") + " · " + status;
+    /* اللعب التلقائيّ: شارةٌ تُعيدك بلمسةٍ في أيّ مكان */
+    const meP = PLAYERS[mySeat];
+    $("autoBar").classList.toggle("on", !!(meP && meP.auto) && st.phase !== "over");
 
     /* الأسئلة */
     const pr = st.prompt;
@@ -504,7 +568,7 @@
     if (pr && pr.seat === mySeat && pr.kind === "sacrifice") showSacrifice(st);
     else closeModal("sacModal");
 
-    renderSide(st);
+    renderMissions(st);
   }
 
   function showSacrifice(v) {
@@ -524,25 +588,83 @@
     openModal("sacModal");
   }
 
-  /* اللاعبون والمهامّ */
-  function renderSide(v) {
-    const pl = $("plist");
-    pl.innerHTML = "";
+  /* ══════════ اللاعبون في زواياهم (كلعبة المرجع) ══════════
+     كلُّ لاعبٍ عند قاعدته: أنت أسفلَ اليسار، ثمّ مع عقارب الساعة. صورتُه
+     وعليها مؤقّته، ونردُه بجانبه، وبركتُه تحته حين يكون الدورُ دوره. */
+  const CORNER = ["cBL", "cTL", "cTR", "cBR"];
+  const cornerOf = s => CORNER[((s - mySeat) % 4 + 4) % 4];
+  const panels = {};
+  function panelEl(s) {
+    if (panels[s]) return panels[s];
+    const d = document.createElement("div");
+    d.className = "pp s" + s;
+    d.setAttribute("data-seat", String(s));
+    d.style.setProperty("--sc", COLORS[s]); d.style.setProperty("--sd", DEEP[s]); d.style.setProperty("--sl", LIGHT[s]);
+    d.innerHTML =
+      '<div class="avw"><div class="av"><span class="pie"></span><span class="ini"></span></div><span class="autoTag">AUTO</span></div>' +
+      '<div class="pinfo"><b class="nm"></b><small class="meta"></small>' +
+      '<div class="dieRow"><span class="hand">👇</span><span class="pool"></span></div></div>' +
+      '<div class="bub"></div>';
+    const row = d.querySelector(".dieRow"), pool = d.querySelector(".pool");
+    if (s === mySeat) {
+      const b = $("diceBtn");
+      b.style.display = "";
+      row.insertBefore(b, pool);
+    } else {
+      const die = document.createElement("div");
+      die.className = "die";
+      drawDie(die, lastRoll[s] || 6);
+      row.insertBefore(die, pool);
+    }
+    panels[s] = d;
+    return d;
+  }
+  function paintPool(pp, vals) {
+    pp.querySelector(".pool").innerHTML = (vals || []).map(x => '<i class="' + (x === 6 ? "six" : "") + '">' + AR_NUM(x) + "</i>").join("");
+  }
+  /* مباراةٌ جديدة: اللوحاتُ تُبنى من جديد (قد تتغيّر المقاعد ومقعدك) */
+  function resetPanels() {
+    const b = $("diceBtn");
+    b.style.display = "none";
+    $("play").appendChild(b);
+    for (const s in panels) { panels[s].remove(); delete panels[s]; }
+    for (const k in lastRoll) delete lastRoll[k];
+  }
+  function renderPanels(v) {
+    for (const s in panels) if (!v.seats.includes(+s)) { panels[s].remove(); delete panels[s]; }
+    const myRoll = v.turn === mySeat && v.phase === "roll" && !v.prompt;
     for (const s of v.seats) {
+      const d = panelEl(s), c = $(cornerOf(s));
+      if (d.parentNode !== c) c.appendChild(d);
       const p = PLAYERS[s] || { name: G.COLOR_AR[s] };
       const fin = (v.pieces[s] || []).filter(x => x.p === G.FINISH).length;
-      const d = document.createElement("div");
-      d.className = "pl" + (v.turn === s && v.phase !== "over" ? " turn" : "") + (s === mySeat ? " me" : "") + ((v.out || {})[s] ? " off" : "");
-      d.style.setProperty("--sc", COLORS[s]); d.style.setProperty("--sd", DEEP[s]); d.style.setProperty("--sl", LIGHT[s]);
-      d.innerHTML = '<div class="av"></div><div class="nm">' + esc(p.name) + (p.bot ? " 🤖" : "") + (p.gone && !p.bot ? " 💤" : "") + "</div>" +
-        (v.rules.teams ? '<span class="tag">' + (s % 2 ? "ف٢" : "ف١") + "</span>" : "") +
-        '<span class="fin">🏁 ' + AR_NUM(fin) + "/٤</span>";
-      pl.appendChild(d);
+      d.querySelector(".ini").textContent = p.bot ? "🤖" : (String(p.name || "؟").trim().charAt(0) || "؟");
+      d.querySelector(".nm").textContent = p.name + (p.gone && !p.bot ? " 💤" : "");
+      d.querySelector(".meta").textContent = "🏁 " + AR_NUM(fin) + "/٤" + (v.rules.teams ? (s % 2 ? " · ف٢" : " · ف١") : "");
+      const acting = v.phase !== "over" && (v.prompt ? v.prompt.seat === s : v.turn === s);
+      d.classList.toggle("turn", acting);
+      d.classList.toggle("me", s === mySeat);
+      d.classList.toggle("auto", !!p.auto);
+      d.classList.toggle("off", !!(v.out || {})[s]);
+      d.classList.toggle("ready", s === mySeat && myRoll);
+      /* البركةُ عند صاحب الدور وحده */
+      paintPool(d, v.turn === s && v.phase !== "over" ? v.pool : []);
+      if (s !== mySeat) { const die = d.querySelector(".die"); if (die && !die.classList.contains("rolling")) drawDie(die, lastRoll[s] || 6); }
     }
+    const b = $("diceBtn");
+    b.disabled = !myRoll;
+    b.classList.remove("rolling");
+    b.classList.toggle("ready", myRoll);
+    /* نردُك يذهَّب حين تكون رميتُك القادمة ستّةً مضمونة (النرد الذهبيّ) */
+    drawDie(b, lastRoll[mySeat] || 6, !!v.golden);
+  }
+
+  /* المهامّ: شريطٌ فوق اللوحة */
+  function renderMissions(v) {
     const mc = $("missionCard");
     if (v.rules.mode !== "missions") { mc.style.display = "none"; return; }
     mc.style.display = "flex";
-    mc.innerHTML = '<div class="h" style="font-size:15px">🕵️ المهامّ السرّيّة</div>';
+    mc.innerHTML = '<div class="h" style="font-size:13px">🕵️ المهامّ السرّيّة</div>';
     for (const s of v.seats) {
       const ms = v.missions && v.missions[s];
       if (!ms) continue;
@@ -570,7 +692,8 @@
   function toLobby() {
     showScreen("lobby");
     VIEW = null; mySeat = null; showPath = false; setRotation(null);
-    clearInterval(timerT);
+    clearInterval(pieT);
+    $("autoBar").classList.remove("on");
     $("phaseInfo").textContent = "في الانتظار…";
   }
 
@@ -705,7 +828,11 @@
       night: r("🌙 الظلام", "لا ترى من الطريق إلا ٤ مربّعاتٍ حول كلّ قطعةٍ لك؛ وما وراءها مخفيٌّ تمامًا. إذا أكلت قطعةً انكشفت لك اللوحةُ حتى نهاية دورك. في الفرق رؤيتُكما مشتركة. وأوّلُ قطعةٍ تصل المركز تفوز."),
       king: r("👑 الملك", "لك ثلاثةُ حرّاسٍ 🛡️ وملكٌ 👑. الملكُ مقفلٌ حتى يخرج حارسٌ ويخطو خطوة. لا يمشي الملك إلا على مربّعاتٍ مشاها حرّاسُك (اضغط على ملكك لترى مساره). إذا هوجم الملك تستطيع التضحية بحارسٍ على اللوحة فيبقى الملك ويعود الحارس محظورًا ٣ أدوار. تفوز بإيصال ملكك إلى المركز أو بإسقاط ملوك الجميع. في الفرق: يمشي ملكك على ما عبّده حرّاسُ زميلك أيضًا، ويفوز الفريق بملكٍ واحد ويخسر بسقوط الملكين.")
     };
-    return r("القواعد الأساسيّة", "تخرج القطعةُ من القاعدة بالرقم ٦ · الستّةُ تمنح رميةً إضافيّة · أكلُ قطعةٍ يمنح رميةً إضافيّة · ثلاثُ ستّاتٍ متتالية تُنهي الدور · مربّعاتُ الانطلاق والنجوم ★ آمنة · لا تجاوزَ للمركز (إلا الارتداد في الاحترافيّ).") +
+    return r("القواعد الأساسيّة", "تخرج القطعةُ من القاعدة بالرقم ٦ · مربّعاتُ الانطلاق والنجوم ★ آمنة · لا تجاوزَ للمركز (إلا الارتداد في الاحترافيّ).") +
+      r("🎲 النرد", "إذا طلعت ستّة ترمي مرّةً أخرى <b style='display:inline'>قبل</b> أن تحرّك، وتتجمّع الأرقام تحت نردك (٦ ثمّ ٤ مثلًا)، ثمّ تُنفقها رقمًا رقمًا: أيُّ قطعةٍ تمشي بأيّ رقم — وإن مشت قطعةٌ بأكثر من رقم اختر الرقمَ من الفقاعة فوقها. " +
+        "ثلاثُ ستّاتٍ متتالية تُلغي الدورَ كلَّه. أكلُ قطعةٍ أو إدخالُها المركز يمنح رميةً جديدة، وما بقي من أرقامك يبقى لك. " +
+        "والنردُ نردُ لعبة يلا لودو: الستّةُ تأتي أكثرَ قليلًا (نحو ٢٣٪)، وإن كانت قطعُك كلُّها في القاعدة ساعدك بستّةٍ أكثر.") +
+      r("⏱️ الوقت", "لكلّ خطوةٍ مهلة تظهر دائرةً تنقص فوق صورتك. إن انتهت لعب عنك اللعبُ التلقائيّ (AUTO) حتى تلمس الشاشة.") +
       (M[mode] || "") +
       r("👥 الفرق ٢ ضدّ ٢", "الأحمر والأصفر ضدّ الأخضر والأزرق. لا يأكل الزميلُ زميله. من أنهى قطعه يرمي النرد ويحرّك قطع زميله. «التأمين المشترك» يجعل المربّع الذي يقف فيه زميلان آمنًا.") +
       '<div class="modeTag" style="margin-top:4px">✨ المعزّزات (حين تُفعَّل)</div>' +
@@ -748,14 +875,67 @@
      اللوبي يرى السبب، لا على لوحةٍ منتهيةٍ بلا مخرج */
   $("endAgain").onclick = () => { closeModal("endModal"); socket.emit("startGame"); };
 
-  /* ══════════ الدردشة ══════════ */
-  function addMsg(m, sys) {
+  /* ══════════ الدردشة: شريطٌ تحت (كالمرجع) ══════════
+     😊 عباراتٌ جاهزة وإيموجي بلمسة، 💬 دردشةٌ مكتوبة بعدّاد ما لم يُقرأ،
+     وكلُّ رسالةٍ تظهر فقاعةً بجانب صورة صاحبها في زاويته. العباراتُ عباراتُنا. */
+  const PHRASES = ["السلام عليكم 👋", "بالتوفيق للجميع 🤝", "لعبة حلوة 👏", "يلا بسرعة شوي ⏳",
+                   "حركة ذكية 🔥", "جايك جايك 😈", "تكفى لا تاكلني 🥺", "معليش يا صاحبي 😅",
+                   "مشكور 🙏", "يا ساتر! 😱", "هههههه 😂", "اليوم يومي 😎"];
+  const EMOJI = ["😂", "😎", "😍", "😡", "😭", "🥳", "😱", "🤔", "👍", "👏", "🔥", "💪", "🤝", "😈", "🙈", "❤️"];
+  (function buildQuick() {
+    const qp = $("quickPop");
+    const phr = document.createElement("div"); phr.className = "phr";
+    const emo = document.createElement("div"); emo.className = "emo";
+    const send = t => { socket.emit("chat", { text: t }); qp.classList.remove("on"); };
+    for (const t of PHRASES) { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.addEventListener("click", () => send(t)); phr.appendChild(b); }
+    for (const t of EMOJI) { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.addEventListener("click", () => send(t)); emo.appendChild(b); }
+    qp.appendChild(phr); qp.appendChild(emo);
+  })();
+  let unread = 0;
+  function paintUnread() {
+    const u = $("unread");
+    u.textContent = unread > 9 ? "+٩" : AR_NUM(unread);
+    u.classList.toggle("on", unread > 0);
+  }
+  $("quickBtn").onclick = e => {
+    e.stopPropagation();
+    $("chatCard").classList.remove("on");
+    $("quickPop").classList.toggle("on");
+  };
+  $("chatBtn").onclick = e => {
+    e.stopPropagation();
+    $("quickPop").classList.remove("on");
+    const on = $("chatCard").classList.toggle("on");
+    if (on) { unread = 0; paintUnread(); $("msgs").scrollTop = $("msgs").scrollHeight; }
+  };
+  $("chatClose").onclick = () => $("chatCard").classList.remove("on");
+  document.addEventListener("pointerdown", e => {
+    if (!e.target.closest) return;
+    if (!e.target.closest("#quickPop") && !e.target.closest("#quickBtn")) $("quickPop").classList.remove("on");
+  });
+  /* إيموجي وحده ⇒ فقاعةٌ بخطٍّ كبير (كوجوه المرجع المتحرّكة) */
+  const EMOJI_ONLY = /^(?:\p{Extended_Pictographic}|️|‍|\s)+$/u;
+  function bubble(seat, text) {
+    const pp = panels[seat];
+    if (!pp) return;
+    const b = pp.querySelector(".bub");
+    b.textContent = text;
+    b.classList.toggle("big", EMOJI_ONLY.test(text) && text.length <= 8);
+    b.classList.add("on");
+    clearTimeout(b._t);
+    b._t = setTimeout(() => b.classList.remove("on"), 4000);
+  }
+  /* quiet: سجلٌّ قديمٌ يُعرض عند الدخول — بلا فقاعاتٍ ولا عدّاد */
+  function addMsg(m, sys, quiet) {
     const d = document.createElement("div");
     d.className = "msg" + (sys ? " system" : "");
     if (sys) d.textContent = m;
     else { d.innerHTML = "<b>" + esc(m.name) + ":</b> " + esc(m.text); if (m.seat >= 0) d.querySelector("b").style.color = DEEP[m.seat]; }
     $("msgs").appendChild(d);
     $("msgs").scrollTop = $("msgs").scrollHeight;
+    if (sys || quiet) return;
+    if (m.seat >= 0) bubble(m.seat, m.text);
+    if (VIEW && m.seat !== mySeat && !$("chatCard").classList.contains("on")) { unread++; paintUnread(); }
   }
   $("chatForm").onsubmit = e => {
     e.preventDefault();
@@ -764,6 +944,18 @@
     socket.emit("chat", { text: t });
     $("chatInput").value = "";
   };
+
+  /* ══════════ اللعب التلقائيّ: لمسةٌ في أيّ مكانٍ تُعيدك (كالمرجع) ══════════ */
+  let manualAt = 0;
+  document.addEventListener("pointerdown", () => {
+    if (!$("autoBar").classList.contains("on")) return;
+    const now = Date.now();
+    if (now - manualAt < 1500) return;
+    manualAt = now;
+    socket.emit("manual");
+    $("autoBar").classList.remove("on");
+    toast("👋 رجعت تلعب بنفسك");
+  }, true);
 
   /* ══════════ الاتّصال والدخول ══════════ */
   socket = io("/ludo");
@@ -834,7 +1026,8 @@
     ended = false;
     $("endModal").classList.remove("on");
     for (const k in toks) { toks[k].remove(); delete toks[k]; }
-    mySeat = null; showPath = false; lastDice = 6;
+    resetPanels(); hidePicker();
+    mySeat = null; showPath = false;
     addMsg("🎲 بدأت المباراة — بالتوفيق!", true);
   });
   socket.on("matchEnd", async res => {
@@ -845,7 +1038,7 @@
     if (ended) onEnd(res);
   });
   socket.on("chat", m => addMsg(m));
-  socket.on("chatLog", list => { $("msgs").innerHTML = ""; list.forEach(m => addMsg(m)); });
+  socket.on("chatLog", list => { $("msgs").innerHTML = ""; list.forEach(m => addMsg(m, false, true)); });
   socket.on("toast", t => toast(t));
   socket.on("kicked", () => {
     try { localStorage.removeItem("ludoResume"); } catch (e) {}

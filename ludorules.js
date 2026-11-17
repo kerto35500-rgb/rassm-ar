@@ -5,8 +5,20 @@
  *
  * ── القواعد الأساسيّة (من لعبة المرجع: Yalla Ludo 1.5.1) ──
  *   • تخرج القطعة من القاعدة بالرقم ٦ وحده.
- *   • الستّة تمنح رميةً إضافيّة، وأكلُ قطعةٍ يمنح رميةً إضافيّة.
- *   • ثلاثُ ستّاتٍ متتالية تُنهي الدور بلا حركة.
+ *   • **النردُ يتجمّع**: الستّةُ تُرمى بعدها رميةٌ أخرى **قبل** أيّ حركة، وتُحفظ
+ *     الأرقامُ في «بِركة» الدور (٦ ثمّ ٦ ثمّ ٤ مثلًا)؛ وبعد أوّل رقمٍ غيرِ الستّة
+ *     يُنفقها اللاعبُ رقمًا رقمًا: أيُّ قطعةٍ تمشي بأيّ رقم.
+ *     (من كود المرجع: offLine.Service.turingNumber، والبركةُ فيه numArray،
+ *     وفي بروتوكوله الأونلاين `repeated int32 diceNum // 骰子列表`.)
+ *   • ثلاثُ ستّاتٍ متتالية في البركة تُلغي الدورَ كلَّه — والستّتان قبلها لم
+ *     تُلعبا بعد، فتضيعان معها (المرجع: yalla.util.isThreeSix).
+ *   • أكلُ قطعةٍ يمنح رميةً جديدة، **ودخولُ قطعةٍ المركزَ كذلك** — وما بقي في
+ *     البركة يبقى ويُضاف إليه (المرجع: chessEvent.Fight / chessEvent.Win).
+ *   • النردُ نردُ المرجع لا نردٌ عادل: ceil(r × 6.5) مقصوصًا عند ٦، فالستّةُ
+ *     ٣ من ١٣ (≈٢٣٪) وكلُّ رقمٍ آخر ٢ من ١٣ (≈١٥٪). وإن كانت قطعُ اللاعب كلُّها
+ *     في القاعدة وبركتُه فارغة فنصفُ الرميات ستّةٌ مضمونة (المرجع:
+ *     offLine.Random.randomNum + isAllhome). هذا نردُ المرجع في لعبه ضدّ
+ *     الكمبيوتر؛ نردُ أونلاينه على خوادمه ولا يظهر في التطبيق.
  *   • مربّعاتُ الانطلاق والنجوم آمنة: لا أكلَ فيها.
  *   • لا تجاوزَ للمركز: الرمية يجب ألّا تزيد على المسافة الباقية.
  *
@@ -93,7 +105,13 @@ const mateOf = s => (s + 2) % 4;
    وقسنا متى كانت كلُّ مهمّةٍ ستكتمل لكلّ هدفٍ ممكن، ثمّ اخترنا لكلٍّ الهدفَ
    الذي يكتمل في نحو ٣٠ دورًا من أدوار صاحبه. قبل المعايرة كانت «اجمع قطعتين»
    تفوز في ٦٨٪ ممّا تُعطى فيه و«أدخِل ٣ قطع» في ٢٪ — أي أنّ الحظَّ في توزيع
-   المهامّ كان يقرّر المباراة لا اللعب. */
+   المهامّ كان يقرّر المباراة لا اللعب.
+   وأُعيد القياسُ بعد نرد المرجع وبركة الستّات (الأدوارُ صارت أغنى بالحركات):
+   المهامُّ كلُّها بين ٢١ و٣٦ دورًا مع لاعبين أو ثلاثة أو أربعة، بعد رفع
+   «الستّات» من ٧ إلى ١٠ و«النزول على قطعتك» إلى ٤ لكلّ عدد. */
+/* أرقامُ النصوص بالهنديّة كبقيّة الواجهة («٦ ١٠ مرّات» لا «٦ 10 مرّات») */
+const arNum = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
+
 const MISSIONS = [
   /* الهدفُ دالّةٌ في عدد اللاعبين: مع خصمٍ واحدٍ لا تجد ما تأكله كما تجده
      مع ثلاثة، وفي الزحام تُقطَع الطريقُ إلى المركز أكثر. */
@@ -101,20 +119,25 @@ const MISSIONS = [
     text: (g, t) => `كُل قطعةً للّاعب ${G.COLOR_AR[t]}`,
     prog: (m, s, t) => (m.stats[s].caps[t] || 0) },
   { id: "eat", goal: n => (n <= 2 ? 1 : 2),
-    text: g => (g === 1 ? "كُل قطعةً لخصمك" : `كُل ${g === 2 ? "قطعتين" : g + " قطع"} لخصومك`),
+    text: g => (g === 1 ? "كُل قطعةً لخصمك" : `كُل ${g === 2 ? "قطعتين" : arNum(g) + " قطع"} لخصومك`),
     prog: (m, s) => m.stats[s].capsTotal },
   /* مع أربعةٍ تكفي القطعةُ في مسار النهاية: الطريقُ إلى المركز في الزحام
      أطولُ من أن تُنافس بقيّةَ المهامّ */
   { id: "home", goal: () => 1,
     text: (g, t, n) => (n >= 4 ? "أدخِل قطعةً إلى مسار النهاية" : "أوصِل قطعةً إلى المركز"),
     prog: (m, s) => m.pieces[s].filter(pc => pc.p >= (m.seats.length >= 4 ? HOME_FIRST : FINISH)).length },
-  { id: "sixes", goal: () => 7, text: g => `ارمِ الرقم ٦ ${g} مرّات`,
+  /* أُعيدت معايرتُها مع نرد المرجع: الستّةُ صارت ٢٣٪ لا ١٧٪، ومعها ستّةُ
+     القاعدة المضمونة نصفَ المرّات — فكان هدفُ السبع يكتمل في ١٨ دورًا والبقيّةُ
+     في ٢٣–٣٥؛ والعشرُ تكتمل في ٢٦–٢٨ مع لاعبين أو ثلاثة أو أربعة */
+  { id: "sixes", goal: () => 10, text: g => `ارمِ الرقم ٦ ${arNum(g)} مرّات`,
     prog: (m, s) => m.stats[s].sixes },
   /* تُعَدّ مرّاتُ الوقوف لا النجومُ المختلفة: النجومُ أربعٌ فقط، فكان الهدفُ
      يقفز بين «سهلٍ جدًّا» و«شبه مستحيل» ولا شيءَ بينهما */
-  { id: "stars", goal: () => 3, text: g => `قِف على النجوم ${g} مرّات`,
+  { id: "stars", goal: () => 3, text: g => `قِف على النجوم ${arNum(g)} مرّات`,
     prog: (m, s) => m.stats[s].starLands },
-  { id: "stack", goal: n => (n >= 4 ? 4 : 3), text: g => `انزل بقطعةٍ على قطعةٍ لك ${g} مرّات`,
+  /* البركةُ تُكثر الحركات في الدور فتكثر النزلاتُ على القطع: الثلاثُ صارت
+     تكتمل في ٢١ دورًا مع لاعبين أو ثلاثة، والأربعُ في نحو ٢٩ — كبقيّة المهامّ */
+  { id: "stack", goal: () => 4, text: g => `انزل بقطعةٍ على قطعةٍ لك ${arNum(g)} مرّات`,
     prog: (m, s) => m.stats[s].stackLands },
   { id: "nearEat", goal: () => 1, minPlayers: 3,
     text: () => "كُل قطعةً بقطعةٍ لم تبتعد عن قاعدتها ٦ خطوات",
@@ -125,7 +148,7 @@ const MISSIONS = [
      رهينةَ مواقع الخصوم لا مهارةَ صاحبها. */
   { id: "puSwap", goal: () => 1, pu: true, text: () => "التقط «تبديل الأماكن»",
     prog: (m, s) => (m.stats[s].power.swap || 0) },
-  { id: "puAny", goal: () => 4, pu: true, text: g => `التقط ${g} معزّزات`,
+  { id: "puAny", goal: () => 4, pu: true, text: g => `التقط ${arNum(g)} معزّزات`,
     prog: (m, s) => m.stats[s].powerTotal },
   { id: "puWind", goal: () => 1, pu: true, text: () => "التقط «الرياح العكسيّة»",
     prog: (m, s) => (m.stats[s].power.wind || 0) },
@@ -184,7 +207,9 @@ class LudoMatch {
     this.turn = this.seats[Math.floor(this.rng() * this.seats.length)];
     this.phase = "roll";
     this.dice = null;
-    this.sixes = 0;
+    /* بركةُ الدور: الأرقامُ المرميّة التي لم تُنفَق بعد، بترتيب رميها.
+       {v: الرقم، g: ذهبيّ؟} — الستّةُ الذهبيّة هديّةٌ لا تُحسَب في عقوبة الثلاث */
+    this.pool = [];
     this.legal = [];
     this.queue = [];
     this.prompt = null;
@@ -325,21 +350,62 @@ class LudoMatch {
     return { owner, idx, from: pc.p, to: t, path, bounce };
   }
 
-  computeLegal(actor, d) {
+  /** الحركاتُ المشروعة: كلُّ قطعةٍ مع كلّ رقمٍ مختلفٍ في البركة (المرجع:
+      Service.chooseItem يجمع getChessesByStep لكلّ رقمٍ في numArray). وكلُّ
+      حركةٍ تحمل رقمَها `d` — فيُنفَق من البركة حين تُلعَب. ورقمٌ مكرّرٌ في
+      البركة (٦ و٦) يُعرَض مرّةً: الحركتان متطابقتان. */
+  computeLegal(actor, only) {
     const out = [];
-    for (const owner of this.controlled(actor)) {
-      let baseSeen = false;
-      this.pieces[owner].forEach((pc, idx) => {
-        /* قطعُ القاعدة متكافئة: نعرض أوّلها وحدها (إلا ملكًا أو حارسًا مقفلًا يختلف) */
-        if (pc.p === BASE) {
-          if (pc.kind === "pawn" && baseSeen) return;
-          if (pc.kind === "pawn") baseSeen = true;
-        }
-        const mv = this.tryMove(owner, idx, d);
-        if (mv) out.push(mv);
-      });
+    const values = only != null ? [only] : [...new Set(this.pool.map(x => x.v))];
+    for (const d of values) {
+      for (const owner of this.controlled(actor)) {
+        let baseSeen = false;
+        this.pieces[owner].forEach((pc, idx) => {
+          /* قطعُ القاعدة متكافئة: نعرض أوّلها وحدها (إلا ملكًا أو حارسًا مقفلًا يختلف) */
+          if (pc.p === BASE) {
+            if (pc.kind === "pawn" && baseSeen) return;
+            if (pc.kind === "pawn") baseSeen = true;
+          }
+          const mv = this.tryMove(owner, idx, d);
+          if (mv) out.push({ ...mv, d });
+        });
+      }
     }
     return out.map((m, i) => ({ id: i, ...m }));
+  }
+
+  /** نردُ المرجع (Yalla Ludo 1.5.1، offLine.Random.randomNum):
+      ceil(r × 6.5) ثمّ ما زاد على ٦ صار ستّة ⇒ P(6) = 3/13 وكلُّ رقمٍ آخر 2/13.
+      وإن كانت قطعُ مَن يرمي كلُّها في القاعدة وبركتُه فارغة، فنصفُ الرميات
+      ستّةٌ مضمونة قبل ذلك (`randomNum(Math.random() > .5)` مع isAllhome). */
+  rollDie(seat) {
+    const owners = this.controlled(seat);
+    const allHome = owners.length > 0 && owners.every(o => this.pieces[o].every(pc => pc.p === BASE));
+    if (allHome && this.pool.length === 0 && this.rng() < 0.5) return 6;
+    const v = Math.ceil(this.rng() * 6.5);
+    return v < 1 ? 1 : v > 6 ? 6 : v;
+  }
+
+  /** ثلاثُ ستّاتٍ متتالية في آخر البركة (المرجع: yalla.util.isThreeSix يعدّ
+      الستّاتِ المتتالية حتى آخر رقم). والذهبيّةُ لا تُعَدّ ولا تقطع العدّ. */
+  threeSix() {
+    let n = 0;
+    for (const x of this.pool) {
+      if (x.g) continue;
+      n = x.v === 6 ? n + 1 : 0;
+    }
+    return n >= 3;
+  }
+
+  /** بعد رقمٍ غير الستّة، أو بعد حركةٍ بقي في البركة بعدها شيء: نعرض ما
+      يُلعَب بالبركة. لا شيء ⇒ ينتقل الدور (وتضيع الأرقامُ التي لا تُلعَب). */
+  offerMoves(seat) {
+    this.legal = this.computeLegal(seat);
+    if (!this.legal.length) {
+      this.ev({ t: "pass", seat, why: "noMove" });
+      return this.nextTurn();
+    }
+    this.phase = "move";
   }
 
   /** المقعد الذي ننتظر فعله: صاحبُ السؤال إن وُجد سؤال، وإلا صاحبُ الدور. */
@@ -360,13 +426,12 @@ class LudoMatch {
     if (golden) { v = 6; this.golden[seat] = false; }
     /* `_loaded`: نردٌ محمَّلٌ للاختبارات وحدها — لا يضبطه الخادم أبدًا */
     else if (this._loaded && this._loaded.length) v = this._loaded.shift();
-    else v = 1 + this.rnd(6);
-    this.ev({ t: "roll", seat, v, golden });
+    else v = this.rollDie(seat);
+    this.pool.push({ v, g: !!golden });
+    this.dice = v;
+    this.ev({ t: "roll", seat, v, golden, pool: this.pool.map(x => x.v) });
 
     if (v === 6) this.stats[seat].sixes++;
-    /* الستّةُ الذهبيّة لا تُحسَب في عقوبة الستّات الثلاث: هي هديّةٌ لا حظّ */
-    if (v === 6 && !golden) this.sixes++;
-    else if (v !== 6) this.sixes = 0;
 
     /* مهمّةُ «ارمِ ٦ كذا مرّة» قد تكتمل برميةٍ لا حركةَ بعدها — فالفوزُ يُفحَص
        هنا أيضًا لا بعد التحريك وحده */
@@ -375,20 +440,19 @@ class LudoMatch {
       if (w) return this.endGame(w);
     }
 
-    if (this.sixes >= 3) {
-      this.ev({ t: "pass", seat, why: "three6" });
-      this.sixes = 0;
-      return this.nextTurn();
+    if (v === 6) {
+      /* ثلاثُ ستّات: يضيع الدورُ كلُّه بما في البركة */
+      if (this.threeSix()) {
+        this.ev({ t: "pass", seat, why: "three6" });
+        return this.nextTurn();
+      }
+      /* الستّة: رميةٌ أخرى **قبل** أيّ حركة، والرقمُ محفوظٌ في البركة */
+      this.phase = "roll";
+      this.legal = [];
+      this.ev({ t: "again", seat, why: "six" });
+      return;
     }
-    this.dice = v;
-    this.legal = this.computeLegal(seat, v);
-    if (!this.legal.length) {
-      this.ev({ t: "pass", seat, why: "noMove" });
-      /* الستّة تعطي رميةً أخرى ولو لم تتحرّك قطعة */
-      if (v === 6) { this.phase = "roll"; this.dice = null; this.ev({ t: "again", seat }); return; }
-      return this.nextTurn();
-    }
-    this.phase = "move";
+    this.offerMoves(seat);
   }
 
   /** تحريكٌ بمعرّف الحركة من قائمة `legal`. */
@@ -397,7 +461,12 @@ class LudoMatch {
     const mv = this.legal.find(m => m.id === Number(moveId));
     if (!mv) throw new Error("حركةٌ غير مشروعة");
     this.moveNo++;
-    this.after = { actor: seat, extra: this.dice === 6, captured: false };
+    /* يُنفَق رقمُ الحركة من البركة (المرجع: random.removeNum(chooseNum)) */
+    const k = this.pool.findIndex(x => x.v === mv.d);
+    if (k >= 0) this.pool.splice(k, 1);
+    /* extra: دخولُ المركز (يُضبط في walk)؛ captured: الأكل. والستّةُ لم تعد
+       تمنح رميةً بعد الحركة — منحتها قبلها */
+    this.after = { actor: seat, extra: false, captured: false };
     this.phase = "resolving";
     this.legal = [];
     this.walk(mv, "move");
@@ -463,7 +532,12 @@ class LudoMatch {
       t: how, owner: mv.owner, idx: mv.idx, from, to: pc.p,
       path: from === BASE ? [0] : mv.path.slice(), bounce: !!mv.bounce
     }, mv.owner, (from === BASE ? [0] : mv.path).map(q => absOf(mv.owner, q)));
-    if (pc.p === FINISH) this.ev({ t: "finish", owner: mv.owner, idx: mv.idx });
+    if (pc.p === FINISH) {
+      this.ev({ t: "finish", owner: mv.owner, idx: mv.idx });
+      /* دخولُ المركز يمنح رميةً جديدة (المرجع: chessEvent.Win ⇒ THROW_START ما
+         لم يكن آخرَ قطعة). وإن كان فوزًا فحصُ الفوز يسبق الرمية في finishMove */
+      if (this.after) this.after.extra = true;
+    }
   }
 
   /** وصولُ قطعةٍ إلى مربّع: أكلُ من فيه ثمّ التقاطُ المعزّز. */
@@ -697,11 +771,18 @@ class LudoMatch {
   finishMove() {
     const w = this.checkWin();
     if (w) return this.endGame(w);
-    const again = this.after && (this.after.extra || this.after.captured);
+    const a = this.after;
     this.after = null;
-    this.phase = "roll";
-    this.dice = null;
-    if (again) { this.ev({ t: "again", seat: this.turn }); return; }
+    this.legal = [];
+    /* أكلٌ أو دخولُ المركز ⇒ رميةٌ جديدة، وما بقي في البركة يبقى فيها ويُنفَق
+       مع ما يأتي (المرجع: status = THROW_START دون random.clear) */
+    if (a && (a.extra || a.captured)) {
+      this.phase = "roll";
+      this.ev({ t: "again", seat: this.turn, why: a.captured ? "capture" : "home" });
+      return;
+    }
+    /* وإلا: ما بقي في البركة يُلعَب، فإن لم يبقَ ما يُلعَب انتقل الدور */
+    if (this.pool.length) return this.offerMoves(this.turn);
     this.nextTurn();
   }
 
@@ -718,7 +799,7 @@ class LudoMatch {
 
   nextTurn() {
     this.endOfTurn(this.turn);
-    this.sixes = 0;
+    this.pool = [];
     this.phase = "roll";
     this.dice = null;
     this.legal = [];
@@ -899,11 +980,12 @@ class LudoMatch {
       turn: this.turn,
       phase: this.phase,
       dice: this.dice,
-      sixes: this.sixes,
+      /* بركةُ الدور (للجميع: النردُ يُرمى أمام الطاولة كلّها) */
+      pool: this.pool.map(x => x.v),
       pieces,
       powerups: night ? this.powerups.filter(x => vis.has(x.cell)) : this.powerups.slice(),
       legal: (this.phase === "move" && this.turn === seat) ? this.legal.map(m => ({
-        id: m.id, owner: m.owner, idx: m.idx, from: m.from, to: m.to, path: m.path, bounce: m.bounce
+        id: m.id, owner: m.owner, idx: m.idx, from: m.from, to: m.to, path: m.path, bounce: m.bounce, d: m.d
       })) : [],
       prompt: pr ? (pr.seat === seat ? { ...pr } : { seat: pr.seat, kind: pr.kind }) : null,
       golden: !!this.golden[seat],

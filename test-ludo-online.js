@@ -176,28 +176,51 @@ async function endByPlay(room, sock) {
   ok(A.all("state").some(s => s.events && s.events.some(e => e.t === "timeout" && e.seat === 0)),
      "ويُعلَن ذلك (حدث timeout باسم صاحبه)");
   {
-    /* من انقضى وقتُه يُكمل البوتُ بقيّةَ دوره بسرعة — لا مهلةٌ كاملةٌ لكلّ
-       خطوة. كان الغائبُ يكلّف الطاولةَ مهلةً للرمي ومهلةً للحركة ومهلتين
-       للرمية الإضافيّة: أربعَ مهلٍ في دورٍ واحد. */
+    /* وضعُ AUTO (من المرجع: SYSTEM_TRUST): من انقضى وقتُه يلعب عنه البوتُ
+       **أدوارَه كلَّها** بسرعة حتى يلمس الشاشة أو يلعب. مهلةٌ واحدةٌ إذن — لا
+       مهلةٌ لكلّ خطوة (كان الغائبُ يكلّف الطاولة أربعَ مهلٍ في الدور الواحد)
+       ولا لكلّ دور. */
     const m = room.match;
-    for (const k of ["timer", "botT", "autoT"]) { if (room[k]) clearTimeout(room[k]); room[k] = null; }
-    room.afk = null;
+    const freeze = () => {
+      for (const k of ["timer", "botT", "autoT"]) { if (room[k]) clearTimeout(room[k]); room[k] = null; }
+    };
+    freeze();
+    for (const p of room.slots) if (p) p.auto = false;
     for (const s of m.seats) m.pieces[s].forEach(pc => { pc.p = -1; pc.shield = 0; pc.cooldown = 0; });
     m.pieces[0][0].p = 5; m.pieces[0][1].p = 20;          /* حركاتٌ غيرُ متكافئة: لا تحريكَ تلقائيّ */
     const other = m.seats.find(s => s !== 0);
-    m.prompt = null; m.queue = []; m.after = null; m.legal = [];
-    m.turn = other; m.phase = "roll"; m.dice = null; m.sixes = 0;
-    m._loaded = [1, 6, 2];                                /* الخصم ١ (لا حركة) ثمّ الغائب ٦ ثمّ ٢ */
+    m.prompt = null; m.queue = []; m.after = null; m.legal = []; m.pool = [];
+    m.turn = other; m.phase = "roll"; m.dice = null;
+    m._loaded = [1, 6, 2];          /* الخصم ١ (لا حركة) ثمّ الغائب ٦ فرميةٌ أخرى ٢ ⇒ بركتُه ٦ و٢ */
     const sOther = [...nsp.sockets.values()].find(s => room.slots[other] && room.slots[other].sockId === s.id);
     const n0 = A.all("state").length, rolls0 = m.rolls;
     sOther.fire("roll");
     const passed = await until(() => m.turn === other && m.rolls >= rolls0 + 3, 3000);
     const evs = A.all("state").slice(n0).flatMap(s => s.events || []);
     const outs = evs.filter(e => e.t === "timeout" && e.seat === 0).length;
-    ok(passed && outs === 1, "الغائب: مهلةٌ واحدةٌ ثمّ يُكمل البوتُ دورَه كلَّه (رمي، حركة، رميةٌ إضافيّة، حركة)",
+    ok(passed && outs === 1, "الغائب: مهلةٌ واحدةٌ ثمّ يُكمل البوتُ دورَه كلَّه (ستّةٌ فرميةٌ أخرى ثمّ رقما البركة)",
        { passed, outs, rolls: m.rolls - rolls0 });
-    ok(evs.filter(e => e.t === "move" && e.owner === 0).length === 2, "وتحرّكت قطعتاه في الرميتين", evs.map(e => e.t));
-    ok(room.afk == null || room.afk !== 0 || m.turn === 0, "وحالُ الغياب لا تمتدّ إلى دورٍ لاحقٍ لغيره", room.afk);
+    ok(evs.filter(e => e.t === "move" && e.owner === 0).length === 2, "وأُنفق رقما بركته في حركتين", evs.map(e => e.t));
+    ok(room.slots[0].auto === true, "ويبقى في وضع AUTO بعد دوره (كالمرجع)", room.slots[0].auto);
+    ok(A.last("state").players[0].auto === true && B.last("state").players[0].auto === true,
+       "وشارتُه يراها الجميع");
+
+    /* دورُه التالي يُلعَب عنه فورًا: لا مهلةَ جديدةَ ولا حدثَ انقضاءٍ ثانٍ */
+    freeze();
+    m.turn = other; m.phase = "roll"; m.pool = []; m.legal = []; m._loaded = [1, 3];
+    const n1 = A.all("state").length;
+    sOther.fire("roll");
+    const went = await until(() => A.all("state").slice(n1).flatMap(s => s.events || []).some(e => e.t === "move" && e.owner === 0), 2000);
+    const evs2 = A.all("state").slice(n1).flatMap(s => s.events || []);
+    ok(went && !evs2.some(e => e.t === "timeout" && e.seat === 0), "ودورُه التالي يُلعَب عنه فورًا بلا مهلةٍ جديدة", evs2.map(e => e.t));
+
+    /* لمسُ الشاشة يعيده إلى يده، ويبدأ مؤقّتُه إن كان الدورُ دوره */
+    freeze();
+    m.turn = 0; m.phase = "roll"; m.pool = []; m.legal = [];
+    A.fire("manual");
+    ok(room.slots[0].auto === false, "ولمسُ الشاشة («manual») يُعيده إلى يده (المرجع: SYSTEM_TRUST_CANCEL)");
+    ok(room.deadline > Date.now() && !!room.timer, "ودورُه الآن ينتظره بمؤقّتٍ لا ببوت", { deadline: room.deadline, timer: !!room.timer });
+    ok(A.last("state").players[0].auto === false, "وتختفي الشارة عند الجميع");
   }
 
   console.log("⑦ الانقطاع والعودة");

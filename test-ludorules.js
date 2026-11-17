@@ -14,9 +14,18 @@ const ok = (c, m, x) => { c ? P++ : F++; console.log((c ? "  ✅ " : "  ❌ ") +
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
 
 const mk = (rules, seats, seed = 1) => { const m = new L.LudoMatch(rules, seats, seed); m.takeEvents(); return m; };
-const turnTo = (m, s) => { m.turn = s; m.phase = "roll"; m.dice = null; m.sixes = 0; m.legal = []; };
+const turnTo = (m, s) => { m.turn = s; m.phase = "roll"; m.dice = null; m.pool = []; m.legal = []; };
 const put = (m, seat, idx, p) => { m.pieces[seat][idx].p = p; };
 const rollAs = (m, seat, v) => { m._loaded = [v]; m.roll(seat); };
+/* الستّةُ تُرمى بعدها أخرى قبل الحركة: رميُ تسلسلٍ كامل (٦ ثمّ ٤ مثلًا) */
+const rollSeq = (m, seat, vs) => { for (const v of vs) rollAs(m, seat, v); };
+/* تحريكُ قطعةٍ برقمٍ بعينه من البركة */
+const goD = (m, seat, owner, idx, d) => {
+  const x = m.legal.find(y => y.owner === owner && y.idx === idx && y.d === d);
+  if (!x) throw new Error("no move " + owner + ":" + idx + " d" + d);
+  m.move(seat, x.id);
+};
+const pool = m => m.pool.map(x => x.v);
 const mv = (m, owner, idx) => m.legal.find(x => x.owner === owner && x.idx === idx);
 const go = (m, seat, owner, idx) => { const x = mv(m, owner, idx); if (!x) throw new Error("no move " + owner + ":" + idx); m.move(seat, x.id); };
 const rel = (seat, abs) => (abs - START[seat] + TRACK) % TRACK;
@@ -49,23 +58,74 @@ console.log("② القواعد الأساسيّة (من لعبة المرجع)"
   turnTo(m, 0); rollAs(m, 0, 3);
   eq(m.turn, 2, "بلا ستّةٍ والقطعُ كلُّها في القاعدة ⇒ يمرّ الدور");
 
+  /* الستّة: رميةٌ أخرى **قبل** أيّ حركة، والأرقامُ تتجمّع (كود المرجع:
+     Service.turingNumber ⇒ THROW_START عند الستّة، وnumArray تحفظ الأرقام) */
   m = mk({ mode: "classic" }, [0, 2]);
   turnTo(m, 0); rollAs(m, 0, 6);
-  ok(!!mv(m, 0, 0), "الستّة تُخرج قطعة");
+  ok(m.turn === 0 && m.phase === "roll" && !m.legal.length, "الستّة: رميةٌ أخرى قبل أيّ حركة (كما في المرجع)");
+  eq(pool(m), [6], "والستّةُ محفوظةٌ في بركة الدور");
+  rollAs(m, 0, 4);
+  eq(pool(m), [6, 4], "والأرقامُ تتجمّع: ٦ ثمّ ٤");
+  ok(!!mv(m, 0, 0) && m.legal.every(x => x.d === 6), "والقطعُ كلُّها في القاعدة ⇒ لا يُلعب الآن إلا الخروجُ بالستّة", m.legal);
   eq(m.legal.length, 1, "وقطعُ القاعدة المتكافئة تُعرض مرّةً واحدة");
   go(m, 0, 0, 0);
   eq(m.pieces[0][0].p, 0, "تقف على مربّع الانطلاق");
-  ok(m.turn === 0 && m.phase === "roll", "والستّة تمنح رميةً أخرى");
-  rollAs(m, 0, 4); go(m, 0, 0, 0);
-  eq(m.turn, 2, "رميةٌ عاديّة ⇒ ينتقل الدور");
+  ok(m.turn === 0 && m.phase === "move" && m.legal.length > 0 && m.legal.every(x => x.d === 4),
+     "ثمّ يُنفَق الرقمُ الباقي (٤) بلا رميةٍ جديدة", m.legal);
+  go(m, 0, 0, 0);
+  eq(m.pieces[0][0].p, 4, "القطعةُ تمشي بالأربعة");
+  eq(m.turn, 2, "نفدت البركة ⇒ ينتقل الدور");
 
+  /* أيُّ رقمٍ لأيّ قطعة، وبأيّ ترتيب */
+  m = mk({ mode: "classic" }, [0, 2]);
+  turnTo(m, 0); put(m, 0, 0, 10); put(m, 0, 1, 20);
+  rollSeq(m, 0, [6, 2]);
+  {
+    const o = m.legal.filter(x => x.owner === 0 && x.from >= 0).map(x => x.idx + ":" + x.d).sort();
+    eq(o, ["0:2", "0:6", "1:2", "1:6"], "كلُّ قطعةٍ على الطريق بكلّ رقمٍ في البركة");
+  }
+  m.move(0, m.legal.find(x => x.idx === 1 && x.d === 2).id);
+  eq(m.pieces[0][1].p, 22, "يبدأ بالاثنين لقطعة");
+  ok(m.legal.length > 0 && m.legal.every(x => x.d === 6), "ثمّ لا يبقى إلا الستّة", m.legal);
+  m.move(0, m.legal.find(x => x.idx === 0 && x.d === 6).id);
+  eq(m.pieces[0][0].p, 16, "فيُعطيها لقطعةٍ أخرى");
+  eq(m.turn, 2, "ثمّ ينتقل الدور");
+
+  /* ثلاثُ ستّات: الدورُ كلُّه يضيع — والستّتان قبلها لم تُلعبا بعد */
   m = mk({ mode: "classic" }, [0, 2]);
   turnTo(m, 0); put(m, 0, 0, 10);
-  rollAs(m, 0, 6); go(m, 0, 0, 0);
-  rollAs(m, 0, 6); go(m, 0, 0, 0);
-  rollAs(m, 0, 6);
-  eq(m.pieces[0][0].p, 22, "ثلاثُ ستّات: الثالثة لا تُحرّك شيئًا");
-  eq(m.turn, 2, "وتُنهي الدور");
+  rollSeq(m, 0, [6, 6, 6]);
+  eq(m.pieces[0][0].p, 10, "ثلاثُ ستّات: لا تتحرّك أيُّ قطعة — والستّتان قبلها تضيعان معها");
+  eq(m.turn, 2, "وينتهي الدور");
+  eq(m.pool.length, 0, "وتُفرَّغ البركة");
+
+  /* الأكلُ يمنح رميةً جديدة وما بقي في البركة لا يضيع */
+  m = mk({ mode: "classic" }, [0, 2]);
+  turnTo(m, 0); put(m, 0, 0, 17); put(m, 0, 1, 30); put(m, 2, 0, rel(2, 20));
+  rollSeq(m, 0, [6, 3]);
+  m.move(0, m.legal.find(x => x.idx === 0 && x.d === 3).id);
+  eq(m.pieces[2][0].p, BASE, "الثلاثةُ تأكل");
+  ok(m.turn === 0 && m.phase === "roll", "والأكلُ يمنح رميةً جديدة قبل إنفاق الباقي (المرجع: Fight ⇒ THROW_START)", m.phase);
+  eq(pool(m), [6], "والستّةُ الباقية محفوظةٌ لم تضِع");
+  rollAs(m, 0, 2);
+  eq(pool(m), [6, 2], "وتُضاف إليها الرميةُ الجديدة");
+
+  /* نردُ المرجع: ceil(r×6.5) ⇒ الستّة ٣/١٣ والباقي ٢/١٣، وستّةٌ مضمونةٌ نصفَ
+     المرّات حين تكون القطعُ كلُّها في القاعدة وأوّلَ رميةٍ في الدور */
+  {
+    const q = mk({ mode: "classic" }, [0, 2], 77); put(q, 0, 0, 5);
+    const c = [0, 0, 0, 0, 0, 0, 0], N = 65000;
+    for (let i = 0; i < N; i++) c[q.rollDie(0)]++;
+    const p6 = c[6] / N, p1 = c[1] / N;
+    ok(Math.abs(p6 - 3 / 13) < 0.01 && Math.abs(p1 - 2 / 13) < 0.01, "نردُ المرجع: الستّةُ ٣ من ١٣ (≈٢٣٪) وكلُّ رقمٍ آخر ٢ من ١٣ (≈١٥٪)", { p6, p1 });
+    ok(c[0] === 0 && c.slice(1).every(x => x > 0), "ولا رقمَ خارج ١..٦");
+    const r = mk({ mode: "classic" }, [0, 2], 78); let six = 0; const M = 20000;
+    for (let i = 0; i < M; i++) six += r.rollDie(0) === 6 ? 1 : 0;
+    ok(Math.abs(six / M - (0.5 + 0.5 * 3 / 13)) < 0.015, "القطعُ كلُّها في القاعدة وأوّلُ رميةٍ في الدور ⇒ نصفُها ستّةٌ مضمونة (≈٦٢٪)", six / M);
+    r.pool = [{ v: 4, g: false }]; six = 0;
+    for (let i = 0; i < M; i++) six += r.rollDie(0) === 6 ? 1 : 0;
+    ok(Math.abs(six / M - 3 / 13) < 0.012, "وبعد أوّل رميةٍ في الدور يعود النردُ العاديّ للمرجع", six / M);
+  }
 
   /* الأكل */
   m = mk({ mode: "classic" }, [0, 2]);
@@ -91,6 +151,7 @@ console.log("② القواعد الأساسيّة (من لعبة المرجع)"
   eq(m.turn, 2, "لا تجاوزَ للمركز: ٥٤+٣ لا تُلعب");
   turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 0);
   eq(m.pieces[0][0].p, FINISH, "والرميةُ المطابقة تُدخلها");
+  ok(m.turn === 0 && m.phase === "roll", "ودخولُ المركز يمنح رميةً جديدة (المرجع: chessEvent.Win ⇒ THROW_START)");
 
   m = mk({ mode: "classic" }, [0, 2]);
   turnTo(m, 0); [0, 1, 2].forEach(i => put(m, 0, i, FINISH)); put(m, 0, 3, 55);
@@ -228,7 +289,7 @@ console.log("⑦ الظلام");
   /* حركةٌ تدخل النطاق: تصل مقصوصة */
   m = mk({ mode: "night" }, [0, 2]);
   put(m, 0, 0, 10); put(m, 2, 0, rel(2, 2));
-  turnTo(m, 2); rollAs(m, 2, 6); evs(m); go(m, 2, 2, 0);
+  turnTo(m, 2); rollSeq(m, 2, [6, 1]); evs(m); goD(m, 2, 2, 0, 6);
   raw = m.takeEvents();
   const part = m.eventsFor(raw, 0).find(e => e.t === "move");
   ok(part && part.partial && part.from === null && part.path[0] === null && part.path[5] != null,
@@ -261,19 +322,18 @@ console.log("⑧ الملك");
 {
   let m = mk({ mode: "king" }, [0, 2]);
   eq(m.pieces[0].map(x => x.kind), ["guard", "guard", "guard", "king"], "ثلاثةُ حرّاسٍ وملك");
-  turnTo(m, 0); rollAs(m, 0, 6);
-  ok(!mv(m, 0, 3), "الملك مقفلٌ في القاعدة في البداية");
-  go(m, 0, 0, 0);
+  turnTo(m, 0); rollSeq(m, 0, [6, 2]);
+  ok(!m.legal.some(x => x.owner === 0 && x.idx === 3), "الملك مقفلٌ في القاعدة في البداية");
+  goD(m, 0, 0, 0, 6);
   ok(!m.unlocked[0], "خروجُ الحارس وحده لا يفكّ القفل");
-  rollAs(m, 0, 2); go(m, 0, 0, 0);
+  goD(m, 0, 0, 0, 2);
   ok(m.unlocked[0], "حتى يخطو خطوةً على الأقلّ");
-  turnTo(m, 0); rollAs(m, 0, 6);
-  ok(!!mv(m, 0, 3), "ثمّ يخرج الملك بستّة");
-  go(m, 0, 0, 3);
-  rollAs(m, 0, 3);
-  ok(!mv(m, 0, 3), "ولا يمشي إلى ما لم يمشِه حارس (الحارس عند ٢)");
+  turnTo(m, 0); rollSeq(m, 0, [6, 3]);
+  ok(m.legal.some(x => x.owner === 0 && x.idx === 3 && x.d === 6), "ثمّ يخرج الملك بستّة");
+  goD(m, 0, 0, 3, 6);
+  ok(!m.legal.some(x => x.idx === 3 && x.d === 3), "ولا يمشي إلى ما لم يمشِه حارس (الحارس عند ٢)", m.legal);
   turnTo(m, 0); rollAs(m, 0, 2);
-  ok(!!mv(m, 0, 3), "ويمشي على المسار المؤمَّن");
+  ok(m.legal.some(x => x.idx === 3 && x.d === 2), "ويمشي على المسار المؤمَّن");
 
   /* التضحية */
   m = mk({ mode: "king" }, [0, 2]);
@@ -291,11 +351,12 @@ console.log("⑧ الملك");
   ok(m.turn === 2 && m.phase === "roll", "والمهاجم يأخذ رميته الإضافيّة");
 
   /* الحظر */
-  turnTo(m, 0); rollAs(m, 0, 6);
-  ok(!mv(m, 0, 0), "الحارسُ المضحّي لا ينزل في فترة الحظر");
+  const exitOf = (mm, i) => mm.legal.some(x => x.owner === 0 && x.idx === i && x.from === BASE && x.d === 6);
+  turnTo(m, 0); rollSeq(m, 0, [6, 1]);
+  ok(!exitOf(m, 0), "الحارسُ المضحّي لا ينزل في فترة الحظر", m.legal);
   for (let k = 0; k < 3; k++) { turnTo(m, 0); m.endOfTurn(0); }
-  turnTo(m, 0); rollAs(m, 0, 6);
-  ok(!!mv(m, 0, 0), "وبعد ثلاثة أدوارٍ يعود");
+  turnTo(m, 0); rollSeq(m, 0, [6, 1]);
+  ok(exitOf(m, 0), "وبعد ثلاثة أدوارٍ يعود", m.legal);
 
   /* رفض التضحية ⇒ يسقط الملك ويخرج اللاعب */
   m = mk({ mode: "king" }, [0, 2]);
@@ -357,7 +418,9 @@ console.log("⑨ المعزّزات");
   ok(m.golden[0], "النرد الذهبيّ محفوظٌ للرمية القادمة");
   turnTo(m, 0); m._loaded = [1]; m.roll(0);
   eq(m.dice, 6, "والرميةُ القادمة ستّةٌ مضمونة");
-  eq(m.sixes, 0, "ولا تُحسَب في عقوبة الستّات");
+  ok(m.pool[0] && m.pool[0].g && m.phase === "roll", "وهي ستّةٌ تمنح رميةً أخرى كأيّ ستّة", m.pool);
+  rollSeq(m, 0, [6, 6]);
+  ok(m.turn === 0 && m.phase === "roll", "ولا تُحسَب في عقوبة الستّات: ذهبيّةٌ ثمّ ستّتان لا تُنهي الدور", pool(m));
 
   /* درع الفقاعة */
   m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);
@@ -395,7 +458,7 @@ console.log("⑨ المعزّزات");
   m.powerups = [{ cell: 31, type: "wind" }];
   put(m, 0, 0, 25);
   put(m, 1, 0, rel(1, 30)); put(m, 2, 0, rel(2, 29));
-  turnTo(m, 0); rollAs(m, 0, 6); go(m, 0, 0, 0);
+  turnTo(m, 0); rollSeq(m, 0, [6, 1]); goD(m, 0, 0, 0, 6);
   ok(absOf(1, m.pieces[1][0].p) === 27 && m.pieces[2][0].p === BASE,
      "اصطدامٌ في الرابع: الأقربُ يأكل الأبعد", { s1: m.pieces[1][0].p, s2: m.pieces[2][0].p });
   m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);

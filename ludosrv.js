@@ -74,7 +74,7 @@ function setupLudoOnline(io, deps = {}) {
     return {
       code: newCode(), hostId: null, createdAt: Date.now(), touched: Date.now(),
       settings: { ...DEFAULTS }, slots: [null, null, null, null],
-      match: null, timer: null, botT: null, autoT: null, deadline: 0, afk: null,
+      match: null, timer: null, botT: null, autoT: null, deadline: 0,
       chat: [], lastResult: null
     };
   }
@@ -97,7 +97,7 @@ function setupLudoOnline(io, deps = {}) {
   }
   const sendLobby = r => nsp.to(r.code).emit("lobby", lobbyOf(r));
 
-  const playersPub = r => r.slots.map((p, i) => p ? { seat: i, name: p.name, bot: !!p.bot, gone: !!p.gone } : null);
+  const playersPub = r => r.slots.map((p, i) => p ? { seat: i, name: p.name, bot: !!p.bot, gone: !!p.gone, auto: !!p.auto } : null);
 
   /* ── الحالة لكلّ مقعدٍ على حدة ── */
   function flush(r) {
@@ -148,11 +148,11 @@ function setupLudoOnline(io, deps = {}) {
 
     const seat = m.actingSeat();
     const p = r.slots[seat];
-    /* من انقضى وقتُه أكمل البوتُ بقيّةَ دوره بسرعة (الرمية ثمّ الحركة ثمّ
-       الرمية الإضافيّة) — لا مهلةٌ كاملةٌ جديدةٌ لكلّ خطوةٍ منه، وإلا صار
-       الغائبُ يكلّف الطاولةَ ضعفَ المهلة أو ثلاثةَ أضعافها في كلّ دور */
-    if (r.afk != null && r.afk !== seat) r.afk = null;
-    if (!p || p.bot || r.afk === seat) {
+    /* وضعُ AUTO (من لعبة المرجع: SYSTEM_TRUST «系统托管»): من انقضى وقتُه
+       يلعب عنه البوتُ **كلَّ أدواره** بسرعة حتى يعود فيلمس الشاشة أو يلعب —
+       لا مهلةٌ كاملةٌ لكلّ خطوةٍ من غائب، فلا يكلّف الطاولةَ انتظارًا بعد أوّل
+       مرّة */
+    if (!p || p.bot || p.auto) {
       flush(r);
       const [a, b] = botDelay;
       /* البديلُ عن البشريّ الغائب يلعب أحسنَ ما يعرف — لا بمستوى بوتات الغرفة */
@@ -171,7 +171,7 @@ function setupLudoOnline(io, deps = {}) {
     r.timer = setTimeout(() => {
       r.timer = null;
       if (r.match !== m) return;
-      if (botAct(r, seat, 2)) { m.ev({ t: "timeout", seat }); r.afk = seat; after(r); }
+      if (botAct(r, seat, 2)) { m.ev({ t: "timeout", seat }); p.auto = true; after(r); }
     }, secs * 1000 + 300);
 
     /* حركةٌ واحدةٌ ممكنة (أو حركاتٌ متكافئة): نحرّكها عنه بعد لحظة كي لا
@@ -216,6 +216,7 @@ function setupLudoOnline(io, deps = {}) {
     r.match = null;
     /* البوتات تُزال والغائبون يُخرَجون: اللوبي يعود كما كان قبل البداية */
     r.slots = r.slots.map(p => (p && !p.bot && !p.gone) ? p : null);
+    for (const p of r.slots) if (p) p.auto = false;
     if (!r.slots.some(p => p && p.id === r.hostId)) {
       const nx = r.slots.find(Boolean);
       r.hostId = nx ? nx.id : null;
@@ -323,6 +324,7 @@ function setupLudoOnline(io, deps = {}) {
         return cb({ ok: false, error: "الجلسة مفتوحةٌ في مكانٍ آخر" });
       /* رجع قبل أن يصير بوتًا: نسلّمه مقعدَه كما تركه */
       p.sockId = socket.id; p.gone = false;
+      p.auto = false;                            /* عاد ليلعب: لا يبقى البوتُ مكانه */
       p._leaveGen = (p._leaveGen || 0) + 1;      /* أيُّ مؤقّتِ مغادرةٍ معلّقٍ صار قديمًا */
       if (p._wasHuman) { p.bot = false; p.name = p._name || p.name; p._wasHuman = false; }
       enter(r, p, cb, { resumed: true });
@@ -397,7 +399,7 @@ function setupLudoOnline(io, deps = {}) {
           act, (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0);
       } catch (e) { return err(e.message); }
       room.lastResult = null;
-      room.afk = null;
+      for (const p of room.slots) if (p) p.auto = false;
       nsp.to(room.code).emit("started", { players: playersPub(room) });
       sendLobby(room);
       after(room);
@@ -409,7 +411,7 @@ function setupLudoOnline(io, deps = {}) {
         if (!room || !room.match || !me) return;
         const seat = slotOf(room, me.id);
         if (seat < 0) return;
-        if (room.afk === seat) room.afk = null;     /* عاد إلى اللوحة: يلعب بنفسه */
+        me.auto = false;                           /* لعب بنفسه ⇒ خرج من AUTO */
         try { fn(room.match, seat, d || {}); }
         catch (e) { return err(e.message || "فعلٌ غير مقبول"); }
         after(room);
@@ -418,6 +420,13 @@ function setupLudoOnline(io, deps = {}) {
     socket.on("roll", act((m, seat) => m.roll(seat)));
     socket.on("move", act((m, seat, d) => m.move(seat, +d.id)));
     socket.on("choose", act((m, seat, d) => m.choose(seat, d.choice === "none" ? "none" : +d.choice)));
+    /* لمسُ الشاشة في وضع AUTO يُعيد اللاعبَ إلى يده (المرجع: SYSTEM_TRUST_CANCEL):
+       إن كان الدورُ دورَه بدأ مؤقّتُه الآن بدل أن يلعب عنه البوت */
+    socket.on("manual", () => {
+      if (!room || !room.match || !me || !me.auto || slotOf(room, me.id) < 0) return;
+      me.auto = false;
+      after(room);
+    });
 
     /* ── الدردشة ── */
     socket.on("chat", d => {

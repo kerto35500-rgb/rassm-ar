@@ -1836,25 +1836,32 @@ body.kw-ludo .mode span { color:#6F8E8A; }
 body.kw-ludo .mode.on { border:2.5px solid var(--sg-deep); background:#E3F6F2;
   box-shadow:0 0 0 3px rgba(47,168,152,.2); }
 
-/* ───── اللاعبون في المباراة ───── */
-body.kw-salfa.kw-ludo .pl .av { background:var(--sc); }
-body.kw-salfa.kw-ludo .pl.me { border-color:#C99A72; background:#fff; }
-/* دورُ اللاعب بلونه هو — يسبق تمييزَ «أنا» كما في السالفة */
-body.kw-salfa.kw-ludo .pl.turn, body.kw-salfa.kw-ludo .pl.me.turn {
-  border-color:var(--sd); background:var(--sl); box-shadow:0 0 0 3px var(--sc); }
-body.kw-salfa.kw-ludo .pl .fin { color:#6F8E8A; }
+/* ───── اللاعبون في زواياهم (على هيئة لعبة المرجع، بلبس المارشميلو) ───── */
+body.kw-ludo .pp { background:var(--sg-white); border:2px solid #C99A72; box-shadow:var(--sg-shadow); }
+/* صاحبُ الدور بلونه هو */
+body.kw-ludo .pp.turn { border-color:var(--sd); background:linear-gradient(180deg,#FFFFFF 0%,var(--sl) 100%);
+  box-shadow:0 0 0 3px var(--sc), 0 8px 18px rgba(60,120,110,.2); }
+body.kw-ludo .pp .nm { color:var(--sg-ink); }
+body.kw-ludo .pp .meta { color:#6F8E8A; }
+body.kw-ludo .pp .bub { border-color:var(--sd); color:var(--sg-ink); }
+body.kw-ludo #picker { border-color:#C99A72; }
+
+/* ───── شريطُ الدردشة تحت: أزرارٌ دائريّة، ولوحتا العبارات والكتابة بطاقتان ───── */
+body.kw-ludo .barBtn { width:50px; height:50px; }
+body.kw-ludo #quickPop .phr button { border-color:#C99A72; color:var(--sg-ink); }
+body.kw-ludo #quickPop .phr button:hover { background:#E3F6F2; border-color:var(--sg-deep); }
+/* قاعدةُ السالفة تنزع عن ‎#chatCard‎ هيئةَ البطاقة (عندها الدردشةُ بطاقتان
+   منفصلتان) — وهنا هو لوحةٌ عائمةٌ تحتاج خلفيّتها */
+body.kw-salfa.kw-ludo #chatCard { background:var(--sg-white); border:2px solid var(--sg-line);
+  box-shadow:0 12px 30px rgba(60,120,110,.28); overflow:hidden; border-radius:22px; }
+body.kw-ludo .chatHead { color:var(--sg-ink); }
+body.kw-ludo #autoBar { background:var(--sg-ink); }
 
 /* ───── اللوحة: إطارٌ أبيضُ عريضٌ كبطاقات الرئيسيّة. الإطارُ على الصندوق
    الثابت لا على اللوحة الدوّارة، وإلا دار ظلُّها معها فسقط جانبًا ───── */
 body.kw-ludo #boardBox { border-radius:26px; background:#FFFBF4;
   box-shadow:0 0 0 7px #fff, 0 0 0 9px #A05F50, 0 14px 26px rgba(60,120,110,.25); }
 
-/* النرد والوقت: الشريطُ فاتحٌ الآن، فالنصُّ الأبيضُ ذو الظلّ لا يُقرأ */
-body.kw-salfa.kw-ludo #turnLine { color:var(--sg-ink); text-shadow:none; font-size:17px; }
-body.kw-ludo #diceBtn .tap { color:var(--sg-deep); text-shadow:none; }
-body.kw-ludo #timerBar { height:12px; background:#F1E8D9; border:2px solid #C99A72; }
-body.kw-ludo #timerBar i { background:var(--sg-strong); }
-body.kw-ludo #goldTag { border:2px solid #C99A72; }
 body.kw-ludo #promptBar { border-radius:999px; border:2px solid #E8A39B; }
 
 /* القطعُ القابلة للحركة: حلقةٌ ثابتةٌ تحت النبض — فمن أطفأ الحركة في جهازه

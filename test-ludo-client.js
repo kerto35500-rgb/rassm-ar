@@ -107,16 +107,24 @@ class El {
   addEventListener(t, f) { (this._ls[t] = this._ls[t] || []).push(f); }
   removeEventListener() {}
   focus() {}
-  /* حدثٌ يصعد إلى الآباء كما في المتصفّح (نافذةُ النتيجة تلتقط نقرة زرّها هكذا) */
+  getBoundingClientRect() { return { left: 0, top: 0, right: 10, bottom: 10, width: 10, height: 10 }; }
+  /* حدثٌ يصعد إلى الآباء كما في المتصفّح (نافذةُ النتيجة تلتقط نقرة زرّها هكذا)،
+     ثمّ إلى مستمعي document (الفقاعةُ ولوحةُ العبارات واللعبُ التلقائيّ هناك).
+     ونقرةُ المتصفّح يسبقها pointerdown — فنرسله أوّلًا كما يفعل هو */
   dispatch(type, ev = {}) {
+    if (type === "click" && !ev._fromClick) this.dispatch("pointerdown", { _fromClick: true });
     ev.type = type; ev.target = ev.target || this;
     let stop = false;
     ev.preventDefault = ev.preventDefault || (() => {}); ev.stopPropagation = () => { stop = true; };
+    const doc = this.ownerDocument;
+    /* مستمعو الالتقاط على document أوّلًا (addEventListener(..., true)) */
+    if (doc && doc._cap && doc._cap[type]) doc._cap[type].slice().forEach(f => f(ev));
     for (let n = this; n && n.nodeType === 1 && !stop; n = n.parentNode) {
       ev.currentTarget = n;
       (n._ls[type] || []).slice().forEach(f => f.call(n, ev));
       if (typeof n["on" + type] === "function") n["on" + type].call(n, ev);
     }
+    if (!stop && doc && doc._ls && doc._ls[type]) doc._ls[type].slice().forEach(f => f(ev));
     return ev;
   }
   /* المحدِّدات: وسمٌ ‎#معرّف ‎.صنف ‎[سمة] مركّبةً، وفراغٌ للسلالة — يكفي app.js */
@@ -193,7 +201,8 @@ function makeDocument(bodyHtml, bodyAttrs) {
   doc.getElementById = id => doc.body.querySelector("#" + id) || doc.head.querySelector("#" + id);
   doc.querySelector = s => doc.body.querySelector(s) || doc.head.querySelector(s);
   doc.querySelectorAll = s => [...doc.head.querySelectorAll(s), ...doc.body.querySelectorAll(s)];
-  doc.addEventListener = () => {};
+  doc._ls = {}; doc._cap = {};
+  doc.addEventListener = (t, f, cap) => { const m = cap ? doc._cap : doc._ls; (m[t] = m[t] || []).push(f); };
   parseInto(doc.body, bodyHtml);
   return doc;
 }
@@ -281,7 +290,7 @@ function openPage(name, search = "", store = {}) {
 /* لاعبٌ آليٌّ **من خلال الواجهة**: يقرأ ما تعرضه الصفحة وينقر عليه */
 function pilot(W, opts = {}) {
   let on = true;
-  const stats = { rolls: 0, moves: 0, kingSel: 0, sac: 0, swap: 0 };
+  const stats = { rolls: 0, moves: 0, kingSel: 0, sac: 0, swap: 0, picked: 0 };
   const tick = () => {
     if (!on) return;
     try {
@@ -298,7 +307,11 @@ function pilot(W, opts = {}) {
             const t = can[Math.floor(Math.random() * can.length)];
             t.dispatch("mouseover");
             t.dispatch("click");
-            if (t.classList.contains("sel")) { stats.kingSel++; t.dispatch("click"); }
+            if (t.classList.contains("sel")) stats.kingSel++;
+            /* قطعةٌ تمشي بأكثر من رقم ⇒ فقاعةُ الأرقام فوقها: نختار أحدها */
+            const pk = W.$("picker");
+            if (pk.classList.contains("on") && pk.querySelector("button")) { stats.picked++; pk.querySelector("button").dispatch("click"); }
+            else if (t.classList.contains("sel")) t.dispatch("click");
             stats.moves++;
           }
         }
@@ -391,7 +404,15 @@ function freeze(room) {
       const want = (((3 - +bSeat) * 90) + 360) % 360 + "deg";
       ok(B.$("ludoBoard").style["--rot"] === want, "ولكلّ لاعبٍ دورانُه هو", { bSeat, got: B.$("ludoBoard").style["--rot"], want });
       ok(A.$("toks").querySelectorAll(".tok").length >= 8, "القطعُ على اللوحة", A.$("toks").querySelectorAll(".tok").length);
-      ok(A.$("plist").querySelectorAll(".pl").length === 4, "قائمةُ اللاعبين بأربعة (بوتان ملآ المقعدين)");
+      ok(A.doc.querySelectorAll(".pp").length === 4, "أربعةُ لاعبين في زواياهم (بوتان ملآ المقعدين)");
+      /* كلعبة المرجع: أنا أسفلَ اليسار، ثمّ مع عقارب الساعة */
+      const seatAt = id => { const p = A.$(id).querySelector(".pp"); return p ? +p.getAttribute("data-seat") : null; };
+      ok(seatAt("cBL") === 0 && seatAt("cTL") === 1 && seatAt("cTR") === 2 && seatAt("cBR") === 3,
+         "أنا (الأحمر) أسفلَ اليسار والبقيّةُ مع عقارب الساعة عند قواعدهم", ["cBL", "cTL", "cTR", "cBR"].map(seatAt));
+      ok(A.$("cBL").querySelector("#diceBtn"), "ونردي في لوحتي بجانب صورتي");
+      ok(A.$("cTL").querySelector(".pp .die") && !A.$("cTL").querySelector("#diceBtn"), "ولكلّ لاعبٍ آخر نردُه في زاويته");
+      const bSeatNum = +B.doc.querySelector(".pp.me").getAttribute("data-seat");
+      ok(B.$("cBL").querySelector(".pp.me") && bSeatNum === 1, "وعند فهد: هو أسفلَ اليسار عنده", bSeatNum);
       const lefts = A.$("toks").querySelectorAll(".tok").map(t => parseFloat(t.style.left));
       ok(lefts.every(x => x > 0 && x < 100), "وكلُّ قطعةٍ داخل اللوحة", lefts);
     }
@@ -525,6 +546,88 @@ function freeze(room) {
     pa.stop(); pb.stop();
   }
 
+  console.log("④ب ما أُخذ من لعبة المرجع: البركة، وفقاعةُ الرقم، والدردشة، واللعبُ التلقائيّ");
+  A.$("endModal").querySelector("[data-close]").dispatch("click");
+  B.$("endModal").querySelector("[data-close]").dispatch("click");
+  await until(() => A.shown("lobby") && B.shown("lobby"));
+  A.$("sPU").querySelector('button[data-v="0"]').dispatch("click");
+  await sleep(30);
+  A.click("startBtn");
+  ok(await until(() => A.shown("play") && B.shown("play")), "مباراةٌ كلاسيكيّةٌ بين اثنين");
+  {
+    const room = roomOf(code), m = room.match, G = require("./ludorules").G;
+    const sa = m.seats.find(s => room.slots[s].name === "سعود"), sb = m.seats.find(s => s !== sa);
+    const aSock = [...nsp.sockets.values()].find(s => room.slots[sa] && room.slots[sa].sockId === s.id);
+    const myPP = () => A.doc.querySelector(".pp.me");
+    freeze(room);
+    for (const s of m.seats) m.pieces[s].forEach(pc => { pc.p = -1; pc.shield = 0; });
+    m.pieces[sa][0].p = 10;
+    m.prompt = null; m.queue = []; m.after = null; m.legal = []; m.pool = [];
+    m.turn = sa; m.phase = "roll"; m.dice = null; m._loaded = [6];
+    aSock.fire("roll");          /* ستّة ⇒ رميةٌ أخرى قبل الحركة */
+    ok(await until(() => /٦/.test(myPP().querySelector(".pool").textContent) && !A.$("diceBtn").disabled, 3000),
+       "الستّةُ تظهر في بركتي تحت نردي، ونردي جاهزٌ لرميةٍ أخرى", myPP().querySelector(".pool").textContent);
+    ok(myPP().classList.contains("ready"), "واليدُ تشير إلى نردي");
+    ok(/٦/.test(B.doc.querySelector('.pp[data-seat="' + sa + '"] .pool').textContent), "والخصمُ يرى بركتي عند صورتي");
+    freeze(room);
+    m._loaded = [2];
+    A.$("diceBtn").dispatch("click");   /* الرميةُ الثانية بالنقر */
+    ok(await until(() => A.$("toks").querySelectorAll(".tok.can").length > 0, 3000), "ثمّ تتوهّج القطعُ للحركة");
+    freeze(room);
+    /* القطعةُ على الطريق (لا في القاعدة) تمشي بالستّة أو بالاثنين ⇒ فقاعةُ اختيار الرقم.
+       القاعدةُ في زاويةٍ من اللوحة، والطريقُ قرب وسطها */
+    const onTrack = A.$("toks").querySelectorAll(".tok.can")
+      .find(t => parseFloat(t.style.left) > 30 && parseFloat(t.style.left) < 70);
+    const before = m.pieces[sa][0].p;
+    onTrack.dispatch("click");
+    const pk = A.$("picker");
+    ok(pk.classList.contains("on") && pk.querySelectorAll("button").length === 2,
+       "قطعةٌ تمشي برقمين ⇒ فقاعةٌ فوقها فيها النردان (chooseStep في المرجع)", pk.querySelectorAll("button").length);
+    const two = pk.querySelectorAll("button").find(b => b.getAttribute("aria-label") === "حرّك 2");
+    two.dispatch("click");
+    ok(await until(() => m.pieces[sa][0].p === before + 2, 3000), "واختيارُ الاثنين يحرّكها اثنين", { before, now: m.pieces[sa][0].p });
+    ok(!pk.classList.contains("on"), "وتُغلَق الفقاعة");
+    ok(await until(() => /٦/.test(myPP().querySelector(".pool").textContent) && !/٢/.test(myPP().querySelector(".pool").textContent), 3000),
+       "والستّةُ باقيةٌ في البركة تنتظر", myPP().querySelector(".pool").textContent);
+    freeze(room);
+
+    /* الدردشة: فقاعةٌ بجانب الصورة وعدّادٌ لما لم يُقرأ */
+    const bSock = [...nsp.sockets.values()].find(s => room.slots[sb] && room.slots[sb].sockId === s.id);
+    B.$("chatInput").value = "مرحبا يا شباب";
+    B.$("chatForm").dispatch("submit");
+    const bBub = () => A.doc.querySelector('.pp[data-seat="' + sb + '"] .bub');
+    ok(await until(() => bBub().classList.contains("on") && /مرحبا/.test(bBub().textContent), 3000),
+       "رسالةُ فهد تظهر فقاعةً بجانب صورته عندي");
+    ok(A.$("unread").classList.contains("on") && A.$("unread").textContent === "١", "وعدّادُ ما لم يُقرأ على زرّ الدردشة", A.$("unread").textContent);
+    A.$("chatBtn").dispatch("click");
+    ok(A.$("chatCard").classList.contains("on") && !A.$("unread").classList.contains("on"), "وفتحُ الدردشة يُصفّره");
+    A.$("chatClose").dispatch("click");
+    /* العبارات الجاهزة والإيموجي */
+    A.$("quickBtn").dispatch("click");
+    ok(A.$("quickPop").classList.contains("on") && A.$("quickPop").querySelectorAll(".phr button").length === 12 &&
+       A.$("quickPop").querySelectorAll(".emo button").length === 16, "😊 يفتح ١٢ عبارةً جاهزة و١٦ إيموجي");
+    A.$("quickPop").querySelectorAll(".emo button")[0].dispatch("click");
+    const myBub = () => myPP().querySelector(".bub");
+    ok(await until(() => myBub().classList.contains("on") && myBub().classList.contains("big"), 3000),
+       "والإيموجي يظهر فقاعةً كبيرةً بجانب صورتي", myBub().textContent);
+    ok(!A.$("quickPop").classList.contains("on"), "وتُغلَق اللوحةُ بعد الإرسال");
+
+    /* اللعب التلقائيّ: ينقضي الوقت ⇒ AUTO حتى ألمس الشاشة */
+    freeze(room);
+    m.prompt = null; m.queue = []; m.after = null; m.legal = []; m.pool = [];
+    m.turn = sb; m.phase = "roll"; m._loaded = [1, 3];
+    bSock.fire("roll");        /* فهد ١ (لا حركة) ⇒ دوري، ولا ألعب */
+    ok(await until(() => A.$("autoBar").classList.contains("on"), 4000), "انقضى وقتي ⇒ شارةُ اللعب التلقائيّ عندي");
+    ok(await until(() => B.doc.querySelector('.pp[data-seat="' + sa + '"]').classList.contains("auto"), 3000), "وشارةُ AUTO على صورتي عند الخصم");
+    A.$("boardBox").dispatch("pointerdown");
+    ok(await until(() => room.slots[sa].auto === false, 2000), "لمسةٌ في أيّ مكانٍ تعيدني (manual)");
+    ok(await until(() => !A.$("autoBar").classList.contains("on"), 2000), "وتختفي الشارة");
+    freeze(room);
+    const pa = pilot(A), pb = pilot(B);
+    ok(await until(() => A.$("endModal").classList.contains("on"), 90000), "وتكتمل المباراة");
+    pa.stop(); pb.stop();
+  }
+
   console.log("⑤ تحديثُ الصفحة في منتصف المباراة، ورابطُ دعوةٍ لا تخطفه جلسةٌ قديمة");
   A.$("endModal").querySelector("[data-close]").dispatch("click");
   B.$("endModal").querySelector("[data-close]").dispatch("click");
@@ -565,10 +668,11 @@ function freeze(room) {
     const IDX = fs.readFileSync(PUB("ludo/index.html"), "utf8");
     const KW = fs.readFileSync(PUB("kawaii.css"), "utf8");
     const mob = (IDX.match(/@media \(max-width: 900px\)\{([\s\S]*?)\n  \}/) || [])[1] || "";
-    ok(/#boardCol, #side\{flex:0 0 auto;\}/.test(mob),
-       "الجوال: عمودُ اللوحة لا ينكمش إلى صفر فتعلوه قائمةُ اللاعبين والدردشة");
-    ok(/#boardCol\{padding:/.test(mob), "الجوال: وإطارُ اللوحة لا يُقصّ عند حافّة الشاشة");
-    ok(/#boardBox\{[^}]*calc\(100dvh - 236px\)/.test(IDX), "الحاسوب: «اضغط للرمي» تحت النرد لا يُقصّ أسفلَ الشاشة");
+    ok(/grid-template-areas:"tl tr" "board board" "bl br"/.test(mob),
+       "الجوال (كالمرجع): لاعبا الأعلى فوق اللوحة ولاعبا الأسفل تحتها");
+    ok(/#arena\{direction:ltr;/.test(IDX), "والساحةُ يسارًا إلى يمين — فلا تقلب العربيّةُ الزوايا عن قواعدها");
+    ok(/grid-template-areas:"tl board tr" "bl board br"/.test(IDX), "الحاسوب: الزوايا الأربع حول اللوحة");
+    ok(/#arena\{[^}]*padding:/.test(mob), "الجوال: وإطارُ اللوحة لا يُقصّ عند حافّة الشاشة");
     ok(/body\.theme-kawaii\.kw-salfa\.kw-ludo \.seg button\.on \{[^}]*color:#fff/.test(KW),
        "الخيارُ المختار في الإعدادات أبيضُ على فيروزيّ (كان رماديًّا لا يكاد يُقرأ)");
     ok(/body\.kw-ludo \.tok\.can\.sel/.test(KW), "الملكُ المختار بحلقته الذهبيّة فوق حلقة «يتحرّك»");
