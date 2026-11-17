@@ -1959,10 +1959,16 @@ body.kw-salfa.kw-justone #joStage { border-radius:26px; background:linear-gradie
 body.kw-justone .stTitle { color:var(--sg-ink); }
 body.kw-justone .stSub, body.kw-justone .stNote, body.kw-justone .secTag { color:#8A7458; }
 body.kw-justone .wrow { border:2px solid #C99A72; color:var(--sg-ink); }
-body.kw-justone .clueIn, body.kw-justone .guessBox input { border:2.5px solid var(--sg-line); border-radius:999px; color:var(--sg-ink); }
-body.kw-justone .clueIn.bad { border-color:#E86F63; }
-body.kw-justone .clueIn.warn { border-color:#E0A92E; }
-body.kw-justone .live { border-color:#C9B4F2; color:var(--sg-ink); }
+/* الخاناتُ داخل بطاقة: قاعدةُ السمة العامّة ‎.card input‎ (أسبقيّتها ٠،٣،٢)
+   كانت تغلب لونَي التنبيه فيبقى الحدُّ بنّيًّا والخلفيّةُ بيضاء — فتعلو هنا */
+body.theme-kawaii.kw-justone .card .clueIn, body.theme-kawaii.kw-justone .card .guessBox input {
+  border:2.5px solid var(--sg-line); border-radius:999px; color:var(--sg-ink); background:#fff; }
+body.theme-kawaii.kw-justone .card .clueIn.bad { border-color:#E0574D; background:#FFF1EF; }
+body.theme-kawaii.kw-justone .card .clueIn.warn { border-color:#E0A92E; background:#FFF9E8; }
+body.theme-kawaii.kw-justone .card .clueIn:focus, body.theme-kawaii.kw-justone .card .guessBox input:focus {
+  box-shadow:0 0 0 4px rgba(242,179,61,.32); }
+body.theme-kawaii.kw-justone .card .clueIn.bad:focus { box-shadow:0 0 0 4px rgba(224,87,77,.25); }
+body.kw-justone .typeBox { border-color:#C9B4F2; color:var(--sg-ink); }
 /* الدردشة العائمة (كلودو): السالفةُ تنزع عن ‎#chatCard‎ هيئةَ البطاقة */
 body.kw-justone .barBtn { width:50px; height:50px; }
 body.kw-justone #quickPop .phr button { border-color:#C99A72; color:var(--sg-ink); }

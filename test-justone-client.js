@@ -352,7 +352,7 @@ const roleOf = W => (room().match && room().match.isGuesser(pidOf(W)) ? "G" : "C
   ok(await until(() => G.doc.querySelectorAll("#picks .pcard").length === 5), "المخمّنُ يرى خمسَ بطاقاتٍ مقلوبة");
   ok(!/تفاحة|سيارة|مدرسة/.test(G.html()), "وصفحتُه لا تحمل أيَّ كلمةٍ من البطاقة");
   ok(givers.every(W => texts(W, ".wrow").join("|").includes("تفاحة") && W.doc.querySelectorAll(".wrow").length === 5), "والملمّحون يرون الكلمات الخمس مرقّمة");
-  ok(/اختر رقمًا/.test(G.$("phaseInfo").textContent) && /يختار رقمًا/.test(givers[0].$("phaseInfo").textContent), "سطرُ المرحلة بحسب الدور");
+  ok(/اختر رقمًا/.test(G.$("phaseInfo").textContent) && /بانتظار اختيار/.test(givers[0].$("phaseInfo").textContent), "سطرُ المرحلة بحسب الدور");
   snap(G, "1-guesser-pick"); snap(givers[0], "1-giver-pick");
   ok(G.doc.querySelector("#team .mate.guesser") && /٢٠|١٩/.test(G.$("tsec").textContent), "شارةُ المخمّن، والمؤقّتُ عشرون ثانية", G.$("tsec").textContent);
 
@@ -398,6 +398,11 @@ const roleOf = W => (room().match && room().match.isGuesser(pidOf(W)) ? "G" : "C
   ok(await until(() => g2.doc.querySelectorAll("#rvAlive .clue").some(d => /حلوة/.test(d.textContent) && /١\/٢/.test(d.textContent))),
      "الشطبُ يظهر للآخر بعدده (١/٢)");
   await sleep(30); snap(g2, "4-giver-review");
+  {
+    const kids = g1.$("joStage").children.map(c => c.id || c.className);
+    ok(kids.indexOf("rvAlive") < kids.indexOf("rvOut") && kids.indexOf("rvAlive") < kids.findIndex(k => /row2b/.test(k)) &&
+       kids.findIndex(k => /row2b/.test(k)) < kids.indexOf("rvOut"), "«جاهز» تحت ما يُصوَّت عليه، والمحذوفُ بعده", kids);
+  }
   g1.click("readyBtn"); g2.click("readyBtn");
 
   console.log("⑥ التخمين: بطاقاتٌ مبعثرة وكتابةٌ حيّة");
@@ -409,6 +414,8 @@ const roleOf = W => (room().match && room().match.isGuesser(pidOf(W)) ? "G" : "C
   ok(givers.every(W => W.doc.querySelectorAll("#gOut .clue").length === 2), "والملمّحون يرون المحذوفَ تحت");
   typeIn(G, "guessIn", "تفا");
   ok(await until(() => givers.every(W => /تفا/.test(W.$("live").textContent))), "ما يكتبه المخمّنُ يظهر عندهم حيًّا");
+  ok(givers.every(W => W.$("live").classList.contains("typeBox") && !W.$("live").classList.contains("live")), "صندوقُ الكتابة باسمٍ لا تلبسه سمةُ الرئيسيّة");
+  ok(/دورُ .+ في التخمين/.test(g1.$("phaseInfo").textContent), "صياغةٌ بلا تذكيرٍ ولا تأنيث", g1.$("phaseInfo").textContent);
   /* الدردشة: الملمّحُ لا يكتب الكلمة */
   g1.$("chatInput").value = "الجواب تفاحه"; g1.$("chatForm").dispatch("submit");
   ok(await until(() => /السرّيّة/.test(g1.$("toast").textContent)), "الملمّحُ لا يكتب الكلمة في الدردشة", g1.$("toast").textContent);
@@ -494,6 +501,8 @@ const roleOf = W => (room().match && room().match.isGuesser(pidOf(W)) ? "G" : "C
   const last = pages[0].$("endRating");
   ok(/من ١٣/.test(last.textContent) && last.querySelector(".ar").textContent.length > 0, "التصنيفُ ونتيجةُ الفريق من ١٣", last.textContent);
   const hist = pages[0].doc.querySelectorAll("#endHist .hrow");
+  ok(pages[0].doc.querySelectorAll("#endHist .g").length === 0 && pages[0].doc.querySelectorAll("#endHist .hw").length > 0,
+     "سطرُ السجلّ بلا صنف ‎.g‎ (تلبسه السمةُ هيئةَ بطاقات الرئيسيّة)");
   ok(hist.length >= 10 && hist.length <= 13, "سجلُّ الجولات", hist.length);
   ok(hist.some(h => /❌/.test(h.textContent)) && hist.some(h => /⏭️/.test(h.textContent)) && hist.some(h => /✅/.test(h.textContent)), "فيه الإصابةُ والخطأُ والتخطّي");
   /* الصفحةُ التي أُعيد فتحها قد تكون صفحةَ المضيف: نعرفه من الخادم */

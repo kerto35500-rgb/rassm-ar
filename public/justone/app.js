@@ -186,7 +186,7 @@
       addMsg("🎴 الجولة " + AR(e.round) + " — المخمّن: " + nameOf(e.guesser), true);
     } else if (e.t === "picked") snd("pick");
     else if (e.t === "unknown") {
-      toast("🤷 " + nameOf(e.by) + " لا يعرف الكلمة — " + (v.isGuesser ? "اختر رقمًا آخر" : "اختيارٌ جديد"));
+      toast("🤷 " + nameOf(e.by) + ": «ما أعرف الكلمة» — " + (v.isGuesser ? "اختر رقمًا آخر" : "اختيارٌ جديد"));
     } else if (e.t === "submitted") snd("pop");
     else if (e.t === "result") snd(e.result === "correct" ? "ok" : e.result === "wrong" ? "bad" : "skip");
     else if (e.t === "timeout") {
@@ -203,11 +203,12 @@
   function phaseLine(v) {
     const g = guesserName(v), G = v.isGuesser;
     if (v.paused) return "⏸️ بانتظار عودة اللاعبين…";
+    /* بلا تذكيرٍ ولا تأنيث: الاسمُ لا يُخبرنا من صاحبه */
     switch (v.phase) {
-      case "pick": return G ? "🎴 اختر رقمًا" : "⏳ " + g + " يختار رقمًا";
+      case "pick": return G ? "🎴 اختر رقمًا" : "⏳ بانتظار اختيار " + g;
       case "clues": return G ? "🙈 الفريق يكتب لك التلميحات" : "✏️ اكتب تلميحك";
       case "review": return G ? "🔍 الفريق يراجع التلميحات" : "✂️ راجعوا التلميحات";
-      case "guess": return G ? "🎯 خمّن الكلمة" : "👀 " + g + " يخمّن";
+      case "guess": return G ? "🎯 خمّن الكلمة" : "👀 دورُ " + g + " في التخمين";
       case "reveal": return { correct: "✅ إصابة!", wrong: "❌ تخمينٌ خاطئ", skip: "⏭️ تخطٍّ", empty: "🫥 لم ينجُ تلميح" }[v.result] || "الكشف";
       case "over": return "🏁 انتهت اللعبة";
       default: return "…";
@@ -314,7 +315,7 @@
     d.innerHTML = gs.map(p => '<i class="' + (p[key] ? "on" : "") + '" title="' + esc(p.name) + '"></i>').join("");
   }
   const secretCard = (v, mini) => '<div class="secret' + (mini ? " mini" : "") + '"><span class="lbl">🤫 الكلمة السرّيّة</span><div class="w">' +
-    esc(v.secret || "؟") + "</div>" + (!mini && v.pickNo ? '<div class="no">البطاقة رقم ' + AR(v.pickNo) + "</div>" : "") + "</div>";
+    esc(v.secret || "؟") + "</div></div>";
 
   /* بطاقةُ تلميح: لونُها بترتيبها، وزاويتُها وإزاحتُها ثابتتان لرقمها */
   function clueCard(c, i, opts = {}) {
@@ -361,7 +362,7 @@
         box.appendChild(b);
       }
     } else {
-      st.innerHTML = '<div class="stTitle">⏳ ' + esc(guesserName(v)) + " يختار رقمًا…</div>" +
+      st.innerHTML = '<div class="stTitle">⏳ بانتظار اختيار ' + esc(guesserName(v)) + "…</div>" +
         '<div class="stSub">هذه بطاقةُ الجولة — هو لا يراها. لا تقل شيئًا! 🤫</div>' +
         '<div class="wlist">' + (v.card || []).map((w, i) =>
           '<div class="wrow k' + (i % 4) + (v.disabled.includes(i + 1) ? " off" : "") + '"><span class="n">' + AR(i + 1) + "</span>" + esc(w) + "</div>").join("") +
@@ -390,8 +391,8 @@
     const me = meP(v);
     if (build) {
       st.innerHTML = secretCard(v) +
-        '<div class="stSub">اكتب ' + (v.cluesPer > 1 ? "<b>تلميحين</b> — كلُّ واحدٍ كلمةٌ واحدة" : "<b>كلمةً واحدة</b>") +
-        " تساعد " + esc(guesserName(v)) + " على تخمينها. المتطابقُ مع غيرك يُحذف — فكّر بكلمةٍ لا يكتبها غيرُك!</div>" +
+        '<div class="stSub">اكتب ' + (v.cluesPer > 1 ? "<b>تلميحين</b> (كلٌّ منهما كلمة)" : "<b>كلمةً واحدة</b>") +
+        " لـ" + esc(guesserName(v)) + " — والمتطابقُ مع غيرك يُحذف، ففكّر بما لا يكتبه غيرُك!</div>" +
         '<div class="clueBox" id="clueBox"></div>' +
         '<div class="sentNote" id="sentNote">✓ وصل تلميحك — تقدر تعدّله حتى يُكمل الجميع</div>' +
         '<div class="row2b"><button class="btn btn-green" id="sendClue">أرسل التلميح ✓</button>' +
@@ -483,9 +484,11 @@
         '<div class="stTitle">✂️ راجعوا التلميحات</div>' +
         '<div class="stSub">الآلةُ حذفت المتطابقَ والكلمةَ نفسها. اشطبوا ما بقي من المخالف: ترجمةٌ، أو جمعٌ ومفرد، أو من عائلة الكلمة. يُحذف ما شطبه <b>' +
         AR(need) + " من " + AR(gs.length) + "</b>.</div>" +
-        '<div class="clues" id="rvAlive"></div><div class="secTag" id="rvOutTag"></div><div class="clues" id="rvOut"></div>' +
+        /* «جاهز» تحت ما يُصوَّت عليه مباشرةً، والمحذوفُ آليًّا بعده للعلم */
+        '<div class="clues" id="rvAlive"></div>' +
         '<div class="row2b"><button class="btn btn-green" id="readyBtn">جاهز ✓</button></div>' +
-        '<div class="stNote" id="rvProg"></div>';
+        '<div class="stNote" id="rvProg"></div>' +
+        '<div class="secTag" id="rvOutTag"></div><div class="clues" id="rvOut"></div>';
       $("readyBtn").onclick = () => socket.emit("ready");
     }
     const alive = (v.clues || []).filter(c => !c.out), out = (v.clues || []).filter(c => c.out);
@@ -553,8 +556,8 @@
     if (build) {
       const all = v.clues || [];
       const alive = all.filter(c => !c.out), out = all.filter(c => c.out);
-      st.innerHTML = '<div class="stTitle">👀 ' + esc(guesserName(v)) + " يخمّن الآن…</div>" +
-        '<div class="live" id="live"></div>' + secretCard(v, true) +
+      st.innerHTML = '<div class="stTitle">👀 دورُ ' + esc(guesserName(v)) + " في التخمين…</div>" +
+        '<div class="typeBox" id="live"></div>' + secretCard(v, true) +
         '<div class="secTag">ما يراه (' + AR(alive.length) + ")</div>" +
         '<div class="clues" id="gAlive"></div>' +
         (out.length ? '<div class="secTag">المحذوفة (' + AR(out.length) + ')</div><div class="clues" id="gOut"></div>' : "");
@@ -575,7 +578,7 @@
     const st = stage();
     const g = guesserName(v);
     const R = {
-      correct: ["correct", "✅ إصابة! +١", g + " قرأ أفكاركم 🎉"],
+      correct: ["correct", "✅ إصابة! +١", "وصلت الفكرة إلى " + g + " 🎉"],
       wrong: ["wrong", "❌ تخمينٌ خاطئ", "ضاعت هذه البطاقة والتي بعدها"],
       skip: ["skip", "⏭️ تخطٍّ", "ضاعت هذه البطاقة وحدها"],
       empty: ["empty", "🫥 لم ينجُ أيُّ تلميح", "كلُّها حُذفت — ضاعت البطاقة"]
@@ -585,7 +588,7 @@
     if (ev && v.result === "wrong" && !ev.burned) R[2] = ev.lost ? "لا بطاقةَ بعدها — فخُصمت نقطة" : "كانت البطاقةَ الأخيرة";
     st.innerHTML = '<div class="resBanner ' + R[0] + '">' + R[1] + (R[2] ? "<small>" + esc(R[2]) + "</small>" : "") + "</div>" +
       secretCard(v) +
-      (v.guess ? '<div class="guessLine">' + esc(g) + " كتب: <b>" + esc(v.guess) + "</b></div>" : "") +
+      (v.guess ? '<div class="guessLine">تخمينُ ' + esc(g) + ": <b>" + esc(v.guess) + "</b></div>" : "") +
       '<div class="clues" id="rvAll"></div>' +
       '<div class="stNote">' + (v.deckLeft > 0 ? "الجولة التالية بعد لحظات… (باقي " + AR(v.deckLeft) + " في الرزمة)" : "انتهت البطاقات — النتيجة بعد لحظات!") + "</div>";
     const all = (v.clues || []).slice().sort((a, b) => (a.out ? 1 : 0) - (b.out ? 1 : 0));
@@ -624,7 +627,7 @@
     const names = res.names || {};
     $("endHist").innerHTML = (res.history || []).map((h, i) =>
       '<div class="hrow"><span>' + (RES_IC[h.result] || "•") + '</span><span class="w">' + esc(h.secret || "—") + "</span>" +
-      '<span class="g">' + AR(i + 1) + ". " + esc(names[h.guesser] || "") + (h.guess && h.result !== "correct" ? " — كتب: " + esc(h.guess) : "") + "</span></div>").join("") ||
+      '<span class="hw">' + AR(i + 1) + ". " + esc(names[h.guesser] || "") + (h.guess && h.result !== "correct" ? " — التخمين: " + esc(h.guess) : "") + "</span></div>").join("") ||
       '<div class="sub">لم تُكشف جولة</div>';
     $("endAgain").style.display = LOBBY && LOBBY.host === ME ? "" : "none";
     openModal("endModal");

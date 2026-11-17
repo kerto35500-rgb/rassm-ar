@@ -116,7 +116,12 @@
   .k2{--cb:var(--lv); --cd:var(--lvd);} .k3{--cb:var(--mn); --cd:var(--mnd);}
 
   /* ═══ اللعب ═══ */
-  #play{display:none; flex-direction:column; gap:9px; flex:1; min-height:0; overflow:auto; position:relative;}
+  #play{display:none; flex-direction:column; gap:8px; flex:1; min-height:0; overflow:auto; position:relative;
+        scrollbar-width:thin; scrollbar-color:#E3C9A0 transparent;}
+  /* شريطُ تمريرٍ ناعم (الشاشاتُ القصيرة) — لا الرماديُّ الفجّ */
+  #play::-webkit-scrollbar{width:9px}
+  #play::-webkit-scrollbar-thumb{background:#E3C9A0; border-radius:999px}
+  #play::-webkit-scrollbar-track{background:transparent}
   /* الشريط: رزمةُ البطاقات ونقاطُ الفريق والجولةُ ومؤقّتُ المرحلة */
   #hud{display:flex; align-items:center; gap:10px; padding:8px 12px; flex-wrap:wrap; justify-content:center; flex-shrink:0;}
   .stat{display:flex; align-items:center; gap:7px; font-weight:900; font-size:13px; background:var(--soft);
@@ -156,9 +161,10 @@
   .mate .bub.big{font-size:28px; padding:0 10px; line-height:1.25;}
 
   /* المسرح: شاشةُ الدور */
-  #joStage{flex:1 0 auto; display:flex; flex-direction:column; align-items:center; gap:14px; padding:16px 10px 20px;}
-  .stTitle{font-size:clamp(20px,4.8vw,26px); font-weight:900; text-align:center; line-height:1.45;}
-  .stSub{font-size:14px; color:var(--muted); text-align:center; line-height:1.75; max-width:560px; font-weight:700;}
+  /* مضغوطٌ عموديًّا: شاشةُ حاسوبٍ بارتفاع ٧٧٠ تتّسع للمرحلة كلّها بلا تمرير */
+  #joStage{flex:1 0 auto; display:flex; flex-direction:column; align-items:center; gap:11px; padding:14px 10px 14px;}
+  .stTitle{font-size:clamp(20px,4.8vw,25px); font-weight:900; text-align:center; line-height:1.4;}
+  .stSub{font-size:14px; color:var(--muted); text-align:center; line-height:1.6; max-width:600px; font-weight:700;}
   .stNote{font-size:12.5px; color:var(--muted); text-align:center; line-height:1.7; max-width:560px;}
 
   /* المخمّن يختار رقمًا: خمسُ بطاقاتٍ مقلوبة */
@@ -183,25 +189,25 @@
   .wrow.off{opacity:.38; text-decoration:line-through;}
 
   /* الكلمةُ السرّيّة */
-  .secret{position:relative; background:#fff; border:6px solid #fff; border-radius:26px; padding:24px 34px 16px;
+  /* ‏margin-top: الشارةُ فوق البطاقة تبرز ١٦px — فلا تلتصق بما قبلها */
+  .secret{position:relative; background:#fff; border:6px solid #fff; border-radius:26px; padding:18px 30px 12px; margin-top:8px;
           min-width:min(92%,320px); text-align:center; box-shadow:0 12px 28px rgba(150,100,40,.22), 0 0 0 2.5px #F2C46B;}
   .secret .lbl{position:absolute; top:-16px; left:50%; transform:translateX(-50%); background:linear-gradient(180deg,#FFD66B,#F2B33D);
                color:#5A3A08; font-size:12.5px; font-weight:900; padding:4px 14px; border-radius:999px; border:2.5px solid #fff;
                white-space:nowrap; box-shadow:0 3px 6px rgba(150,100,40,.25);}
-  .secret .w{font-size:clamp(34px,9vw,48px); font-weight:900; line-height:1.3; word-break:break-word;}
-  .secret .no{font-size:12px; font-weight:800; color:var(--muted);}
-  .secret.mini{padding:12px 22px 8px; min-width:0; border-width:4px; border-radius:20px;}
+  .secret .w{font-size:clamp(30px,8vw,44px); font-weight:900; line-height:1.3; word-break:break-word;}
+  .secret.mini{padding:12px 22px 8px; min-width:0; border-width:4px; border-radius:20px; margin-top:10px;}
   .secret.mini .w{font-size:24px;}
   .secret.mini .lbl{top:-13px; font-size:11px; padding:2px 11px;}
 
   /* كتابةُ التلميح */
   .clueBox{display:flex; flex-direction:column; gap:8px; width:min(100%,420px);}
-  .clueIn{width:100%; padding:14px 16px; font:inherit; font-size:23px; font-weight:900; text-align:center; color:var(--ink);
+  .clueIn{width:100%; padding:10px 16px; font:inherit; font-size:21px; font-weight:900; text-align:center; color:var(--ink);
           border-radius:20px; border:3px solid var(--line); background:#fff; outline:none; transition:border-color .15s, background .15s;}
   .clueIn:focus{border-color:#C9B4F2; box-shadow:0 0 0 4px rgba(132,98,210,.15);}
   .clueIn.bad{border-color:#F08A84; background:#FFF4F3;}
   .clueIn.warn{border-color:#F2C46B; background:#FFFBEF;}
-  .cwarn{min-height:19px; font-size:13px; font-weight:800; color:#C1332E; text-align:center;}
+  .cwarn{min-height:17px; font-size:13px; font-weight:800; color:#C1332E; text-align:center; line-height:1.3;}
   .cwarn.w{color:#946208;}
   .sentNote{display:none; font-size:14px; font-weight:900; color:#1F8A5B; text-align:center; background:#E6F8EF;
             border:2px solid #9FE0C0; border-radius:999px; padding:6px 14px;}
@@ -216,7 +222,9 @@
         transform:rotate(var(--r,0deg)) translateY(var(--y,0px)); transition:transform .25s, opacity .25s, box-shadow .2s;}
   .clue .t{font-size:clamp(21px,5vw,28px); font-weight:900; color:#3d2a26; word-break:break-word; line-height:1.35;}
   .clue .by{font-size:11.5px; font-weight:800; color:var(--cd); margin-top:3px;}
-  .clue.out{opacity:.55; filter:grayscale(.5); --r:0deg; --y:0px;}
+  /* المحذوفُ أصغرُ وأخفت: حاضرٌ للعلم، لا ينافس ما نجا على المساحة */
+  .clue.out{opacity:.55; filter:grayscale(.5); --r:0deg; --y:0px; min-width:88px; padding:9px 12px 7px; border-width:4px;}
+  .clue.out .t{font-size:clamp(16px,4vw,20px);}
   .clue.out .t{text-decoration:line-through; text-decoration-thickness:3px; text-decoration-color:#E5484D;}
   .clue .why{display:inline-block; margin-top:6px; font-size:11px; font-weight:900; background:#fff; color:#C1332E;
              border-radius:999px; padding:2px 9px;}
@@ -235,11 +243,11 @@
                   border-radius:20px; border:3px solid #C9B4F2; background:#fff; color:var(--ink); outline:none;}
   .guessBox input:focus{box-shadow:0 0 0 4px rgba(132,98,210,.18);}
   .guessBox .btn{flex:1 1 140px; width:auto;}
-  .live{min-height:60px; padding:10px 22px; border-radius:20px; background:#fff; border:3px dashed #C9B4F2;
+  .typeBox{min-height:60px; padding:10px 22px; border-radius:20px; background:#fff; border:3px dashed #C9B4F2;
         font-size:24px; font-weight:900; text-align:center; min-width:min(90%,300px); display:flex; align-items:center;
         justify-content:center; gap:4px;}
-  .live .ph{font-size:14px; color:var(--muted); font-weight:800;}
-  .live .caret{display:inline-block; width:3px; height:1.05em; background:var(--lvd); border-radius:2px; animation:blink 1s step-end infinite;}
+  .typeBox .ph{font-size:14px; color:var(--muted); font-weight:800;}
+  .typeBox .caret{display:inline-block; width:3px; height:1.05em; background:var(--lvd); border-radius:2px; animation:blink 1s step-end infinite;}
   @keyframes blink{50%{opacity:0}}
 
   /* انتظارُ المخمّن */
@@ -310,7 +318,8 @@
   .hrow{display:flex; gap:8px; align-items:center; padding:7px 11px; border-radius:13px; background:var(--soft);
         font-size:13.5px; font-weight:800; line-height:1.5;}
   .hrow .w{font-weight:900; font-size:15px;}
-  .hrow .g{color:var(--muted); font-size:12px; margin-inline-start:auto; text-align:end;}
+  /* ‏‎.hw‎ لا ‎.g‎: السمةُ تُلبس كلَّ ‎.g‎ هيئةَ بطاقات الرئيسيّة فتصير كبسولةً بنّيّة */
+  .hrow .hw{color:var(--muted); font-size:12px; margin-inline-start:auto; text-align:end;}
   #toast{position:fixed; left:50%; bottom:20px; transform:translateX(-50%) translateY(70px);
          background:#12263c; color:#fff; padding:11px 18px; border-radius:12px; font-weight:800;
          font-size:14px; z-index:90; opacity:0; transition:.25s; pointer-events:none; max-width:90vw; text-align:center;}
