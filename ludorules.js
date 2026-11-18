@@ -54,6 +54,7 @@ const VISION = 4;                         /* نطاقُ الرؤية في الظ
 const SACRIFICE_LOCK = 3;                 /* أدوارُ الحظر بعد التضحية */
 const MAX_CHAIN = 3;                      /* أقصى تتابعٍ للمعزّزات في حركةٍ واحدة */
 const MAX_ROLLS = 6000;                   /* صمّامٌ ضدّ مباراةٍ لا تنتهي */
+const PITY_TURNS = 5;                     /* أدوارٌ بلا ستّة ثمّ تصير الستّةُ ٥٠٪ */
 
 const MODES = ["classic", "rush", "master", "missions", "night", "king"];
 const MODE_AR = {
@@ -221,6 +222,8 @@ class LudoMatch {
     /* بركةُ الدور: الأرقامُ المرميّة التي لم تُنفَق بعد، بترتيب رميها.
        {v: الرقم، g: ذهبيّ؟} — الستّةُ الذهبيّة هديّةٌ لا تُحسَب في عقوبة الثلاث */
     this.pool = [];
+    this.dry = {};           /* أدوارٌ متتالية بلا ستّة لكلّ مقعد (نظامُ التعويض) */
+    this.sixTurn = false;    /* هل رمى صاحبُ الدور ستّةً في دوره هذا */
     this.legal = [];
     this.queue = [];
     this.prompt = null;
@@ -415,9 +418,13 @@ class LudoMatch {
   rollDie(seat) {
     const owners = this.controlled(seat);
     const allHome = owners.length > 0 && owners.every(o => this.pieces[o].every(pc => pc.p === BASE));
-    if (allHome && this.pool.length === 0 && this.rng() < 0.5) return 6;
-    const v = Math.ceil(this.rng() * 6.5);
-    return v < 1 ? 1 : v > 6 ? 6 : v;
+    const base = () => { const v = Math.ceil(this.rng() * 6.5); return v < 1 ? 1 : v > 6 ? 6 : v; };
+    if (allHome && this.pool.length === 0) return this.rng() < 0.5 ? 6 : base();     /* ٦١٫٥٪ */
+    /* نظامُ التعويض (طلبُ المستخدم): خمسةُ أدوارٍ متتالية بلا ستّة ⇒ الستّةُ
+       نصفُ الرميات (٥٠٪، والبقيّةُ ١–٥ بالتساوي) حتى تأتي، ثمّ يُصفَّر العدّاد
+       فورًا. (والقاعدةُ مع القاعدة الممتلئة أعلاه أسخى، فلا يُجمَع الاثنان.) */
+    if ((this.dry[seat] || 0) >= PITY_TURNS) return this.rng() < 0.5 ? 6 : 1 + Math.floor(this.rng() * 5);
+    return base();
   }
 
   /** ثلاثُ ستّاتٍ متتالية في البركة ⇒ يُلغى الدور — كلعبة المرجع حرفيًّا
@@ -467,6 +474,8 @@ class LudoMatch {
     else v = this.rollDie(seat);
     this.pool.push({ v, g: !!golden });
     this.dice = v;
+    /* ستّة ⇒ يُصفَّر عدّادُ التعويض فورًا */
+    if (v === 6) { this.dry[seat] = 0; this.sixTurn = true; }
     this.ev({ t: "roll", seat, v, golden, pool: this.pool.map(x => x.v) });
 
     if (v === 6) this.stats[seat].sixes++;
@@ -846,6 +855,9 @@ class LudoMatch {
   }
 
   nextTurn() {
+    /* دورٌ انتهى بلا ستّة ⇒ يزيد عدّادُ صاحبه */
+    if (!this.sixTurn) this.dry[this.turn] = (this.dry[this.turn] || 0) + 1;
+    this.sixTurn = false;
     this.endOfTurn(this.turn);
     this.pool = [];
     this.phase = "roll";
@@ -1052,5 +1064,5 @@ class LudoMatch {
 
 module.exports = {
   LudoMatch, DEFAULTS, MODES, MODE_AR, POWERS, POWER_AR, POWER_ICON, MISSIONS,
-  SAFE, VISION, SACRIFICE_LOCK, DEAD, rngFrom, normRules, teamOf, mateOf, G
+  SAFE, VISION, PITY_TURNS, SACRIFICE_LOCK, DEAD, rngFrom, normRules, teamOf, mateOf, G
 };

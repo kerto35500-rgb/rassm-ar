@@ -14,7 +14,7 @@ const ok = (c, m, x) => { c ? P++ : F++; console.log((c ? "  ✅ " : "  ❌ ") +
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
 
 const mk = (rules, seats, seed = 1) => { const m = new L.LudoMatch(rules, seats, seed); m.takeEvents(); return m; };
-const turnTo = (m, s) => { m.turn = s; m.phase = "roll"; m.dice = null; m.pool = []; m.legal = []; };
+const turnTo = (m, s) => { m.turn = s; m.phase = "roll"; m.dice = null; m.pool = []; m.legal = []; m.sixTurn = false; };
 const put = (m, seat, idx, p) => { m.pieces[seat][idx].p = p; };
 const rollAs = (m, seat, v) => { m._loaded = [v]; m.roll(seat); };
 /* الستّةُ تُرمى بعدها أخرى قبل الحركة: رميُ تسلسلٍ كامل (٦ ثمّ ٤ مثلًا) */
@@ -151,6 +151,44 @@ console.log("② القواعد الأساسيّة (من لعبة المرجع)"
     turnTo(mm, 0); put(mm, 0, 0, 10);
     rollSeq(mm, 0, [6, 6, 6]);
     ok(mm.turn === 2 && mm.pieces[0][0].p === 10, "٦ ٦ ٦ من أوّل الدور ⇒ يُلغى الدور");
+  }
+
+  /* نظامُ التعويض (طلبُ المستخدم): خمسةُ أدوارٍ متتالية بلا ستّة ⇒ الستّةُ ٥٠٪
+     حتى تأتي، ثمّ يُصفَّر العدّاد فورًا */
+  {
+    eq(L.PITY_TURNS, 5, "خمسةُ أدوار");
+    const mm = mk({ mode: "classic" }, [0, 2]);
+    put(mm, 0, 0, 10);
+    const freq6 = () => { let n = 0; mm.pool = []; for (let k = 0; k < 40000; k++) if (mm.rollDie(0) === 6) n++; return n / 40000; };
+    const f0 = freq6();
+    ok(Math.abs(f0 - 3 / 13) < .01, "قبل التعويض: الستّةُ ٢٣٪ كنرد المرجع", f0);
+    for (let k = 0; k < 4; k++) { turnTo(mm, 0); rollAs(mm, 0, 2); go(mm, 0, 0, 0); }
+    eq(mm.dry[0], 4, "أربعةُ أدوارٍ بلا ستّة تُعَدّ");
+    ok(Math.abs(freq6() - 3 / 13) < .01, "ولا تعويضَ بعدُ");
+    turnTo(mm, 0); rollAs(mm, 0, 2); go(mm, 0, 0, 0);
+    eq(mm.dry[0], 5, "والخامس");
+    const f5 = freq6();
+    ok(Math.abs(f5 - .5) < .01, "بعد خمسة أدوارٍ بلا ستّة: الستّةُ ٥٠٪", f5);
+    {
+      let c = [0, 0, 0, 0, 0, 0, 0]; mm.pool = [];
+      for (let k = 0; k < 40000; k++) c[mm.rollDie(0)]++;
+      ok([1, 2, 3, 4, 5].every(v => Math.abs(c[v] / 40000 - .1) < .01), "والبقيّةُ ١–٥ بالتساوي (١٠٪ لكلٍّ)", c.slice(1).map(x => (x / 400).toFixed(1)));
+    }
+    {
+      put(mm, 2, 0, 30);
+      let n2 = 0; mm.pool = []; for (let k = 0; k < 40000; k++) if (mm.rollDie(2) === 6) n2++;
+      ok((mm.dry[2] || 0) < 5 && Math.abs(n2 / 40000 - 3 / 13) < .01, "ولكلّ لاعبٍ عدّادُه: الخصمُ ما زال ٢٣٪", [mm.dry, n2 / 40000]);
+    }
+    turnTo(mm, 0); rollAs(mm, 0, 6);
+    eq(mm.dry[0], 0, "ستّةٌ ⇒ يُصفَّر العدّادُ فورًا (في الدور نفسه)");
+    ok(Math.abs(freq6() - 3 / 13) < .01, "فتعود الستّةُ ٢٣٪");
+    rollAs(mm, 0, 3); go(mm, 0, 0, 0);
+    eq(mm.dry[0], 0, "ودورٌ فيه ستّة لا يُعَدّ جافًّا");
+    /* القاعدةُ الممتلئة أسخى (٦١٫٥٪): لا يُجمَع الاثنان */
+    const mh = mk({ mode: "classic" }, [0, 2]);
+    mh.dry[0] = 9; mh.pool = [];
+    let n = 0; for (let k = 0; k < 40000; k++) if (mh.rollDie(0) === 6) n++;
+    ok(Math.abs(n / 40000 - 8 / 13) < .01, "وكلُّ القطع في القاعدة: تبقى ٦١٫٥٪ (الأسخى) لا أكثر", n / 40000);
   }
 
   /* زوجُ الخصم: قطعتان من لونٍ واحدٍ في مربّعٍ غيرِ آمن لا يُنزَل عليهما
