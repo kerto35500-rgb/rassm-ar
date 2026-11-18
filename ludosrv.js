@@ -30,6 +30,8 @@ const clean = (s, n) => String(s == null ? "" : s).replace(/[<>]/g, "").trim().s
 const DEFAULTS = Object.freeze({
   ...L.DEFAULTS, players: 4, turnSecs: 15, bots: true, botDiff: 2
 });
+/* خطأٌ لا يُعرض (نقرةٌ متأخّرة سبقتها الحركةُ الآليّة) */
+const SILENT = Symbol("silent");
 
 /** إعداداتُ المضيف بعد التحقّق — لا يمرّ رقمٌ خارج مداه. */
 function sanitize(d, old) {
@@ -189,6 +191,7 @@ function setupLudoOnline(io, deps = {}) {
           r.autoT = null;
           if (r.match !== m || m.phase !== "move" || m.turn !== seat) return;
           try { m.move(seat, id); } catch (e) { return; }
+          r.lastAuto = { seat, at: Date.now() };
           after(r);
         }, autoMoveMs);
       }
@@ -419,12 +422,19 @@ function setupLudoOnline(io, deps = {}) {
         if (seat < 0) return;
         me.auto = false;                           /* لعب بنفسه ⇒ خرج من AUTO */
         try { fn(room.match, seat, d || {}); }
-        catch (e) { return err(e.message || "فعلٌ غير مقبول"); }
+        catch (e) { if (e === SILENT) return; return err(e.message || "فعلٌ غير مقبول"); }
         after(room);
       };
     }
     socket.on("roll", act((m, seat) => m.roll(seat)));
-    socket.on("move", act((m, seat, d) => m.move(seat, +d.id)));
+    /* حركةٌ وحيدةٌ تُلعَب عنه بعد لحظة (autoMoveMs)؛ والصفحةُ تُبرز القطعةَ بعد
+       حركة النرد — فمن نقرها تلك اللحظة سبقته الحركةُ الآليّة، فكان يرى «ليس
+       دورك في التحريك» عن قطعةٍ تحرّكت كما أراد. نقرتُه المتأخّرة تُتجاهَل بصمت. */
+    socket.on("move", act((m, seat, d) => {
+      const late = room.lastAuto && room.lastAuto.seat === seat && Date.now() - room.lastAuto.at < 3000;
+      if (late && (m.phase !== "move" || m.turn !== seat)) throw SILENT;
+      m.move(seat, +d.id);
+    }));
     socket.on("choose", act((m, seat, d) => m.choose(seat, d.choice === "none" ? "none" : +d.choice)));
     /* لمسُ الشاشة في وضع AUTO يُعيد اللاعبَ إلى يده (المرجع: SYSTEM_TRUST_CANCEL):
        إن كان الدورُ دورَه بدأ مؤقّتُه الآن بدل أن يلعب عنه البوت */

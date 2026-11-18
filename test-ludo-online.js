@@ -239,6 +239,24 @@ async function endByPlay(room, sock) {
     ok(room.slots[0].auto === false, "ولمسُ الشاشة («manual») يُعيده إلى يده (المرجع: SYSTEM_TRUST_CANCEL)");
     ok(room.deadline > Date.now() && !!room.timer, "ودورُه الآن ينتظره بمؤقّتٍ لا ببوت", { deadline: room.deadline, timer: !!room.timer });
     ok(A.last("state").players[0].auto === false, "وتختفي الشارة عند الجميع");
+
+    /* حركةٌ وحيدة تُلعَب عنه بعد لحظة؛ ونقرتُه التي وصلت بعدها لا تعود بخطأ
+       «ليس دورك في التحريك» (كان يظهر حين ينقر القطعةَ المتوهّجة) */
+    freeze();
+    for (const s of m.seats) m.pieces[s].forEach(pc => { pc.p = -1; });
+    m.pieces[0][0].p = 10;
+    m.turn = 0; m.phase = "roll"; m.pool = []; m.legal = []; m._loaded = [3];
+    const t0 = A.all("toast").length;
+    A.fire("roll");
+    ok(await until(() => m.pieces[0][0].p === 13, 1000), "حركةٌ وحيدة ⇒ لُعبت عنه تلقائيًّا");
+    A.fire("move", { id: 0 });
+    await sleep(20);
+    ok(A.all("toast").length === t0, "ونقرتُه المتأخّرة تُتجاهَل بلا رسالة خطأ", A.all("toast").slice(t0));
+    /* لكنّ الخطأَ الحقيقيّ يبقى: نقرٌ في دور غيره بلا حركةٍ آليّة قريبة */
+    freeze(); room.lastAuto = null;
+    m.turn = m.seats.find(s => s !== 0); m.phase = "roll";
+    A.fire("move", { id: 0 });
+    ok(A.all("toast").length === t0 + 1 && /ليس دورك/.test(A.last("toast")), "والنقرُ في دور غيره يبقى خطأً ظاهرًا", A.last("toast"));
   }
 
   console.log("⑦ الانقطاع والعودة");
