@@ -363,6 +363,7 @@ function freeze(room) {
   ok(A.$("boardBox").querySelector("#promptBar") && !A.$("playTop").querySelector("#promptBar"),
      "سطرُ التبديل داخل صندوق اللوحة (طافٍ) لا فوقها في مجرى الصفحة");
   ok(/#promptBar\{[^}]*position:absolute/.test(HTML) && /#promptBar\{[^}]*pointer-events:none/.test(HTML), "مطلقُ الموضع ولا يحجب النقر");
+  ok(/\.pp \.pool\{position:absolute/.test(HTML), "البركةُ شاراتٌ طافية: ظهورُها في دور صاحبها لا يُطيل لوحتَه فلا تنزل الطاولة");
   /* مظاهرُ اللوحة: الهادئُ افتراضًا، ومربّعاتُ النجوم رماديّة، و🎨 يبدّل */
   {
     const fills = () => A.$("boardSvg").querySelectorAll("rect").map(r => r.getAttribute("fill"));

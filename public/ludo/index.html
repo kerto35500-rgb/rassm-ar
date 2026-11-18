@@ -256,7 +256,11 @@
   @keyframes diceCall{50%{transform:translateY(-5px) rotate(-6deg)}}
   @keyframes diceRoll{0%{transform:rotate(0)} 25%{transform:rotate(90deg) scale(.9)} 50%{transform:rotate(180deg)} 75%{transform:rotate(270deg) scale(.9)} 100%{transform:rotate(360deg)}}
   /* البركة: الأرقامُ المرميّة التي لم تُنفَق بعد (dice_box في المرجع) */
-  .pool{display:flex; gap:2px; flex-wrap:wrap; max-width:92px; margin-top:2px;}
+  /* البركةُ شاراتٌ تتدلّى من حافّة اللوحة السفلى — لا سطرٌ داخلها. كانت سطرًا
+     يُضاف تحت الاسم حين يحين دورُ صاحبها فتطول لوحتُه، فيطول صفُّ اللاعبَين
+     العلويَّين وتنزل الطاولةُ كلُّها ثمّ تصعد مع كلّ دور */
+  .pp .pool{position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); z-index:4;
+            display:flex; gap:2px; flex-wrap:nowrap; pointer-events:none;}
   .pool:empty{display:none;}
   .pool i{font-style:normal; width:17px; height:17px; border-radius:5px; background:#fff; border:1.5px solid var(--sd);
           font-size:10.5px; font-weight:900; display:flex; align-items:center; justify-content:center; color:#3a2b2b;}
