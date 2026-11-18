@@ -40,6 +40,11 @@ function sanitize(d, old) {
   if (typeof d.sharedSafe === "boolean") S.sharedSafe = d.sharedSafe;
   if (typeof d.powerups === "boolean") S.powerups = d.powerups;
   if ([3, 4, 5, 6].includes(+d.powerCount)) S.powerCount = +d.powerCount;
+  /* أنواعُ المعزّزات: ما يعرفه المحرّك وحده، ولا تُقبل قائمةٌ فارغة (يبقى نوعٌ على الأقلّ) */
+  if (Array.isArray(d.powerTypes)) {
+    const t = L.POWERS.filter(p => d.powerTypes.includes(p));
+    if (t.length) S.powerTypes = t;
+  }
   if ([2, 3, 4].includes(+d.players)) S.players = +d.players;
   if (TURN_SECS.includes(+d.turnSecs)) S.turnSecs = +d.turnSecs;
   if (typeof d.bots === "boolean") S.bots = d.bots;
@@ -395,7 +400,8 @@ function setupLudoOnline(io, deps = {}) {
       }
       try {
         room.match = new L.LudoMatch(
-          { mode: S.mode, teams: S.teams, sharedSafe: S.sharedSafe, powerups: S.powerups, powerCount: S.powerCount },
+          { mode: S.mode, teams: S.teams, sharedSafe: S.sharedSafe, powerups: S.powerups, powerCount: S.powerCount,
+            powerTypes: S.powerTypes },
           act, (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0);
       } catch (e) { return err(e.message); }
       room.lastResult = null;

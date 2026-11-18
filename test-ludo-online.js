@@ -116,7 +116,25 @@ async function endByPlay(room, sock) {
   ok(A.last("lobby").slots[1] && A.last("lobby").slots[1].name === "فهد", "اللاعب ينتقل إلى مقعدٍ فارغ (يختار لونه وفريقه)");
   B.fire("sit", { slot: 0 });
   ok(A.last("lobby").slots[0].name === "سعود", "ولا يأخذ مقعدًا مشغولًا");
-  A.fire("updateSettings", { teams: false, players: 4, mode: "classic", powerups: false });
+  /* المضيفُ يمنع أنواعًا من المعزّزات */
+  eq(A.last("lobby").settings.powerTypes, ["gold", "jump", "bubble", "wind", "swap"], "المعزّزاتُ كلُّها مسموحةٌ افتراضًا");
+  A.fire("updateSettings", { powerTypes: ["swap", "zzz", "gold"] });
+  eq(A.last("lobby").settings.powerTypes, ["gold", "swap"], "يختار المضيفُ أنواعَها (والمجهولُ يُتجاهَل)");
+  A.fire("updateSettings", { powerTypes: [] });
+  eq(A.last("lobby").settings.powerTypes, ["gold", "swap"], "والقائمةُ الفارغة لا تُقبل — يبقى نوعٌ على الأقلّ");
+  B.fire("updateSettings", { powerTypes: ["jump"] });
+  eq(A.last("lobby").settings.powerTypes, ["gold", "swap"], "وغيرُ المضيف لا يغيّرها");
+  A.fire("updateSettings", { mode: "classic", powerups: true, powerCount: 6 });
+  A.fire("startGame");
+  {
+    const mm = api.rooms.get(code).match;
+    ok(mm && mm.rules.powerTypes.join() === "gold,swap" && mm.powerups.every(p => p.type === "gold" || p.type === "swap"),
+       "والمباراةُ لا يظهر فيها إلا المسموح", mm && mm.powerups.map(p => p.type));
+    ok(A.last("state").rules.powerTypes.join() === "gold,swap", "والقواعدُ في الحالة تحمل الأنواع (للقواعد في الواجهة)");
+    const rm = api.rooms.get(code);
+    await endByPlay(rm, A);
+  }
+  A.fire("updateSettings", { teams: false, players: 4, mode: "classic", powerups: false, powerTypes: ["gold", "jump", "bubble", "wind", "swap"] });
 
   console.log("③ البداية والحجب لكلّ مقعد");
   A.fire("updateSettings", { mode: "missions", teams: true });

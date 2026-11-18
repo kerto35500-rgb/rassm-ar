@@ -706,11 +706,24 @@
   /* ══════════ الاتّصال والدخول ══════════ */
   socket = io("/justone");
   const invite = new URLSearchParams(location.search).get("r");
+  /* رابطُ دعوة: الرمزُ من الرابط فلا خانةَ له، والزرُّ بعرض البطاقة (كان الرقمُ
+     يُقصّ في الجوال)، والرقمُ معزولٌ اتّجاهيًّا كي لا يلتصق بالنصّ العربيّ */
+  const BIDI = s => "⁨" + s + "⁩";
   if (invite) {
-    $("pRoom").value = invite.trim().slice(0, 6);
+    const code = invite.trim().slice(0, 6);
+    $("pRoom").value = code;
+    $("pRoom").style.display = "none";
     $("createBtn").style.display = "none";
-    $("joinBtn").textContent = "🚪 ادخل الغرفة " + invite;
-    document.querySelector(".divider").textContent = "— دعوة لغرفة " + invite + " —";
+    $("joinBtn").textContent = "🚪 ادخل الغرفة " + BIDI(code);
+    document.querySelector(".divider").textContent = "— دعوة لغرفة " + BIDI(code) + " —";
+  }
+  /* دعوةٌ لغرفةٍ انتهت: تعود الخانةُ وزرُّ الإنشاء */
+  function inviteFailed() {
+    if (!invite) return;
+    $("pRoom").style.display = "";
+    $("createBtn").style.display = "";
+    $("joinBtn").textContent = "انضمام 🚪";
+    document.querySelector(".divider").textContent = "— أو انضم لغرفة موجودة —";
   }
 
   socket.on("hello", h => {
@@ -734,7 +747,11 @@
     const n = needName(); if (!n) return;
     const r = $("pRoom").value.trim();
     if (!r) return ($("joinErr").textContent = "اكتب رمز الغرفة");
-    socket.emit("joinRoom", { name: n, roomId: r }, res => res.ok ? enter(res) : ($("joinErr").textContent = res.error || "تعذّر الانضمام"));
+    socket.emit("joinRoom", { name: n, roomId: r }, res => {
+      if (res.ok) return enter(res);
+      $("joinErr").textContent = res.error || "تعذّر الانضمام";
+      inviteFailed();
+    });
   };
   $("pName").onkeydown = e => { if (e.key === "Enter") ($("pRoom").value.trim() ? $("joinBtn") : $("createBtn")).click(); };
   $("pRoom").onkeydown = e => { if (e.key === "Enter") $("joinBtn").click(); };

@@ -85,6 +85,7 @@
   #whoLine{display:none; text-align:center; font-size:13.5px; color:var(--green); font-weight:800; margin:-4px 0 4px;}
   .row2{display:flex; gap:8px;}
   .row2 > *{flex:1 1 0; min-width:0;}
+  .row2 .btn{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .backLink{display:inline-flex; align-items:center; justify-content:center; gap:6px;
             margin:2px auto 4px; padding:9px 20px; border-radius:999px;
             background:rgba(255,255,255,.14); border:1.5px solid rgba(255,255,255,.32);
@@ -634,12 +635,24 @@ function drawRoomCode(canvas, code){
 
 /* ============ الدخول ============ */
 const inviteRoom = new URLSearchParams(location.search).get("r");
+/* الرمزُ من الرابط فلا خانةَ له والزرُّ بعرض البطاقة — كان رقمُ الغرفة يُقصّ
+   في الزرّ على الجوال. والرقمُ معزولٌ اتّجاهيًّا (⁨…⁩) فلا يلتصق بما حوله */
 if (inviteRoom){
-  $("pRoom").value = inviteRoom.trim().slice(0,6);
+  const code = inviteRoom.trim().slice(0,6);
+  $("pRoom").value = code;
+  $("pRoom").style.display = "none";
   $("createBtn").style.display = "none";
-  $("joinBtn").textContent = "🚪 ادخل الغرفة " + inviteRoom;
-  document.querySelector(".divider").textContent = "— دعوة لغرفة " + inviteRoom + " —";
+  $("joinBtn").textContent = "🚪 ادخل الغرفة ⁨" + code + "⁩";
+  document.querySelector(".divider").textContent = "— دعوة لغرفة ⁨" + code + "⁩ —";
   $("pName").placeholder = "اكتب اسمك للدخول";
+}
+/* دعوةٌ لغرفةٍ انتهت: تعود الخانةُ وزرُّ الإنشاء — لا يعلق الزائر بلا مخرج */
+function inviteFailed(){
+  if (!inviteRoom) return;
+  $("pRoom").style.display = "";
+  $("createBtn").style.display = "";
+  $("joinBtn").textContent = "انضمام 🚪";
+  document.querySelector(".divider").textContent = "— أو انضم لغرفة موجودة —";
 }
 
 socket.on("hello", h => {
@@ -670,6 +683,7 @@ $("joinBtn").onclick = () => {
   socket.emit("joinRoom", { name:n, roomId:r, password:$("pPass").value }, res => {
     if (!res.ok){
       if (res.needPass) $("pPass").style.display = "block";
+      else inviteFailed();
       return $("joinErr").textContent = res.error || "تعذّر الانضمام";
     }
     enter(res);

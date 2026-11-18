@@ -68,17 +68,27 @@ const POWER_AR = {
 const POWER_ICON = { gold: "🎲", jump: "🦘", bubble: "🫧", wind: "🌬️", swap: "🔄" };
 
 const DEFAULTS = Object.freeze({
-  mode: "classic", teams: false, sharedSafe: false, powerups: false, powerCount: 4
+  mode: "classic", teams: false, sharedSafe: false, powerups: false, powerCount: 4,
+  powerTypes: Object.freeze(POWERS.slice())
 });
+
+/** أنواعُ المعزّزات التي اختارها المضيف (بترتيب POWERS). غيرُ مُحدَّدة ⇒ كلُّها. */
+function normTypes(t) {
+  if (!Array.isArray(t)) return POWERS.slice();
+  return POWERS.filter(p => t.includes(p));
+}
 
 function normRules(r) {
   r = r || {};
+  const types = normTypes(r.powerTypes);
   return {
     mode: MODES.includes(r.mode) ? r.mode : "classic",
     teams: !!r.teams,
     sharedSafe: !!r.teams && !!r.sharedSafe,
-    powerups: !!r.powerups,
-    powerCount: Math.max(3, Math.min(6, Math.round(+r.powerCount || 4)))
+    /* لا نوعَ مُختار ⇒ لا معزّزات (لا لوحةَ بمعزّزاتٍ لا يظهر منها شيء) */
+    powerups: !!r.powerups && types.length > 0,
+    powerCount: Math.max(3, Math.min(6, Math.round(+r.powerCount || 4))),
+    powerTypes: types.length ? types : POWERS.slice()
   };
 }
 
@@ -146,13 +156,14 @@ const MISSIONS = [
      بالالتقاط لا بالنجاح: التبديلُ يخيب حين لا خصمَ في نطاقه، والرياح لا
      تدفع أحدًا حين يخلو ما خلفك — فلو عددنا النجاح وحده لصارت المهمّةُ
      رهينةَ مواقع الخصوم لا مهارةَ صاحبها. */
-  { id: "puSwap", goal: () => 1, pu: true, text: () => "التقط «تبديل الأماكن»",
+  /* ‏puType: مهمّةُ نوعٍ بعينه لا تُعطى إن منعه المضيف — وإلا كانت مستحيلة */
+  { id: "puSwap", goal: () => 1, pu: true, puType: "swap", text: () => "التقط «تبديل الأماكن»",
     prog: (m, s) => (m.stats[s].power.swap || 0) },
   { id: "puAny", goal: () => 4, pu: true, text: g => `التقط ${arNum(g)} معزّزات`,
     prog: (m, s) => m.stats[s].powerTotal },
-  { id: "puWind", goal: () => 1, pu: true, text: () => "التقط «الرياح العكسيّة»",
+  { id: "puWind", goal: () => 1, pu: true, puType: "wind", text: () => "التقط «الرياح العكسيّة»",
     prog: (m, s) => (m.stats[s].power.wind || 0) },
-  { id: "puGold", goal: () => 1, pu: true, text: () => "التقط «النرد الذهبيّ»",
+  { id: "puGold", goal: () => 1, pu: true, puType: "gold", text: () => "التقط «النرد الذهبيّ»",
     prog: (m, s) => (m.stats[s].power.gold || 0) }
 ];
 const MISSION_BY_ID = Object.fromEntries(MISSIONS.map(x => [x.id, x]));
@@ -210,6 +221,7 @@ class LudoMatch {
     /* بركةُ الدور: الأرقامُ المرميّة التي لم تُنفَق بعد، بترتيب رميها.
        {v: الرقم، g: ذهبيّ؟} — الستّةُ الذهبيّة هديّةٌ لا تُحسَب في عقوبة الثلاث */
     this.pool = [];
+    this.sixRun = 0;         /* ستّاتُ الرمية الجارية المتتالية (عقوبةُ الثلاث) */
     this.legal = [];
     this.queue = [];
     this.prompt = null;
@@ -386,16 +398,13 @@ class LudoMatch {
     return v < 1 ? 1 : v > 6 ? 6 : v;
   }
 
-  /** ثلاثُ ستّاتٍ متتالية في آخر البركة (المرجع: yalla.util.isThreeSix يعدّ
-      الستّاتِ المتتالية حتى آخر رقم). والذهبيّةُ لا تُعَدّ ولا تقطع العدّ. */
-  threeSix() {
-    let n = 0;
-    for (const x of this.pool) {
-      if (x.g) continue;
-      n = x.v === 6 ? n + 1 : 0;
-    }
-    return n >= 3;
-  }
+  /** ثلاثُ ستّاتٍ متتالية **في الرمية الجارية** (المرجع: yalla.util.isThreeSix).
+      كانت تُعَدّ من البركة كلّها، فتختلط الستّاتُ الباقية من رميةٍ سابقة
+      بستّات رمية المكافأة بعد الأكل: ٦ ٦ ٣ ← لُعبت الثلاثة فأكلت ← بقي ٦ ٦ ←
+      رميةُ المكافأة ٦ ⇒ «ثلاث ستّات» وضاع الدور ظلمًا. والصحيح أنّ كلَّ رميةٍ
+      تعدّ ستّاتها هي — فيرمي اللاعبُ في دوره أكثرَ من ثلاثة نرود (٦ ٦ ٣ ثمّ
+      أكلٌ ثمّ ٦ ثمّ رقمٌ آخر…). والذهبيّةُ لا تُعَدّ ولا تقطع العدّ. */
+  threeSix() { return this.sixRun >= 3; }
 
   /** بعد رقمٍ غير الستّة، أو بعد حركةٍ بقي في البركة بعدها شيء: نعرض ما
       يُلعَب بالبركة. لا شيء ⇒ ينتقل الدور (وتضيع الأرقامُ التي لا تُلعَب). */
@@ -428,6 +437,8 @@ class LudoMatch {
     else if (this._loaded && this._loaded.length) v = this._loaded.shift();
     else v = this.rollDie(seat);
     this.pool.push({ v, g: !!golden });
+    /* عدّادُ ستّات الرمية الجارية: ستّةٌ تزيده، وغيرُها يصفّره، والذهبيّةُ لا تمسّه */
+    if (!golden) this.sixRun = v === 6 ? (this.sixRun || 0) + 1 : 0;
     this.dice = v;
     this.ev({ t: "roll", seat, v, golden, pool: this.pool.map(x => x.v) });
 
@@ -627,7 +638,9 @@ class LudoMatch {
       const free = this.powerCells();
       if (!free.length) return;
       const cell = free[this.rnd(free.length)];
-      const type = POWERS[this.rnd(POWERS.length)];
+      /* من الأنواع التي اختارها المضيف وحدها */
+      const types = this.rules.powerTypes;
+      const type = types[this.rnd(types.length)];
       this.powerups.push({ cell, type });
       this.evPos({ t: "spawn", cell, type }, null, [cell]);
     }
@@ -778,6 +791,7 @@ class LudoMatch {
        مع ما يأتي (المرجع: status = THROW_START دون random.clear) */
     if (a && (a.extra || a.captured)) {
       this.phase = "roll";
+      this.sixRun = 0;            /* رميةُ المكافأة تعدّ ستّاتها من الصفر */
       this.ev({ t: "again", seat: this.turn, why: a.captured ? "capture" : "home" });
       return;
     }
@@ -800,6 +814,7 @@ class LudoMatch {
   nextTurn() {
     this.endOfTurn(this.turn);
     this.pool = [];
+    this.sixRun = 0;
     this.phase = "roll";
     this.dice = null;
     this.legal = [];
@@ -872,7 +887,8 @@ class LudoMatch {
 
   assignMissions() {
     const n = this.seats.length;
-    const pool = MISSIONS.filter(x => (!x.pu || this.rules.powerups) && n >= (x.minPlayers || 0));
+    const pool = MISSIONS.filter(x => (!x.pu || (this.rules.powerups && (!x.puType || this.rules.powerTypes.includes(x.puType)))) &&
+                                      n >= (x.minPlayers || 0));
     const bag = pool.slice();
     for (let i = bag.length - 1; i > 0; i--) { const j = this.rnd(i + 1); [bag[i], bag[j]] = [bag[j], bag[i]]; }
     /* لا مهمّتان متطابقتان على اللوحة كلّها، ومهمّةُ «كُل لونًا» لا تستهدف

@@ -328,6 +328,14 @@ const roleOf = W => (room().match && room().match.isGuesser(pidOf(W)) ? "G" : "C
   const B = openPage("فهد", "?r=" + CODE);
   await until(() => B.$("pName"));
   ok(B.$("createBtn").style.display === "none" && /ادخل الغرفة/.test(B.$("joinBtn").textContent), "رابطُ الدعوة يُخفي «إنشاء» ويعرض «ادخل الغرفة»");
+  ok(B.$("pRoom").style.display === "none" && B.$("joinBtn").textContent.includes(CODE), "وخانةُ الرمز مخفيّة فالرقمُ كاملٌ في الزرّ");
+  {
+    const Z = openPage("زائر", "?r=99999");
+    await until(() => Z.$("pName"));
+    Z.$("pName").value = "زائر"; Z.click("joinBtn");
+    ok(await until(() => /لا توجد غرفة/.test(Z.$("joinErr").textContent)) && Z.$("pRoom").style.display === "" && Z.$("createBtn").style.display === "",
+       "دعوةٌ منتهية ⇒ تعود خانةُ الرمز وزرُّ الإنشاء");
+  }
   B.$("pName").value = "فهد"; B.click("joinBtn");
   const C = openPage("نورة", "?r=" + CODE);
   await until(() => C.$("pName"));

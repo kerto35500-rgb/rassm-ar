@@ -91,17 +91,34 @@
   .modeBox{display:flex; flex-direction:column; gap:8px; border:2px dashed var(--line); border-radius:12px; padding:9px; background:#fbfdff;}
   .modeTag{font-size:12px; font-weight:900; color:var(--muted);}
 
-  /* المقاعد الأربعة في اللوبي */
-  #seatGrid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
-  .seat{position:relative; border-radius:16px; padding:10px 12px; display:flex; align-items:center; gap:10px;
-        border:3px solid var(--sd); background:var(--sl); min-height:64px; transition:.18s;}
+  /* المقاعد الأربعة في اللوبي.
+     ‏minmax(0,1fr) لا 1fr: العمودُ بـ1fr لا يضيق عن أعرض ما فيه (زرُّ «اجلس
+     هنا» مع الاسم)، فكانت الشبكةُ في الجوال أعرضَ من الشاشة ويُقصّ عمودُها
+     الأيسر. والبطاقةُ تلتفّ: الزرُّ ينزل تحت الاسم إن ضاق السطر. */
+  #seatGrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;}
+  .seat{position:relative; border-radius:16px; padding:10px 12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+        border:3px solid var(--sd); background:var(--sl); min-height:64px; min-width:0; transition:.18s;}
+  .seat.empty{cursor:pointer;}
   .seat .dot{width:34px; height:34px; border-radius:50%; background:var(--sc); flex-shrink:0;
              border:3px solid #fff; box-shadow:0 0 0 2px var(--sd), 0 3px 0 rgba(0,0,0,.15);}
-  .seat .who{flex:1; min-width:0;}
+  .seat .who{flex:1 1 70px; min-width:0;}
   .seat .who b{display:block; font-size:15px; font-weight:900; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .seat .who small{font-size:11.5px; font-weight:800; color:var(--sd);}
+  .seat .who b.ghost{opacity:.55;}
+  .seat .who small{display:block; font-size:11.5px; font-weight:800; color:var(--sd); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .seat .sitBtn{border:2px dashed var(--sd); background:#fff; color:var(--sd); border-radius:10px; padding:7px 12px;
-                font-family:inherit; font-weight:900; font-size:13px; cursor:pointer;}
+                font-family:inherit; font-weight:900; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0; margin-inline-start:auto;}
+  .teamTag.mine{color:var(--green);}
+  .teamHint{grid-column:1/-1; font-size:11.5px; font-weight:800; color:var(--muted); text-align:center; line-height:1.6;}
+  /* أنواعُ المعزّزات: يمنعها المضيفُ بلمسة */
+  .puPick{display:flex; flex-wrap:wrap; gap:6px; width:100%;}
+  .puPick button{display:flex; align-items:center; gap:5px; border:2px solid var(--line); background:#fff; border-radius:999px;
+                 padding:5px 11px 5px 9px; font:inherit; font-size:12.5px; font-weight:800; cursor:pointer; color:var(--muted);
+                 opacity:.55; text-decoration:line-through;}
+  .puPick button.on{opacity:1; text-decoration:none; color:var(--ink); border-color:var(--green); background:#eafaf0;}
+  .puPick .pi{font-size:16px; text-decoration:none;}
+  .rule.off{opacity:.55;}
+  /* زرُّ الانضمام لا يُقصّ رقمُ الغرفة فيه */
+  .row2 .btn{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .seat .kick{position:absolute; top:-8px; inset-inline-end:-6px; width:22px; height:22px; border:none;
               border-radius:50%; background:#ffe0e0; color:var(--red); cursor:pointer; font-size:11px;}
   .seat .crown{position:absolute; top:-12px; inset-inline-start:-4px; font-size:17px;}
@@ -175,6 +192,11 @@
   #cTL .pp, #cBL .pp{flex-direction:row-reverse;}
   .pp.turn{border-color:var(--sd); box-shadow:0 0 0 3px var(--sc), 0 8px 18px rgba(0,0,0,.12); transform:translateY(-2px);}
   .pp.off{opacity:.45; filter:grayscale(.5);}
+  /* شارةُ «زميلك» على لوحة الزميل في الفرق */
+  .pp .tmb{display:none; position:absolute; top:-11px; inset-inline-start:12px; z-index:5; white-space:nowrap;
+           background:#2E9E5B; color:#fff; font-size:10.5px; font-weight:900; padding:1px 8px; border-radius:999px; border:2px solid #fff;
+           box-shadow:0 2px 5px rgba(0,0,0,.15);}
+  .pp.mate .tmb{display:block;}
   .pp .avw{position:relative; flex-shrink:0;}
   .pp .av{position:relative; width:58px; height:58px; border-radius:50%; background:var(--sc); overflow:hidden;
           border:3px solid #fff; box-shadow:0 0 0 2.5px var(--sd), 0 3px 0 var(--sd);
@@ -321,7 +343,15 @@
     .pp .nm{font-size:13px;}
     .die{width:38px; height:38px; padding:5px; border-radius:11px;}
     .pool i{width:18px; height:18px; font-size:11px;}
-    #seatGrid{grid-template-columns:1fr 1fr;}
+    #seatGrid{grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;}
+  }
+  /* الجوال: المقاعدُ أضيق — نقطةٌ أصغر وزرٌّ أصغر */
+  @media (max-width: 560px){
+    .seat{padding:8px 9px; gap:7px; border-radius:14px; min-height:58px;}
+    .seat .dot{width:26px; height:26px; border-width:2.5px;}
+    .seat .who b{font-size:13.5px;}
+    .seat .who small{font-size:11px;}
+    .seat .sitBtn{padding:5px 9px; font-size:12px; border-radius:9px;}
   }
 </style>
 <link rel="stylesheet" href="/kawaii.css">

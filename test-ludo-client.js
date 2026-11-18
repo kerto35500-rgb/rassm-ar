@@ -365,6 +365,16 @@ function freeze(room) {
   const B = openPage("B", "?r=" + code);
   await until(() => B.ctx._sock);
   ok(B.$("createBtn").style.display === "none" && /ادخل الغرفة/.test(B.$("joinBtn").textContent), "رابطُ الدعوة يعرض زرَّ الدخول وحده");
+  ok(B.$("pRoom").style.display === "none" && B.$("joinBtn").textContent.includes(code),
+     "وخانةُ الرمز مخفيّة فالزرُّ بعرض البطاقة والرقمُ كاملٌ فيه (كان يُقصّ في الجوال)", B.$("joinBtn").textContent);
+  {
+    /* دعوةٌ لغرفةٍ انتهت: تعود الخانةُ وزرُّ الإنشاء — لا يعلق الزائر */
+    const Z = openPage("Z", "?r=99999");
+    await until(() => Z.ctx._sock);
+    Z.$("pName").value = "زائر"; Z.click("joinBtn");
+    ok(await until(() => /لا توجد غرفة/.test(Z.$("joinErr").textContent)), "دعوةٌ منتهية ⇒ رسالة");
+    ok(Z.$("pRoom").style.display === "" && Z.$("createBtn").style.display === "", "وتعود خانةُ الرمز وزرُّ الإنشاء");
+  }
   B.$("pName").value = "فهد";
   B.click("joinBtn");
   ok(await until(() => B.shown("lobby")), "المدعوّ يدخل اللوبي");
@@ -378,10 +388,36 @@ function freeze(room) {
   ok(await until(() => /الظلام/.test(B.$("lobbySummary").textContent)), "ويصل الاختيار إلى الآخرين");
   A.$("sPU").querySelector('button[data-v="1"]').dispatch("click");
   ok(await until(() => A.$("sPUc").style.display === ""), "تفعيلُ المعزّزات يُظهر عددها");
+  /* المضيفُ يمنع أنواعًا بعينها */
+  {
+    const chips = () => A.$("sPUt").querySelectorAll("button");
+    ok(A.$("sPUt").style.display === "" && chips().length === 5 && chips().every(b => b.classList.contains("on")), "وأنواعَها الخمسة، مسموحةً كلُّها");
+    A.$("sPUt").querySelector('[data-p="swap"]').dispatch("click");
+    ok(await until(() => !A.$("sPUt").querySelector('[data-p="swap"]').classList.contains("on") &&
+                         roomOf(code).settings.powerTypes.join() === "gold,jump,bubble,wind"), "لمسةٌ تمنع «تبديل الأماكن» (وتصل الخادم)");
+    ok(await until(() => B.$("lobbySummary").textContent.includes("🦘") && !B.$("lobbySummary").textContent.includes("🔄")), "والملخّصُ عند الآخرين يعرض المسموح وحده", B.$("lobbySummary").textContent);
+    for (const k of ["gold", "jump", "bubble"]) A.$("sPUt").querySelector(`[data-p="${k}"]`).dispatch("click");
+    await until(() => roomOf(code).settings.powerTypes.join() === "wind");
+    A.$("sPUt").querySelector('[data-p="wind"]').dispatch("click");
+    await sleep(30);
+    ok(roomOf(code).settings.powerTypes.join() === "wind" && /واحدًا على الأقلّ/.test(A.$("toast").textContent), "ولا يُمنع آخرُ نوع", A.$("toast").textContent);
+    for (const k of ["gold", "jump", "bubble", "swap"]) A.$("sPUt").querySelector(`[data-p="${k}"]`).dispatch("click");
+    ok(await until(() => roomOf(code).settings.powerTypes.length === 5), "ولمسةٌ ثانيةٌ تُعيد المسموح");
+  }
   A.$("sTeams").querySelector('button[data-v="1"]').dispatch("click");
   ok(await until(() => A.$("rowShared").style.display === "" && A.$("rowPlayers").style.display === "none"),
      "الفرقُ تُظهر «التأمين المشترك» وتُخفي عدد اللاعبين");
   ok(await until(() => A.$("seatGrid").querySelectorAll(".teamTag").length === 2), "والمقاعدُ تُعرَض فريقين");
+  ok(/فريقك/.test(A.$("seatGrid").querySelector(".teamTag.mine").textContent) && /الأحمر/.test(A.$("seatGrid").querySelector(".teamTag.mine").textContent),
+     "وفريقي مُعلَّمٌ «فريقك» (الأحمر + الأصفر)");
+  ok(/صاحبك/.test(A.$("seatGrid").querySelector(".teamHint").textContent), "وتلميحٌ لمن يريد صاحبَه في فريقه");
+  /* فهد (الأخضر) يلمس المقعدَ الأصفر الفارغ — البطاقة نفسها لا الزرّ — فيصير زميلي */
+  B.$("seatGrid").querySelector(".seat.s2.empty").dispatch("click");
+  ok(await until(() => roomOf(code).slots[2] && roomOf(code).slots[2].name === "فهد"), "لمسُ المقعد الفارغ يُجلس فيه");
+  ok(await until(() => /فريقك/.test(B.$("seatGrid").querySelector(".teamTag.mine").textContent) &&
+                       /الأحمر/.test(B.$("seatGrid").querySelector(".teamTag.mine").textContent)), "فصار فهد في فريقي");
+  B.$("seatGrid").querySelector(".seat.s1.empty").dispatch("click");
+  await until(() => roomOf(code).slots[1] && roomOf(code).slots[1].name === "فهد");
   A.$("sTeams").querySelector('button[data-v="0"]').dispatch("click");
   A.$("sPU").querySelector('button[data-v="0"]').dispatch("click");
   await sleep(40);
@@ -397,6 +433,14 @@ function freeze(room) {
     A.click("startBtn");
     const started = await until(() => A.shown("play") && B.shown("play"), 5000);
     ok(started, `${mode}: بدأت المباراة واللوحةُ ظاهرةٌ عند الاثنين`);
+    if (mode === "king") {
+      /* الفرق: من زميلُك مكتوبٌ على لوحته (الزميلُ مقابلُك، لا جارُك) */
+      await until(() => A.doc.querySelector(".pp.s2 .meta") && A.doc.querySelector(".pp.s2 .meta").textContent);
+      ok(A.doc.querySelector(".pp.s2").classList.contains("mate") && /زميلك/.test(A.doc.querySelector(".pp.s2 .meta").textContent),
+         "الفرق: لوحةُ الزميل المقابل مكتوبٌ عليها «زميلك» وعليها شارتُه", A.doc.querySelector(".pp.s2 .meta").textContent);
+      ok(/خصم/.test(A.doc.querySelector(".pp.s1 .meta").textContent) && !A.doc.querySelector(".pp.s1").classList.contains("mate"),
+         "وجاري (الأخضر) خصمٌ لا زميل", A.doc.querySelector(".pp.s1 .meta").textContent);
+    }
     if (first) {
       first = false;
       ok(A.$("ludoBoard").style["--rot"] === "270deg", "اللوحة تدور حتى تكون قاعدةُ الأحمر أسفلَ اليسار", A.$("ludoBoard").style["--rot"]);

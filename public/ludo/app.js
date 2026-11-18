@@ -604,7 +604,7 @@
       '<div class="avw"><div class="av"><span class="pie"></span><span class="ini"></span></div><span class="autoTag">AUTO</span></div>' +
       '<div class="pinfo"><b class="nm"></b><small class="meta"></small>' +
       '<div class="dieRow"><span class="hand">👇</span><span class="pool"></span></div></div>' +
-      '<div class="bub"></div>';
+      '<span class="tmb">🤝 زميلك</span><div class="bub"></div>';
     const row = d.querySelector(".dieRow"), pool = d.querySelector(".pool");
     if (s === mySeat) {
       const b = $("diceBtn");
@@ -640,10 +640,15 @@
       const fin = (v.pieces[s] || []).filter(x => x.p === G.FINISH).length;
       d.querySelector(".ini").textContent = p.bot ? "🤖" : (String(p.name || "؟").trim().charAt(0) || "؟");
       d.querySelector(".nm").textContent = p.name + (p.gone && !p.bot ? " 💤" : "");
-      d.querySelector(".meta").textContent = "🏁 " + AR_NUM(fin) + "/٤" + (v.rules.teams ? (s % 2 ? " · ف٢" : " · ف١") : "");
+      /* في الفرق: من زميلُك ومن خصمُك — مكتوبًا على لوحته، لا رمزًا يُفهم بالتخمين.
+         (كان «ف١/ف٢» وحده، فظنّ اللاعبُ جارَه زميلَه: الزميلُ مقابلُك على اللوحة) */
+      const mate = v.rules.teams && s !== mySeat && mySeat != null && s % 2 === mySeat % 2;
+      d.querySelector(".meta").textContent = "🏁 " + AR_NUM(fin) + "/٤" +
+        (v.rules.teams ? (s === mySeat ? " · فريقك" : mate ? " · زميلك" : " · ⚔️ خصم") : "");
       const acting = v.phase !== "over" && (v.prompt ? v.prompt.seat === s : v.turn === s);
       d.classList.toggle("turn", acting);
       d.classList.toggle("me", s === mySeat);
+      d.classList.toggle("mate", !!mate);
       d.classList.toggle("auto", !!p.auto);
       d.classList.toggle("off", !!(v.out || {})[s]);
       d.classList.toggle("ready", s === mySeat && myRoll);
@@ -710,16 +715,21 @@
       const p = L.slots[i];
       const act = L.active.includes(i);
       const d = document.createElement("div");
-      d.className = "seat s" + i + (p && p.id === ME ? " me" : "") + (act ? "" : " off");
+      d.className = "seat s" + i + (p && p.id === ME ? " me" : "") + (act ? "" : " off") + (!p && act ? " empty" : "");
+      /* سطرٌ قصيرٌ تحت الاسم: اللونُ ثمّ الحال — كان «الأزرق · يجلس فيه بوت»
+         يتكسّر في الجوال على ثلاثة أسطر ويدفع البطاقة خارج الشاشة */
+      const status = p ? (p.id === ME ? "أنت" : p.gone ? "غائب" : "") : "";
       d.innerHTML = '<div class="dot"></div><div class="who">' +
-        (p ? "<b>" + esc(p.name) + (p.bot ? " 🤖" : "") + "</b><small>" + G.COLOR_AR[i] + (p.id === ME ? " · أنت" : "") + (p.gone ? " · غائب" : "") + "</small>"
-           : "<b style='opacity:.55'>" + (act ? "مقعدٌ فارغ" : "خارج اللعب") + "</b><small>" + G.COLOR_AR[i] + (act && settings.bots ? " · يجلس فيه بوت" : "") + "</small>") +
+        (p ? "<b>" + esc(p.name) + (p.bot ? " 🤖" : "") + "</b><small>" + G.COLOR_AR[i] + (status ? " · " + status : "") + "</small>"
+           : '<b class="ghost">' + (!act ? "خارج اللعب" : settings.bots ? "🤖 بوت" : "مقعدٌ فارغ") + "</b><small>" + G.COLOR_AR[i] + "</small>") +
         "</div>" + (p && p.host ? '<span class="crown">👑</span>' : "");
       if (!p && act) {
         const sit = document.createElement("button");
         sit.className = "sitBtn"; sit.textContent = "اجلس هنا";
-        sit.onclick = () => socket.emit("sit", { slot: i });
+        sit.onclick = e => { e.stopPropagation(); socket.emit("sit", { slot: i }); };
         d.appendChild(sit);
+        /* والبطاقةُ كلُّها تُلمَس — أسهل في الجوال من الزرّ الصغير */
+        d.onclick = () => socket.emit("sit", { slot: i });
       }
       if (p && host && p.id !== ME) {
         const k = document.createElement("button");
@@ -730,10 +740,18 @@
       return d;
     };
     if (settings.teams) {
-      grid.insertAdjacentHTML("beforeend", '<div class="teamTag">الفريق الأوّل: الأحمر + الأصفر</div>');
+      /* الزميلان متقابلان على اللوحة (الأحمر والأصفر، الأخضر والأزرق) — لا
+         متجاوران. فنقولها صراحةً، ونعلّم فريقك، وندلّ على طريقة الانضمام إلى
+         فريق صاحبك: لاعبان جلسا في مقعدين متجاورين خصمان لا زميلان. */
+      const mine = L.slots.findIndex(p => p && p.id === ME);
+      const myTeam = mine >= 0 ? mine % 2 : -1;
+      const tag = (t, txt) => '<div class="teamTag' + (t === myTeam ? " mine" : "") + '">' + txt + (t === myTeam ? " — فريقك 🤝" : "") + "</div>";
+      grid.insertAdjacentHTML("beforeend", tag(0, "الفريق الأوّل: 🔴 الأحمر + 🟡 الأصفر"));
       grid.appendChild(seatCard(0)); grid.appendChild(seatCard(2));
-      grid.insertAdjacentHTML("beforeend", '<div class="teamTag">الفريق الثاني: الأخضر + الأزرق</div>');
+      grid.insertAdjacentHTML("beforeend", tag(1, "الفريق الثاني: 🟢 الأخضر + 🔵 الأزرق"));
       grid.appendChild(seatCard(1)); grid.appendChild(seatCard(3));
+      if (L.slots.some((p, i) => !p && L.active.includes(i)))
+        grid.insertAdjacentHTML("beforeend", '<div class="teamHint">تريد صاحبك في فريقك؟ يلمس المقعدَ الفارغ في صفّ فريقك فينتقل إليه.</div>');
     } else order.forEach(i => grid.appendChild(seatCard(i)));
     $("plCount").textContent = "(" + AR_NUM(L.slots.filter(Boolean).length) + "/" + AR_NUM(L.active.length) + ")";
 
@@ -749,7 +767,8 @@
   function summary(S) {
     return (MODE_ICON[S.mode] || "") + " <b>" + esc(NAMES.modes[S.mode] || S.mode) + "</b> — " + esc(MODE_DESC[S.mode] || "") +
       "<br>" + (S.teams ? "فرق ٢ ضدّ ٢" + (S.sharedSafe ? " · تأمينٌ مشترك" : "") : S.players === 2 ? "لاعبان" : AR_NUM(S.players) + " لاعبين") +
-      (S.powerups ? " · " + AR_NUM(S.powerCount) + " معزّزات" : " · بلا معزّزات") + " · " + AR_NUM(S.turnSecs) + "ث للدور";
+      (S.powerups ? " · " + AR_NUM(S.powerCount) + " معزّزات " + typesOf(S).map(k => NAMES.icons[k] || "").join("") : " · بلا معزّزات") +
+      " · " + AR_NUM(S.turnSecs) + "ث للدور";
   }
 
   function buildSettings() {
@@ -762,13 +781,14 @@
         <div class="hint">في الفرق: الأحمر والأصفر ضدّ الأخضر والأزرق، ومن أنهى قطعه يرمي لزميله.</div></div>
       <div class="setRow" id="rowShared"><label>التأمين المشترك</label>
         <div class="seg" id="sShared"><button data-v="0">إيقاف</button><button data-v="1">تشغيل</button></div>
-        <div class="hint">يقف الزميلان في مربّعٍ واحدٍ فيصير آمنًا لا يُؤكلان فيه.</div></div>
+        <div class="hint">تشغيل: يقف الزميلان في مربّعٍ واحدٍ فيصير آمنًا لا يُؤكلان فيه. إيقاف: لا يقفان معًا إلا على النجوم والانطلاق. وفي الحالتين لا يأكل زميلٌ زميلَه — وزميلُك مقابلُك على اللوحة لا جارُك.</div></div>
       <div class="setRow" id="rowPlayers"><label>عدد اللاعبين</label>
         <div class="seg" id="sPlayers"><button data-v="2">٢</button><button data-v="3">٣</button><button data-v="4">٤</button></div></div>
       <div class="setRow"><label>المعزّزات السحريّة</label>
         <div class="seg" id="sPU"><button data-v="0">إيقاف</button><button data-v="1">تشغيل ✨</button></div>
         <select id="sPUc"><option value="3">٣ على اللوحة</option><option value="4">٤ على اللوحة</option><option value="5">٥ على اللوحة</option><option value="6">٦ على اللوحة</option></select>
-        <div class="hint">🎲 نردٌ ذهبيّ · 🦘 قفزة الحظّ · 🫧 درع الفقاعة · 🌬️ الرياح العكسيّة · 🔄 تبديل الأماكن — تُلتقَط بالوقوف التامّ عليها.</div></div>
+        <div class="puPick" id="sPUt"></div>
+        <div class="hint" id="sPUhint">اضغط على معزّزٍ لتمنعه أو تسمح به — تُلتقَط المعزّزاتُ بالوقوف التامّ عليها.</div></div>
       <div class="setRow"><label>مهلة الدور</label>
         <select id="sSecs"><option value="10">١٠ث</option><option value="15">١٥ث</option><option value="20">٢٠ث</option><option value="30">٣٠ث</option></select></div>
       <div class="setRow"><label>البوتات في المقاعد الفارغة</label>
@@ -791,7 +811,24 @@
     seg("sDiff", "botDiff", Number);
     $("sPUc").onchange = () => push({ powerCount: +$("sPUc").value });
     $("sSecs").onchange = () => push({ turnSecs: +$("sSecs").value });
+    /* أنواعُ المعزّزات: زرٌّ لكلّ نوع، يُمنَع بلمسة ويُسمَح بأخرى (ويبقى واحدٌ على الأقلّ) */
+    const pt = $("sPUt");
+    for (const k of POWER_KEYS) {
+      const b = document.createElement("button");
+      b.type = "button"; b.dataset.p = k;
+      b.innerHTML = '<span class="pi">' + (NAMES.icons[k] || "") + "</span>" + esc(NAMES.powers[k] || k);
+      b.onclick = () => {
+        const cur = typesOf(settings);
+        const next = cur.includes(k) ? cur.filter(x => x !== k) : POWER_KEYS.filter(x => x === k || cur.includes(x));
+        if (!next.length) return toast("اترك معزّزًا واحدًا على الأقلّ — أو أوقف المعزّزات كلَّها");
+        push({ powerTypes: next });
+      };
+      pt.appendChild(b);
+    }
   }
+  /* أنواعُ المعزّزات المسموحة (الإعداداتُ القديمة بلا قائمة ⇒ كلُّها) */
+  const POWER_KEYS = ["gold", "jump", "bubble", "wind", "swap"];
+  const typesOf = S => (S && Array.isArray(S.powerTypes) && S.powerTypes.length ? POWER_KEYS.filter(k => S.powerTypes.includes(k)) : POWER_KEYS.slice());
   /* نُرسل **التغيير وحده** لا الإعداداتِ كلَّها: لو أرسلنا نسختنا كاملةً
      ونقر المضيفُ خيارين أسرعَ من ردّ الخادم، لحملت النقرةُ الثانيةُ قيمةَ
      الأولى القديمة فألغتها (أطفأ البوتات ثمّ اختار العدد ⇒ عادت البوتات).
@@ -810,6 +847,14 @@
     $("rowShared").style.display = S.teams ? "" : "none";
     $("rowPlayers").style.display = S.teams ? "none" : "";
     $("sPUc").style.display = S.powerups ? "" : "none";
+    $("sPUt").style.display = S.powerups ? "" : "none";
+    $("sPUhint").style.display = S.powerups ? "" : "none";
+    const allowed = typesOf(S);
+    $("sPUt").querySelectorAll("button").forEach(b => {
+      const on = allowed.includes(b.dataset.p);
+      b.classList.toggle("on", on);
+      b.title = on ? "مسموح — اضغط لتمنعه" : "ممنوع — اضغط لتسمح به";
+    });
     $("sPUc").value = String(S.powerCount); $("sSecs").value = String(S.turnSecs);
     $("sDiff").style.display = S.bots ? "" : "none";
   }
@@ -819,7 +864,10 @@
   /* ══════════ القواعد ══════════ */
   function rulesHTML(mode) {
     const r = (t, b) => '<div class="rule"><b>' + t + "</b>" + b + "</div>";
-    const pu = (k, t) => '<div class="rule pu"><span class="ic" style="background:' + PU_BG[k] + '">' + (NAMES.icons[k] || "") + "</span><div><b>" + esc(NAMES.powers[k] || k) + "</b>" + t + "</div></div>";
+    /* ما منعه مضيفُ الغرفة يُعرض باهتًا بعلامة «ممنوع» */
+    const allowed = typesOf((VIEW && VIEW.rules) || settings);
+    const pu = (k, t) => '<div class="rule pu' + (allowed.includes(k) ? "" : " off") + '"><span class="ic" style="background:' + PU_BG[k] + '">' +
+      (NAMES.icons[k] || "") + "</span><div><b>" + esc(NAMES.powers[k] || k) + (allowed.includes(k) ? "" : " — 🚫 ممنوعٌ في هذه الغرفة") + "</b>" + t + "</div></div>";
     const M = {
       classic: r("🎲 الكلاسيكيّ", "أوصِل قطعك الأربع إلى المركز أوّلًا."),
       rush: r("⚡ السريع", "تبدأ قطعةٌ لكلّ لاعبٍ على مربّع انطلاقه، وأوّلُ قطعةٍ تصل المركز تفوز."),
@@ -834,7 +882,8 @@
         "والنردُ نردُ لعبة يلا لودو: الستّةُ تأتي أكثرَ قليلًا (نحو ٢٣٪)، وإن كانت قطعُك كلُّها في القاعدة ساعدك بستّةٍ أكثر.") +
       r("⏱️ الوقت", "لكلّ خطوةٍ مهلة تظهر دائرةً تنقص فوق صورتك. إن انتهت لعب عنك اللعبُ التلقائيّ (AUTO) حتى تلمس الشاشة.") +
       (M[mode] || "") +
-      r("👥 الفرق ٢ ضدّ ٢", "الأحمر والأصفر ضدّ الأخضر والأزرق. لا يأكل الزميلُ زميله. من أنهى قطعه يرمي النرد ويحرّك قطع زميله. «التأمين المشترك» يجعل المربّع الذي يقف فيه زميلان آمنًا.") +
+      r("👥 الفرق ٢ ضدّ ٢", "الأحمر والأصفر ضدّ الأخضر والأزرق — زميلُك <b style='display:inline'>مقابلُك</b> على اللوحة لا جارُك، ومكتوبٌ «زميلك» على لوحته. لا يأكل الزميلُ زميله أبدًا. من أنهى قطعه يرمي النرد ويحرّك قطع زميله. " +
+        "«التأمين المشترك» مفعّلًا: يقف الزميلان في مربّعٍ واحدٍ فيصير آمنًا لا يُؤكلان فيه؛ ومطفأً: لا يقفان معًا إلا على النجوم ومربّعات الانطلاق.") +
       '<div class="modeTag" style="margin-top:4px">✨ المعزّزات (حين تُفعَّل)</div>' +
       pu("gold", "رميتُك القادمة ستّةٌ مضمونة.") +
       pu("jump", "تتقدّم القطعةُ ١ إلى ٣ مربّعاتٍ عشوائيًّا.") +
@@ -960,11 +1009,25 @@
   /* ══════════ الاتّصال والدخول ══════════ */
   socket = io("/ludo");
   const invite = new URLSearchParams(location.search).get("r");
+  /* رابطُ دعوة: الرمزُ معروفٌ من الرابط، فلا خانةَ له — والزرُّ بعرض البطاقة.
+     كانت الخانةُ تأخذ نصفَ الصفّ فيُقصّ رقمُ الغرفة في زرّ «ادخل الغرفة» على
+     الجوال. والرقمُ معزولٌ اتّجاهيًّا (⁨…⁩) كي لا يلتصق بالنصّ العربيّ حوله. */
+  const BIDI = s => "⁨" + s + "⁩";
   if (invite) {
-    $("pRoom").value = invite.trim().slice(0, 6);
+    const code = invite.trim().slice(0, 6);
+    $("pRoom").value = code;
+    $("pRoom").style.display = "none";
     $("createBtn").style.display = "none";
-    $("joinBtn").textContent = "🚪 ادخل الغرفة " + invite;
-    document.querySelector(".divider").textContent = "— دعوة لغرفة " + invite + " —";
+    $("joinBtn").textContent = "🚪 ادخل الغرفة " + BIDI(code);
+    document.querySelector(".divider").textContent = "— دعوة لغرفة " + BIDI(code) + " —";
+  }
+  /* دعوةٌ لغرفةٍ انتهت: نُعيد الخانةَ وزرَّ الإنشاء — وإلا علق الزائرُ بلا مخرج */
+  function inviteFailed() {
+    if (!invite) return;
+    $("pRoom").style.display = "";
+    $("createBtn").style.display = "";
+    $("joinBtn").textContent = "انضمام 🚪";
+    document.querySelector(".divider").textContent = "— أو انضم لغرفة موجودة —";
   }
 
   socket.on("hello", h => {
@@ -988,7 +1051,11 @@
     const n = needName(); if (!n) return;
     const r = $("pRoom").value.trim();
     if (!r) return ($("joinErr").textContent = "اكتب رمز الغرفة");
-    socket.emit("joinRoom", { name: n, roomId: r }, res => res.ok ? enter(res) : ($("joinErr").textContent = res.error || "تعذّر الانضمام"));
+    socket.emit("joinRoom", { name: n, roomId: r }, res => {
+      if (res.ok) return enter(res);
+      $("joinErr").textContent = res.error || "تعذّر الانضمام";
+      inviteFailed();
+    });
   };
   $("pName").onkeydown = e => { if (e.key === "Enter") ($("pRoom").value.trim() ? $("joinBtn") : $("createBtn")).click(); };
   $("pRoom").onkeydown = e => { if (e.key === "Enter") $("joinBtn").click(); };

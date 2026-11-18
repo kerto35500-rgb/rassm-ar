@@ -73,6 +73,7 @@
   .backLink:active { transform:none; }
   .row2 { display:flex; gap:8px; }
   .row2 > * { flex:1 1 0; min-width:0; }
+  .row2 .btn { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
   /* ===== شاشة اللعبة ===== */
   #gameScreen { display:none; flex-direction:column; height:100vh; padding:8px; gap:8px; max-width:1250px; margin:0 auto; }
@@ -956,12 +957,24 @@ function enterGame(roomId) {
 
 // رابط دعوة: ?r=CODE يدخل الغرفة مباشرة بمجرد كتابة الاسم
 const inviteRoom = new URLSearchParams(location.search).get("r");
+/* الرمزُ من الرابط فلا خانةَ له والزرُّ بعرض البطاقة — كان رقمُ الغرفة يُقصّ في
+   الزرّ على الجوال. والرقمُ معزولٌ اتّجاهيًّا (⁨…⁩) فلا يلتصق بما حوله */
 if (inviteRoom) {
-  $("roomInput").value = inviteRoom.trim().slice(0, 6);
+  const code = inviteRoom.trim().slice(0, 6);
+  $("roomInput").value = code;
+  $("roomInput").style.display = "none";
   $("createBtn").style.display = "none";
-  $("joinBtn").textContent = "ادخل الغرفة " + inviteRoom + " 🚪";
-  document.querySelector("#lobbyScreen .divider").textContent = "— دعوة لغرفة " + inviteRoom + " —";
+  $("joinBtn").textContent = "ادخل الغرفة ⁨" + code + "⁩ 🚪";
+  document.querySelector("#lobbyScreen .divider").textContent = "— دعوة لغرفة ⁨" + code + "⁩ —";
   $("nameInput").placeholder = "اكتب اسمك للدخول";
+}
+/* دعوةٌ لغرفةٍ انتهت: تعود الخانةُ وزرُّ الإنشاء */
+function inviteFailed() {
+  if (!inviteRoom) return;
+  $("roomInput").style.display = "";
+  $("createBtn").style.display = "";
+  $("joinBtn").textContent = "انضمام 🚪";
+  document.querySelector("#lobbyScreen .divider").textContent = "— أو انضم لغرفة موجودة —";
 }
 $("createBtn").onclick = () => {
   const name = $("nameInput").value.trim();
@@ -977,7 +990,7 @@ $("joinBtn").onclick = () => {
   if (!roomId) return $("joinError").textContent = "اكتب رمز الغرفة";
   socket.emit("joinRoom", { name, roomId }, res => {
     if (res.ok) { joinedRoomId = roomId; joinedName = name; enterGame(roomId); }
-    else $("joinError").textContent = res.error;
+    else { $("joinError").textContent = res.error; inviteFailed(); }
   });
 };
 
