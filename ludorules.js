@@ -221,7 +221,6 @@ class LudoMatch {
     /* بركةُ الدور: الأرقامُ المرميّة التي لم تُنفَق بعد، بترتيب رميها.
        {v: الرقم، g: ذهبيّ؟} — الستّةُ الذهبيّة هديّةٌ لا تُحسَب في عقوبة الثلاث */
     this.pool = [];
-    this.sixRun = 0;         /* ستّاتُ الرمية الجارية المتتالية (عقوبةُ الثلاث) */
     this.legal = [];
     this.queue = [];
     this.prompt = null;
@@ -421,13 +420,20 @@ class LudoMatch {
     return v < 1 ? 1 : v > 6 ? 6 : v;
   }
 
-  /** ثلاثُ ستّاتٍ متتالية **في الرمية الجارية** (المرجع: yalla.util.isThreeSix).
-      كانت تُعَدّ من البركة كلّها، فتختلط الستّاتُ الباقية من رميةٍ سابقة
-      بستّات رمية المكافأة بعد الأكل: ٦ ٦ ٣ ← لُعبت الثلاثة فأكلت ← بقي ٦ ٦ ←
-      رميةُ المكافأة ٦ ⇒ «ثلاث ستّات» وضاع الدور ظلمًا. والصحيح أنّ كلَّ رميةٍ
-      تعدّ ستّاتها هي — فيرمي اللاعبُ في دوره أكثرَ من ثلاثة نرود (٦ ٦ ٣ ثمّ
-      أكلٌ ثمّ ٦ ثمّ رقمٌ آخر…). والذهبيّةُ لا تُعَدّ ولا تقطع العدّ. */
-  threeSix() { return this.sixRun >= 3; }
+  /** ثلاثُ ستّاتٍ متتالية في البركة ⇒ يُلغى الدور — كلعبة المرجع حرفيًّا
+      (yalla.util.isThreeSix يعدّ الستّاتِ المتتالية في numArray حتى آخر رقم):
+      ستّتان باقيتان ثمّ ستّةُ المكافأة بعد الأكل ثلاثٌ متتالية ⇒ يُلغى.
+      ولا يمنع ذلك أكثرَ من ثلاثة نرودٍ في الدور حين يفصل بين الستّات رقمٌ
+      آخر: ٦ ٦ ٣ ← لُعبت ستّةٌ فأكلت ← بقي ٦ ٣ ← المكافأة ٦ ثمّ ٢ (مثالُ
+      المستخدم). والستّةُ الذهبيّة (المعزّز) لا تُعَدّ ولا تقطع العدّ. */
+  threeSix() {
+    let n = 0;
+    for (const x of this.pool) {
+      if (x.g) continue;
+      n = x.v === 6 ? n + 1 : 0;
+    }
+    return n >= 3;
+  }
 
   /** بعد رقمٍ غير الستّة، أو بعد حركةٍ بقي في البركة بعدها شيء: نعرض ما
       يُلعَب بالبركة. لا شيء ⇒ ينتقل الدور (وتضيع الأرقامُ التي لا تُلعَب). */
@@ -460,8 +466,6 @@ class LudoMatch {
     else if (this._loaded && this._loaded.length) v = this._loaded.shift();
     else v = this.rollDie(seat);
     this.pool.push({ v, g: !!golden });
-    /* عدّادُ ستّات الرمية الجارية: ستّةٌ تزيده، وغيرُها يصفّره، والذهبيّةُ لا تمسّه */
-    if (!golden) this.sixRun = v === 6 ? (this.sixRun || 0) + 1 : 0;
     this.dice = v;
     this.ev({ t: "roll", seat, v, golden, pool: this.pool.map(x => x.v) });
 
@@ -822,7 +826,6 @@ class LudoMatch {
        مع ما يأتي (المرجع: status = THROW_START دون random.clear) */
     if (a && (a.extra || a.captured)) {
       this.phase = "roll";
-      this.sixRun = 0;            /* رميةُ المكافأة تعدّ ستّاتها من الصفر */
       this.ev({ t: "again", seat: this.turn, why: a.captured ? "capture" : "home" });
       return;
     }
@@ -845,7 +848,6 @@ class LudoMatch {
   nextTurn() {
     this.endOfTurn(this.turn);
     this.pool = [];
-    this.sixRun = 0;
     this.phase = "roll";
     this.dice = null;
     this.legal = [];

@@ -14,7 +14,7 @@ const ok = (c, m, x) => { c ? P++ : F++; console.log((c ? "  ✅ " : "  ❌ ") +
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
 
 const mk = (rules, seats, seed = 1) => { const m = new L.LudoMatch(rules, seats, seed); m.takeEvents(); return m; };
-const turnTo = (m, s) => { m.turn = s; m.phase = "roll"; m.dice = null; m.pool = []; m.legal = []; m.sixRun = 0; };
+const turnTo = (m, s) => { m.turn = s; m.phase = "roll"; m.dice = null; m.pool = []; m.legal = []; };
 const put = (m, seat, idx, p) => { m.pieces[seat][idx].p = p; };
 const rollAs = (m, seat, v) => { m._loaded = [v]; m.roll(seat); };
 /* الستّةُ تُرمى بعدها أخرى قبل الحركة: رميُ تسلسلٍ كامل (٦ ثمّ ٤ مثلًا) */
@@ -99,45 +99,52 @@ console.log("② القواعد الأساسيّة (من لعبة المرجع)"
   eq(m.turn, 2, "وينتهي الدور");
   eq(m.pool.length, 0, "وتُفرَّغ البركة");
 
-  /* أكثرُ من ثلاثة نرودٍ في الدور (طلبُ المستخدم): ٦ ٦ ٣ ← الثلاثةُ تأكل ← بقي
-     ٦ ٦ ← رميةُ المكافأة ٦ ثمّ ٢. كانت «ثلاث ستّات» تُعَدّ من البركة كلّها
-     فتجمع الستّتين الباقيتين مع ستّة المكافأة ويضيع الدورُ ظلمًا. */
+  /* «ثلاثُ ستّاتٍ متتالية تُلغي الدور» كلعبة المرجع (isThreeSix على البركة)،
+     ومعها أكثرُ من ثلاثة نرودٍ في الدور حين يفصل بين الستّات رقم — مثالُ
+     المستخدم: ٦ ٦ ٣ ← لُعبت ستّةٌ فأكلت ← بقي ٦ ٣ ← المكافأة ٦ ثمّ ٢. */
   {
-    /* أوّلُ موضعٍ تنزل منه الثلاثةُ على مربّعٍ غيرِ آمن (النجومُ لا يُؤكل فيها) */
+    /* موضعٌ تنزل منه الستّةُ على مربّعٍ غيرِ آمن (النجومُ لا يُؤكل فيها) */
     let from = 5;
-    while (L.SAFE.has(absOf(0, from + 3))) from++;
-    const setup = () => {
+    while (L.SAFE.has(absOf(0, from + 6)) || L.SAFE.has(absOf(0, from + 3))) from++;
+    const setup = (d) => {
       const mm = mk({ mode: "classic" }, [0, 2]);
-      turnTo(mm, 0); put(mm, 0, 0, from); put(mm, 0, 1, 30);
-      const target = absOf(0, from + 3);
+      turnTo(mm, 0); put(mm, 0, 0, from); put(mm, 0, 1, 40);
+      const target = absOf(0, from + d);
       put(mm, 2, 0, rel(2, target));
       return { mm, target };
     };
-    let { mm, target } = setup();
+    let { mm, target } = setup(6);
     ok(!L.SAFE.has(target), "(مربّعُ الأكل غيرُ آمن)");
     rollSeq(mm, 0, [6, 6, 3]);
     eq(pool(mm), [6, 6, 3], "٦ ٦ ٣ في البركة");
-    goD(mm, 0, 0, 0, 3);
-    ok(mm.pieces[2][0].p === BASE && mm.phase === "roll" && mm.turn === 0, "الثلاثةُ أكلت ⇒ رميةُ مكافأة");
-    eq(pool(mm), [6, 6], "والستّتان باقيتان");
+    goD(mm, 0, 0, 0, 6);
+    ok(mm.pieces[2][0].p === BASE && mm.phase === "roll" && mm.turn === 0, "ستّةٌ أكلت ⇒ رميةُ مكافأة");
+    eq(pool(mm), [6, 3], "وبقي ٦ ٣");
     rollAs(mm, 0, 6);
-    ok(mm.turn === 0 && mm.phase === "roll", "ستّةُ المكافأة لا تُكمل «ثلاث ستّات» مع الباقي — يرمي ثانية", { turn: mm.turn, phase: mm.phase });
+    ok(mm.turn === 0 && mm.phase === "roll", "ستّةُ المكافأة بعد الثلاثة ليست ثالثةً متتالية — يرمي ثانية", { turn: mm.turn, phase: mm.phase });
     rollAs(mm, 0, 2);
-    eq(pool(mm), [6, 6, 6, 2], "خمسةُ نرودٍ في دورٍ واحد: ٦ ٦ ٣ ثمّ ٦ ٢");
+    eq(pool(mm), [6, 3, 6, 2], "خمسةُ نرودٍ في دورٍ واحد: ٦ ٦ ٣ ثمّ ٦ ٢");
     ok(mm.phase === "move" && mm.legal.some(x => x.d === 2) && mm.legal.some(x => x.d === 6), "وكلُّها تُلعَب");
 
-    ({ mm } = setup());
+    /* ستّتان باقيتان + ستّةُ المكافأة = ثلاثٌ متتالية في البركة ⇒ يُلغى (كالمرجع) */
+    ({ mm } = setup(3));
     rollSeq(mm, 0, [6, 6, 3]); goD(mm, 0, 0, 0, 3);
-    rollSeq(mm, 0, [6, 6, 6]);
-    ok(mm.turn === 2 && mm.pool.length === 0, "أمّا ثلاثُ ستّاتٍ في رمية المكافأة نفسها فتُضيّع الدور", { turn: mm.turn, pool: pool(mm) });
+    eq(pool(mm), [6, 6], "الثلاثةُ أكلت فبقيت ستّتان");
+    rollAs(mm, 0, 6);
+    ok(mm.turn === 2 && mm.pool.length === 0, "فستّةُ المكافأة ثالثتُهما ⇒ يُلغى الدور", { turn: mm.turn, pool: pool(mm) });
 
-    /* والذهبيّةُ لا تُعَدّ: ٦ ٦ ثمّ ذهبيّة ثمّ ٦ ⇒ ثلاثٌ عاديّة لا أربع */
+    ({ mm } = setup(6));
+    rollSeq(mm, 0, [6, 6, 3]); goD(mm, 0, 0, 0, 6);
+    rollSeq(mm, 0, [6, 6, 6]);
+    ok(mm.turn === 2 && mm.pool.length === 0, "وثلاثُ ستّاتٍ في رمية المكافأة نفسها تُلغيه", { turn: mm.turn, pool: pool(mm) });
+
+    /* والذهبيّةُ لا تُعَدّ: ٦ ٦ ثمّ ذهبيّة ثمّ ٦ ⇒ الثالثةُ العاديّة تُلغي */
     mm = mk({ mode: "classic" }, [0, 2]);
     turnTo(mm, 0); put(mm, 0, 0, 10);
     rollSeq(mm, 0, [6, 6]); mm.golden[0] = true; mm.roll(0);
-    ok(mm.turn === 0 && mm.phase === "roll" && mm.sixRun === 2, "الذهبيّةُ لا تزيد العدّاد ولا تصفّره", mm.sixRun);
+    ok(mm.turn === 0 && mm.phase === "roll", "الذهبيّةُ لا تُحسَب ثالثة");
     rollAs(mm, 0, 6);
-    ok(mm.turn === 2, "والستّةُ العاديّةُ الثالثة تُضيّع الدور");
+    ok(mm.turn === 2, "والستّةُ العاديّةُ الثالثة تُلغي الدور");
 
     /* القاعدةُ باقية (طلبُ المستخدم): ثلاثُ ستّاتٍ متتالية تُلغي الدور — من أوّل رمية */
     mm = mk({ mode: "classic" }, [0, 2]);

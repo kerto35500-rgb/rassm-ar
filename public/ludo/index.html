@@ -279,8 +279,15 @@
   #picker::after{content:""; position:absolute; left:50%; bottom:-9px; margin-left:-8px; border:8px solid transparent;
                  border-bottom:0; border-top-color:#fff;}
 
-  #promptBar{display:none; width:min(100%,640px); border-radius:14px; padding:9px 12px; font-weight:900; text-align:center;
-             background:#fff3f0; border:2.5px solid #ffb3a7; color:#b3261e; font-size:14px;}
+  /* سطرُ «اختر خصمًا تبدّل معه»: يطفو فوق اللوحة لا يُدفع في الصفحة — كان يظهر
+     فوقها فينزل كلُّ شيءٍ تحته ثمّ يصعد. ومكانُه صفُّ المنتصف (مسارا النهاية
+     والمركز): لا قطعةَ تُبدَّل هناك، فلا يغطّي هدفًا — ومهما دارت اللوحة
+     ربعًا بقي الصفُّ الأوسط مساراتِ نهاية. ولا يحجب النقر. */
+  #promptBar{display:none; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:84%; z-index:25;
+             pointer-events:none; border-radius:999px; padding:4px 12px; font-weight:900; text-align:center;
+             white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.35;
+             background:rgba(255,243,240,.95); border:2px solid #ffb3a7; color:#b3261e;
+             font-size:clamp(11px, 2.4vw, 14px); box-shadow:0 4px 12px rgba(0,0,0,.16);}
 
   /* المهامّ: شريطٌ فوق اللوحة */
   #missionCard{display:none; padding:8px 10px; flex-direction:row; flex-wrap:wrap; gap:6px; width:min(100%, 900px);}
@@ -423,7 +430,6 @@
     <div id="play">
       <div id="playTop">
         <div class="card" id="missionCard"></div>
-        <div id="promptBar"></div>
       </div>
       <!-- اللوحة في الوسط وكلُّ لاعبٍ في زاويته؛ الزوايا تُملأ حسب مقعدك
            (أنت أسفلَ اليسار دائمًا، ثمّ مع عقارب الساعة) -->
@@ -433,6 +439,7 @@
         <div id="boardBox">
           <div id="ludoBoard"><svg id="boardSvg" viewBox="0 0 15 15" aria-label="لوحة اللودو"></svg><div id="toks"></div></div>
           <div id="picker" aria-label="اختر الرقم"></div>
+          <div id="promptBar"></div>
         </div>
         <div class="corner" id="cBL"></div>
         <div class="corner" id="cBR"></div>

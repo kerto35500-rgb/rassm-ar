@@ -359,6 +359,10 @@ function freeze(room) {
   ok(svgKids > 90, "اللوحة مرسومة (قواعد + ٥٢ مربّعًا + مسارات + مركز)", svgKids);
   ok(A.$("boardSvg").querySelectorAll("polygon").length >= 4 + 4 + 4, "النجوم والأسهم مضلّعاتٌ لا محارف", A.$("boardSvg").querySelectorAll("polygon").length);
   ok(!A.$("boardSvg").querySelectorAll("text").length, "ولا نصَّ في اللوحة الثابتة (لا إيموجي يختلف بين الأجهزة)");
+  /* سطرُ «اختر خصمًا تبدّل معه» يطفو فوق اللوحة — لا يُدفع في الصفحة فينزلها */
+  ok(A.$("boardBox").querySelector("#promptBar") && !A.$("playTop").querySelector("#promptBar"),
+     "سطرُ التبديل داخل صندوق اللوحة (طافٍ) لا فوقها في مجرى الصفحة");
+  ok(/#promptBar\{[^}]*position:absolute/.test(HTML) && /#promptBar\{[^}]*pointer-events:none/.test(HTML), "مطلقُ الموضع ولا يحجب النقر");
   /* مظاهرُ اللوحة: الهادئُ افتراضًا، ومربّعاتُ النجوم رماديّة، و🎨 يبدّل */
   {
     const fills = () => A.$("boardSvg").querySelectorAll("rect").map(r => r.getAttribute("fill"));
