@@ -594,7 +594,7 @@ function freeze(room) {
     bSock.fire("roll");
     ok(await until(() => A.$("sacModal").classList.contains("on"), 4000), "هجومٌ على الملك ⇒ نافذةُ التضحية عند صاحبه");
     ok(A.$("sacChoices").children.length === 2, "بخيارين: الحارسُ الذي على اللوحة، أو تركُ الملك", A.$("sacChoices").textContent);
-    ok(await until(() => /ينتظر/.test(B.$("promptBar").textContent) && B.$("promptBar").style.display === "block"), "والخصمُ يرى أنّه ينتظر القرار");
+    ok(await until(() => /⏳.*يقرّر التضحية/.test(B.$("promptBar").textContent) && B.$("promptBar").style.display === "block"), "والخصمُ يرى أنّه ينتظر القرار (فوق اللوحة)");
     A.$("sacModal").dispatch("click");             /* نقرٌ خارج النافذة */
     ok(A.$("sacModal").classList.contains("on"), "ونقرةٌ خارج النافذة لا تُغلقها (السؤال ينتظر جوابًا)");
     A.$("sacChoices").children[0].dispatch("click");
@@ -644,7 +644,7 @@ function freeze(room) {
     aSock.fire("roll");
     ok(await until(() => A.doc.querySelectorAll(".tok.target").length === 2, 4000), "التبديل: الخصمان في النطاق متوهّجان للاختيار",
        A.doc.querySelectorAll(".tok.target").length);
-    ok(/اختر خصمًا/.test(A.$("promptBar").textContent), "والشريطُ يقول ما المطلوب");
+    ok(/اختر قطعةَ خصمٍ/.test(A.$("promptBar").textContent) && A.$("promptBar").style.display === "block", "والسطرُ الطافي فوق اللوحة يقول ما المطلوب");
     const before = m.pieces[sa][0].p;
     A.doc.querySelectorAll(".tok.target")[0].dispatch("click");
     ok(await until(() => m.pieces[sa][0].p !== before && !m.prompt), "نقرُ أحدهما يبدّل المكانين", { before, now: m.pieces[sa][0].p });
