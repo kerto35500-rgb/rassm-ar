@@ -195,6 +195,7 @@ function parseInto(root, html) {
 function makeDocument(bodyHtml, bodyAttrs) {
   const doc = { readyState: "complete" };
   doc.body = new El("body", doc); doc.head = new El("head", doc);
+  doc.documentElement = new El("html", doc);      /* مظهرُ اللوحة يضبط ألوانَ المقاعد عليه */
   for (const [k, v] of Object.entries(bodyAttrs)) doc.body.setAttribute(k, v);
   doc.createElement = t => new El(t, doc);
   doc.createElementNS = (ns, t) => new El(t, doc);
@@ -256,6 +257,7 @@ function connectClient() {
 /* ══════════ متصفّحٌ مصغّر: صفحةٌ من index.html تعمل فيها سكربتاتُها ══════════ */
 const errors = [];
 const seen = { power: 0, toasts: [] };
+const G_STARS = require("./public/ludo/geom.js").STARS.length;
 process.on("uncaughtException", e => errors.push(e));
 process.on("unhandledRejection", e => errors.push(e));
 
@@ -357,6 +359,23 @@ function freeze(room) {
   ok(svgKids > 90, "اللوحة مرسومة (قواعد + ٥٢ مربّعًا + مسارات + مركز)", svgKids);
   ok(A.$("boardSvg").querySelectorAll("polygon").length >= 4 + 4 + 4, "النجوم والأسهم مضلّعاتٌ لا محارف", A.$("boardSvg").querySelectorAll("polygon").length);
   ok(!A.$("boardSvg").querySelectorAll("text").length, "ولا نصَّ في اللوحة الثابتة (لا إيموجي يختلف بين الأجهزة)");
+  /* مظاهرُ اللوحة: الهادئُ افتراضًا، ومربّعاتُ النجوم رماديّة، و🎨 يبدّل */
+  {
+    const fills = () => A.$("boardSvg").querySelectorAll("rect").map(r => r.getAttribute("fill"));
+    ok(fills()[0] === "#F5EFE4", "اللوحةُ بالمظهر الهادئ افتراضًا (لا الألوان الزاهية)", fills()[0]);
+    ok(fills().filter(f => f === "#E1DED8").length === G_STARS, "مربّعاتُ النجوم رماديّةٌ تُميَّز", fills().filter(f => f === "#E1DED8").length);
+    A.click("themeBtn");
+    ok(A.$("themeModal").classList.contains("on") && A.$("themeGrid").querySelectorAll(".thm").length === 4, "🎨 يفتح أربعةَ مظاهر بلوحاتها مصغّرة");
+    ok(A.$("themeGrid").querySelectorAll(".thm svg rect").length > 4 * 60, "كلُّ معاينةٍ لوحةٌ حقيقيّةٌ مرسومة");
+    ok(A.$("themeGrid").querySelector(".thm.on").dataset.k === "calm", "والهادئُ هو المختار");
+    A.$("themeGrid").querySelector('[data-k="dark"]').dispatch("click");
+    ok(A.ctx._store.ludoBoard === "dark" && fills()[0] === "#232833", "اختيارُ «داكن» يعيد رسم اللوحة ويُحفظ في الجهاز");
+    ok(A.doc.documentElement.style["--c0"] === "#D47F77" && A.$("boardBox").style["--bb-bg"] === "#232833", "وألوانُ المقاعد وإطارُ اللوحة تتبعه");
+    ok(A.$("themeGrid").querySelector(".thm.on").dataset.k === "dark", "والبطاقةُ المختارة مُعلَّمة");
+    A.$("themeGrid").querySelector('[data-k="calm"]').dispatch("click");
+    A.$("themeModal").querySelector("[data-close]").dispatch("click");
+    ok(!A.$("themeModal").classList.contains("on") && fills()[0] === "#F5EFE4", "ويعود ويُغلق");
+  }
 
   console.log("② الدخول واللوبي");
   await until(() => A.ctx._sock && true);
@@ -702,11 +721,13 @@ function freeze(room) {
     m.prompt = null; m.queue = []; m.after = null; m.legal = []; m.pool = [];
     m.turn = sb; m.phase = "roll"; m._loaded = [1, 3];
     bSock.fire("roll");        /* فهد ١ (لا حركة) ⇒ دوري، ولا ألعب */
-    ok(await until(() => A.$("autoBar").classList.contains("on"), 4000), "انقضى وقتي ⇒ شارةُ اللعب التلقائيّ عندي");
+    ok(await until(() => A.doc.querySelector(".pp.me").classList.contains("auto"), 4000), "انقضى وقتي ⇒ «AUTO» تحت صورتي");
+    ok(!A.$("autoBar"), "بلا شريطٍ ولا إشعار للّعب التلقائيّ (طلبُ المستخدم)");
+    ok(!seen.toasts.some(t => /اللعب التلقائيّ|انتهى وقتك|رجعت تلعب/.test(t)), "ولا رسالةَ «انتهى وقتك» ولا «رجعت تلعب»");
     ok(await until(() => B.doc.querySelector('.pp[data-seat="' + sa + '"]').classList.contains("auto"), 3000), "وشارةُ AUTO على صورتي عند الخصم");
     A.$("boardBox").dispatch("pointerdown");
     ok(await until(() => room.slots[sa].auto === false, 2000), "لمسةٌ في أيّ مكانٍ تعيدني (manual)");
-    ok(await until(() => !A.$("autoBar").classList.contains("on"), 2000), "وتختفي الشارة");
+    ok(await until(() => !A.doc.querySelector(".pp.me").classList.contains("auto"), 2000), "وتزول «AUTO» من تحت صورتي");
     freeze(room);
     const pa = pilot(A), pb = pilot(B);
     ok(await until(() => A.$("endModal").classList.contains("on"), 90000), "وتكتمل المباراة");

@@ -1866,19 +1866,20 @@ body.kw-ludo #quickPop .phr button:hover { background:#E3F6F2; border-color:var(
 body.kw-salfa.kw-ludo #chatCard { background:var(--sg-white); border:2px solid var(--sg-line);
   box-shadow:0 12px 30px rgba(60,120,110,.28); overflow:hidden; border-radius:22px; }
 body.kw-ludo .chatHead { color:var(--sg-ink); }
-body.kw-ludo #autoBar { background:var(--sg-ink); }
 
 /* ───── اللوحة: إطارٌ أبيضُ عريضٌ كبطاقات الرئيسيّة. الإطارُ على الصندوق
    الثابت لا على اللوحة الدوّارة، وإلا دار ظلُّها معها فسقط جانبًا ───── */
-body.kw-ludo #boardBox { border-radius:26px; background:#FFFBF4;
-  box-shadow:0 0 0 7px #fff, 0 0 0 9px #A05F50, 0 14px 26px rgba(60,120,110,.25); }
+body.kw-ludo #boardBox { border-radius:26px; background:var(--bb-bg, #FFFBF4);
+  box-shadow:0 0 0 7px var(--bb-ring, #fff), 0 0 0 9px #A05F50, 0 14px 26px rgba(60,120,110,.25); }
 
 body.kw-ludo #promptBar { border-radius:999px; border:2px solid #E8A39B; }
 
 /* القطعُ القابلة للحركة: حلقةٌ ثابتةٌ تحت النبض — فمن أطفأ الحركة في جهازه
    (تقليل الحركة يوقف كلَّ animation أدناه) يرى ما يُحرَّك مع ذلك */
-body.kw-ludo .tok.can { box-shadow:0 0 0 1.5px var(--sd), 0 3px 0 var(--sd), 0 0 0 5px rgba(255,255,255,.95), 0 0 12px 4px var(--sc); }
-body.kw-ludo .tok.target { box-shadow:0 0 0 1.5px var(--sd), 0 0 0 5px #ff6b6b, 0 0 14px 4px #ff9f9f; }
+body.kw-ludo .tok.can { box-shadow:0 0 0 1px var(--sd), 0 2px 0 var(--sd), 0 0 0 4px rgba(255,255,255,.95), 0 0 10px 3px var(--sc); }
+body.kw-ludo .tok.target { box-shadow:0 0 0 1px var(--sd), 0 0 0 4px #ff6b6b, 0 0 12px 3px #ff9f9f; }
+body.kw-ludo .thm { border-color:#C99A72; border-radius:18px; background:var(--sg-white); }
+body.kw-ludo .thm.on { border-color:var(--sg-deep); box-shadow:0 0 0 3px rgba(47,168,152,.25); }
 /* الملكُ المختار (النقرة الأولى): حلقتُه الذهبيّة تغلب حلقةَ «يتحرّك» أعلاه —
    كانت تلك أعلى أسبقيّةً فيبدو المختارُ كبقيّة القطع المتوهّجة */
 body.kw-ludo .tok.can.sel, body.kw-ludo .tok.sel {

@@ -17,9 +17,42 @@
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const AR_NUM = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
 
-  const COLORS = ["#F28B82", "#77D3A0", "#FFD45E", "#82C6F2"];
-  const DEEP = ["#D9534A", "#2E9E5B", "#DDA20C", "#2F8FD3"];
-  const LIGHT = ["#FFE3E0", "#DFF6E9", "#FFF4D0", "#DFF0FC"];
+  /* ══════════ مظاهرُ اللوحة ══════════
+     لكلّ لاعبٍ مظهرُه (يُحفظ في جهازه ولا يغيّر شيئًا عند غيره). الألوانُ
+     الأربعة تبقى أحمرَ وأخضرَ وأصفرَ وأزرقَ في كلّ مظهر — بها يُعرف اللاعبون —
+     لكنّ تشبُّعها وإضاءتها تختلف. ومربّعاتُ النجوم رماديّةٌ في كلّها تُميَّز
+     من بعيد. seat: [اللون، الغامق، الفاتح] لكلّ مقعد. */
+  const BOARD_THEMES = {
+    calm: { name: "هادئ", desc: "باستيلٌ خافتٌ على ورقٍ دافئ — مريحٌ للعين",
+      seat: [["#E2948C", "#BF5F56", "#F7E1DE"], ["#8CC6A2", "#4C9669", "#E1F1E6"],
+             ["#E6C677", "#B38B2C", "#F7EED6"], ["#8FB7DA", "#4C7FAB", "#E1EDF6"]],
+      bg: "#F5EFE4", frame: "#DCCDB6", ring: "#FFFDF8", cell: "#FFFDF8", line: "#E8DECF", inner: "#FFFDF8",
+      star: "#E1DED8", starFill: "#D8B65E", starLine: "#B6923A", home: .78, dot: "#FFFDF8" },
+    wood: { name: "خشبي", desc: "ألوانُ الأرض على خشبٍ فاتح",
+      seat: [["#C46B5A", "#994536", "#EFD9D0"], ["#7DA36F", "#4D7641", "#DFE9D5"],
+             ["#D3AA4B", "#9C7A20", "#F2E5C4"], ["#6C91B2", "#416586", "#D9E3EC"]],
+      bg: "#E6D3B3", frame: "#B48F62", ring: "#F3E6CF", cell: "#F6ECDA", line: "#D6BF98", inner: "#F6ECDA",
+      star: "#D3C8B6", starFill: "#C9993C", starLine: "#9A721E", home: .85, dot: "#F6ECDA" },
+    dark: { name: "داكن", desc: "لوحةٌ داكنة بألوانٍ هادئة — للّعب ليلًا",
+      seat: [["#D47F77", "#B2574F", "#4A3436"], ["#6DB68B", "#4A976B", "#2E4739"],
+             ["#D6B562", "#B4923D", "#4A422F"], ["#6C9CC8", "#4A7CAB", "#2E3D50"]],
+      bg: "#232833", frame: "#3A4252", ring: "#2C3240", cell: "#313846", line: "#404859", inner: "#2B313D",
+      star: "#4A505D", starFill: "#D6B460", starLine: "#A8873A", home: .8, dot: "#313846" },
+    marsh: { name: "مارشميلو", desc: "الألوانُ الزاهية الأولى",
+      seat: [["#F28B82", "#D9534A", "#FFE3E0"], ["#77D3A0", "#2E9E5B", "#DFF6E9"],
+             ["#FFD45E", "#DDA20C", "#FFF4D0"], ["#82C6F2", "#2F8FD3", "#DFF0FC"]],
+      bg: "#FFFBF4", frame: "#E8D5BF", ring: "#FFFFFF", cell: "#FFFFFF", line: "#EADFD1", inner: "#FFFFFF",
+      star: "#ECE8E2", starFill: "#F4C95D", starLine: "#E0A92E", home: .82, dot: "#FFFFFF" }
+  };
+  const THEME_KEYS = ["calm", "wood", "dark", "marsh"];
+  let THEME = "calm";
+  try { const t = localStorage.getItem("ludoBoard"); if (BOARD_THEMES[t]) THEME = t; } catch (e) {}
+  /* مصفوفاتٌ ثابتةُ المرجع تُملأ من المظهر (كلُّ من يقرؤها يرى المظهرَ الحاليّ) */
+  const COLORS = [], DEEP = [], LIGHT = [];
+  function loadPalette(key) {
+    BOARD_THEMES[key].seat.forEach(([c, d, l], i) => { COLORS[i] = c; DEEP[i] = d; LIGHT[i] = l; });
+  }
+  loadPalette(THEME);
   const PU_BG = { gold: "#FFE58F", jump: "#CFF2BE", bubble: "#CFE9FF", wind: "#E6DCFF", swap: "#FFD6E8" };
   const MODE_DESC = {
     classic: "أوصِل قطعك الأربع إلى المركز",
@@ -34,6 +67,8 @@
   let socket = null, ME = null, TOKEN = null, ROOM = null;
   let NAMES = { modes: {}, powers: {}, icons: {} }, DEFAULTS = null, settings = null;
   let LOBBY = null, VIEW = null, PLAYERS = [], SKEW = 0;
+  /* هل يلعب عنّي AUTO الآن؟ (لمسةٌ تُعيدني) */
+  let autoOn = false;
   let mySeat = null, showPath = false;
   /* انتهت المباراة ولم يُغلق اللاعبُ نافذةَ النتيجة بعد: اللوحةُ تبقى خلفها
      كما انتهت، واللوبي ينتظر حتى تُغلَق */
@@ -94,19 +129,21 @@
   };
   let layerPU, layerFog, layerPath, layerHint, layerFx;
 
-  function buildBoard() {
-    svg.innerHTML = "";
-    const defs = el("defs", {});
-    const sh = el("filter", { id: "lsh", x: "-10%", y: "-10%", width: "120%", height: "120%" }, defs);
-    el("feDropShadow", { dx: 0, dy: 0.08, stdDeviation: 0.06, "flood-color": "#7a5a3a", "flood-opacity": .25 }, sh);
+  /** يرسم اللوحةَ بمظهرٍ في أيّ SVG — اللوحةُ الحيّة ومعايناتُ اختيار المظهر معًا. */
+  function drawBoard(root, T, fid) {
+    const add = (tag, attrs, parent) => el(tag, attrs, parent || root);
+    const C = s => T.seat[s][0], Lt = s => T.seat[s][2];
+    const defs = add("defs", {});
+    const sh = add("filter", { id: fid, x: "-10%", y: "-10%", width: "120%", height: "120%" }, defs);
+    add("feDropShadow", { dx: 0, dy: 0.08, stdDeviation: 0.06, "flood-color": "#3a2a1a", "flood-opacity": .22 }, sh);
 
-    el("rect", { x: 0, y: 0, width: 15, height: 15, rx: .7, fill: "#FFFBF4", stroke: "#E8D5BF", "stroke-width": .12 });
+    add("rect", { x: 0, y: 0, width: 15, height: 15, rx: .7, fill: T.bg, stroke: T.frame, "stroke-width": .12 });
 
     /* القواعد الأربع */
     G.YARD.forEach(([r, c], s) => {
-      el("rect", { x: c + .14, y: r + .14, width: 5.72, height: 5.72, rx: .75, fill: COLORS[s], stroke: "#fff", "stroke-width": .14, filter: "url(#lsh)" });
-      el("rect", { x: c + .95, y: r + .95, width: 4.1, height: 4.1, rx: .65, fill: "#fff" });
-      G.BASE_RC[s].forEach(([br, bc]) => el("circle", { cx: bc + .5, cy: br + .5, r: .48, fill: LIGHT[s], stroke: COLORS[s], "stroke-width": .07 }));
+      add("rect", { x: c + .14, y: r + .14, width: 5.72, height: 5.72, rx: .75, fill: C(s), stroke: T.ring, "stroke-width": .14, filter: `url(#${fid})` });
+      add("rect", { x: c + .95, y: r + .95, width: 4.1, height: 4.1, rx: .65, fill: T.inner });
+      G.BASE_RC[s].forEach(([br, bc]) => add("circle", { cx: bc + .5, cy: br + .5, r: .44, fill: Lt(s), stroke: C(s), "stroke-width": .07 }));
     });
 
     /* الطريق. النجمةُ والسهمُ مضلّعاتٌ لا محارف: «★» و«▶» قد يرسمهما ويندوز
@@ -121,25 +158,30 @@
     };
     G.TRACK_RC.forEach(([r, c], i) => {
       const start = G.START.indexOf(i), star = G.STARS.includes(i);
-      el("rect", { x: c + .05, y: r + .05, width: .9, height: .9, rx: .14,
-        fill: start >= 0 ? COLORS[start] : "#fff", stroke: "#EADFD1", "stroke-width": .05 });
+      /* مربّعُ النجمة رماديٌّ يُميَّز من بعيد عن بقيّة الطريق */
+      add("rect", { x: c + .05, y: r + .05, width: .9, height: .9, rx: .14,
+        fill: start >= 0 ? C(start) : star ? T.star : T.cell, stroke: T.line, "stroke-width": .05 });
       /* النجمةُ تبقى قائمةً مهما دارت اللوحة (class=upright) */
-      if (star) el("polygon", { points: STAR(c + .5, r + .5, .36, .15), fill: "#F4C95D", stroke: "#E0A92E",
-                                "stroke-width": .035, "stroke-linejoin": "round", class: "upright", "data-c": `${c + .5} ${r + .5}` });
+      if (star) add("polygon", { points: STAR(c + .5, r + .5, .34, .14), fill: T.starFill, stroke: T.starLine,
+                                 "stroke-width": .035, "stroke-linejoin": "round", class: "upright", "data-c": `${c + .5} ${r + .5}` });
       /* وسهمُ الانطلاق اتّجاهٌ على اللوحة فيدور معها: المقعد ٠ يمينًا، ١ نزولًا،
          ٢ يسارًا، ٣ صعودًا — هكذا يبدأ الطريق من كلّ قاعدة */
-      if (start >= 0) el("polygon", { points: `${c + .3},${r + .26} ${c + .76},${r + .5} ${c + .3},${r + .74}`,
-                                      fill: "#fff", "stroke-linejoin": "round",
-                                      transform: `rotate(${[0, 90, 180, 270][start]} ${c + .5} ${r + .5})` });
+      if (start >= 0) add("polygon", { points: `${c + .3},${r + .26} ${c + .76},${r + .5} ${c + .3},${r + .74}`,
+                                       fill: "#fff", opacity: .92, "stroke-linejoin": "round",
+                                       transform: `rotate(${[0, 90, 180, 270][start]} ${c + .5} ${r + .5})` });
     });
     /* مسارات النهاية */
     G.HOME_RC.forEach((cells, s) => cells.forEach(([r, c]) =>
-      el("rect", { x: c + .05, y: r + .05, width: .9, height: .9, rx: .14, fill: COLORS[s], opacity: .82, stroke: "#fff", "stroke-width": .05 })));
+      add("rect", { x: c + .05, y: r + .05, width: .9, height: .9, rx: .14, fill: C(s), opacity: T.home, stroke: T.ring, "stroke-width": .05 })));
     /* المركز: أربعةُ مثلّثات */
     const tri = [["6,6", "6,9"], ["6,6", "9,6"], ["9,6", "9,9"], ["6,9", "9,9"]];
-    tri.forEach(([a, b], s) => el("polygon", { points: `${a} ${b} 7.5,7.5`, fill: COLORS[s], stroke: "#fff", "stroke-width": .08 }));
-    el("circle", { cx: 7.5, cy: 7.5, r: .55, fill: "#fff", opacity: .85 });
+    tri.forEach(([a, b], s) => add("polygon", { points: `${a} ${b} 7.5,7.5`, fill: C(s), stroke: T.ring, "stroke-width": .08 }));
+    add("circle", { cx: 7.5, cy: 7.5, r: .55, fill: T.dot, opacity: .85 });
+  }
 
+  function buildBoard() {
+    svg.innerHTML = "";
+    drawBoard(svg, BOARD_THEMES[THEME], "lsh");
     layerPU = el("g", { id: "lPU" });
     layerPath = el("g", { id: "lPath" });
     layerFog = el("g", { id: "lFog" });
@@ -179,7 +221,9 @@
     const d = document.createElement("div");
     d.className = "tok s" + seat;
     d.style.setProperty("--sc", COLORS[seat]); d.style.setProperty("--sd", DEEP[seat]);
-    d.innerHTML = '<span class="badge counter"></span>';
+    /* ‏‎.tkb‎ لا ‎.badge‎: السمةُ تُلبس كلَّ ‎.badge‎ إطارًا بنّيًّا، فكان الوسمُ
+       الفارغ يظهر مربّعًا بنّيًّا صغيرًا في وسط كلّ قطعة */
+    d.innerHTML = '<span class="tkb counter"></span>';
     d.addEventListener("click", () => onTokClick(seat, idx));
     $("toks").appendChild(d);
     toks[k] = d;
@@ -203,7 +247,7 @@
       const hidden = pc.hidden || pc.p === -2;
       d.style.display = hidden ? "none" : "";
       d.classList.remove("can", "target");
-      const b = d.querySelector(".badge");
+      const b = d.querySelector(".tkb");
       b.textContent = pc.k === "king" ? "👑" : pc.k === "guard" ? "🛡️" : "";
       let cd = d.querySelector(".cd");
       if (pc.cd) { if (!cd) { cd = document.createElement("span"); cd.className = "cd counter"; d.appendChild(cd); } cd.textContent = "🔒" + AR_NUM(pc.cd); }
@@ -532,7 +576,6 @@
       else if (e.t === "again" && e.seat === mySeat)
         toast(e.why === "six" ? "ستّة! ارمِ مرّةً أخرى 🎲" : e.why === "home" ? "🏁 دخلت قطعتك — رميةٌ إضافيّة!" : "💥 أكلت — رميةٌ إضافيّة!");
       else if (e.t === "pass" && e.seat === mySeat) toast(e.why === "three6" ? "٣ ستّات متتالية — ضاع الدورُ كلُّه" : "لا حركةَ ممكنة");
-      else if (e.t === "timeout" && e.seat === mySeat) toast("⏱️ انتهى وقتك — اللعب التلقائيّ يلعب عنك");
       else if (e.t === "turn" && e.seat === mySeat) { snd("turn"); }
       else if (e.t === "spawn") flash(e.cell, "#fff");
     }
@@ -565,9 +608,10 @@
       : "دور " + tn;
     $("phaseInfo").textContent = (MODE_ICON[st.rules.mode] || "") + " " + (NAMES.modes[st.rules.mode] || "") +
       (st.rules.teams ? " · فرق" : "") + " · " + status;
-    /* اللعب التلقائيّ: شارةٌ تُعيدك بلمسةٍ في أيّ مكان */
+    /* اللعب التلقائيّ: بلا شريطٍ ولا إشعار (طلبُ المستخدم) — تكفي «AUTO» تحت
+       صورتك في زاويتك، ولمسةٌ في أيّ مكانٍ تُعيدك */
     const meP = PLAYERS[mySeat];
-    $("autoBar").classList.toggle("on", !!(meP && meP.auto) && st.phase !== "over");
+    autoOn = !!(meP && meP.auto) && st.phase !== "over";
 
     /* الأسئلة */
     const pr = st.prompt;
@@ -610,21 +654,22 @@
     d.className = "pp s" + s;
     d.setAttribute("data-seat", String(s));
     d.style.setProperty("--sc", COLORS[s]); d.style.setProperty("--sd", DEEP[s]); d.style.setProperty("--sl", LIGHT[s]);
+    /* صفٌّ واحد: الصورة | الاسمُ وتحته العدّادُ والبركة | النرد */
     d.innerHTML =
       '<div class="avw"><div class="av"><span class="pie"></span><span class="ini"></span></div><span class="autoTag">AUTO</span></div>' +
-      '<div class="pinfo"><b class="nm"></b><small class="meta"></small>' +
-      '<div class="dieRow"><span class="hand">👇</span><span class="pool"></span></div></div>' +
+      '<div class="pinfo"><b class="nm"></b><small class="meta"></small><span class="pool"></span></div>' +
+      '<div class="dieRow"><span class="hand">👇</span></div>' +
       '<span class="tmb">🤝 زميلك</span><div class="bub"></div>';
-    const row = d.querySelector(".dieRow"), pool = d.querySelector(".pool");
+    const row = d.querySelector(".dieRow");
     if (s === mySeat) {
       const b = $("diceBtn");
       b.style.display = "";
-      row.insertBefore(b, pool);
+      row.appendChild(b);
     } else {
       const die = document.createElement("div");
       die.className = "die";
       drawDie(die, lastRoll[s] || 6);
-      row.insertBefore(die, pool);
+      row.appendChild(die);
     }
     panels[s] = d;
     return d;
@@ -708,7 +753,7 @@
     showScreen("lobby");
     VIEW = null; mySeat = null; showPath = false; setRotation(null);
     clearInterval(pieT);
-    $("autoBar").classList.remove("on");
+    autoOn = false;
     $("phaseInfo").textContent = "في الانتظار…";
   }
 
@@ -1005,16 +1050,15 @@
     $("chatInput").value = "";
   };
 
-  /* ══════════ اللعب التلقائيّ: لمسةٌ في أيّ مكانٍ تُعيدك (كالمرجع) ══════════ */
+  /* ══════════ اللعب التلقائيّ: لمسةٌ في أيّ مكانٍ تُعيدك (كالمرجع) — بصمت ══════════ */
   let manualAt = 0;
   document.addEventListener("pointerdown", () => {
-    if (!$("autoBar").classList.contains("on")) return;
+    if (!autoOn) return;
     const now = Date.now();
     if (now - manualAt < 1500) return;
     manualAt = now;
+    autoOn = false;
     socket.emit("manual");
-    $("autoBar").classList.remove("on");
-    toast("👋 رجعت تلعب بنفسك");
   }, true);
 
   /* ══════════ الاتّصال والدخول ══════════ */
@@ -1127,6 +1171,56 @@
     (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
       .then(() => toast("انتُسخ رابط الدعوة 📋")).catch(() => prompt("انسخ الرابط:", link));
   };
+
+  /* ══════════ مظهرُ اللوحة: لكلّ لاعبٍ ما يريح عينه ══════════ */
+  function setThemeVars(T) {
+    /* ألوانُ المقاعد في اللوبي (‎--c0‎…) وإطارُ اللوحة من المظهر نفسه */
+    const rs = document.documentElement.style;
+    T.seat.forEach(([c, d, l], i) => { rs.setProperty("--c" + i, c); rs.setProperty("--c" + i + "d", d); rs.setProperty("--c" + i + "l", l); });
+    const bb = $("boardBox").style;
+    bb.setProperty("--bb-bg", T.bg); bb.setProperty("--bb-ring", T.ring);
+  }
+  function applyTheme(key) {
+    if (!BOARD_THEMES[key]) return;
+    THEME = key;
+    try { localStorage.setItem("ludoBoard", key); } catch (e) {}
+    loadPalette(key);
+    setThemeVars(BOARD_THEMES[key]);
+    buildBoard();
+    setRotation(mySeat);
+    for (const k in toks) {
+      const s = +k.split("-")[0];
+      toks[k].style.setProperty("--sc", COLORS[s]); toks[k].style.setProperty("--sd", DEEP[s]);
+    }
+    for (const s in panels) {
+      const p = panels[s];
+      p.style.setProperty("--sc", COLORS[s]); p.style.setProperty("--sd", DEEP[s]); p.style.setProperty("--sl", LIGHT[s]);
+    }
+    if (VIEW) render(VIEW);
+    paintThemeGrid();
+  }
+  /* بطاقاتُ الاختيار: كلُّ مظهرٍ مرسومٌ بلوحته الحقيقيّة مصغّرةً */
+  function paintThemeGrid() {
+    const g = $("themeGrid");
+    if (!g.dataset.built) {
+      g.dataset.built = "1";
+      for (const k of THEME_KEYS) {
+        const T = BOARD_THEMES[k];
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "thm"; b.dataset.k = k;
+        const s = document.createElementNS(SVGNS, "svg");
+        s.setAttribute("viewBox", "0 0 15 15");
+        drawBoard(s, T, "psh_" + k);
+        b.appendChild(s);
+        b.insertAdjacentHTML("beforeend", "<b>" + esc(T.name) + "</b><small>" + esc(T.desc) + "</small>");
+        b.onclick = () => applyTheme(k);
+        g.appendChild(b);
+      }
+    }
+    g.querySelectorAll(".thm").forEach(b => b.classList.toggle("on", b.dataset.k === THEME));
+  }
+  $("themeBtn").onclick = () => { paintThemeGrid(); openModal("themeModal"); };
+  setThemeVars(BOARD_THEMES[THEME]);
 
   showScreen("join");
 })();

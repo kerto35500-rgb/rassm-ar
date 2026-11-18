@@ -149,7 +149,10 @@
          grid-template-areas:"tl board tr" "bl board br"; padding:4px 6px; flex-shrink:0;}
   #cTL{grid-area:tl; align-self:start;} #cTR{grid-area:tr; align-self:start;}
   #cBL{grid-area:bl; align-self:end;}   #cBR{grid-area:br; align-self:end;}
-  .corner{direction:rtl; min-width:0;}
+  /* اللوحةُ الصغيرة تلتصق بجهة اللوحة الكبيرة (قربَ قاعدة صاحبها) لا تمتدّ
+     بعرض العمود — كانت تمتدّ فيتبعثر ما فيها ويكثر الفراغ */
+  .corner{direction:rtl; min-width:0; display:flex;}
+  #cTL, #cBL{justify-content:flex-start;} #cTR, #cBR{justify-content:flex-end;}
   /* ٢١٢ = الشريط العلويّ + شريطُ الدردشة + الفراغات؛ والعرضُ يترك عمودَي الزوايا */
   #boardBox{grid-area:board; position:relative; align-self:center;
             width:min(calc(100vw - 520px), calc(100dvh - 212px)); min-width:300px; aspect-ratio:1;}
@@ -159,24 +162,34 @@
   #toks{position:absolute; inset:0; pointer-events:none;}
   .counter{transform:rotate(calc(-1 * var(--rot,0deg)));}
 
-  /* القطع */
-  .tok{position:absolute; width:5.6%; height:5.6%; margin:-2.8% 0 0 -2.8%; border-radius:50%;
-       background:radial-gradient(circle at 35% 30%, #fff 0 14%, var(--sc) 16% 100%);
-       border:2.5px solid #fff; box-shadow:0 0 0 1.5px var(--sd), 0 3px 0 var(--sd), 0 6px 10px rgba(0,0,0,.25);
+  /* القطع: نحو ثلاثة أرباع المربّع (كقطع لعبة المرجع) — كانت تملؤه كلَّه
+     وتفيض عنه بظلالها فتزحم اللوحة. المربّعُ ١/١٥ من اللوحة = ٦٫٦٧٪ */
+  .tok{position:absolute; width:4.8%; height:4.8%; margin:-2.4% 0 0 -2.4%; border-radius:50%;
+       background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.9) 0 11%, var(--sc) 14% 100%);
+       border:2px solid #fff; box-shadow:0 0 0 1px var(--sd), 0 2px 0 var(--sd), 0 3px 6px rgba(0,0,0,.22);
        transition:left .16s ease-out, top .16s ease-out, transform .2s, opacity .3s;
        display:flex; align-items:center; justify-content:center; pointer-events:auto; z-index:3;}
-  .tok .badge{font-size:min(2.1vw,15px); line-height:1; filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));}
-  .tok.king{width:6.6%; height:6.6%; margin:-3.3% 0 0 -3.3%; box-shadow:0 0 0 2px #f2c94c, 0 3px 0 var(--sd), 0 6px 12px rgba(0,0,0,.3);}
-  .tok.small{transform:scale(.72);}
+  .tok .tkb{font-size:min(1.8vw,13px); line-height:1; filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));}
+  .tok.king{width:5.6%; height:5.6%; margin:-2.8% 0 0 -2.8%; box-shadow:0 0 0 1.5px #f2c94c, 0 2px 0 var(--sd), 0 4px 8px rgba(0,0,0,.28);}
+  .tok.small{transform:scale(.8);}
   .tok.can{cursor:pointer; animation:tokPulse .9s ease-in-out infinite; z-index:6;}
-  @keyframes tokPulse{50%{box-shadow:0 0 0 1.5px var(--sd), 0 3px 0 var(--sd), 0 0 0 7px rgba(255,255,255,.75), 0 0 16px 6px var(--sc);}}
+  @keyframes tokPulse{50%{box-shadow:0 0 0 1px var(--sd), 0 2px 0 var(--sd), 0 0 0 5px rgba(255,255,255,.75), 0 0 12px 4px var(--sc);}}
   .tok.target{cursor:pointer; animation:tokTarget .7s ease-in-out infinite; z-index:6;}
   /* الملكُ المختار (النقرة الأولى): حلقةٌ ذهبيّةٌ ثابتة بدل النبض */
   .tok.sel{animation:none; z-index:7; box-shadow:0 0 0 2px #f2c94c, 0 0 0 6px #fff, 0 0 0 8px #E2A90E, 0 0 18px 8px rgba(255,211,77,.75);}
   @keyframes tokTarget{50%{box-shadow:0 0 0 1.5px var(--sd), 0 0 0 7px #ff5b5b, 0 0 18px 6px #ff8f8f;}}
   /* القفزة تكبيرٌ لا إزاحة: اللوحة تدور، و«فوق» في اللوحة قد يكون يسارَ الشاشة */
   .tok.hop{transform:scale(1.25);}
-  .tok.small.hop{transform:scale(.92);}
+  .tok.small.hop{transform:scale(1);}
+  /* اختيارُ مظهر اللوحة: كلُّ مظهرٍ بلوحته الحقيقيّة مصغّرة */
+  #themeGrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;}
+  .thm{border:2.5px solid var(--line); border-radius:16px; padding:8px; background:#fff; cursor:pointer; font:inherit;
+       text-align:center; color:var(--ink); display:flex; flex-direction:column; gap:3px; transition:transform .15s, border-color .15s;}
+  .thm svg{width:100%; aspect-ratio:1; display:block; border-radius:10px;}
+  .thm b{font-size:15px; font-weight:900; margin-top:4px;}
+  .thm small{font-size:11.5px; color:var(--muted); line-height:1.5;}
+  .thm:hover{transform:translateY(-2px);}
+  .thm.on{border-color:var(--green); box-shadow:0 0 0 3px rgba(46,158,91,.22);}
   /* وثبةُ الكنغر: انتقالٌ واحدٌ أطول، والقطعةُ تكبر في منتصفه كأنّها في الهواء */
   .tok.leap{transition:left .44s cubic-bezier(.35,.1,.3,1), top .44s cubic-bezier(.35,.1,.3,1); animation:leapArc .44s ease-in-out; z-index:8;}
   @keyframes leapArc{0%{transform:scale(1)} 45%{transform:scale(1.85); filter:drop-shadow(0 10px 6px rgba(0,0,0,.3))} 100%{transform:scale(1)}}
@@ -187,13 +200,15 @@
            font-size:min(1.6vw,11px); font-weight:900; padding:1px 5px;}
   .tok.dead{opacity:0; transform:scale(.2);}
 
-  /* ── لوحةُ اللاعب في زاويته ── */
-  .pp{position:relative; display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:20px;
-      background:#fff; border:2px solid var(--line); box-shadow:0 4px 10px rgba(0,0,0,.08);
+  /* ── لوحةُ اللاعب في زاويته: مضغوطةٌ مرتّبة — صورةٌ صغيرة، ثمّ الاسمُ وتحته
+     العدّادُ والبركة، ثمّ النرد. كانت أعرضَ بكثير، والاسمُ فوق والنردُ تحت
+     والفراغُ بينهما كبير ── */
+  .pp{position:relative; display:inline-flex; align-items:center; gap:7px; padding:5px 9px 5px 6px; border-radius:16px;
+      max-width:100%; background:#fff; border:2px solid var(--line); box-shadow:0 3px 8px rgba(0,0,0,.08);
       transition:box-shadow .2s, transform .2s, opacity .2s;}
   /* زاويتا اليسار: الصورةُ إلى الخارج والنردُ نحو اللوحة (العكسُ في اليمين) */
-  #cTL .pp, #cBL .pp{flex-direction:row-reverse;}
-  .pp.turn{border-color:var(--sd); box-shadow:0 0 0 3px var(--sc), 0 8px 18px rgba(0,0,0,.12); transform:translateY(-2px);}
+  #cTL .pp, #cBL .pp{flex-direction:row-reverse; padding:5px 6px 5px 9px;}
+  .pp.turn{border-color:var(--sd); box-shadow:0 0 0 2.5px var(--sc), 0 6px 14px rgba(0,0,0,.12); transform:translateY(-1px);}
   .pp.off{opacity:.45; filter:grayscale(.5);}
   /* شارةُ «زميلك» على لوحة الزميل في الفرق */
   .pp .tmb{display:none; position:absolute; top:-11px; inset-inline-start:12px; z-index:5; white-space:nowrap;
@@ -201,9 +216,9 @@
            box-shadow:0 2px 5px rgba(0,0,0,.15);}
   .pp.mate .tmb{display:block;}
   .pp .avw{position:relative; flex-shrink:0;}
-  .pp .av{position:relative; width:58px; height:58px; border-radius:50%; background:var(--sc); overflow:hidden;
-          border:3px solid #fff; box-shadow:0 0 0 2.5px var(--sd), 0 3px 0 var(--sd);
-          display:flex; align-items:center; justify-content:center; font-weight:900; font-size:24px; color:#fff;
+  .pp .av{position:relative; width:42px; height:42px; border-radius:50%; background:var(--sc); overflow:hidden;
+          border:2.5px solid #fff; box-shadow:0 0 0 2px var(--sd), 0 2px 0 var(--sd);
+          display:flex; align-items:center; justify-content:center; font-weight:900; font-size:18px; color:#fff;
           text-shadow:0 1px 2px rgba(0,0,0,.25);}
   .pp .av .ini{position:relative; z-index:1;}
   /* المؤقّت: قطاعٌ أخضرُ فوق الصورة يتناقص مع عقارب الساعة (كمؤقّت المرجع:
@@ -212,25 +227,23 @@
            background:conic-gradient(transparent 0 var(--e,0deg), rgba(80,242,84,.72) var(--e,0deg) 360deg);}
   .pp.timing .pie{display:block;}
   .pp.hurry .pie{background:conic-gradient(transparent 0 var(--e,0deg), rgba(255,122,82,.8) var(--e,0deg) 360deg);}
-  .pp .autoTag{display:none; position:absolute; bottom:-7px; left:50%; transform:translateX(-50%); z-index:3; white-space:nowrap;
-               background:#3b3b4f; color:#fff; font-size:9.5px; font-weight:900; padding:1px 6px; border-radius:999px; border:1.5px solid #fff;}
+  .pp .autoTag{display:none; position:absolute; bottom:-6px; left:50%; transform:translateX(-50%); z-index:3; white-space:nowrap;
+               background:#3b3b4f; color:#fff; font-size:8.5px; font-weight:900; padding:0 5px; border-radius:999px; border:1.5px solid #fff;}
   .pp.auto .autoTag{display:block;}
-  .pp .pinfo{display:flex; flex-direction:column; gap:5px; min-width:0; flex:1;}
-  .pp .nm{font-weight:900; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .pp .meta{font-size:11.5px; font-weight:800; color:var(--muted); white-space:nowrap;}
-  .pp .dieRow{display:flex; align-items:center; gap:7px; position:relative;}
-  #cTL .dieRow, #cBL .dieRow{flex-direction:row-reverse;}
+  .pp .pinfo{display:flex; flex-direction:column; gap:1px; min-width:0; flex:0 1 auto;}
+  .pp .nm{font-weight:900; font-size:13px; max-width:96px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .pp .meta{font-size:10.5px; font-weight:800; color:var(--muted); white-space:nowrap;}
+  .pp .dieRow{display:flex; align-items:center; position:relative; flex-shrink:0;}
   /* اليدُ تشير إلى نردك حين يحين رميُك (throw_jump في المرجع) */
-  .pp .hand{display:none; position:absolute; top:-30px; font-size:22px; pointer-events:none; z-index:6;
+  .pp .hand{display:none; position:absolute; top:-23px; left:calc(50% - 9px); font-size:18px; pointer-events:none; z-index:6;
             animation:handBob .8s ease-in-out infinite;}
-  #cTL .hand, #cBL .hand{left:12px;} #cTR .hand, #cBR .hand{right:12px;}
   .pp.ready .hand{display:block;}
   @keyframes handBob{50%{transform:translateY(-6px)}}
 
   /* ── النرد: لكلّ لاعبٍ نردُه بجانب صورته ── */
-  .die{width:46px; height:46px; border-radius:13px; border:3px solid #fff; background:#fffdf7; flex-shrink:0;
-       box-shadow:0 0 0 2px var(--sd,#c7b9a6), 0 4px 0 var(--sd,#c7b9a6), 0 6px 12px rgba(0,0,0,.15);
-       display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); padding:6px; gap:1px;
+  .die{width:36px; height:36px; border-radius:10px; border:2.5px solid #fff; background:#fffdf7; flex-shrink:0;
+       box-shadow:0 0 0 1.5px var(--sd,#c7b9a6), 0 3px 0 var(--sd,#c7b9a6), 0 4px 8px rgba(0,0,0,.13);
+       display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); padding:4px; gap:1px;
        position:relative; transition:transform .12s, opacity .2s; opacity:.6; font:inherit; color:inherit;}
   .pp.turn .die{opacity:1;}
   .die i{border-radius:50%; width:100%; aspect-ratio:1; align-self:center;}
@@ -243,9 +256,10 @@
   @keyframes diceCall{50%{transform:translateY(-5px) rotate(-6deg)}}
   @keyframes diceRoll{0%{transform:rotate(0)} 25%{transform:rotate(90deg) scale(.9)} 50%{transform:rotate(180deg)} 75%{transform:rotate(270deg) scale(.9)} 100%{transform:rotate(360deg)}}
   /* البركة: الأرقامُ المرميّة التي لم تُنفَق بعد (dice_box في المرجع) */
-  .pool{display:flex; gap:3px; flex-wrap:wrap; max-width:96px;}
-  .pool i{font-style:normal; width:21px; height:21px; border-radius:6px; background:#fff; border:2px solid var(--sd);
-          font-size:12.5px; font-weight:900; display:flex; align-items:center; justify-content:center; color:#3a2b2b;}
+  .pool{display:flex; gap:2px; flex-wrap:wrap; max-width:92px; margin-top:2px;}
+  .pool:empty{display:none;}
+  .pool i{font-style:normal; width:17px; height:17px; border-radius:5px; background:#fff; border:1.5px solid var(--sd);
+          font-size:10.5px; font-weight:900; display:flex; align-items:center; justify-content:center; color:#3a2b2b;}
   .pool i.six{background:#FFF1BF;}
   /* فقاعةُ الدردشة بجانب صاحبها */
   .pp .bub{position:absolute; bottom:calc(100% + 8px); max-width:230px; background:#fff; border:2px solid var(--sd);
@@ -304,12 +318,6 @@
   #chatForm{display:flex; gap:6px; padding:8px; border-top:2px solid var(--line);}
   #chatForm input{flex:1; min-width:0; text-align:start; font-size:14px; padding:10px 12px; border:2px solid var(--line); border-radius:10px; font-family:inherit;}
   #chatForm button{border:none; border-radius:10px; background:#1668c7; color:#fff; font-weight:800; padding:10px 14px; cursor:pointer; font-family:inherit;}
-  /* اللعب التلقائيّ: شارةٌ تقول ما يجري وتُعيدك بلمسة (trusteeship في المرجع) */
-  #autoBar{display:none; position:fixed; left:50%; bottom:76px; transform:translateX(-50%); z-index:45; cursor:pointer;
-           background:#3b3b4f; color:#fff; border:2px solid #fff; border-radius:999px; padding:9px 16px; font-weight:900;
-           font-size:13.5px; box-shadow:0 8px 20px rgba(0,0,0,.25); white-space:nowrap;}
-  #autoBar.on{display:block;}
-
   /* النوافذ */
   .modal{position:fixed; inset:0; background:rgba(10,20,34,.72); z-index:60; display:none; align-items:center; justify-content:center; padding:14px;}
   .modal.on{display:flex;}
@@ -338,14 +346,20 @@
     #arena{grid-template-columns:1fr 1fr; grid-template-rows:auto auto auto; gap:8px;
            grid-template-areas:"tl tr" "board board" "bl br"; padding:6px 10px;}
     #cTL, #cTR{align-self:end;} #cBL, #cBR{align-self:start;}
-    /* ٣٤٠ = الشريط العلويّ + صفّا اللاعبين + شريطُ الدردشة؛ والإطارُ الأبيض
-       يُرسَم خارج الصندوق فيُترك له هامش */
-    #boardBox{justify-self:center; min-width:0; width:min(calc(100vw - 40px), max(280px, calc(100dvh - 340px)));}
-    .pp{padding:6px 8px; gap:7px; border-radius:16px;}
-    .pp .av{width:44px; height:44px; font-size:18px;}
-    .pp .nm{font-size:13px;}
-    .die{width:38px; height:38px; padding:5px; border-radius:11px;}
-    .pool i{width:18px; height:18px; font-size:11px;}
+    /* في الجوال: كلُّ لوحةٍ في جهة قاعدتها (فوقها أو تحتها) */
+    #cTL, #cBL{justify-content:flex-end;} #cTR, #cBR{justify-content:flex-start;}
+    /* ٢٦٠ = الشريط العلويّ + صفّا اللاعبين (صارا أقصر) + شريطُ الدردشة؛
+       والإطارُ الأبيض يُرسَم خارج الصندوق فيُترك له هامش */
+    #boardBox{justify-self:center; min-width:0; width:min(calc(100vw - 40px), max(280px, calc(100dvh - 260px)));}
+    .pp{padding:4px 8px 4px 5px; gap:5px; border-radius:14px;}
+    #cTL .pp, #cBL .pp{padding:4px 5px 4px 8px;}
+    .pp .av{width:34px; height:34px; font-size:15px; border-width:2px;}
+    .pp .nm{font-size:12px; max-width:84px;}
+    .pp .meta{font-size:9.5px;}
+    .pp .tmb{font-size:9.5px; padding:0 6px; top:-10px;}
+    .die{width:30px; height:30px; padding:3px; border-radius:8px; border-width:2px;}
+    .pool i{width:15px; height:15px; font-size:9.5px; border-radius:4px;}
+    .pp .hand{top:-19px; font-size:15px; left:calc(50% - 8px);}
     #seatGrid{grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;}
   }
   /* الجوال: المقاعدُ أضيق — نقطةٌ أصغر وزرٌّ أصغر */
@@ -386,6 +400,7 @@
     <div class="card" id="topBar">
       <div id="roomChip" title="انسخ رابط الدعوة"><b id="roomCode">—</b><span>🔗 انسخ الرابط</span></div>
       <div id="phaseInfo">في الانتظار…</div>
+      <button class="iconBtn" id="themeBtn" title="مظهر اللوحة">🎨</button>
       <button class="iconBtn" id="rulesBtn" title="القواعد">📖</button>
       <button class="iconBtn" id="sndBtn" title="الصوت">🔊</button>
       <a class="iconBtn" href="/" title="الصفحة الرئيسية">🏠</a>
@@ -435,12 +450,19 @@
           <button type="submit">إرسال</button>
         </form>
       </div>
-      <div id="autoBar">🤖 اللعب التلقائيّ يلعب عنك — المس الشاشة لتعود</div>
       <!-- نردُك: يُنقل إلى لوحتك في زاويتك -->
       <button id="diceBtn" class="die" disabled aria-label="ارمِ النرد" style="display:none"></button>
     </div>
   </div>
 </div>
+
+<!-- مظهر اللوحة -->
+<div class="modal" id="themeModal"><div class="sheet">
+  <h3>🎨 مظهر اللوحة</h3>
+  <div class="sub" style="text-align:start">اختر ما يريح عينك — يُحفظ على جهازك ولا يغيّر شيئًا عند بقيّة اللاعبين.</div>
+  <div id="themeGrid"></div>
+  <button class="btn btn-ghost" data-close>تمّ</button>
+</div></div>
 
 <!-- القواعد -->
 <div class="modal" id="rulesModal"><div class="sheet">
