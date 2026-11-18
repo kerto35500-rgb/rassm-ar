@@ -177,6 +177,9 @@
   /* القفزة تكبيرٌ لا إزاحة: اللوحة تدور، و«فوق» في اللوحة قد يكون يسارَ الشاشة */
   .tok.hop{transform:scale(1.25);}
   .tok.small.hop{transform:scale(.92);}
+  /* وثبةُ الكنغر: انتقالٌ واحدٌ أطول، والقطعةُ تكبر في منتصفه كأنّها في الهواء */
+  .tok.leap{transition:left .44s cubic-bezier(.35,.1,.3,1), top .44s cubic-bezier(.35,.1,.3,1); animation:leapArc .44s ease-in-out; z-index:8;}
+  @keyframes leapArc{0%{transform:scale(1)} 45%{transform:scale(1.85); filter:drop-shadow(0 10px 6px rgba(0,0,0,.3))} 100%{transform:scale(1)}}
   .tok.sh::after{content:""; position:absolute; inset:-28%; border-radius:50%;
                  background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.75), rgba(160,215,255,.35) 55%, rgba(120,190,255,.15));
                  border:2px solid rgba(140,200,255,.9); pointer-events:none;}

@@ -91,8 +91,12 @@ function scoreMove(view, mv, track, diff, rnd) {
     }
   }
 
-  /* الأمان */
-  const danger = toAbs != null ? threats(view, mv.owner, toAbs, track) : 0;
+  /* الأمان. قطعتان للّون نفسه في مربّعٍ غيرِ آمن زوجٌ لا يُنزَل عليه (قاعدةُ
+     المرجع) — فمن ينضمّ إلى قطعةٍ له لا خطرَ عليه هناك، والزوجُ مكسبٌ صغير */
+  const pairs = toAbs != null && !SAFE.has(toAbs) &&
+    track.some(o => o.seat === mv.owner && o.idx !== mv.idx && o.abs === toAbs);
+  if (pairs && mode !== "master") s += 10;
+  const danger = toAbs != null && !pairs ? threats(view, mv.owner, toAbs, track) : 0;
   const shielded = !!pc.sh;
   if (toAbs != null) {
     if (SAFE.has(toAbs)) s += 14;

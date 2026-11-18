@@ -472,10 +472,6 @@
   const idleWaiters = [];
   const whenIdle = () => new Promise(res => (busy || queue.length) ? idleWaiters.push(res) : res());
 
-  /* حليفي: أنا أو زميلي في الفرق — ما يخصّهما يُعلَن بنافذة، وما يخصّ غيرهما
-     يكفيه وميضُ المربّع على اللوحة */
-  const mine = (v, s) => s === mySeat || (v.rules.teams && s != null && s % 2 === mySeat % 2);
-
   async function animate(st, speed) {
     const players = st.players || PLAYERS;
     const nm = s => (players[s] && players[s].name) || G.COLOR_AR[s];
@@ -489,7 +485,7 @@
         await animRoll(e.seat, e.v, e.golden);
         await wait(140);
       }
-      else if ((e.t === "move" || e.t === "jump") && e.path) {
+      else if (e.t === "move" && e.path) {
         const d = tokEl(e.owner, e.idx);
         if (e.partial && d.style.display === "none") d.style.display = "";
         for (const q of e.path) {
@@ -501,21 +497,26 @@
         }
         if (e.partial && e.to == null) d.style.display = "none";
       }
+      /* قفزةُ الكنغر (ودفعةُ الريح لصاحبها): وثبةٌ واحدةٌ إلى المربّع، لا مشيٌ
+         مربّعًا مربّعًا — القطعةُ تكبر في الهواء ثمّ تهبط حيث انتهت */
+      else if (e.t === "jump" && e.path) {
+        const d = tokEl(e.owner, e.idx);
+        if (e.partial && d.style.display === "none") d.style.display = "";
+        const seen = e.path.filter(q => q != null);
+        if (seen.length) {
+          d.classList.add("leap"); snd("pow");
+          place(d, rcFor(e.owner, seen[seen.length - 1], e.idx));
+          await wait(470);
+          d.classList.remove("leap");
+        }
+        if (e.partial && e.to == null) d.style.display = "none";
+      }
       else if (e.t === "capture") { snd("cap"); flash(e.cell, "#ff6b6b"); toast(`💥 ${nm(e.by)} أكل قطعةً لـ${nm(e.seat)}`); await wait(260); }
-      else if (e.t === "power") {
-        snd("pow"); flash(e.cell, "#ffd34d");
-        if (mine(st, e.actor)) toast(`${NAMES.icons[e.type] || "✨"} ${NAMES.powers[e.type] || ""}`);
-        await wait(220);
-      }
-      else if (e.t === "jumpRoll" && e.got && mine(st, e.owner)) toast(`🦘 قفزة الحظّ: ${AR_NUM(e.got)} ${e.got === 1 ? "مربّع" : "مربّعات"}`);
-      else if (e.t === "fizzle" && mine(st, e.owner)) toast("🔄 لا خصمَ في النطاق — ضاع التبديل");
-      else if (e.t === "wind") {
-        if (e.pushes && e.pushes.length) toast(`🌬️ الرياح دفعت ${AR_NUM(e.pushes.length)} ${e.pushes.length === 1 ? "قطعة" : "قطع"} للخلف`);
-        else if (mine(st, e.owner)) toast(e.advance ? "🌬️ لا أحد خلفك — تقدّمت خطوة" : "🌬️ لا أحد خلفك");
-        await wait(200);
-      }
-      else if (e.t === "swap") { snd("pow"); toast("🔄 تبادلت قطعتان مكانيهما"); await wait(200); }
-      else if (e.t === "shielded") toast("🫧 الدرع حمى القطعة من الأكل");
+      /* المعزّزات: بلا إشعاراتٍ مكتوبة (لا لصاحبها ولا لغيره) — يكفي ما يُرى على
+         اللوحة: وميضُ المربّع، والقفزة، وارتدادُ القطع، والنردُ الذهبيّ */
+      else if (e.t === "power") { snd("pow"); flash(e.cell, "#ffd34d"); await wait(220); }
+      else if (e.t === "wind") { if (e.pushes && e.pushes.length) snd("cap"); await wait(200); }
+      else if (e.t === "swap") { snd("pow"); await wait(200); }
       else if (e.t === "sacrifice") { snd("cap"); toast(`🛡️ ${nm(e.seat)} ضحّى بحارسٍ لينجو ملكه`); await wait(250); }
       else if (e.t === "kingDown") { snd("cap"); toast(`👑 سقط ملك ${nm(e.seat)}!`); await wait(300); }
       else if (e.t === "out" && e.seat === mySeat) toast("سقط ملكك — خرجت من المباراة");
@@ -877,6 +878,7 @@
       king: r("👑 الملك", "لك ثلاثةُ حرّاسٍ 🛡️ وملكٌ 👑. الملكُ مقفلٌ حتى يخرج حارسٌ ويخطو خطوة. لا يمشي الملك إلا على مربّعاتٍ مشاها حرّاسُك (اضغط على ملكك لترى مساره). إذا هوجم الملك تستطيع التضحية بحارسٍ على اللوحة فيبقى الملك ويعود الحارس محظورًا ٣ أدوار. تفوز بإيصال ملكك إلى المركز أو بإسقاط ملوك الجميع. في الفرق: يمشي ملكك على ما عبّده حرّاسُ زميلك أيضًا، ويفوز الفريق بملكٍ واحد ويخسر بسقوط الملكين.")
     };
     return r("القواعد الأساسيّة", "تخرج القطعةُ من القاعدة بالرقم ٦ · مربّعاتُ الانطلاق والنجوم ★ آمنة · لا تجاوزَ للمركز (إلا الارتداد في الاحترافيّ).") +
+      r("🧱 الزوج المحميّ", "قطعتان من لونٍ واحدٍ في مربّعٍ واحدٍ (غيرِ آمن) لا ينزل عليهما الخصم ولا يأكلهما — لكنّه يتخطّاهما. ولا تدفعهما الرياح ولا يُبدَّل معهما.") +
       r("🎲 النرد", "إذا طلعت ستّة ترمي مرّةً أخرى <b style='display:inline'>قبل</b> أن تحرّك، وتتجمّع الأرقام تحت نردك (٦ ثمّ ٤ مثلًا)، ثمّ تُنفقها رقمًا رقمًا: أيُّ قطعةٍ تمشي بأيّ رقم — وإن مشت قطعةٌ بأكثر من رقم اختر الرقمَ من الفقاعة فوقها. " +
         "ثلاثُ ستّاتٍ متتالية تُلغي الدورَ كلَّه. أكلُ قطعةٍ أو إدخالُها المركز يمنح رميةً جديدة، وما بقي من أرقامك يبقى لك. " +
         "والنردُ نردُ لعبة يلا لودو: الستّةُ تأتي أكثرَ قليلًا (نحو ٢٣٪)، وإن كانت قطعُك كلُّها في القاعدة ساعدك بستّةٍ أكثر.") +
@@ -886,10 +888,10 @@
         "«التأمين المشترك» مفعّلًا: يقف الزميلان في مربّعٍ واحدٍ فيصير آمنًا لا يُؤكلان فيه؛ ومطفأً: لا يقفان معًا إلا على النجوم ومربّعات الانطلاق.") +
       '<div class="modeTag" style="margin-top:4px">✨ المعزّزات (حين تُفعَّل)</div>' +
       pu("gold", "رميتُك القادمة ستّةٌ مضمونة.") +
-      pu("jump", "تتقدّم القطعةُ ١ إلى ٣ مربّعاتٍ عشوائيًّا.") +
+      pu("jump", "تقفز القطعةُ وثبةً واحدةً ١ إلى ٣ مربّعاتٍ عشوائيًّا (وتقف قبل زوج الخصم).") +
       pu("bubble", "لا تُؤكل القطعةُ دورةً كاملة.") +
-      pu("wind", "خصومُ المربّعات الثلاثة خلفك يرتدّون إلى المربّع الرابع، وإن اجتمع فيه خصمان أكل الأقربُ الأبعد. ولا أحد خلفك ⇒ تتقدّم خطوة.") +
-      pu("swap", "تبدّل مكانك مع خصمٍ في نطاق ٥ مربّعاتٍ أمامك أو خلفك.");
+      pu("wind", "خصومُ المربّعات الثلاثة خلفك يرتدّون إلى المربّع الرابع: إن كانوا من لونين مختلفين أكل الأقربُ إليك الأبعد، وإن كانوا من لونٍ واحدٍ وقفوا معًا زوجًا محميًّا. والزوجُ القائم لا تدفعه الريح. ولا أحد خلفك ⇒ تتقدّم خطوة.") +
+      pu("swap", "تبدّل مكانك مع خصمٍ في نطاق ٥ مربّعاتٍ أمامك أو خلفك (إلا قطعةً في زوجٍ محميّ).");
   }
   $("rulesBtn").onclick = () => {
     $("rulesBody").innerHTML = rulesHTML((VIEW && VIEW.rules.mode) || (settings && settings.mode) || "classic");

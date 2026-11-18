@@ -240,7 +240,11 @@ function connectClient() {
         ? res => { const r = JSON.parse(JSON.stringify(res)); setImmediate(() => ack(r)); } : undefined));
     },
     io: { on() {} },
-    _deliver(e, d) { (handlers[e] || []).slice().forEach(f => f(d)); },
+    _deliver(e, d) {
+      /* نعدّ التقاطَ المعزّزات الذي وصل الصفحات (للتحقّق من أنّه بلا إشعار) */
+      if (e === "state" && d && d.events) for (const ev of d.events) if (ev.t === "power") seen.power++;
+      (handlers[e] || []).slice().forEach(f => f(d));
+    },
     disconnect() { nsp.sockets.delete(s.id); s.client = null; s.fire("disconnect"); }
   };
   s.client = c;
@@ -251,6 +255,7 @@ function connectClient() {
 
 /* ══════════ متصفّحٌ مصغّر: صفحةٌ من index.html تعمل فيها سكربتاتُها ══════════ */
 const errors = [];
+const seen = { power: 0, toasts: [] };
 process.on("uncaughtException", e => errors.push(e));
 process.on("unhandledRejection", e => errors.push(e));
 
@@ -282,6 +287,15 @@ function openPage(name, search = "", store = {}) {
   vm.runInContext(SRC.theme, ctx, { filename: "theme.js" });
   vm.runInContext(SRC.geom, ctx, { filename: "geom.js" });
   vm.runInContext(SRC.app, ctx, { filename: "app.js" });
+  /* كلُّ ما يُكتب في شريط الإشعار يُسجَّل — لنتحقّق ممّا لا يجب أن يظهر */
+  {
+    const t = doc.getElementById("toast");
+    const proto = Object.getOwnPropertyDescriptor(El.prototype, "textContent");
+    Object.defineProperty(t, "textContent", {
+      get() { return proto.get.call(this); },
+      set(v) { seen.toasts.push(String(v)); proto.set.call(this, v); }
+    });
+  }
   const $ = id => doc.getElementById(id);
   const shown = id => $(id).style.display !== "none" && $(id).style.display !== "";
   return { name, doc, ctx, $, shown, click: id => $(id).dispatch("click") };
@@ -724,6 +738,15 @@ function freeze(room) {
     const set = A.$("setBox").textContent;
     ok(!/مفعّلة|مغلقة/.test(set) && /تشغيل/.test(set) && /إيقاف/.test(set),
        "مفاتيحُ الإعدادات «تشغيل/إيقاف» — «مفعّلة» و«مغلقة» تتشابهان رسمًا فتُقرأ إحداهما للأخرى");
+  }
+
+  console.log("⑥ب المعزّزات بلا إشعارات");
+  {
+    const powerToast = /قفزة الحظّ|الرياح دفعت|لا أحد خلفك|تبادلت قطعتان|الدرع حمى|ضاع التبديل|النرد الذهبيّ|درع الفقاعة|تبديل الأماكن|الرياح العكسيّة/;
+    ok(seen.power > 0, "التُقطت معزّزاتٌ في المباريات", seen.power);
+    const bad = seen.toasts.filter(t => powerToast.test(t));
+    ok(bad.length === 0, "ولم يظهر لأيّ لاعبٍ إشعارٌ بالتقاطها أو بأثرها", bad.slice(0, 5));
+    ok(/\.tok\.leap\{/.test(HTML) && /leapArc/.test(HTML), "وقفزةُ الكنغر وثبةٌ واحدة (أنماطُها موجودة)");
   }
 
   console.log("⑦ لا استثناءَ في أيّ مسار");

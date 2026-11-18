@@ -265,6 +265,27 @@ class LudoMatch {
     return null;
   }
 
+  /** الزوج المحميّ: مقعدٌ خصمٌ لِـmover له قطعتان فأكثر في مربّعٍ غيرِ آمن.
+      لا يُنزَل عليه (ويُتخطّى) — من لعبة المرجع: MapEv.canMove يمنع الوصولَ إلى
+      مربّعٍ فيه قطعتان فأكثر للونٍ آخر. كان الخصمُ ينزل عليهما فيأكلهما معًا.
+      (في الاحترافيّ أشدّ: الحاجزُ لا يُتخطّى أيضًا — blockadeAt.) */
+  pairAt(abs, mover) {
+    if (SAFE.has(abs)) return null;
+    const by = {};
+    for (const o of this.piecesOnAbs(abs)) if (this.opponent(mover, o.seat)) by[o.seat] = (by[o.seat] || 0) + 1;
+    for (const s of Object.keys(by)) if (by[s] >= 2) return +s;
+    return null;
+  }
+
+  /** هل القطعةُ جزءٌ من زوجٍ لمقعدها في مربّعٍ غيرِ آمن؟ (لا تدفعها ريحٌ ولا تُبدَّل) */
+  inPair(seat, idx) {
+    const pc = this.pieces[seat][idx];
+    if (!(pc.p >= 0 && pc.p <= LAST_TRACK)) return false;
+    const abs = absOf(seat, pc.p);
+    if (SAFE.has(abs)) return false;
+    return this.pieces[seat].some((o, i) => i !== idx && o.p === pc.p);
+  }
+
   /** آمنٌ: انطلاقٌ أو نجمة، أو (في الفرق مع «التأمين المشترك») مربّعٌ يقف
       فيه زميلان من مقعدين مختلفين. */
   isSafeAbs(abs) {
@@ -352,8 +373,10 @@ class LudoMatch {
       for (const s of path) if (!sec.has(this.key(owner, s))) return null;
     }
 
-    /* الفرق بلا «تأمينٍ مشترك»: لا يقف زميلان في مربّعٍ واحدٍ غيرِ آمن */
     const t = q;
+    /* زوجُ الخصم (قطعتان من لونٍ واحد) لا يُنزَل عليه — ويُتخطّى */
+    if (t <= LAST_TRACK && this.pairAt(absOf(owner, t), owner) !== null) return null;
+    /* الفرق بلا «تأمينٍ مشترك»: لا يقف زميلان في مربّعٍ واحدٍ غيرِ آمن */
     if (t <= LAST_TRACK && this.isTeams() && !this.rules.sharedSafe) {
       const abs = absOf(owner, t);
       if (!SAFE.has(abs) &&
@@ -703,6 +726,7 @@ class LudoMatch {
       for (const o of this.piecesOnAbs(cell)) {
         if (!this.opponent(owner, o.seat)) continue;
         if (block !== null && block === o.seat) continue;   /* الحاجز راسخ لا تدفعه ريح */
+        if (this.inPair(o.seat, o.idx)) continue;          /* والزوجُ المحميّ كذلك */
         pushed.push({ ...o, k });
       }
     }
@@ -727,18 +751,24 @@ class LudoMatch {
     this.evPos({ t: "wind", owner, idx, pushes, advance: false },
                null, [a, ...pushes.map(x => absOf(x.seat, x.from)), dest]);
 
-    /* الاصطدام في المربّع الرابع: الأقربُ يأكل الأبعد (لا يأكل حليفَه، ولا
-       يمسّ قطعَ صاحب الريح، ولا يأكل في مربّعٍ آمن أو محميًّا بفقاعة) */
+    /* الاصطدام في المربّع الرابع (كما اتّفقنا):
+       • لونان مختلفان ⇒ يأكل الأقربُ إليك (أصغرُ k) الأبعد.
+       • لونٌ واحد ⇒ لا أكل: يقفان معًا زوجًا محميًّا (pairAt) لا يُنزَل عليه.
+       ولا يأكل حليفَه، ولا يمسّ قطعَ صاحب الريح، ولا يأكل في مربّعٍ آمن أو
+       محميًّا بفقاعة، ولا يأكل زوجًا (قطعتين للونٍ واحد) وجده هناك. */
     if (this.isSafeAbs(dest)) return;
     const landed = pushed.filter(o => o.pc.p >= 0 && o.pc.p <= LAST_TRACK && absOf(o.seat, o.pc.p) === dest)
                          .sort((x, y) => x.k - y.k);
     if (!landed.length) return;
     const surv = landed[0];
+    const count = {};
+    for (const o of this.piecesOnAbs(dest)) count[o.seat] = (count[o.seat] || 0) + 1;
     for (const o of this.piecesOnAbs(dest)) {
       if (o.seat === surv.seat && o.idx === surv.idx) continue;
       if (!this.opponent(owner, o.seat)) continue;
       if (!this.opponent(surv.seat, o.seat)) continue;
       if (o.pc.shield > 0) continue;
+      if (count[o.seat] >= 2) continue;
       this.queue.unshift({ k: "capture", seat: o.seat, idx: o.idx, by: surv.seat, cell: dest, reward: false });
     }
   }
@@ -763,6 +793,7 @@ class LudoMatch {
       for (const o of this.piecesOnAbs(cell)) {
         if (!this.opponent(owner, o.seat) || o.pc.shield > 0) continue;
         if (block !== null && block === o.seat) continue;
+        if (this.inPair(o.seat, o.idx)) continue;          /* الزوجُ المحميّ لا يُفكّ بالتبديل */
         const op = o.pc.p - d;
         if (op < 0 || op > LAST_TRACK) continue;
         out.push({ id: out.length, seat: o.seat, idx: o.idx, d, cell });

@@ -138,6 +138,60 @@ console.log("② القواعد الأساسيّة (من لعبة المرجع)"
     ok(mm.turn === 0 && mm.phase === "roll" && mm.sixRun === 2, "الذهبيّةُ لا تزيد العدّاد ولا تصفّره", mm.sixRun);
     rollAs(mm, 0, 6);
     ok(mm.turn === 2, "والستّةُ العاديّةُ الثالثة تُضيّع الدور");
+
+    /* القاعدةُ باقية (طلبُ المستخدم): ثلاثُ ستّاتٍ متتالية تُلغي الدور — من أوّل رمية */
+    mm = mk({ mode: "classic" }, [0, 2]);
+    turnTo(mm, 0); put(mm, 0, 0, 10);
+    rollSeq(mm, 0, [6, 6, 6]);
+    ok(mm.turn === 2 && mm.pieces[0][0].p === 10, "٦ ٦ ٦ من أوّل الدور ⇒ يُلغى الدور");
+  }
+
+  /* زوجُ الخصم: قطعتان من لونٍ واحدٍ في مربّعٍ غيرِ آمن لا يُنزَل عليهما
+     (المرجع: MapEv.canMove) — كان الخصمُ ينزل فيأكلهما معًا. ويُتخطّيان. */
+  {
+    let from = 5;
+    while (L.SAFE.has(absOf(0, from + 3)) || L.SAFE.has(absOf(0, from + 4))) from++;
+    const pairCell = absOf(0, from + 3);
+    const build = (n2) => {
+      const mm = mk({ mode: "classic" }, [0, 2]);
+      turnTo(mm, 0); put(mm, 0, 0, from); put(mm, 0, 1, 40);
+      for (let i = 0; i < n2; i++) put(mm, 2, i, rel(2, pairCell));
+      return mm;
+    };
+    let mm = build(2);
+    rollAs(mm, 0, 3);
+    ok(!mm.legal.some(x => x.owner === 0 && x.idx === 0), "لا ينزل الخصمُ على قطعتين من لونٍ واحد", mm.legal);
+    mm = build(2); rollAs(mm, 0, 4);
+    ok(mm.legal.some(x => x.owner === 0 && x.idx === 0), "لكن يتخطّاهما");
+    go(mm, 0, 0, 0);
+    ok(mm.pieces[2][0].p !== BASE && mm.pieces[2][1].p !== BASE, "ولا يمسّهما بالتخطّي");
+    mm = build(1); rollAs(mm, 0, 3); go(mm, 0, 0, 0);
+    ok(mm.pieces[2][0].p === BASE, "والقطعةُ الواحدة تُؤكل كالعادة");
+    /* زوجي أنا: أنزل عليه (ثلاثُ قطعٍ لي) */
+    mm = mk({ mode: "classic" }, [0, 2]);
+    turnTo(mm, 0); put(mm, 0, 0, from); put(mm, 0, 1, from + 3); put(mm, 0, 2, from + 3);
+    rollAs(mm, 0, 3);
+    ok(mm.legal.some(x => x.owner === 0 && x.idx === 0), "وعلى زوجي أنا أنزل");
+    /* على النجمة: لا أكل أصلًا، فلا حجب — تتشارك الألوانُ المربّعَ الآمن */
+    const star = STARS.find(a => a > 8 && a < 40);
+    mm = mk({ mode: "classic" }, [0, 2]);
+    turnTo(mm, 0); put(mm, 0, 0, star - 3);
+    put(mm, 2, 0, rel(2, star)); put(mm, 2, 1, rel(2, star));
+    rollAs(mm, 0, 3);
+    ok(mm.legal.some(x => x.owner === 0 && x.idx === 0), "زوجٌ على نجمة: يُنزَل معه (المربّعُ آمنٌ للجميع)");
+    go(mm, 0, 0, 0);
+    ok(mm.pieces[2][0].p !== BASE && mm.pieces[2][1].p !== BASE, "ولا أكل");
+    /* في الفرق: زوجُ الخصم يحجب، وزوجُ زميلي لا يحجبني (مع التأمين المشترك) */
+    mm = mk({ mode: "classic", teams: true, sharedSafe: true }, [0, 1, 2, 3]);
+    turnTo(mm, 0); put(mm, 0, 0, from); put(mm, 0, 1, 40);
+    put(mm, 2, 0, rel(2, pairCell)); put(mm, 2, 1, rel(2, pairCell));
+    rollAs(mm, 0, 3);
+    ok(mm.legal.some(x => x.owner === 0 && x.idx === 0), "زوجُ زميلي لا يحجبني");
+    mm = mk({ mode: "classic", teams: true, sharedSafe: true }, [0, 1, 2, 3]);
+    turnTo(mm, 0); put(mm, 0, 0, from); put(mm, 0, 1, 40);
+    put(mm, 1, 0, rel(1, pairCell)); put(mm, 1, 1, rel(1, pairCell));
+    rollAs(mm, 0, 3);
+    ok(!mm.legal.some(x => x.owner === 0 && x.idx === 0), "وزوجُ الخصم يحجبني");
   }
 
   /* الأكلُ يمنح رميةً جديدة وما بقي في البركة لا يضيع */
@@ -506,6 +560,42 @@ console.log("⑨ المعزّزات");
   m.powerups = [{ cell: 12, type: "wind" }];
   put(m, 0, 0, 10); turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 0);
   eq(m.pieces[0][0].p, 13, "ولا أحد خلفك ⇒ تتقدّم خطوة");
+  /* لونٌ واحدٌ يرتدّ قطعتين إلى الرابع ⇒ لا أكل: يقفان معًا زوجًا محميًّا */
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 1, 2]);
+  m.powerups = [{ cell: 33, type: "wind" }];
+  put(m, 0, 0, 28);
+  put(m, 1, 0, rel(1, 31)); put(m, 1, 1, rel(1, 30));
+  turnTo(m, 0); rollAs(m, 0, 5); go(m, 0, 0, 0);
+  ok(absOf(1, m.pieces[1][0].p) === 29 && absOf(1, m.pieces[1][1].p) === 29, "قطعتان من لونٍ واحد ترتدّان معًا بلا أكل",
+     { a: m.pieces[1][0].p, b: m.pieces[1][1].p });
+  ok(m.pairAt(29, 0) === 1, "فصارتا زوجًا محميًّا لا يُنزَل عليه");
+  /* والزوجُ القائم خلفك لا تدفعه الريح (كحاجز الاحترافيّ) */
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 1, 2]);
+  m.powerups = [{ cell: 33, type: "wind" }];
+  put(m, 0, 0, 28);
+  put(m, 1, 0, rel(1, 31)); put(m, 1, 1, rel(1, 31));
+  turnTo(m, 0); rollAs(m, 0, 5); go(m, 0, 0, 0);
+  ok(absOf(1, m.pieces[1][0].p) === 31 && absOf(1, m.pieces[1][1].p) === 31, "والزوجُ القائم لا تدفعه الريح");
+  /* ولا يأكل المرتدُّ زوجًا وجده في الرابع */
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 1, 2]);
+  m.powerups = [{ cell: 33, type: "wind" }];
+  put(m, 0, 0, 28);
+  put(m, 1, 0, rel(1, 31)); put(m, 2, 0, rel(2, 29)); put(m, 2, 1, rel(2, 29));
+  turnTo(m, 0); rollAs(m, 0, 5); go(m, 0, 0, 0);
+  ok(m.pieces[2][0].p !== BASE && m.pieces[2][1].p !== BASE && absOf(1, m.pieces[1][0].p) === 29,
+     "ولا يأكل المرتدُّ زوجًا وجده في الرابع", { s2: [m.pieces[2][0].p, m.pieces[2][1].p] });
+  /* قفزة الكنغر تقف قبل زوج الخصم */
+  {
+    let P = 14;
+    while ([P, P + 1, P + 2, P + 3].some(a => L.SAFE.has(a))) P++;
+    m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);
+    m.powerups = [{ cell: P, type: "jump" }];
+    put(m, 0, 0, P - 2);
+    put(m, 2, 0, rel(2, P + 3)); put(m, 2, 1, rel(2, P + 3));
+    m.rnd = n => Math.min(2, n - 1);                      /* القفزة ٣ */
+    turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 0);
+    ok(m.pieces[0][0].p === P + 2 && m.pieces[2][0].p !== BASE, "قفزةُ الحظّ تقف قبل زوج الخصم ولا تأكله", { me: m.pieces[0][0].p, P });
+  }
 
   /* تبديل الأماكن */
   m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);
@@ -513,6 +603,12 @@ console.log("⑨ المعزّزات");
   put(m, 0, 0, 10); put(m, 2, 0, rel(2, 16));
   turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 0);
   ok(m.pieces[0][0].p === 16 && absOf(2, m.pieces[2][0].p) === 12, "خصمٌ واحدٌ في النطاق ⇒ تبديلٌ فوريّ");
+  {
+    const mm = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);
+    let c = 16; while (L.SAFE.has(c)) c++;
+    put(mm, 0, 0, 12); put(mm, 2, 0, rel(2, c)); put(mm, 2, 1, rel(2, c));
+    ok(!mm.swapOptions(0, 0).length, "والزوجُ المحميّ لا يُبدَّل معه", mm.swapOptions(0, 0));
+  }
   m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 1, 2]);
   m.powerups = [{ cell: 31, type: "swap" }];
   put(m, 0, 0, 29); put(m, 2, 0, rel(2, 35)); put(m, 1, 0, rel(1, 28));
