@@ -284,7 +284,14 @@
       opts = v.legal.filter(x => x.owner === seat && x.from === -1 && v.pieces[seat][x.idx].k === pc.k);
     return opts;
   }
+  /* حركةٌ أُرسلت ولم يصل ردُّها بعد: القطعُ تكفّ عن التوهّج فورًا، ولمسةٌ
+     ثانية (نقرٌ مزدوجٌ على الجوال) لا تُرسل حركةً أخرى — كانت تعود برسالة
+     «ليس دورك في التحريك». يُفكّ القفلُ مع الحالة التالية أو رسالة خطأ. */
+  let moveSentAt = 0, moveSentSrv = 0;
   function playMove(m) {
+    if (moveSentAt && Date.now() - moveSentAt < 2500) return;
+    moveSentAt = Date.now(); moveSentSrv = Date.now() + SKEW;   /* بساعة الخادم */
+    for (const k in toks) toks[k].classList.remove("can");
     selKing = null; showPath = false; hidePicker();
     socket.emit("move", { id: m.id }); clearHint(); drawPath(VIEW); markSel();
   }
@@ -534,6 +541,8 @@
   function render(st) {
     VIEW = st;
     PLAYERS = st.players || PLAYERS;
+    /* حالةٌ وُلدت بعد إرسال الحركة ⇒ يُفكّ قفلُ النقر (حالةٌ أقدم كانت في الطابور لا تفكّه) */
+    if (moveSentAt && (!st.serverNow || st.serverNow >= moveSentSrv)) moveSentAt = 0;
     if (st.serverNow) SKEW = st.serverNow - Date.now();
     if (mySeat !== st.me) { mySeat = st.me; setRotation(mySeat); }
     if (!ended) showScreen("play");
@@ -1108,7 +1117,7 @@
   });
   socket.on("chat", m => addMsg(m));
   socket.on("chatLog", list => { $("msgs").innerHTML = ""; list.forEach(m => addMsg(m, false, true)); });
-  socket.on("toast", t => toast(t));
+  socket.on("toast", t => { moveSentAt = 0; toast(t); });
   socket.on("kicked", () => {
     try { localStorage.removeItem("ludoResume"); } catch (e) {}
     alert("تم إخراجك من الغرفة"); location.href = "/ludo/";

@@ -473,6 +473,33 @@ function freeze(room) {
       ok(B.$("cBL").querySelector(".pp.me") && bSeatNum === 1, "وعند فهد: هو أسفلَ اليسار عنده", bSeatNum);
       const lefts = A.$("toks").querySelectorAll(".tok").map(t => parseFloat(t.style.left));
       ok(lefts.every(x => x > 0 && x < 100), "وكلُّ قطعةٍ داخل اللوحة", lefts);
+
+      /* نقرٌ مزدوجٌ على قطعة (الجوال): حركةٌ واحدةٌ تُرسَل لا اثنتان — كانت
+         الثانيةُ تعود برسالة «ليس دورك في التحريك» */
+      {
+        let sent = 0, tried = false, after = -1;
+        const sock = A.ctx._sock, em = sock.emit;
+        sock.emit = function (e, d, ack) { if (e === "move") sent++; return em.call(this, e, d, ack); };
+        for (let k = 0; k < 80 && !tried; k++) {
+          await until(() => !A.$("diceBtn").disabled || A.doc.querySelectorAll(".tok.can").length, 2000);
+          if (!A.$("diceBtn").disabled) A.$("diceBtn").dispatch("click");
+          await until(() => A.doc.querySelectorAll(".tok.can").length, 300);
+          const can = A.doc.querySelectorAll(".tok.can");
+          if (!can.length) continue;
+          const before = sent;
+          can[0].dispatch("click");
+          const pk = A.$("picker");
+          if (pk.classList.contains("on") && pk.querySelector("button")) pk.querySelector("button").dispatch("click");
+          if (sent !== before + 1) continue;              /* فاتته المهلة (لعب عنه AUTO) — نعيد */
+          after = A.doc.querySelectorAll(".tok.can").length;
+          can[0].dispatch("click"); can[0].dispatch("click");
+          tried = true;
+          ok(sent === before + 1, "نقرٌ مزدوجٌ على قطعةٍ يرسل حركةً واحدة", { sent, before });
+          ok(after === 0, "والقطعُ تكفّ عن التوهّج فور الإرسال", after);
+        }
+        sock.emit = em;
+        ok(tried, "(أُتيح للاختبار دورٌ بحركة)");
+      }
     }
     if (mode === "night") {
       await until(() => A.$("lFog").children.length > 0, 3000);
