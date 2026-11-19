@@ -63,6 +63,8 @@
     b.toggle("kw-decrypto", !!document.getElementById("dcTabs"));
     /* البسكويتة الحارّة: الهيكلُ نفسه، ولونُها خوخيٌّ فلفليّ. تُميَّز بطاولتها */
     b.toggle("kw-spicy", !!document.getElementById("spTable"));
+    /* التخاطر: الهيكلُ نفسه، ولونُها نعناعيٌّ سماويّ. تُميَّز بعدّادها */
+    b.toggle("kw-wave", !!document.getElementById("wvGauge"));
     /* القنبلة: نسخة برتقالية */
     b.toggle("kw-bomb", !!document.getElementById("bombCircle"));
     /* قمّة الهرم: نسخة بنفسجية (تُميَّز بمشهد الهرم) */

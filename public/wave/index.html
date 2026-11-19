@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>📡 التخاطر — هل تقرأ أفكار فريقك؟</title>
+<style>
+  /* ═══ الأساس: هيكل «برّا السالفة» نفسه (كبقيّة ألعاب الفرق)، فتلبسه سمةُ
+     المارشميلو. وفوقه ما يخصّ اللعبة: العدّادُ نصفُ الدائرة (SVG)، ومناطقُ الهدف
+     بالباستيل، والستارة، والمؤشرُ الذي يُسحب. الأصنافُ الجديدة تبدأ بـ‎wv‎. ═══ */
+  :root{
+    --bg1:#0e1b2c; --panel:#ffffff; --ink:#3d2a26; --muted:#7d6f62;
+    --green:#2e9e5b; --green2:#25834a; --red:#e5484d; --amber:#f5a524;
+    --line:#ecdcc8; --soft:#fbf5ec;
+    --bl:#DDEBFF; --blm:#A9C9F5; --bld:#3F78C9;
+    --pk:#FFE0EB; --pkm:#F7B3C9; --pkd:#D2557E;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:"Segoe UI",Tahoma,system-ui,sans-serif; color:var(--ink);
+    background:radial-gradient(1200px 700px at 50% -10%,#1d3a5c,var(--bg1));
+    height:100vh; height:100dvh; max-height:100dvh;
+    display:flex; flex-direction:column; align-items:center;
+    padding:10px; gap:10px; overflow:hidden;
+    -webkit-user-select:none; user-select:none;
+  }
+  input{-webkit-user-select:text; user-select:text;}
+  .wrap{width:100%; max-width:820px; display:flex; flex-direction:column; gap:10px; flex:1; min-height:0; overflow:hidden;}
+  .card{background:var(--panel); border-radius:16px; box-shadow:0 10px 30px rgba(6,14,26,.28);}
+  .tb{--tc:var(--bl); --tm:var(--blm); --td:var(--bld);}
+  .tp{--tc:var(--pk); --tm:var(--pkm); --td:var(--pkd);}
+
+  #topBar{display:flex; align-items:center; gap:8px; padding:8px 10px; flex-wrap:nowrap;}
+  #roomChip{display:flex; flex-direction:column; align-items:center; justify-content:center;
+            background:var(--soft); border:2px solid var(--line); border-radius:12px;
+            padding:4px 12px; cursor:pointer; flex-shrink:0; min-width:92px;}
+  #roomChip b{font-size:17px; letter-spacing:1px; color:#1668c7;}
+  #roomChip span{font-size:10px; color:var(--muted);}
+  #phaseInfo{flex:1; min-width:0; text-align:center; font-weight:800; font-size:15px;
+             white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .iconBtn{width:38px; height:38px; flex-shrink:0; border:2px solid var(--line); background:#fff;
+           border-radius:11px; cursor:pointer; font-size:17px; display:flex; align-items:center; justify-content:center;
+           text-decoration:none; color:inherit;}
+
+  #joinScreen{position:relative; display:flex; flex-direction:column; align-items:center;
+              justify-content:center; min-height:100%; gap:16px; padding:24px 16px; overflow:auto;}
+  .logo{font-size:clamp(40px,9vw,56px); font-weight:900; color:#fff; text-shadow:0 4px 14px rgba(0,0,0,.35); letter-spacing:1px; text-align:center; line-height:1.25;}
+  .logo span{color:#9FE2C4;}
+  .tagline{color:#cfe3f7; margin-top:-10px; font-size:clamp(14px,3.5vw,17px); text-align:center; max-width:560px; line-height:1.7;}
+  #joinScreen .card{background:var(--panel); border-radius:18px; padding:20px; width:100%;
+        max-width:400px; box-shadow:0 12px 34px rgba(0,0,0,.28); display:flex; flex-direction:column; gap:10px;}
+  #joinScreen .card input{width:100%; min-width:0; padding:11px 13px; border:2px solid #e3e8ee;
+        border-radius:10px; font-size:16px; text-align:center; background:#f8fafc; font-family:inherit;}
+  .sub{color:var(--muted); font-size:14px; text-align:center; max-width:560px; line-height:1.7;}
+  .btn{border:none; border-radius:12px; padding:13px 18px; font-size:16px; font-weight:800;
+       cursor:pointer; font-family:inherit; color:#fff; width:100%;}
+  .btn-green{background:linear-gradient(180deg,var(--green),var(--green2));}
+  .btn-blue{background:linear-gradient(180deg,#3b8fe0,#1668c7);}
+  .btn-red{background:linear-gradient(180deg,#f4696d,var(--red));}
+  .btn-violet{background:linear-gradient(180deg,#9a6bff,#6a37e0);}
+  .btn-ghost{background:var(--soft); color:var(--ink); border:2px solid var(--line);}
+  .btn:active{transform:translateY(1px);}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .divider{text-align:center; color:#999; font-size:13px;}
+  #joinErr{color:var(--red); text-align:center; font-size:14px; min-height:16px; font-weight:700;}
+  #whoLine{display:none; text-align:center; font-size:13.5px; color:var(--green); font-weight:800; margin:-4px 0 4px;}
+  .row2{display:flex; gap:8px;}
+  .row2 > *{flex:1 1 0; min-width:0;}
+  .row2 .btn{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .backLink{display:inline-flex; align-items:center; justify-content:center; gap:6px;
+            margin:2px auto 4px; padding:9px 20px; border-radius:999px;
+            background:rgba(255,255,255,.14); border:1.5px solid rgba(255,255,255,.32);
+            color:#fff; font-size:15.5px; font-weight:900; text-decoration:none;}
+  .facts{display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
+  .facts span{background:rgba(255,255,255,.85); border:2px solid #fff; border-radius:999px; padding:5px 13px;
+              font-size:13px; font-weight:900; color:var(--ink); box-shadow:0 3px 8px rgba(0,0,0,.1);}
+
+  #lobby{display:none; flex-direction:column; gap:10px; padding:14px; flex:1; min-height:0; overflow:auto;}
+  .h{font-size:18px; font-weight:900; display:flex; align-items:center; gap:8px;}
+  #setBox{display:none; flex-direction:column; gap:10px;}
+  #setBox.open{display:flex;}
+  .setRow{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+          background:var(--soft); border-radius:11px; padding:9px 11px;}
+  .setRow label{font-weight:800; font-size:14px;}
+  .setRow .hint{font-size:11px; color:var(--muted); width:100%;}
+  .seg{display:flex; gap:0; border:2px solid var(--line); border-radius:11px; overflow:hidden; flex-wrap:wrap;}
+  .seg button{border:none; background:#fff; padding:9px 12px; font-size:13px; font-weight:800; cursor:pointer;
+              font-family:inherit; color:var(--muted);}
+  .seg button.on{background:var(--green); color:#fff;}
+  #needMore{font-weight:800; color:#B5651D;}
+  .av{width:32px; height:32px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+      color:#fff; font-weight:900; font-size:15px; background:var(--td,#8462D2); border:2.5px solid #fff;
+      box-shadow:0 0 0 1.5px var(--td,#8462D2); text-shadow:0 1px 1px rgba(0,0,0,.2);}
+  #wvTeams{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;}
+  .wvTeamCol{border-radius:20px; padding:10px; background:var(--tc); border:4px solid #fff;
+             box-shadow:0 6px 14px rgba(80,60,120,.13), 0 0 0 1.5px var(--tm); display:flex; flex-direction:column; gap:8px; min-width:0;}
+  .wvTeamCol .hd{font-weight:900; font-size:15.5px; color:var(--td); display:flex; align-items:center; gap:6px;}
+  .wvTeamCol .hd small{font-size:12px; color:var(--muted); font-weight:800;}
+  .wvLp{position:relative; display:flex; align-items:center; gap:8px; padding:5px 10px 5px 6px; border-radius:999px;
+        background:#fff; border:2px solid var(--tm); font-weight:800; font-size:14px; min-width:0;}
+  .wvLp .nm{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:1;}
+  .wvLp small{font-size:11px; font-weight:800; color:var(--muted); flex-shrink:0;}
+  .wvLp.me{box-shadow:0 0 0 2.5px var(--td);}
+  .wvLp.gone{opacity:.45;}
+  .wvLp .crown{position:absolute; top:-12px; inset-inline-start:-2px; font-size:15px;}
+  .wvLp .kick{width:22px; height:22px; border:none; border-radius:50%; background:#ffe0e0; color:var(--red); cursor:pointer; font-size:11px; flex-shrink:0;}
+  .wvJoinTeam{border:2px dashed var(--td); background:rgba(255,255,255,.6); color:var(--td); border-radius:999px;
+              padding:7px 10px; font:inherit; font-weight:900; font-size:13px; cursor:pointer;}
+  .wvEmpty{font-size:12.5px; color:var(--muted); font-weight:800; text-align:center; padding:4px;}
+  .howTo{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; padding:10px;}
+  .howTo div{background:var(--cb); border:4px solid #fff; border-radius:16px; padding:9px 11px; font-size:13px; line-height:1.65;
+             box-shadow:0 4px 10px rgba(120,80,40,.12);}
+  .howTo b{display:block; font-size:14.5px; margin-bottom:1px;}
+  .k0{--cb:#FFD9E4;} .k1{--cb:#FFE7B3;} .k2{--cb:#D2F4E5;} .k3{--cb:#E8DEFF;}
+
+  /* ═══ اللعب ═══ */
+  #play{display:none; flex-direction:column; gap:8px; flex:1; min-height:0; overflow:auto; position:relative;
+        scrollbar-width:thin; scrollbar-color:#B9E6D3 transparent; padding-bottom:4px;}
+  #wvHud{display:flex; flex-direction:column; gap:7px; padding:8px 12px; flex-shrink:0;}
+  .wvHudRow{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .wvScore{display:flex; align-items:center; gap:7px; padding:4px 12px 4px 6px; border-radius:999px; background:var(--tc);
+           border:2.5px solid #fff; box-shadow:0 0 0 1.5px var(--tm); font-weight:900; font-size:13px; color:var(--td); min-width:0;}
+  .wvScore b{font-size:19px;}
+  .wvScore.mine{box-shadow:0 0 0 2.5px var(--td);}
+  .wvScore.turn{animation:turnGlow 1.6s ease-in-out infinite;}
+  @keyframes turnGlow{50%{box-shadow:0 0 0 2.5px var(--td), 0 0 14px 3px var(--tm)}}
+  #wvRound{font-weight:900; font-size:14px; white-space:nowrap; background:var(--soft); border-radius:999px; padding:4px 12px;}
+  #timer{display:flex; align-items:center; gap:8px;}
+  #tbar{flex:1; height:12px; border-radius:99px; background:#EFE4D2; overflow:hidden; border:2px solid #fff;
+        box-shadow:inset 0 1px 2px rgba(0,0,0,.12), 0 0 0 1px #E2D3BC;}
+  #tbar i{display:block; height:100%; width:100%; border-radius:99px; background:linear-gradient(90deg,#9FE2C4,#3DBE84); transition:width .25s linear;}
+  #tbar.hurry i{background:linear-gradient(90deg,#FFB38A,#EE6E52);}
+  #tbar.paused i{background:repeating-linear-gradient(45deg,#D9CCB8 0 8px,#E8DDCB 8px 16px);}
+  #tbar.none i{background:#E6DCCB; width:100% !important;}
+  #tsec{font-weight:900; min-width:36px; text-align:center; font-size:14px;}
+
+  #wvBanner{padding:10px 12px; display:flex; flex-direction:column; align-items:center; gap:7px; flex-shrink:0;}
+  #wvBanner .tt{font-size:clamp(16px,4.2vw,20px); font-weight:900; text-align:center; line-height:1.45;}
+  #wvStrip{display:flex; gap:6px; flex-wrap:wrap; justify-content:center;}
+  .wvMate{position:relative; display:flex; align-items:center; gap:6px; padding:3px 10px 3px 4px; border-radius:999px;
+          background:var(--tc); border:2px solid #fff; box-shadow:0 0 0 1.5px var(--tm); font-weight:800; font-size:12.5px; max-width:190px;}
+  .wvMate .av{width:25px; height:25px; font-size:12px; border-width:2px;}
+  .wvMate .nm{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .wvMate.me{box-shadow:0 0 0 2.5px var(--td);}
+  .wvMate.off{opacity:.42; filter:grayscale(.6);}
+  .wvMate.done::after{content:"✓"; position:absolute; top:-7px; inset-inline-end:-5px; width:19px; height:19px; border-radius:50%;
+                      background:#3DBE84; color:#fff; font-size:11px; font-weight:900; display:flex; align-items:center; justify-content:center; border:2px solid #fff;}
+  .wvMate .bub{position:absolute; bottom:calc(100% + 8px); inset-inline-start:0; max-width:220px; width:max-content;
+               background:#fff; border:2px solid var(--td); border-radius:14px; padding:5px 10px; font-size:13px; font-weight:800;
+               color:var(--ink); line-height:1.5; box-shadow:0 4px 12px rgba(0,0,0,.14); opacity:0; transform:translateY(6px) scale(.96);
+               transition:opacity .2s, transform .2s; pointer-events:none; z-index:20; word-break:break-word; white-space:normal;}
+  .wvMate .bub.on{opacity:1; transform:none;}
+  .wvMate .bub.big{font-size:26px; padding:0 9px; line-height:1.25;}
+
+  /* ═══ العدّاد ═══ */
+  #wvGaugeCard{padding:10px 10px 12px; display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0;}
+  #wvClue{min-height:44px; display:flex; align-items:center; justify-content:center; padding:6px 18px; border-radius:20px;
+          background:linear-gradient(180deg,#FFFDF5,#FFF1C9); border:4px solid #fff; box-shadow:0 6px 14px rgba(150,110,40,.15), 0 0 0 1.5px #F2D58A;
+          font-size:clamp(18px,4.8vw,24px); font-weight:900; text-align:center; max-width:100%; word-break:break-word;}
+  #wvClue.empty{background:#fff; box-shadow:0 0 0 1.5px var(--line); color:var(--muted); font-size:14px; border-style:dashed; border-color:#E2D3BC;}
+  #wvGauge{width:min(100%, 560px); aspect-ratio:400/228; touch-action:none; display:block;}
+  #wvGauge.can{cursor:grab;}
+  #wvGauge.can:active{cursor:grabbing;}
+  /* الستارة: نصفُ دائرةٍ تدور حول المركز فتنزل تحت الأفق (والأفقُ يقصّها) */
+  #wvCurtain{transform-box:view-box; transform-origin:200px 205px; transition:transform .95s cubic-bezier(.65,0,.25,1.15);}
+  #wvGauge.open #wvCurtain{transform:rotate(-180deg);}
+  #wvTarget{transform-box:view-box; transform-origin:200px 205px;}
+  #wvNeedle{transform-box:view-box; transform-origin:200px 205px; will-change:transform;}
+  #wvGauge.locked #wvNeedle .stick{stroke:#3d2a26;}
+  #wvGauge.noNeedle #wvNeedle{opacity:0;}
+  .wvEnds{display:flex; justify-content:space-between; gap:10px; width:min(100%,560px); direction:ltr; margin-top:-4px;}
+  .wvEnd{flex:1 1 0; min-width:0; padding:8px 12px; border-radius:16px; border:4px solid #fff; font-weight:900; font-size:clamp(13.5px,3.6vw,16.5px);
+         text-align:center; line-height:1.35; box-shadow:0 5px 12px rgba(80,60,120,.12); direction:rtl;}
+  .wvEnd.l{background:linear-gradient(180deg,#E7F2FF,#C9DFFB); color:#2D5A9E;}
+  .wvEnd.r{background:linear-gradient(180deg,#FFEDD9,#FFD2A8); color:#A3561A;}
+  .wvFine{display:none; gap:8px; justify-content:center; direction:ltr;}
+  .wvFine.on{display:flex;}
+  .wvFine button{border:2px solid var(--line); background:#fff; border-radius:999px; padding:6px 14px; font:inherit; font-weight:900; font-size:14px; cursor:pointer; color:var(--ink);}
+
+  /* لوحةُ الفعل */
+  #wvAct{padding:12px; display:flex; flex-direction:column; align-items:center; gap:9px; flex-shrink:0;}
+  #wvAct .tt{font-size:16.5px; font-weight:900; text-align:center; line-height:1.5;}
+  #wvAct .ss{font-size:13px; color:var(--muted); font-weight:800; text-align:center; line-height:1.65;}
+  .wvClueBox{display:flex; gap:8px; width:min(100%,520px); flex-wrap:wrap;}
+  body .wvClueBox input.wvClueIn{flex:1 1 220px; min-width:0; padding:11px 14px; font:inherit; font-size:19px; font-weight:900; text-align:center;
+         border-radius:18px; border:3px solid #BFE9D6; background:#fff; color:var(--ink); outline:none; box-shadow:none;}
+  .wvClueBox .btn{flex:0 1 auto; width:auto; padding:12px 20px;}
+  .wvVote{display:flex; gap:10px; width:min(100%,520px); direction:ltr;}
+  .wvVote .btn{flex:1; font-size:16px; padding:14px 10px;}
+  .wvVote .btn.on{box-shadow:0 0 0 3px #fff, 0 0 0 6px var(--td,#3F78C9);}
+  .wvVote small{display:block; font-size:12px; opacity:.9;}
+  .wvAgree{display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center;}
+  .wvAgree .who{display:flex; gap:4px;}
+  .wvAgree .who .av{width:26px; height:26px; font-size:12px; border-width:2px; opacity:.4;}
+  .wvAgree .who .av.ok{opacity:1; box-shadow:0 0 0 2px #3DBE84;}
+  .wvAgree .btn{width:auto; padding:11px 22px;}
+  .wvRes{display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
+  .wvPts{border-radius:18px; padding:10px 18px; font-weight:900; font-size:clamp(17px,4.4vw,21px); border:4px solid #fff;
+         background:var(--tc); color:var(--td); box-shadow:0 6px 14px rgba(0,0,0,.12); text-align:center;}
+  .wvPts small{display:block; font-size:12px; font-weight:800; color:var(--muted);}
+  .wvPts.zero{background:#F3EEE6; color:#8E7F70;}
+
+  #chatBar{display:flex; gap:12px; justify-content:center; align-items:center; flex-shrink:0; padding:2px 0 4px;}
+  .barBtn{width:48px; height:48px; font-size:22px; position:relative;}
+  #unread{display:none; position:absolute; top:-6px; right:-6px; min-width:20px; height:20px; padding:0 5px; border-radius:999px;
+          background:#E5484D; color:#fff; font-size:11px; font-weight:900; line-height:17px; border:2px solid #fff; text-align:center;}
+  #unread.on{display:block;}
+  #quickPop{display:none; position:fixed; bottom:72px; left:50%; transform:translateX(-50%); width:min(94vw, 470px);
+            padding:10px; z-index:40; flex-direction:column; gap:8px;}
+  #quickPop.on{display:flex;}
+  #quickPop .phr{display:grid; grid-template-columns:repeat(2,1fr); gap:6px;}
+  #quickPop .phr button{border:2px solid var(--line); background:#fff; border-radius:999px; padding:8px 10px; font:inherit;
+                        font-weight:800; font-size:13.5px; cursor:pointer; color:var(--ink);}
+  #quickPop .emo{display:grid; grid-template-columns:repeat(8,1fr); gap:4px;}
+  #quickPop .emo button{border:none; background:transparent; font-size:25px; cursor:pointer; padding:4px 0; border-radius:10px;}
+  #chatCard{display:none; position:fixed; bottom:72px; left:50%; transform:translateX(-50%); width:min(94vw, 470px);
+            height:min(62vh, 440px); flex-direction:column; z-index:40; overflow:hidden; gap:8px; padding:10px;}
+  #chatCard.on{display:flex;}
+  .chatHead{display:flex; align-items:center; justify-content:space-between; font-weight:900;}
+  .chatHead button{border:none; background:transparent; font-size:18px; cursor:pointer; color:var(--muted);}
+  #msgs{flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:5px; min-height:90px;}
+  .msg{background:var(--soft); border-radius:9px; padding:6px 9px; font-size:13px; word-break:break-word;}
+  .msg b{color:#1668c7;}
+  .msg.system{background:#eef4fb; color:#1668c7; text-align:center; font-weight:700;}
+  #chatForm{display:flex; gap:6px; padding:8px; border-top:2px solid var(--line);}
+  #chatForm input{flex:1; min-width:0; text-align:start; font-size:14px; padding:10px 12px; border:2px solid var(--line); border-radius:10px; font-family:inherit;}
+  #chatForm button{border:none; border-radius:10px; background:#1668c7; color:#fff; font-weight:800; padding:10px 14px; cursor:pointer; font-family:inherit;}
+
+  .modal{position:fixed; inset:0; background:rgba(10,20,34,.72); z-index:60; display:none; align-items:center; justify-content:center; padding:14px;}
+  .modal.on{display:flex;}
+  .sheet{background:#fff; border-radius:18px; width:100%; max-width:560px; max-height:88vh; overflow:auto; padding:16px; display:flex; flex-direction:column; gap:11px;}
+  .sheet h3{margin:0; font-size:19px;}
+  .rule{background:var(--soft); border-radius:12px; padding:9px 12px; font-size:13.5px; line-height:1.8;}
+  .rule b{display:block; font-size:14.5px; margin-bottom:2px;}
+  .wvWin{text-align:center; border-radius:22px; padding:16px 12px 14px; border:5px solid #fff; background:var(--tc,#E6F8EF);
+         box-shadow:0 8px 20px rgba(80,60,120,.2), 0 0 0 2px var(--tm,#9FE0C0);}
+  .wvWin .ic{font-size:56px; line-height:1.1;}
+  .wvWin .ar{font-size:25px; font-weight:900; color:var(--td,#3d2a26);}
+  .wvWin .ln{font-size:14px; font-weight:800; color:var(--muted); margin-top:3px;}
+  .hist{display:flex; flex-direction:column; gap:6px; max-height:36vh; overflow:auto;}
+  .hrow{display:flex; align-items:center; gap:8px; padding:7px 11px; border-radius:13px; background:var(--soft); font-size:13px; font-weight:800; line-height:1.5;}
+  .hrow .tag{font-size:11px; font-weight:900; border-radius:999px; padding:0 8px; background:var(--tc); color:var(--td); flex-shrink:0;}
+  .hrow .pts{margin-inline-start:auto; font-weight:900; flex-shrink:0;}
+  #toast{position:fixed; left:50%; bottom:20px; transform:translateX(-50%) translateY(70px);
+         background:#12263c; color:#fff; padding:11px 18px; border-radius:12px; font-weight:800;
+         font-size:14px; z-index:90; opacity:0; transition:.25s; pointer-events:none; max-width:90vw; text-align:center;}
+  #toast.on{transform:translateX(-50%) translateY(0); opacity:1;}
+
+  @media (max-width: 700px){
+    body{padding:6px; gap:6px;}
+    #wvTeams{grid-template-columns:1fr;}
+    .wvScore{font-size:12px; padding:3px 9px 3px 5px;} .wvScore b{font-size:17px;}
+    #wvAct{padding:10px;}
+  }
+</style>
+<link rel="stylesheet" href="/kawaii.css">
+<script src="/theme.js" defer></script>
+</head>
+<body class="theme-kawaii">
+<div class="wrap">
+
+  <div id="joinScreen">
+    <div class="logo">التخاطر <span>📡</span></div>
+    <div class="tagline">تلميحٌ واحد، ومؤشرٌ على نصف دائرة… هل يقرأ فريقُك أفكارك؟</div>
+    <a class="backLink" href="/">← رجوع لاختيار الألعاب</a>
+    <div class="card">
+      <input id="pName" maxlength="20" placeholder="اكتب اسمك هنا" autocomplete="off">
+      <div id="whoLine"></div>
+      <button class="btn btn-green" id="createBtn">إنشاء غرفة جديدة ➕</button>
+      <div class="divider">— أو انضم لغرفة موجودة —</div>
+      <div class="row2">
+        <input id="pRoom" maxlength="6" placeholder="رمز الغرفة" inputmode="numeric" autocomplete="off">
+        <button class="btn btn-blue" id="joinBtn">انضمام 🚪</button>
+      </div>
+      <div id="joinErr"></div>
+    </div>
+    <div class="facts"><span>👥 ٤ لاعبين فأكثر</span><span>🔵 فريقان</span><span>🎯 أوّلُ من يبلغ ١٠</span></div>
+  </div>
+
+  <div id="game" style="display:none; flex-direction:column; gap:10px; flex:1; min-height:0;">
+    <div class="card" id="topBar">
+      <div id="roomChip" title="انسخ رابط الدعوة"><b id="roomCode">—</b><span>🔗 انسخ الرابط</span></div>
+      <div id="phaseInfo">في الانتظار…</div>
+      <button class="iconBtn" id="rulesBtn" title="القواعد">📖</button>
+      <button class="iconBtn" id="sndBtn" title="الصوت">🔊</button>
+      <button class="iconBtn" id="leaveBtn" type="button" title="ترك الجلسة والعودة للقائمة الرئيسيّة">🚪</button>
+    </div>
+
+    <div class="card" id="lobby">
+      <div class="h">👥 الفريقان <span id="plCount" style="font-size:13px; color:var(--muted); font-weight:700;"></span></div>
+      <div id="wvTeams"></div>
+      <div id="needMore" class="sub"></div>
+      <div id="hostArea" style="display:none; flex-direction:column; gap:10px;">
+        <div class="row2">
+          <button class="btn btn-ghost" id="setOpen">⚙️ الإعدادات</button>
+          <button class="btn btn-ghost" id="shuffleBtn">🔀 وزّع عشوائيًّا</button>
+        </div>
+        <div id="setBox"></div>
+        <button class="btn btn-green" id="startBtn">▶️ ابدأ اللعبة</button>
+      </div>
+      <div id="waitHost" class="sub">بانتظار مدير الغرفة يبدأ اللعبة…</div>
+      <div id="lobbySummary" class="sub"></div>
+      <div class="card howTo" id="howTo">
+        <div class="k0"><b>🔮 ١. الوسيط</b>يرى الهدفَ المخفيّ على نصف الدائرة، ويكتب تلميحًا بين طرفَي البطاقة.</div>
+        <div class="k1"><b>🧭 ٢. فريقُه</b>يسحبون المؤشر حيث يظنّون الهدف، ويوافقون جميعًا.</div>
+        <div class="k2"><b>🛡️ ٣. الخصم</b>يصوّت: الهدفُ يسارَ المؤشر أم يمينَه؟</div>
+        <div class="k3"><b>🎯 ٤. الكشف</b>المركز ٤ · ثمّ ٣ · ثمّ ٢ — والخصمُ نقطةٌ إن أصاب. أوّلُ من يبلغ ١٠ يفوز.</div>
+      </div>
+    </div>
+
+    <div id="play">
+      <div class="card" id="wvHud">
+        <div class="wvHudRow">
+          <div class="wvScore tb" id="scoreA"></div>
+          <div id="wvRound">الجولة ١</div>
+          <div class="wvScore tp" id="scoreB"></div>
+        </div>
+        <div id="timer"><div id="tbar"><i></i></div><span id="tsec">—</span></div>
+      </div>
+      <div class="card" id="wvBanner"><div class="tt"></div><div id="wvStrip"></div></div>
+      <div class="card" id="wvGaugeCard">
+        <div id="wvClue" class="empty">التلميحُ يظهر هنا</div>
+        <svg id="wvGauge" viewBox="0 0 400 228" aria-label="العدّاد"></svg>
+        <div class="wvEnds"><div class="wvEnd l" id="endL">—</div><div class="wvEnd r" id="endR">—</div></div>
+        <div class="wvFine" id="wvFine"><button type="button" data-d="-1">◀ ١°</button><button type="button" data-d="1">١° ▶</button></div>
+      </div>
+      <div class="card" id="wvAct"></div>
+      <div id="chatBar">
+        <button class="iconBtn barBtn" id="quickBtn" title="عبارات وإيموجي">😊</button>
+        <button class="iconBtn barBtn" id="chatBtn" title="الدردشة">💬<span id="unread"></span></button>
+      </div>
+    </div>
+    <div class="card" id="quickPop"></div>
+    <div class="card" id="chatCard">
+      <div class="chatHead"><span>💬 الدردشة</span><button type="button" id="chatClose" aria-label="إغلاق">✕</button></div>
+      <div id="msgs"></div>
+      <form id="chatForm" autocomplete="off">
+        <input id="chatInput" type="text" placeholder="اكتب رسالة…" maxlength="140">
+        <button type="submit">إرسال</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="rulesModal"><div class="sheet">
+  <h3>📖 قواعد «التخاطر»</h3>
+  <div id="rulesBody"></div>
+  <button class="btn btn-ghost" data-close>حسنًا</button>
+</div></div>
+
+<div class="modal" id="leaveModal"><div class="sheet">
+  <h3>🚪 ترك الجلسة؟</h3>
+  <div class="sub" style="text-align:start">ستخرج من اللعبة إلى القائمة الرئيسيّة.</div>
+  <div class="row2"><button class="btn btn-red" id="leaveYes" type="button">نعم، اخرج</button><button class="btn btn-ghost" data-close>ابقَ</button></div>
+</div></div>
+
+<div class="modal" id="endModal"><div class="sheet">
+  <div id="endWin" class="wvWin">—</div>
+  <div class="h" style="font-size:15px">📜 الجولات</div>
+  <div id="endHist" class="hist"></div>
+  <button class="btn btn-green" id="endAgain" style="display:none">🔄 لعبة جديدة</button>
+  <div class="row2"><button class="btn btn-ghost" data-close>إلى الانتظار</button><button class="btn btn-ghost" id="endLeave" type="button">🚪 ترك الجلسة</button></div>
+</div></div>
+
+<div class="modal" id="replacedModal" data-sticky><div class="sheet">
+  <h3>📱 فتحت اللعبةَ في مكانٍ آخر</h3>
+  <div class="sub" style="text-align:start">مقعدُك انتقل إلى التبويب أو الجهاز الذي فتحتها منه الآن.</div>
+  <button class="btn btn-green" type="button" onclick="location.reload()">العب من هنا</button>
+</div></div>
+
+<div id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/wave/app.js"></script>
+</body>
+</html>

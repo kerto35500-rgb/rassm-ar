@@ -295,6 +295,34 @@ function setupPanel(app, deps) {
     } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
   });
 
+  // ═══════════════ بطاقات «التخاطر» ═══════════════
+  // كالكلمات فوقها: الأساسُ في الكود، والمُضاف والمُخفى في الإعدادات.
+  const WB = require("./wavebank");
+
+  app.get(ADMIN_PATH + "/p/wcards", (req, res) => {
+    if (!guard(req, res)) return;
+    res.json({ ok: true, ...WB.listAll() });
+  });
+
+  app.post(ADMIN_PATH + "/p/wcard", json, async (req, res) => {
+    if (!guard(req, res)) return;
+    const op = String(req.body?.op || "add");
+    /* إضافةٌ بالجملة: بطاقةٌ في كلّ سطر («بارد | حار») */
+    const list = op === "add"
+      ? String(req.body?.card || "").split(/\n+/).map(x => x.trim()).filter(Boolean).slice(0, 200)
+      : [String(req.body?.card || "")];
+    if (!list.length) return res.status(400).json({ ok: false, error: "اكتب بطاقة" });
+    try {
+      const done = [], failed = [];
+      for (const c of list) {
+        const r = op === "remove" ? await WB.remove(st(), c, "admin") : await WB.add(st(), c, "admin");
+        (r.ok ? done : failed).push(r.ok ? r.card : r.error);
+      }
+      if (done.length) note(req, "wcard-" + (op === "remove" ? "remove" : "add"), done.join("،").slice(0, 120), { n: done.length });
+      res.status(done.length ? 200 : 400).json({ ok: done.length > 0, done, failed, error: failed[0], ...WB.listAll() });
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  });
+
   // ═══════════════ الإعدادات ═══════════════
 
   /* صحّة الرهان: كم ذهبٍ محجوزٌ الآن، وكم صفًّا سُوّي. الرقم «المحجوز» يجب
@@ -564,6 +592,7 @@ a.dl{background:#1f6f45;color:#fff;border-radius:7px;padding:8px 14px;font-weigh
   <button class="tab" data-p="shop">🛍️ المتجر</button>
   <button class="tab" data-p="skins">🎨 مظاهر بالوت</button>
   <button class="tab" data-p="jw">🔤 كلمة واحدة · 🔐 الشفرة</button>
+  <button class="tab" data-p="wc">📡 التخاطر</button>
   <button class="tab" data-p="live">🂡 الطاولات الحيّة</button>
   <button class="tab" data-p="set">⚙️ الإعدادات</button>
   <button class="tab" data-p="audit">📜 السجلّ</button>
@@ -612,6 +641,19 @@ a.dl{background:#1f6f45;color:#fff;border-radius:7px;padding:8px 14px;font-weigh
   <div id="jwwrap"></div>
 </div>
 
+<div class="pane" id="p-wc">
+  <div class="card"><h2>📡 بطاقات «التخاطر» (مفاهيم متعاكسة)</h2>
+    <div class="h muted" style="margin-bottom:8px">كلُّ بطاقةٍ طرفا مقياس: <b>يسار | يمين</b> (بخطٍّ عموديّ بينهما) — مثل «رخيص | غالٍ».
+      أضف بطاقةً في كلّ سطر. حذفُ بطاقةٍ أساسيّةٍ يُخفيها فقط، وتعود بإضافتها من جديد.</div>
+    <div class="row"><textarea id="wcNew" rows="3" placeholder="بارد | حار&#10;ممل | ممتع" style="flex:1;min-width:220px"></textarea>
+      <button class="g" onclick="wcAdd()">➕ أضف</button></div>
+    <div class="row"><input id="wcq" placeholder="ابحث في البطاقات…" style="flex:1;min-width:180px" oninput="wcDraw()">
+      <span class="muted" id="wcmeta"></span></div>
+    <div class="msg" id="wcMsg"></div>
+  </div>
+  <div id="wcwrap"></div>
+</div>
+
 <div class="pane" id="p-sup">
   <div class="card">
     <div class="row">
@@ -652,6 +694,7 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   if(t.dataset.p==="live") loadLive();
   if(t.dataset.p==="skins") loadSkins();
   if(t.dataset.p==="jw") loadJW();
+  if(t.dataset.p==="wc") loadWC();
   if(t.dataset.p==="sup"){ loadTickets(); loadReports(); }
 });
 
@@ -835,6 +878,53 @@ async function jwDel(w){
 async function jwBack(w){
   const r=await post("/jword",{op:"add",word:w});
   say("#jwMsg",r,loadJW);
+}
+
+let WC=null;
+async function loadWC(){
+  const r=await j("/wcards");
+  if(!r.ok) return $("#wcwrap").innerHTML='<div class="msg err">'+esc(r.error||"تعذّر")+'</div>';
+  WC=r; wcDraw();
+}
+function wcDraw(){
+  if(!WC) return;
+  const q=($("#wcq").value||"").trim();
+  const hit=w=>!q||w.includes(q);
+  $("#wcmeta").textContent=WC.total+" بطاقةً في اللعب · "+WC.base+" أساسيّة · "+WC.added.length+" مُضافة · "+WC.removed.length+" مُخفاة";
+  const chip=(w,cls,btn)=>'<span class="pill '+cls+'" style="margin:3px;display:inline-flex;gap:6px;align-items:center;font-size:13px">'+esc(w)+btn+'</span>';
+  const enc=w=>encodeURIComponent(w).replace(/'/g,"%27");
+  const x=w=>'<a href="#" title="احذف" onclick="wcDel(\\''+enc(w)+'\\');return false" style="color:#fca5a5;text-decoration:none">✕</a>';
+  const back=w=>'<a href="#" title="أعِدها" onclick="wcBack(\\''+enc(w)+'\\');return false" style="color:#86efac;text-decoration:none">↺</a>';
+  let h='';
+  const add=WC.added.filter(hit);
+  if(add.length) h+='<div class="card"><h2>➕ مُضافة من اللوحة ('+add.length+')</h2>'+add.map(w=>chip(w,"ok",x(w))).join("")+'</div>';
+  for(const c in WC.cats){
+    const ws=WC.cats[c].filter(o=>hit(o.w));
+    if(!ws.length) continue;
+    h+='<div class="card"><h2>'+esc(c)+' ('+ws.length+')</h2>'+
+      ws.map(o=>o.hidden?chip(o.w,"bad",back(o.w)):chip(o.w,"",x(o.w))).join("")+'</div>';
+  }
+  $("#wcwrap").innerHTML=h||'<div class="card muted">لا نتائج</div>';
+}
+async function wcAdd(){
+  const w=$("#wcNew").value.trim(); if(!w) return;
+  const r=await post("/wcard",{op:"add",card:w});
+  if(r.done&&r.done.length) $("#wcNew").value="";
+  const extra=r.failed&&r.failed.length?" — لم تُضف "+r.failed.length+": "+r.failed.slice(0,3).join("، "):"";
+  const m=$("#wcMsg");
+  if(r.ok){ m.className="msg ok"; m.textContent="أُضيفت "+r.done.length+extra; setTimeout(loadWC,600); }
+  else say("#wcMsg",r);
+}
+async function wcDel(w){
+  w=decodeURIComponent(w);
+  if(!confirm("حذف «"+w+"» من البطاقات؟")) return;
+  const r=await post("/wcard",{op:"remove",card:w});
+  say("#wcMsg",r,loadWC);
+}
+async function wcBack(w){
+  w=decodeURIComponent(w);
+  const r=await post("/wcard",{op:"add",card:w});
+  say("#wcMsg",r,loadWC);
 }
 
 async function loadSkins(){

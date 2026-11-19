@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- أيقونة «التخاطر» للصفحة الرئيسيّة بستايل المارشميلو: عدّادٌ نصفُ دائريٍّ
+       كريميّ بحافّةٍ بيضاءَ عريضة، عليه منطقةُ هدفٍ باستيليّة (نعناعيّ ثمّ
+       كهرمانيّ ثمّ ورديٌّ في المركز) ومؤشرٌ برتقاليّ، وفوقه موجتا تخاطرٍ صغيرتان.
+       مرسومةٌ من الصفر بلا شعارٍ ولا علامة ولا محارف. -->
+  <defs>
+    <linearGradient id="wF" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#FFF3DF"/></linearGradient>
+    <filter id="wsh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.6" flood-color="#000" flood-opacity=".28"/>
+    </filter>
+  </defs>
+  <g filter="url(#wsh)">
+    <!-- القاعدة -->
+    <rect x="12" y="92" width="104" height="14" rx="7" fill="#C9EBDD" stroke="#fff" stroke-width="4"/>
+    <!-- الوجه: نصفُ دائرة -->
+    <path d="M19 94 A45 45 0 0 1 109 94 Z" fill="url(#wF)" stroke="#fff" stroke-width="6"/>
+    <!-- منطقةُ الهدف (مركزُها ~٢٥° يمينَ القمّة) -->
+    <path d="M64 94 L64.0 50.0 A44 44 0 0 1 100.5 69.4 Z" fill="#BDEBD6" stroke="#fff" stroke-width="1.2"/>
+    <path d="M64 94 L72.4 50.8 A44 44 0 0 1 95.1 62.9 Z" fill="#FFE08A" stroke="#fff" stroke-width="1.2"/>
+    <path d="M64 94 L79.8 52.9 A44 44 0 0 1 89.2 58.0 Z" fill="#FFB3C7" stroke="#fff" stroke-width="1.2"/>
+    <!-- علاماتُ الحافّة -->
+    <path d="M24 94 h6 M64 54 v6 M104 94 h-6" stroke="#E2D3BC" stroke-width="3" stroke-linecap="round"/>
+    <!-- المؤشر -->
+    <line x1="64" y1="94" x2="60.1" y2="57.2" stroke="#E8553A" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="59.9" cy="55.2" r="6" fill="#fff" stroke="#E8553A" stroke-width="3.5"/>
+    <circle cx="64" cy="94" r="8" fill="#4A2E2B" stroke="#fff" stroke-width="3.5"/>
+    <!-- موجتا التخاطر -->
+    <path d="M44 30 q20 -14 40 0" stroke="#3CB997" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M52 40 q12 -8 24 0" stroke="#8FD8F5" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>
