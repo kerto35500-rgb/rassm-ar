@@ -67,6 +67,15 @@ setTimeout(async () => {
   ok(!ADMINS.isAdmin(BOSS.toUpperCase() + " ") || BOSS.toUpperCase() === BOSS, "المقارنةُ حرفًا بحرف");
   ok(!ADMINS.isAdmin(BOSS + "x") && !ADMINS.isAdmin(""), "واسمٌ قريبٌ ليس أدمنًا");
 
+  {
+    const O = ADMINS.OWNERS[0];
+    ok(ADMINS.isAdmin({ name: O.name, created: O.before - 864e5 }), "صاحبُ الموقع أدمنٌ من الكود (حسابُه القديم)");
+    ok(ADMINS.isAdmin({ name: O.name, created: 0 }), "ولو كان حسابًا قديمًا بلا تاريخ");
+    ok(!ADMINS.isAdmin({ name: O.name, created: Date.now() }), "ومن يسجّل اسمَه بعد اليوم ليس أدمنًا");
+    ok(!ADMINS.isAdmin(O.name), "ولا يكفي الاسمُ وحده بلا حساب");
+    ok(!ADMINS.isAdmin({ name: O.name + " ", created: 0 }) && !ADMINS.isAdmin({ name: O.name.toUpperCase(), created: 0 }), "ولا اسمٌ قريبٌ منه");
+  }
+
   console.log("\n③ ‏/control");
   r = await req("GET", "/control", null, "");
   ok(r.code === 302 && r.loc === "/?acc=1&back=/control", "ضيفٌ ⇒ نافذةُ الدخول ثمّ يعود", r.loc);
@@ -149,6 +158,8 @@ setTimeout(async () => {
   console.log("\n⑦ المشرفون من اللوحة");
   r = await A("POST", AP + "/p/admin-acc", { name: "لا_يوجد_أحد", on: true });
   ok(r.code === 400, "لا يُرقّى اسمٌ بلا حساب", r.json);
+  r = await A("POST", AP + "/p/admin-acc", { name: ADMINS.OWNERS[0].name, on: false });
+  ok(r.code === 400, "وصاحبُ الموقع لا يُنزَل من اللوحة", r.json);
   r = await A("POST", AP + "/p/admin-acc", { name: BOSS, on: false });
   ok(r.code === 400 && /Render/.test(r.json.error), "وأدمنُ Render لا يُنزَل من اللوحة", r.json);
   r = await A("POST", AP + "/p/admin-acc", { name: PLAYER, on: true });
