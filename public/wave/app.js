@@ -288,7 +288,8 @@
     $("endR").textContent = C ? C.card.right : "—";
     const clue = $("wvClue");
     clue.classList.toggle("empty", !(C && C.clue));
-    clue.textContent = C && C.clue ? "«" + C.clue + "»" : (v.phase === "clue" ? "🔮 " + nameOf(C.psychic) + " يكتب التلميح…" : "—");
+    clue.textContent = C && C.clue ? "«" + C.clue + "»"
+      : (v.phase === "clue" ? (C.psychic === v.me ? "✍️ اكتب تلميحك تحت — والهدفُ أمامك" : "🔮 " + nameOf(C.psychic) + " يكتب التلميح…") : "—");
     const g = $("wvGauge");
     const open = C && C.target != null;
     g.classList.toggle("open", !!open);

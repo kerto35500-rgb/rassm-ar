@@ -165,8 +165,9 @@
   /* الستارة: نصفُ دائرةٍ تدور حول المركز فتنزل تحت الأفق (والأفقُ يقصّها) */
   #wvCurtain{transform-box:view-box; transform-origin:200px 205px; transition:transform .95s cubic-bezier(.65,0,.25,1.15);}
   #wvGauge.open #wvCurtain{transform:rotate(-180deg);}
-  #wvTarget{transform-box:view-box; transform-origin:200px 205px;}
-  #wvNeedle{transform-box:view-box; transform-origin:200px 205px; will-change:transform;}
+  /* الهدفُ والمؤشرُ يدوران بسمة transform="rotate(θ 200 205)" وحدها — لا
+     transform-origin هنا: كان يُطبَّق على السمة أيضًا فيُزاح المركزُ مرّتين
+     (فظهر المؤشرُ شظيّةً عند الحافّة) */
   #wvGauge.locked #wvNeedle .stick{stroke:#3d2a26;}
   #wvGauge.noNeedle #wvNeedle{opacity:0;}
   .wvEnds{display:flex; justify-content:space-between; gap:10px; width:min(100%,560px); direction:ltr; margin-top:-4px;}
