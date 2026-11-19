@@ -645,7 +645,23 @@ function freeze(room) {
     aSock.fire("roll");
     ok(await until(() => A.doc.querySelectorAll(".tok.target").length === 2, 4000), "التبديل: الخصمان في النطاق متوهّجان للاختيار",
        A.doc.querySelectorAll(".tok.target").length);
-    ok(/اختر قطعةَ خصمٍ/.test(A.$("promptBar").textContent) && A.$("promptBar").style.display === "block", "والسطرُ الطافي فوق اللوحة يقول ما المطلوب");
+    ok(/اضغط خصمًا/.test(A.$("promptBar").textContent) && /قطعتك لتبقى/.test(A.$("promptBar").textContent) &&
+       A.$("promptBar").style.display === "block", "والسطرُ الطافي فوق اللوحة يقول ما المطلوب (والبقاءُ خيار)", A.$("promptBar").textContent);
+    /* التبديلُ اختياريّ: قطعتي تتوهّج بالأخضر، ونقرُها يُبقيها مكانها */
+    const keep = A.doc.querySelectorAll(".tok.keep");
+    ok(keep.length === 1 && keep[0].classList.contains("s" + sa), "وقطعتي متوهّجةٌ بالأخضر (للبقاء)", keep.length);
+    const mine = m.pieces[sa][0].p, his = [m.pieces[sb][0].p, m.pieces[sb][1].p];
+    keep[0].dispatch("click");
+    ok(await until(() => !m.prompt && m.turn !== sa, 3000), "نقرُها ⇒ لا تبديل ويمضي الدور", { prompt: !!m.prompt, turn: m.turn });
+    ok(m.pieces[sa][0].p === mine && m.pieces[sb][0].p === his[0] && m.pieces[sb][1].p === his[1], "وكلٌّ في مكانه");
+    ok(await until(() => !A.doc.querySelectorAll(".tok.target").length && !A.doc.querySelectorAll(".tok.keep").length), "ويزول التوهّج");
+    /* مرّةً ثانية: هذه المرّة أختار خصمًا */
+    freeze(room);
+    m.pieces[sa][0].p = rel(sa, 3);
+    m.powerups = [{ cell: 4, type: "swap" }];
+    m.prompt = null; m.queue = []; m.turn = sa; m.phase = "roll"; m.dice = null; m.pool = []; m._loaded = [1];
+    aSock.fire("roll");
+    ok(await until(() => A.doc.querySelectorAll(".tok.target").length === 2, 4000), "(تبديلٌ ثانٍ)");
     const before = m.pieces[sa][0].p;
     A.doc.querySelectorAll(".tok.target")[0].dispatch("click");
     ok(await until(() => m.pieces[sa][0].p !== before && !m.prompt), "نقرُ أحدهما يبدّل المكانين", { before, now: m.pieces[sa][0].p });
@@ -688,8 +704,19 @@ function freeze(room) {
     const onTrack = A.$("toks").querySelectorAll(".tok.can")
       .find(t => parseFloat(t.style.left) > 30 && parseFloat(t.style.left) < 70);
     const before = m.pieces[sa][0].p;
-    onTrack.dispatch("click");
     const pk = A.$("picker");
+    /* الفقاعةُ فوق القطعة — وقربَ أعلى اللوحة تحتها (صورةُ المستخدم: كانت تختفي
+       خلف الشريط العلويّ فلا يظهر منها إلا سهمُها) */
+    onTrack.getBoundingClientRect = () => ({ left: 100, top: 300, right: 110, bottom: 310, width: 10, height: 10 });
+    onTrack.dispatch("click");
+    ok(pk.classList.contains("on") && !pk.classList.contains("below") && pk.style.top === "300px",
+       "قطعةٌ في وسط اللوحة ⇒ الفقاعةُ فوقها", { cls: pk.className, top: pk.style.top });
+    onTrack.getBoundingClientRect = () => ({ left: 100, top: 20, right: 110, bottom: 30, width: 10, height: 10 });
+    onTrack.dispatch("click");
+    ok(pk.classList.contains("on") && pk.classList.contains("below") && pk.style.top === "30px",
+       "وقربَ أعلى اللوحة ⇒ تنقلب تحت القطعة فتبقى ظاهرة", { cls: pk.className, top: pk.style.top });
+    delete onTrack.getBoundingClientRect;
+    onTrack.dispatch("click");
     ok(pk.classList.contains("on") && pk.querySelectorAll("button").length === 2,
        "قطعةٌ تمشي برقمين ⇒ فقاعةٌ فوقها فيها النردان (chooseStep في المرجع)", pk.querySelectorAll("button").length);
     const two = pk.querySelectorAll("button").find(b => b.getAttribute("aria-label") === "حرّك 2");

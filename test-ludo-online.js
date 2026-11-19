@@ -22,6 +22,7 @@ class FS {
   last(e) { for (let i = this.rx.length - 1; i >= 0; i--) if (this.rx[i].e === e) return this.rx[i].d; return null; }
   all(e) { return this.rx.filter(x => x.e === e).map(x => x.d); }
   ask(e, d) { return new Promise(res => this.fire(e, d, res)); }
+  disconnect() { this.nsp.drop(this); }
   get handshake() { return { headers: {}, address: "1.2.3.4" }; }
 }
 class FN {
@@ -305,6 +306,54 @@ async function endByPlay(room, sock) {
     await until(() => !rm.match && stats.length > 0, 60000);
     stop();
     ok(stats.some(x => x.u === 77 && x.g === "ludo" && x.games === 1), "تُسجَّل مباراتُه في إحصاءات «ludo»", stats);
+  }
+
+  console.log("⑩ الخروجُ من مباراةٍ جارية ثمّ العودةُ إليها");
+  {
+    /* وحيدٌ مع البوتات يخرج: كانت الغرفةُ تُحذف فورًا فيجد «الغرفة انتهت» */
+    const s = nsp.connect();
+    const rr = await s.ask("createRoom", { name: "عمر" });
+    const rm = api.rooms.get(rr.roomId);
+    s.fire("updateSettings", { players: 4, mode: "classic" });
+    s.fire("startGame");
+    ok(!!rm.match, "مباراةٌ مع ثلاثة بوتات");
+    const tok = rr.token;
+    nsp.drop(s);
+    await sleep(260);
+    ok(api.rooms.has(rr.roomId) && !!rm.match, "خرج البشريُّ الوحيد: الغرفةُ والمباراةُ باقيتان");
+    ok(rm.paused && !rm.timer && !rm.botT && !rm.autoT, "والمباراةُ متوقّفة — لا تُكملها البوتاتُ وحدها",
+       { paused: rm.paused, t: !!rm.timer, b: !!rm.botT });
+    const mn = rm.match.moveNo;
+    await sleep(60);
+    eq(rm.match.moveNo, mn, "لا حركةَ في غيابه");
+
+    const s2 = nsp.connect();
+    let j = await s2.ask("rejoin", { roomId: rr.roomId, token: tok });
+    ok(j.ok && j.resumed && rm.slots[0].sockId === s2.id && !rm.slots[0].bot && rm.slots[0].name === "عمر",
+       "يعود برمز جهازه إلى مقعده باسمه", { j, slot: rm.slots[0] && { n: rm.slots[0].name, b: rm.slots[0].bot } });
+    ok(!rm.paused && !!(rm.timer || rm.botT || rm.autoT), "وتُستأنف المباراة");
+
+    /* من متصفّحٍ آخر (بلا رمز): يعود باسمه — والغريبُ لا يدخل */
+    nsp.drop(s2);
+    await sleep(260);
+    const s3 = nsp.connect();
+    j = await s3.ask("joinRoom", { name: "غريب", roomId: rr.roomId });
+    ok(!j.ok && /جارية/.test(j.error || ""), "غريبٌ لا يدخل مباراةً جارية", j);
+    j = await s3.ask("joinRoom", { name: "  عمر ", roomId: rr.roomId });
+    ok(j.ok && j.resumed && rm.slots[0].sockId === s3.id && rm.slots[0].name === "عمر" && !rm.slots[0].bot,
+       "ومن متصفّحٍ آخر بلا رمز يعود باسمه إلى مقعده", j);
+    ok(s3.last("state") && s3.last("state").me === 0, "ويأخذ حالةَ المباراة فورًا");
+
+    /* جلستُه القديمة ما زالت متّصلة (تبويبٌ آخر): الجديدةُ تتسلّم المقعد */
+    const s4 = nsp.connect();
+    j = await s4.ask("joinRoom", { name: "؟", roomId: rr.roomId, token: tok });
+    ok(j.ok && rm.slots[0].sockId === s4.id, "رمزُ جهازه في تبويبٍ ثانٍ يتسلّم المقعد (كان «الجلسة مفتوحةٌ في مكانٍ آخر» يمسح رمزَه)", j);
+    ok(s3.all("replaced").length === 1 && !nsp.sockets.has(s3.id), "والجلسةُ القديمة تُخبَر وتُغلَق");
+    ok(!rm.slots[0].gone && !rm.slots[0].bot && rm.slots[0].sockId === s4.id, "ولا يمسّ خروجُها المقعد");
+    const s5 = nsp.connect();
+    j = await s5.ask("joinRoom", { name: "عمر", roomId: rr.roomId });
+    ok(!j.ok && rm.slots[0].sockId === s4.id, "والاسمُ وحده لا ينتزع مقعدَ لاعبٍ حاضر", j);
+    ok(await endByPlay(rm, s4), "وتكتمل المباراةُ بعد العودة");
   }
 
   console.log(`\n═══ ${P} نجحت · ${F} فشلت ═══\n`);

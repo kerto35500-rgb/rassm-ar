@@ -21,6 +21,9 @@ const { nameFromSocket } = require("./account");
 const SLOTS = 4;
 const IDLE_MS = 45 * 60 * 1000;
 const GRACE_MS = 60 * 1000;
+/* مباراةٌ غادرها كلُّ البشر: تتوقّف (لا تلعب البوتاتُ وحدها) وتبقى الغرفةُ
+   هذه المدّة ليعود من خرج فيكمل من حيث ترك */
+const KEEP_MS = 15 * 60 * 1000;
 const CHAT_KEEP = 40;
 const TURN_SECS = [10, 15, 20, 30];
 const BOT_NAMES = ["أبو فهد", "صقر", "نورة", "الذيب", "سيف", "العنيد", "مشعل", "ريم", "الشمري", "أبو تركي"];
@@ -65,6 +68,7 @@ function setupLudoOnline(io, deps = {}) {
   const botDelay = deps.botDelay != null ? deps.botDelay : [650, 1100];
   const autoMoveMs = deps.autoMoveMs != null ? deps.autoMoveMs : 650;
   const graceMs = deps.graceMs != null ? deps.graceMs : GRACE_MS;
+  const keepMs = deps.keepMs != null ? deps.keepMs : KEEP_MS;
   /* للاختبارات وحدها: تقصيرُ مؤقّت الدور (١ = الزمن الحقيقيّ) */
   const secsScale = deps.secsScale != null ? deps.secsScale : 1;
   const rooms = new Map();
@@ -88,6 +92,10 @@ function setupLudoOnline(io, deps = {}) {
   const touch = r => { r.touched = Date.now(); };
   const people = r => r.slots.filter(Boolean);
   const humans = r => people(r).filter(p => !p.bot);
+  /* أحدٌ من البشر متّصلٌ الآن */
+  const anyHere = r => humans(r).some(p => !p.gone);
+  /** «اسمٌ» للمقارنة عند العودة: بلا مسافاتٍ زائدة ولا حالةِ أحرف */
+  const normName = n => String(n == null ? "" : n).replace(/\s+/g, " ").trim().toLowerCase();
   const slotOf = (r, id) => r.slots.findIndex(p => p && p.id === id);
 
   /* ── اللوبي ── */
@@ -152,6 +160,12 @@ function setupLudoOnline(io, deps = {}) {
     if (!m) return;
     clearTimers(r);
     if (m.phase === "over") { flush(r); return finish(r); }
+
+    /* لا أحدَ من البشر هنا: المباراةُ تتوقّف مكانها حتى يعود أحد (الغرفةُ
+       تُحفظ keepMs). كانت البوتاتُ تكملها وحدها — وقبل ذلك كانت الغرفةُ
+       تُحذف فورًا، فمن خرج ثمّ رجع وجد «الغرفة انتهت» */
+    if (!anyHere(r)) { r.paused = true; flush(r); return; }
+    r.paused = false;
 
     const seat = m.actingSeat();
     const p = r.slots[seat];
@@ -236,7 +250,7 @@ function setupLudoOnline(io, deps = {}) {
   const sweep = setInterval(() => {
     const now = Date.now();
     for (const [code, r] of rooms) {
-      if (now - r.touched > IDLE_MS || (!humans(r).some(p => !p.gone) && now - r.touched > graceMs)) {
+      if (now - r.touched > IDLE_MS || (!anyHere(r) && now - r.touched > (r.match ? keepMs : graceMs))) {
         clearTimers(r);
         rooms.delete(code);
       }
@@ -309,7 +323,13 @@ function setupLudoOnline(io, deps = {}) {
       if (typeof cb !== "function") return;
       const r = rooms.get(clean(d && d.roomId, 8));
       if (!r) return cb({ ok: false, error: "لا توجد غرفة بهذا الرمز" });
-      if (r.match) return cb({ ok: false, error: "المباراة جارية — انتظر انتهاءها" });
+      /* المباراةُ جارية: من كان فيها وخرج يعود إلى مقعده — برمز جهازه، أو
+         بحسابه، أو باسمه (من متصفّحٍ آخر بلا رمز). وغيرُه ينتظر نهايتها */
+      if (r.match) {
+        const p = seatToReclaim(r, d);
+        if (!p) return cb({ ok: false, error: "المباراة جارية — انتظر انتهاءها" });
+        return resume(r, p, cb);
+      }
       const acct = socket.userId ? String(socket.userId) : null;
       if (acct && people(r).some(p => p.userId && String(p.userId) === acct && !p.gone))
         return cb({ ok: false, error: "حسابك موجودٌ في الغرفة" });
@@ -327,16 +347,44 @@ function setupLudoOnline(io, deps = {}) {
       if (!r) return cb({ ok: false, error: "الغرفة انتهت" });
       const i = r.slots.findIndex(p => p && p.token && p.token === String(d && d.token || ""));
       if (i < 0) return cb({ ok: false, error: "انتهت جلستك" });
-      const p = r.slots[i];
-      if (p.sockId && p.sockId !== socket.id && nsp.sockets.get(p.sockId))
-        return cb({ ok: false, error: "الجلسة مفتوحةٌ في مكانٍ آخر" });
-      /* رجع قبل أن يصير بوتًا: نسلّمه مقعدَه كما تركه */
+      resume(r, r.slots[i], cb);
+    });
+
+    /** مقعدٌ في المباراة الجارية لصاحبه الذي خرج: رمزُ الجهاز أوّلًا، ثمّ
+        الحساب، ثمّ الاسم (لمقعدٍ غاب صاحبُه فقط — لا يُنتزَع مقعدُ حاضرٍ باسمه) */
+    function seatToReclaim(r, d) {
+      const mine = r.match.seats.map(i => r.slots[i]).filter(p => p && (!p.bot || p._wasHuman));
+      const tok = String(d && d.token || "");
+      const acct = socket.userId ? String(socket.userId) : null;
+      const nm = normName(d && d.name);
+      return (tok && mine.find(p => p.token === tok)) ||
+             (acct && mine.find(p => p.userId && String(p.userId) === acct)) ||
+             (nm && mine.find(p => p.gone && normName(p._name || p.name) === nm)) || null;
+    }
+
+    /** يعود صاحبُ المقعد إليه كما تركه. وإن كانت جلستُه القديمة ما زالت
+        متّصلة (تبويبٌ آخر، أو جوالٌ لم يُغلق مقبسَه بعد) تسلّمت الجديدةُ
+        المقعد وأُخبرت القديمة — كان الرفضُ «الجلسة مفتوحةٌ في مكانٍ آخر»
+        يمسح رمزَ العودة فلا يرجع أبدًا. */
+    function resume(r, p, cb) {
+      if (room && (room !== r || me !== p)) leave(true);
+      /* المقعدُ للجديدة أوّلًا، ثمّ تُغلَق القديمة — فخروجُها لا يمسّه (leave) */
+      const oldId = p.sockId;
       p.sockId = socket.id; p.gone = false;
       p.auto = false;                            /* عاد ليلعب: لا يبقى البوتُ مكانه */
       p._leaveGen = (p._leaveGen || 0) + 1;      /* أيُّ مؤقّتِ مغادرةٍ معلّقٍ صار قديمًا */
       if (p._wasHuman) { p.bot = false; p.name = p._name || p.name; p._wasHuman = false; }
+      if (oldId && oldId !== socket.id) {
+        const old = nsp.sockets.get(oldId);
+        if (old) {
+          old.emit("replaced");
+          if (typeof old.disconnect === "function") old.disconnect(true);
+        }
+      }
       enter(r, p, cb, { resumed: true });
-    });
+      /* مباراةٌ توقّفت لغياب الجميع تُستأنف الآن */
+      if (r.match && r.paused) after(r);
+    }
 
     socket.on("leaveRoom", () => leave(true));
     socket.on("disconnect", () => leave(false));
@@ -418,6 +466,7 @@ function setupLudoOnline(io, deps = {}) {
     function act(fn) {
       return d => {
         if (!room || !room.match || !me) return;
+        if (me.sockId !== socket.id) return;       /* جلسةٌ أحدث تسلّمت المقعد */
         const seat = slotOf(room, me.id);
         if (seat < 0) return;
         me.auto = false;                           /* لعب بنفسه ⇒ خرج من AUTO */
@@ -447,7 +496,7 @@ function setupLudoOnline(io, deps = {}) {
     /* ── الدردشة ── */
     socket.on("chat", d => {
       /* المُخرَجُ يبقى مقبسُه مربوطًا بالغرفة في هذا الإغلاق — فالمقعدُ هو الحكم */
-      if (!room || !me || slotOf(room, me.id) < 0) return;
+      if (!room || !me || slotOf(room, me.id) < 0 || me.sockId !== socket.id) return;
       const now = Date.now();
       if (now - lastChat < 700) return;
       lastChat = now;
@@ -468,6 +517,8 @@ function setupLudoOnline(io, deps = {}) {
       socket.leave(r.code);
       const i = slotOf(r, p.id);
       if (i < 0) return;
+      /* جلسةٌ أحدث تسلّمت المقعد: خروجُ هذه لا يمسّه */
+      if (p.sockId && p.sockId !== socket.id) return;
       p.sockId = null;
       /* رقمُ هذه المغادرة. من انقطع ثمّ عاد ثمّ انقطع ثانيةً يترك مؤقّتين
          معلّقين؛ لولا هذا الرقم لنفّذ الاثنان التحويلَ إلى بوت، فيُكتب اسمُه
@@ -486,8 +537,8 @@ function setupLudoOnline(io, deps = {}) {
           r.hostId = nx ? nx.id : null;
         }
         sendLobby(r);
-        if (r.match) after(r);
-        if (!humans(r).some(x => !x.gone)) { clearTimers(r); rooms.delete(r.code); }
+        if (r.match) after(r);                    /* ومن لم يبقَ أحد: تتوقّف (after) */
+        else if (!anyHere(r)) { clearTimers(r); rooms.delete(r.code); }
       };
 
       if (deliberate || !r.match) { p.gone = true; drop(); return; }

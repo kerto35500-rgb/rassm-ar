@@ -126,6 +126,16 @@ console.log("② القواعد الأساسيّة (من لعبة المرجع)"
     eq(pool(mm), [6, 3, 6, 2], "خمسةُ نرودٍ في دورٍ واحد: ٦ ٦ ٣ ثمّ ٦ ٢");
     ok(mm.phase === "move" && mm.legal.some(x => x.d === 2) && mm.legal.some(x => x.d === 6), "وكلُّها تُلعَب");
 
+    /* صورةُ المستخدم: ٦ ٦ ٣ ← لُعبت ستّةٌ فأكلت ← ٦ ٣ ← المكافأة ٦ ثمّ ٦.
+       كانت تمضي (الثلاثةُ تفصل) ثمّ يُلعَب الثلاثة فيرى الجميعُ ٦ ٦ ٦ ٤ والدورُ
+       مستمرّ — والآن ثلاثُ ستّاتٍ في البركة تُلغي ولو فصل بينها رقم */
+    ({ mm } = setup(6));
+    rollSeq(mm, 0, [6, 6, 3]); goD(mm, 0, 0, 0, 6);
+    rollAs(mm, 0, 6);
+    eq(pool(mm), [6, 3, 6], "ستّتان في البركة يفصلهما ثلاثة");
+    rollAs(mm, 0, 6);
+    ok(mm.turn === 2 && mm.pool.length === 0, "فالستّةُ الثالثة في البركة تُلغي الدور (لا ٦ ٦ ٦ ٤ يمضي)", { turn: mm.turn, pool: pool(mm) });
+
     /* ستّتان باقيتان + ستّةُ المكافأة = ثلاثٌ متتالية في البركة ⇒ يُلغى (كالمرجع) */
     ({ mm } = setup(3));
     rollSeq(mm, 0, [6, 6, 3]); goD(mm, 0, 0, 0, 3);
@@ -133,18 +143,19 @@ console.log("② القواعد الأساسيّة (من لعبة المرجع)"
     rollAs(mm, 0, 6);
     ok(mm.turn === 2 && mm.pool.length === 0, "فستّةُ المكافأة ثالثتُهما ⇒ يُلغى الدور", { turn: mm.turn, pool: pool(mm) });
 
-    ({ mm } = setup(6));
-    rollSeq(mm, 0, [6, 6, 3]); goD(mm, 0, 0, 0, 6);
-    rollSeq(mm, 0, [6, 6, 6]);
+    ({ mm } = setup(3));
+    rollAs(mm, 0, 3); goD(mm, 0, 0, 0, 3);
+    ok(mm.phase === "roll" && mm.pool.length === 0, "(ثلاثةٌ أكلت ⇒ مكافأةٌ والبركةُ فارغة)");
+    rollSeq(mm, 0, [6, 6]);
+    ok(mm.turn === 0, "ستّتا المكافأة: يرمي ثالثة");
+    rollAs(mm, 0, 6);
     ok(mm.turn === 2 && mm.pool.length === 0, "وثلاثُ ستّاتٍ في رمية المكافأة نفسها تُلغيه", { turn: mm.turn, pool: pool(mm) });
 
-    /* والذهبيّةُ لا تُعَدّ: ٦ ٦ ثمّ ذهبيّة ثمّ ٦ ⇒ الثالثةُ العاديّة تُلغي */
+    /* والذهبيّةُ ستّةٌ كغيرها: ٦ ٦ ثمّ ذهبيّة ⇒ ثلاثُ ستّاتٍ تُرى ⇒ يُلغى */
     mm = mk({ mode: "classic" }, [0, 2]);
     turnTo(mm, 0); put(mm, 0, 0, 10);
     rollSeq(mm, 0, [6, 6]); mm.golden[0] = true; mm.roll(0);
-    ok(mm.turn === 0 && mm.phase === "roll", "الذهبيّةُ لا تُحسَب ثالثة");
-    rollAs(mm, 0, 6);
-    ok(mm.turn === 2, "والستّةُ العاديّةُ الثالثة تُلغي الدور");
+    ok(mm.turn === 2 && mm.pool.length === 0, "الذهبيّةُ تُحسَب ثالثة");
 
     /* القاعدةُ باقية (طلبُ المستخدم): ثلاثُ ستّاتٍ متتالية تُلغي الدور — من أوّل رمية */
     mm = mk({ mode: "classic" }, [0, 2]);
@@ -559,8 +570,10 @@ console.log("⑨ المعزّزات");
   turnTo(m, 0); m._loaded = [1]; m.roll(0);
   eq(m.dice, 6, "والرميةُ القادمة ستّةٌ مضمونة");
   ok(m.pool[0] && m.pool[0].g && m.phase === "roll", "وهي ستّةٌ تمنح رميةً أخرى كأيّ ستّة", m.pool);
-  rollSeq(m, 0, [6, 6]);
-  ok(m.turn === 0 && m.phase === "roll", "ولا تُحسَب في عقوبة الستّات: ذهبيّةٌ ثمّ ستّتان لا تُنهي الدور", pool(m));
+  rollAs(m, 0, 6);
+  ok(m.turn === 0 && m.phase === "roll", "ذهبيّةٌ ثمّ ستّة: ستّتان، يرمي ثانية", pool(m));
+  rollAs(m, 0, 6);
+  ok(m.turn === 2, "وذهبيّةٌ ثمّ ستّتان: ثلاثُ ستّاتٍ تُلغي الدور كأيّ ثلاث", pool(m));
 
   /* درع الفقاعة */
   m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);
@@ -603,8 +616,13 @@ console.log("⑨ المعزّزات");
      "اصطدامٌ في الرابع: الأقربُ يأكل الأبعد", { s1: m.pieces[1][0].p, s2: m.pieces[2][0].p });
   m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);
   m.powerups = [{ cell: 12, type: "wind" }];
-  put(m, 0, 0, 10); turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 0);
+  put(m, 0, 0, 10); turnTo(m, 0); rollAs(m, 0, 2); evs(m); go(m, 0, 0, 0);
   eq(m.pieces[0][0].p, 13, "ولا أحد خلفك ⇒ تتقدّم خطوة");
+  {
+    const es = evs(m);
+    ok(es.some(e => e.t === "move" && e.from === 12 && e.to === 13) && !es.some(e => e.t === "jump"),
+       "وخطوةُ الريح مشيٌ عاديّ (move) لا وثبةُ الكنغر (jump)", es.map(e => e.t));
+  }
   /* لونٌ واحدٌ يرتدّ قطعتين إلى الرابع ⇒ لا أكل: يقفان معًا زوجًا محميًّا */
   m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 1, 2]);
   m.powerups = [{ cell: 33, type: "wind" }];
@@ -647,7 +665,34 @@ console.log("⑨ المعزّزات");
   m.powerups = [{ cell: 12, type: "swap" }];
   put(m, 0, 0, 10); put(m, 2, 0, rel(2, 16));
   turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 0);
-  ok(m.pieces[0][0].p === 16 && absOf(2, m.pieces[2][0].p) === 12, "خصمٌ واحدٌ في النطاق ⇒ تبديلٌ فوريّ");
+  ok(m.prompt && m.prompt.kind === "swap" && m.prompt.options.length === 1 && m.prompt.seat === 0,
+     "خصمٌ واحدٌ في النطاق ⇒ يُسأل اللاعب أيضًا (لا تبديلَ فوريّ)", m.prompt);
+  ok(m.prompt.owner === 0 && m.prompt.idx === 0, "والسؤالُ يعرف قطعتَه (للنقر عليها)");
+  m.choose(0, m.prompt.options[0].id);
+  ok(m.pieces[0][0].p === 16 && absOf(2, m.pieces[2][0].p) === 12, "فيختار الخصمَ فيبدّلان");
+  /* التبديلُ اختياريّ: «none» (النقرُ على قطعتك) ⇒ تبقى مكانك */
+  m = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);
+  m.powerups = [{ cell: 12, type: "swap" }];
+  put(m, 0, 0, 10); put(m, 2, 0, rel(2, 16));
+  turnTo(m, 0); rollAs(m, 0, 2); go(m, 0, 0, 0); evs(m);
+  m.choose(0, "none");
+  ok(m.pieces[0][0].p === 12 && absOf(2, m.pieces[2][0].p) === 16 && !m.prompt, "«none» ⇒ لا تبديل: كلٌّ في مكانه",
+     { me: m.pieces[0][0].p, him: m.pieces[2][0].p });
+  ok(m.turn === 2, "ويمضي الدورُ كالعادة");
+  ok(evs(m).some(e => e.t === "fizzle" && e.skip), "وحدثُ «تخطّى» لا تبديل");
+  {
+    /* البوتُ لا يبدّل مع خصمٍ خلفه (يرجعه ويقدّم الخصم) */
+    const mm = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);
+    mm.powerups = [{ cell: 14, type: "swap" }];
+    put(mm, 0, 0, 12); put(mm, 2, 0, rel(2, 11));
+    turnTo(mm, 0); rollAs(mm, 0, 2); go(mm, 0, 0, 0);
+    ok(mm.prompt && mm.prompt.kind === "swap", "(سؤالُ تبديلٍ مع خصمٍ خلفه)", mm.prompt);
+    const d = BOT.decide(mm.view(0), 2, () => .5);
+    ok(d && d.kind === "choose" && d.choice === "none", "البوتُ يختار البقاء", d);
+    put(mm, 2, 0, rel(2, 18)); mm.prompt.options = mm.swapOptions(0, 0);
+    const d2 = BOT.decide(mm.view(0), 2, () => .5);
+    ok(d2 && d2.choice !== "none", "ومع خصمٍ أمامه يبدّل", d2);
+  }
   {
     const mm = mk({ mode: "classic", powerups: true, powerCount: 3 }, [0, 2]);
     let c = 16; while (L.SAFE.has(c)) c++;

@@ -246,7 +246,7 @@
       d.classList.toggle("sh", !!pc.sh);
       const hidden = pc.hidden || pc.p === -2;
       d.style.display = hidden ? "none" : "";
-      d.classList.remove("can", "target");
+      d.classList.remove("can", "target", "keep");
       const b = d.querySelector(".tkb");
       b.textContent = pc.k === "king" ? "👑" : pc.k === "guard" ? "🛡️" : "";
       let cd = d.querySelector(".cd");
@@ -283,8 +283,11 @@
         });
       }
     }
-    if (v.prompt && v.prompt.seat === mySeat && v.prompt.kind === "swap" && v.prompt.options)
+    if (v.prompt && v.prompt.seat === mySeat && v.prompt.kind === "swap" && v.prompt.options) {
       for (const o of v.prompt.options) tokEl(o.seat, o.idx).classList.add("target");
+      /* التبديلُ اختياريّ: قطعتُك تتوهّج أيضًا — النقرُ عليها يُبقيها مكانها */
+      if (v.prompt.owner != null) tokEl(v.prompt.owner, v.prompt.idx).classList.add("keep");
+    }
   }
 
   function onTokClick(seat, idx) {
@@ -293,6 +296,7 @@
     if (v.prompt && v.prompt.seat === mySeat && v.prompt.kind === "swap" && v.prompt.options) {
       const o = v.prompt.options.find(x => x.seat === seat && x.idx === idx);
       if (o) { socket.emit("choose", { choice: o.id }); return; }
+      if (seat === v.prompt.owner && idx === v.prompt.idx) { socket.emit("choose", { choice: "none" }); return; }
     }
     if (v.phase === "move" && v.turn === mySeat) {
       const opts = optionsFor(v, seat, idx);
@@ -358,9 +362,19 @@
       pk.appendChild(b);
     }
     const t = tokEl(seat, idx).getBoundingClientRect(), box = $("boardBox").getBoundingClientRect();
-    pk.style.left = (t.left + t.width / 2 - box.left) + "px";
-    pk.style.top = (t.top - box.top) + "px";
     pk.classList.add("on");
+    /* قطعةٌ قربَ أعلى اللوحة: الفقاعةُ تحتها — فوقها كانت تختفي خلف شريط
+       الأعلى ولوحتَي لاعبَي الأعلى فلا يُرى إلا سهمُها */
+    const ph = pk.offsetHeight || 56, pw = pk.offsetWidth || 0;
+    const below = (t.top - box.top) < ph + 18;
+    pk.classList.toggle("below", below);
+    pk.style.top = ((below ? t.bottom : t.top) - box.top) + "px";
+    /* ولا تخرج عن الشاشة يمينًا أو يسارًا (السهمُ يبقى على القطعة) */
+    const cx = t.left + t.width / 2, vw = window.innerWidth || 0;
+    let x = cx;
+    if (vw && pw) x = Math.min(Math.max(cx, pw / 2 + 6), vw - pw / 2 - 6);
+    pk.style.left = (x - box.left) + "px";
+    pk.style.setProperty("--ax", (cx - x) + "px");
   }
   function hidePicker() { const pk = $("picker"); pk.classList.remove("on"); pk.innerHTML = ""; }
   /* النقرُ خارج الفقاعة وخارج القطع يُغلقها */
@@ -566,7 +580,25 @@
       /* المعزّزات: بلا إشعاراتٍ مكتوبة (لا لصاحبها ولا لغيره) — يكفي ما يُرى على
          اللوحة: وميضُ المربّع، والقفزة، وارتدادُ القطع، والنردُ الذهبيّ */
       else if (e.t === "power") { snd("pow"); flash(e.cell, "#ffd34d"); await wait(220); }
-      else if (e.t === "wind") { if (e.pushes && e.pushes.length) snd("cap"); await wait(200); }
+      /* الرياح: من دُفع يرتدّ مربّعًا مربّعًا إلى الخلف (معًا)؛ وتقدُّمُ صاحبها
+         خطوةً حدثُ «move» عاديّ — لا وثبةُ الكنغر */
+      else if (e.t === "wind") {
+        const ps = (e.pushes || []).filter(x => x.from != null && x.to != null && x.from > x.to);
+        if (ps.length) {
+          snd("cap");
+          const n = Math.max(...ps.map(x => x.from - x.to));
+          for (let k = 1; k <= n; k++) {
+            for (const x of ps) if (x.from - k >= x.to) {
+              const d = tokEl(x.seat, x.idx);
+              place(d, rcFor(x.seat, x.from - k, x.idx)); d.classList.add("hop");
+            }
+            snd("step");
+            await wait(130);
+            for (const x of ps) tokEl(x.seat, x.idx).classList.remove("hop");
+          }
+        }
+        await wait(120);
+      }
       else if (e.t === "swap") { snd("pow"); await wait(200); }
       else if (e.t === "sacrifice") { snd("cap"); toast(`🛡️ ${nm(e.seat)} ضحّى بحارسٍ لينجو ملكه`); await wait(250); }
       else if (e.t === "kingDown") { snd("cap"); toast(`👑 سقط ملك ${nm(e.seat)}!`); await wait(300); }
@@ -616,7 +648,7 @@
     /* الأسئلة */
     const pr = st.prompt;
     const bar = $("promptBar");
-    if (pr && pr.seat === mySeat && pr.kind === "swap") { bar.style.display = "block"; bar.textContent = "🔄 اختر قطعةَ خصمٍ متوهّجةً بالأحمر للتبديل"; }
+    if (pr && pr.seat === mySeat && pr.kind === "swap") { bar.style.display = "block"; bar.textContent = "🔄 اضغط خصمًا متوهّجًا بالأحمر لتبدّل معه — أو اضغط قطعتك لتبقى مكانك"; }
     else if (pr && pr.seat !== mySeat) { bar.style.display = "block"; bar.textContent = "⏳ " + ((PLAYERS[pr.seat] && PLAYERS[pr.seat].name) || "") + (pr.kind === "sacrifice" ? " يقرّر التضحية…" : " يختار مع من يبدّل…"); }
     else bar.style.display = "none";
     if (pr && pr.seat === mySeat && pr.kind === "sacrifice") showSacrifice(st);
@@ -934,7 +966,7 @@
     return r("القواعد الأساسيّة", "تخرج القطعةُ من القاعدة بالرقم ٦ · مربّعاتُ الانطلاق والنجوم ★ آمنة · لا تجاوزَ للمركز (إلا الارتداد في الاحترافيّ).") +
       r("🧱 الزوج المحميّ", "قطعتان من لونٍ واحدٍ في مربّعٍ واحدٍ (غيرِ آمن) لا ينزل عليهما الخصم ولا يأكلهما — لكنّه يتخطّاهما. ولا تدفعهما الرياح ولا يُبدَّل معهما.") +
       r("🎲 النرد", "إذا طلعت ستّة ترمي مرّةً أخرى <b style='display:inline'>قبل</b> أن تحرّك، وتتجمّع الأرقام تحت نردك (٦ ثمّ ٤ مثلًا)، ثمّ تُنفقها رقمًا رقمًا: أيُّ قطعةٍ تمشي بأيّ رقم — وإن مشت قطعةٌ بأكثر من رقم اختر الرقمَ من الفقاعة فوقها. " +
-        "ثلاثُ ستّاتٍ متتالية في بركتك تُلغي الدورَ كلَّه — حتى لو جاءت الثالثةُ في رمية المكافأة بعد ستّتين لم تلعبهما. أكلُ قطعةٍ أو إدخالُها المركز يمنح رميةً جديدة، وما بقي من أرقامك يبقى لك. " +
+        "إذا اجتمعت في بركتك <b style='display:inline'>ثلاثُ ستّات</b> لم تلعبها ضاع الدورُ كلُّه — ولو جاءت الثالثةُ في رمية المكافأة، أو كانت إحداها ذهبيّة. أكلُ قطعةٍ أو إدخالُها المركز يمنح رميةً جديدة، وما بقي من أرقامك يبقى لك. " +
         "والنردُ نردُ لعبة يلا لودو: الستّةُ تأتي أكثرَ قليلًا (نحو ٢٣٪)، وإن كانت قطعُك كلُّها في القاعدة ساعدك بستّةٍ أكثر. " +
         "وإن مرّت بك <b style='display:inline'>خمسةُ أدوارٍ متتالية</b> بلا ستّة صارت فرصتُها <b style='display:inline'>٥٠٪</b> حتى تأتي، ثمّ تعود كما كانت.") +
       r("⏱️ الوقت", "لكلّ خطوةٍ مهلة تظهر دائرةً تنقص فوق صورتك. إن انتهت لعب عنك اللعبُ التلقائيّ (AUTO) حتى تلمس الشاشة.") +
@@ -946,7 +978,7 @@
       pu("jump", "تقفز القطعةُ وثبةً واحدةً ١ إلى ٣ مربّعاتٍ عشوائيًّا (وتقف قبل زوج الخصم).") +
       pu("bubble", "لا تُؤكل القطعةُ دورةً كاملة.") +
       pu("wind", "خصومُ المربّعات الثلاثة خلفك يرتدّون إلى المربّع الرابع: إن كانوا من لونين مختلفين أكل الأقربُ إليك الأبعد، وإن كانوا من لونٍ واحدٍ وقفوا معًا زوجًا محميًّا. والزوجُ القائم لا تدفعه الريح. ولا أحد خلفك ⇒ تتقدّم خطوة.") +
-      pu("swap", "تبدّل مكانك مع خصمٍ في نطاق ٥ مربّعاتٍ أمامك أو خلفك (إلا قطعةً في زوجٍ محميّ).");
+      pu("swap", "تبدّل مكانك مع خصمٍ تختاره في نطاق ٥ مربّعاتٍ أمامك أو خلفك (إلا قطعةً في زوجٍ محميّ) — أو تضغط قطعتك فتبقى مكانها.");
   }
   $("rulesBtn").onclick = () => {
     $("rulesBody").innerHTML = rulesHTML((VIEW && VIEW.rules.mode) || (settings && settings.mode) || "classic");
@@ -1107,7 +1139,11 @@
     const n = needName(); if (!n) return;
     const r = $("pRoom").value.trim();
     if (!r) return ($("joinErr").textContent = "اكتب رمز الغرفة");
-    socket.emit("joinRoom", { name: n, roomId: r }, res => {
+    /* رمزُ هذا الجهاز لتلك الغرفة (إن وُجد): من خرج من مباراةٍ جارية يعود
+       بالرمز إلى مقعده — والخادمُ يقبل الاسمَ أيضًا من جهازٍ آخر */
+    let token = null;
+    try { const s = JSON.parse(localStorage.getItem("ludoResume") || "null"); if (s && s.room === r) token = s.token; } catch (e) {}
+    socket.emit("joinRoom", { name: n, roomId: r, token }, res => {
       if (res.ok) return enter(res);
       $("joinErr").textContent = res.error || "تعذّر الانضمام";
       inviteFailed();
@@ -1163,6 +1199,12 @@
   socket.on("chat", m => addMsg(m));
   socket.on("chatLog", list => { $("msgs").innerHTML = ""; list.forEach(m => addMsg(m, false, true)); });
   socket.on("toast", t => { moveSentAt = 0; toast(t); });
+  /* فُتحت اللعبةُ بالمقعد نفسه في تبويبٍ أو جهازٍ آخر: هذا التبويبُ يتوقّف
+     ولا يعيد الاتّصال وحده (وإلا تبادلا المقعدَ بلا نهاية) */
+  socket.on("replaced", () => {
+    const box = $("replacedModal");
+    if (box) box.classList.add("on");
+  });
   socket.on("kicked", () => {
     try { localStorage.removeItem("ludoResume"); } catch (e) {}
     alert("تم إخراجك من الغرفة"); location.href = "/ludo/";

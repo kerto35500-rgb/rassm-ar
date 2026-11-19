@@ -220,7 +220,7 @@ class LudoMatch {
     this.phase = "roll";
     this.dice = null;
     /* بركةُ الدور: الأرقامُ المرميّة التي لم تُنفَق بعد، بترتيب رميها.
-       {v: الرقم، g: ذهبيّ؟} — الستّةُ الذهبيّة هديّةٌ لا تُحسَب في عقوبة الثلاث */
+       {v: الرقم، g: ذهبيّ؟} — والذهبيّةُ ستّةٌ كغيرها في عقوبة الثلاث */
     this.pool = [];
     this.dry = {};           /* أدوارٌ متتالية بلا ستّة لكلّ مقعد (نظامُ التعويض) */
     this.sixTurn = false;    /* هل رمى صاحبُ الدور ستّةً في دوره هذا */
@@ -427,19 +427,16 @@ class LudoMatch {
     return base();
   }
 
-  /** ثلاثُ ستّاتٍ متتالية في البركة ⇒ يُلغى الدور — كلعبة المرجع حرفيًّا
-      (yalla.util.isThreeSix يعدّ الستّاتِ المتتالية في numArray حتى آخر رقم):
-      ستّتان باقيتان ثمّ ستّةُ المكافأة بعد الأكل ثلاثٌ متتالية ⇒ يُلغى.
-      ولا يمنع ذلك أكثرَ من ثلاثة نرودٍ في الدور حين يفصل بين الستّات رقمٌ
-      آخر: ٦ ٦ ٣ ← لُعبت ستّةٌ فأكلت ← بقي ٦ ٣ ← المكافأة ٦ ثمّ ٢ (مثالُ
-      المستخدم). والستّةُ الذهبيّة (المعزّز) لا تُعَدّ ولا تقطع العدّ. */
+  /** ثلاثُ ستّاتٍ في البركة معًا (لم تُلعَب بعد) ⇒ يُلغى الدور.
+      كان العدُّ للمتتالية وحدها (كـ yalla.util.isThreeSix)، فإذا فصل بينها
+      رقمٌ آخر نجت: ٦ ٦ ٣ ← لُعبت ستّةٌ فأكلت ← ٦ ٣ ← المكافأة ٦ ثمّ ٦ ⇒
+      البركة ٦ ٣ ٦ ٦ تمضي، ثمّ يُلعَب الثلاثة فيرى اللاعبون ٦ ٦ ٦ ٤ والدورُ
+      مستمرّ (صورةُ المستخدم). فالعدُّ الآن لما في البركة كلِّه: لا تجتمع
+      فيها ثلاثُ ستّاتٍ أبدًا. ويبقى مثالُ المستخدم الأوّل جائزًا: ٦ ٦ ٣ ←
+      لُعبت ستّةٌ فأكلت ← ٦ ٣ ← المكافأة ٦ ثمّ ٢ (ستّتان فقط). والذهبيّةُ
+      ستّةٌ كغيرها: ما يُرى ثلاثَ ستّاتٍ يُلغي. */
   threeSix() {
-    let n = 0;
-    for (const x of this.pool) {
-      if (x.g) continue;
-      n = x.v === 6 ? n + 1 : 0;
-    }
-    return n >= 3;
+    return this.pool.filter(x => x.v === 6).length >= 3;
   }
 
   /** بعد رقمٍ غير الستّة، أو بعد حركةٍ بقي في البركة بعدها شيء: نعرض ما
@@ -536,8 +533,14 @@ class LudoMatch {
         if (pr.reward) this.after.captured = true;
       } else this.killKing(pr.seat, pr.king, pr.by, pr.cell, pr.reward);
     } else if (pr.kind === "swap") {
-      const pick = pr.options.find(o => o.id === Number(choice)) || pr.options[0];
-      this.applySwap(pr.owner, pr.idx, pick, pr.actor);
+      if (choice == null || choice === "none") {
+        const pc = this.pieces[pr.owner][pr.idx];
+        const at = pc.p >= 0 && pc.p <= LAST_TRACK ? absOf(pr.owner, pc.p) : null;
+        this.evPos({ t: "fizzle", type: "swap", owner: pr.owner, idx: pr.idx, skip: true }, pr.owner, [at]);
+      } else {
+        const pick = pr.options.find(o => o.id === Number(choice)) || pr.options[0];
+        this.applySwap(pr.owner, pr.idx, pick, pr.actor);
+      }
     }
     this.pump();
   }
@@ -716,8 +719,10 @@ class LudoMatch {
       this.applyWind(owner, idx, depth, actor);
     } else if (type === "swap") {
       const opts = this.swapOptions(owner, idx);
+      /* التبديلُ اختياريّ ويُسأل عنه دائمًا — ولو كان في النطاق خصمٌ واحد
+         (كان يُبدَّل معه فورًا بلا سؤال). جوابُ «none» (أو النقرُ على قطعتك)
+         يُبقيك مكانك */
       if (!opts.length) this.evPos({ t: "fizzle", type, owner, idx }, owner, [abs]);
-      else if (opts.length === 1) this.applySwap(owner, idx, opts[0], actor);
       else {
         this.prompt = { seat: actor, kind: "swap", owner, idx, actor, options: opts };
         this.phase = "prompt";
@@ -746,8 +751,9 @@ class LudoMatch {
     if (!pushed.length) {
       const one = this.tryMove(owner, idx, 1);
       this.evPos({ t: "wind", owner, idx, pushes: [], advance: !!one }, owner, [a]);
+      /* خطوةٌ عاديّة (مشيٌ) لا وثبةُ الكنغر — الوثبةُ للقفزة وحدها */
       if (one) {
-        this.walk(one, "jump");
+        this.walk(one, "move");
         if (depth < MAX_CHAIN) this.queue.unshift({ k: "land", owner, idx, depth: depth + 1, actor });
       }
       return;

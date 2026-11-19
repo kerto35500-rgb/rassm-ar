@@ -169,14 +169,17 @@ function chooseMove(view, diff, rnd) {
 /** التبديل: أكبرُ قفزةٍ للأمام، ثمّ أبعدُ خصمٍ يُعاد. */
 function chooseSwap(view) {
   const pr = view.prompt;
-  if (!pr || !pr.options || !pr.options.length) return 0;
-  let best = pr.options[0], bs = -Infinity;
+  if (!pr || !pr.options || !pr.options.length) return "none";
+  /* التبديلُ اختياريّ: خصمٌ أمامك (d > 0) تتقدّم إلى مكانه ويرتدّ هو — وكلّما
+     كان أبعدَ في طريقه كان ردُّه أنفع. وخصمٌ خلفك يُرجعك ويقدّمه: لا تبديل */
+  let best = null, bs = 0;
   for (const o of pr.options) {
+    if (!(o.d > 0)) continue;
     const him = view.pieces[o.seat] && view.pieces[o.seat][o.idx];
     const sc = o.d * 3 + (him && him.p > 0 ? him.p * 0.25 : 0) + (him && him.k === "king" ? 20 : 0);
     if (sc > bs) { bs = sc; best = o; }
   }
-  return best.id;
+  return best ? best.id : "none";
 }
 
 /** التضحية: دائمًا — الملكُ أغلى من أيّ حارس. والحارسُ الأقلّ تقدّمًا يُفدى به. */
