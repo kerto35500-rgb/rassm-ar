@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- أيقونة «رسالة حب» للصفحة الرئيسيّة بستايل المارشميلو: ظرفٌ كريميٌّ بحافّةٍ
+       بيضاءَ عريضة تخرج منه بطاقةٌ ورديّةٌ عليها تاجٌ صغير، وعلى الظرف ختمُ قلب،
+       وحوله قلبان صغيران. مرسومةٌ من الصفر بلا شعارٍ ولا علامة ولا محارف. -->
+  <defs>
+    <linearGradient id="lE" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#FFF1E6"/></linearGradient>
+    <linearGradient id="lC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#FFD3DF"/></linearGradient>
+    <filter id="lsh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.6" flood-color="#000" flood-opacity=".28"/>
+    </filter>
+  </defs>
+  <g filter="url(#lsh)">
+    <!-- البطاقة الخارجة من الظرف -->
+    <rect x="38" y="16" width="52" height="62" rx="9" fill="url(#lC)" stroke="#fff" stroke-width="5"/>
+    <path d="M51 46 L49 30 L57 36 L64 25 L71 36 L79 30 L77 46 Z" fill="#FFEFA6" stroke="#C9466A" stroke-width="3" stroke-linejoin="round"/>
+    <rect x="51" y="46" width="26" height="5" rx="2" fill="#C9466A"/>
+    <!-- الظرف -->
+    <path d="M18 56 L64 86 L110 56 V100 a8 8 0 0 1 -8 8 H26 a8 8 0 0 1 -8 -8 Z" fill="url(#lE)" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M18 104 L52 78 M110 104 L76 78" stroke="#F2D6C8" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M18 56 L64 86 L110 56" fill="none" stroke="#EBC9B8" stroke-width="3" stroke-linejoin="round"/>
+    <!-- ختمُ القلب -->
+    <path d="M64 100 C64 100 50 91 50 81.5 C50 76 54 73 58 73 C61 73 63 74.8 64 77 C65 74.8 67 73 70 73 C74 73 78 76 78 81.5 C78 91 64 100 64 100 Z" fill="#FF7E9D" stroke="#fff" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M56.5 80 q1.5 -3 4.5 -3" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".8"/>
+    <!-- قلبان صغيران -->
+    <path d="M20 34 c0 0 -6 -4 -6 -8 c0 -2.4 1.7 -3.6 3.4 -3.6 c1.2 0 2.1 .7 2.6 1.6 c.5 -.9 1.4 -1.6 2.6 -1.6 c1.7 0 3.4 1.2 3.4 3.6 c0 4 -6 8 -6 8z" fill="#FFB3C7" stroke="#fff" stroke-width="2"/>
+    <path d="M108 30 c0 0 -5 -3.4 -5 -6.6 c0 -2 1.4 -3 2.8 -3 c1 0 1.8 .6 2.2 1.3 c.4 -.7 1.2 -1.3 2.2 -1.3 c1.4 0 2.8 1 2.8 3 c0 3.2 -5 6.6 -5 6.6z" fill="#FFB3C7" stroke="#fff" stroke-width="2"/>
+  </g>
+</svg>

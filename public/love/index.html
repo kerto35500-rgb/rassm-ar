@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>💌 رسالة حب — استنتاجٌ وخداع مع أصحابك</title>
+<style>
+  /* ═══ الأساس: هيكل «برّا السالفة» نفسه (كلودو و«كلمة واحدة» و«البسكويتة»)،
+     فتلبسه سمةُ المارشميلو — الدخولُ واللوبي والإعدادات والأزرار والدردشة.
+     وفوقه ما يخصّ اللعبة: البطاقاتُ الباستيليّة بأيقوناتٍ مرسومة، ومساحاتُ
+     اللاعبين، وعدّادُ البطاقات والسجلّ، ونافذةُ الاستهداف. الأصنافُ الجديدة
+     تبدأ بـ‎ll‎ فلا تلبسها قواعدُ السمة العامّة. ═══ */
+  :root{
+    --bg1:#0e1b2c; --panel:#ffffff; --ink:#3d2a26; --muted:#7d6f62;
+    --green:#2e9e5b; --green2:#25834a; --red:#e5484d; --amber:#f5a524;
+    --line:#ecdcc8; --soft:#fbf5ec;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:"Segoe UI",Tahoma,system-ui,sans-serif; color:var(--ink);
+    background:radial-gradient(1200px 700px at 50% -10%,#1d3a5c,var(--bg1));
+    height:100vh; height:100dvh; max-height:100dvh;
+    display:flex; flex-direction:column; align-items:center;
+    padding:10px; gap:10px; overflow:hidden;
+    -webkit-user-select:none; user-select:none;
+  }
+  input{-webkit-user-select:text; user-select:text;}
+  .wrap{width:100%; max-width:1000px; display:flex; flex-direction:column; gap:10px; flex:1; min-height:0; overflow:hidden;}
+  .card{background:var(--panel); border-radius:16px; box-shadow:0 10px 30px rgba(6,14,26,.28);}
+
+  /* الشريط العلويّ */
+  #topBar{display:flex; align-items:center; gap:8px; padding:8px 10px; flex-wrap:nowrap;}
+  #roomChip{display:flex; flex-direction:column; align-items:center; justify-content:center;
+            background:var(--soft); border:2px solid var(--line); border-radius:12px;
+            padding:4px 12px; cursor:pointer; flex-shrink:0; min-width:92px;}
+  #roomChip b{font-size:17px; letter-spacing:1px; color:#1668c7;}
+  #roomChip span{font-size:10px; color:var(--muted);}
+  #phaseInfo{flex:1; min-width:0; text-align:center; font-weight:800; font-size:15px;
+             white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .iconBtn{width:38px; height:38px; flex-shrink:0; border:2px solid var(--line); background:#fff;
+           border-radius:11px; cursor:pointer; font-size:17px; display:flex; align-items:center; justify-content:center;
+           text-decoration:none; color:inherit;}
+
+  /* شاشة الدخول */
+  #joinScreen{position:relative; display:flex; flex-direction:column; align-items:center;
+              justify-content:center; min-height:100%; gap:16px; padding:24px 16px; overflow:auto;}
+  .logo{font-size:clamp(38px,8.5vw,54px); font-weight:900; color:#fff; text-shadow:0 4px 14px rgba(0,0,0,.35); letter-spacing:1px; text-align:center; line-height:1.25;}
+  .logo span{color:#FF9AB0;}
+  .tagline{color:#cfe3f7; margin-top:-10px; font-size:clamp(14px,3.5vw,17px); text-align:center; max-width:560px; line-height:1.7;}
+  #joinScreen .card{background:var(--panel); border-radius:18px; padding:20px; width:100%;
+        max-width:400px; box-shadow:0 12px 34px rgba(0,0,0,.28); display:flex; flex-direction:column; gap:10px;}
+  #joinScreen .card input{width:100%; min-width:0; padding:11px 13px; border:2px solid #e3e8ee;
+        border-radius:10px; font-size:16px; text-align:center; background:#f8fafc; font-family:inherit;}
+  .sub{color:var(--muted); font-size:14px; text-align:center; max-width:560px; line-height:1.7;}
+  .btn{border:none; border-radius:12px; padding:13px 18px; font-size:16px; font-weight:800;
+       cursor:pointer; font-family:inherit; color:#fff; width:100%;}
+  .btn-green{background:linear-gradient(180deg,var(--green),var(--green2));}
+  .btn-blue{background:linear-gradient(180deg,#3b8fe0,#1668c7);}
+  .btn-red{background:linear-gradient(180deg,#f4696d,var(--red));}
+  .btn-ghost{background:var(--soft); color:var(--ink); border:2px solid var(--line);}
+  .btn:active{transform:translateY(1px);}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .divider{text-align:center; color:#999; font-size:13px;}
+  #joinErr{color:var(--red); text-align:center; font-size:14px; min-height:16px; font-weight:700;}
+  #whoLine{display:none; text-align:center; font-size:13.5px; color:var(--green); font-weight:800; margin:-4px 0 4px;}
+  .row2{display:flex; gap:8px;}
+  .row2 > *{flex:1 1 0; min-width:0;}
+  .row2 .btn{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .backLink{display:inline-flex; align-items:center; justify-content:center; gap:6px;
+            margin:2px auto 4px; padding:9px 20px; border-radius:999px;
+            background:rgba(255,255,255,.14); border:1.5px solid rgba(255,255,255,.32);
+            color:#fff; font-size:15.5px; font-weight:900; text-decoration:none;}
+  .facts{display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
+  .facts span{background:rgba(255,255,255,.85); border:2px solid #fff; border-radius:999px; padding:5px 13px;
+              font-size:13px; font-weight:900; color:var(--ink); box-shadow:0 3px 8px rgba(0,0,0,.1);}
+
+  /* اللوبي */
+  #lobby{display:none; flex-direction:column; gap:10px; padding:14px; flex:1; min-height:0; overflow:auto;}
+  .h{font-size:18px; font-weight:900; display:flex; align-items:center; gap:8px;}
+  #setBox{display:none; flex-direction:column; gap:10px;}
+  #setBox.open{display:flex;}
+  .setRow{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+          background:var(--soft); border-radius:11px; padding:9px 11px;}
+  .setRow label{font-weight:800; font-size:14px;}
+  .setRow .hint{font-size:11px; color:var(--muted); width:100%;}
+  .seg{display:flex; gap:0; border:2px solid var(--line); border-radius:11px; overflow:hidden; flex-wrap:wrap;}
+  .seg button{border:none; background:#fff; padding:9px 13px; font-size:13px; font-weight:800; cursor:pointer;
+              font-family:inherit; color:var(--muted);}
+  .seg button.on{background:var(--green); color:#fff;}
+  #plist{display:flex; flex-wrap:wrap; gap:9px;}
+  .llLp{position:relative; display:flex; align-items:center; gap:8px; padding:6px 14px 6px 7px; border-radius:999px;
+        background:#fff; border:2px solid var(--line); font-weight:800; font-size:14.5px; max-width:100%;}
+  .llLp .nm{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px;}
+  .llLp small{font-size:11px; font-weight:800; color:var(--muted);}
+  .llLp.me{box-shadow:0 0 0 2.5px #E86A7E;}
+  .llLp.gone{opacity:.45;}
+  .llLp .crown{position:absolute; top:-13px; inset-inline-start:-3px; font-size:16px;}
+  .llLp .kick{width:22px; height:22px; border:none; border-radius:50%; background:#ffe0e0; color:var(--red);
+              cursor:pointer; font-size:11px; flex-shrink:0;}
+  .llLp.botSlot{border-style:dashed; opacity:.75;}
+  .av{width:32px; height:32px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+      color:#fff; font-weight:900; font-size:15px; background:var(--sd,#8462D2); border:2.5px solid #fff;
+      box-shadow:0 0 0 1.5px var(--sd,#8462D2); text-shadow:0 1px 1px rgba(0,0,0,.2);}
+  #needMore{font-weight:800; color:#B5651D;}
+  .howTo{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px; padding:10px;}
+  .howTo div{background:var(--cb); border:4px solid #fff; border-radius:16px; padding:9px 11px; font-size:13px; line-height:1.65;
+             box-shadow:0 4px 10px rgba(120,80,40,.12);}
+  .howTo b{display:block; font-size:14.5px; margin-bottom:1px;}
+  .k0{--cb:#FFE0E8;} .k1{--cb:#FFEBD2;} .k2{--cb:#ECE3FF;} .k3{--cb:#DDF5EA;}
+
+  /* ═══ اللعب ═══ */
+  #play{display:none; flex-direction:column; gap:8px; flex:1; min-height:0; overflow:auto; position:relative;
+        scrollbar-width:thin; scrollbar-color:#F2B8C6 transparent; padding-bottom:4px;}
+  #play::-webkit-scrollbar{width:9px}
+  #play::-webkit-scrollbar-thumb{background:#F2B8C6; border-radius:999px}
+  #llHud{display:flex; flex-direction:column; gap:7px; padding:8px 12px; flex-shrink:0;}
+  .llHudRow{display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;}
+  .llStat{display:flex; align-items:center; gap:6px; font-weight:900; font-size:13px; background:var(--soft);
+          border-radius:999px; padding:4px 12px; white-space:nowrap; border:2px solid var(--line);}
+  .llStat b{font-size:17px;}
+  .llAside{display:inline-flex; gap:3px; align-items:center;}
+  #timer{display:flex; align-items:center; gap:8px;}
+  #tbar{flex:1; height:12px; border-radius:99px; background:#F3E3E6; overflow:hidden; border:2px solid #fff;
+        box-shadow:inset 0 1px 2px rgba(0,0,0,.12), 0 0 0 1px #EBCDD3;}
+  #tbar i{display:block; height:100%; width:100%; border-radius:99px; background:linear-gradient(90deg,#FFC6D3,#E86A7E);
+          transition:width .25s linear;}
+  #tbar.hurry i{background:linear-gradient(90deg,#FF9B8A,#E5484D);}
+  #tbar.paused i{background:repeating-linear-gradient(45deg,#E3D2D6 0 8px,#EFE2E5 8px 16px);}
+  #tsec{font-weight:900; min-width:36px; text-align:center; font-size:14px;}
+
+  /* الطاولة (ثلثاها) والجانبُ (عدّ البطاقات والسجلّ — ثلثها) */
+  #llMain{display:grid; grid-template-columns:minmax(0,2fr) minmax(250px,1fr); gap:8px; align-items:start; flex-shrink:0;}
+  #llBoard{display:flex; flex-direction:column; gap:8px; min-width:0;}
+  #llTable{display:grid; grid-template-columns:repeat(auto-fit,minmax(175px,1fr)); gap:8px;}
+  .llMat{position:relative; border-radius:20px; padding:9px 9px 10px; background:linear-gradient(180deg,#FFFEFC,#FFF4F6);
+         border:3px solid #fff; box-shadow:0 0 0 1.5px var(--line), 0 6px 14px rgba(160,70,90,.1);
+         display:flex; flex-direction:column; gap:6px; transition:box-shadow .2s, opacity .3s, transform .2s, filter .3s; min-width:0;}
+  .llMat.turn{box-shadow:0 0 0 3px var(--sd), 0 8px 18px rgba(160,70,90,.18); transform:translateY(-2px);}
+  .llMat.out{opacity:.5; filter:grayscale(.85);}
+  .llMat.hit, #llMine.hit{animation:llHit .55s cubic-bezier(.36,.07,.19,.97) both;}
+  @keyframes llHit{15%,55%{transform:translateX(-6px) rotate(-1deg)} 35%,75%{transform:translateX(6px) rotate(1deg)}}
+  .llMat .hd, #llMine .hd{display:flex; align-items:center; gap:7px; min-width:0; flex-wrap:wrap;}
+  .llMat .hd .av{width:30px; height:30px; font-size:13px; border-width:2px;}
+  .llMat .nm{font-weight:900; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:1;}
+  .llStars{font-size:12.5px; font-weight:900; background:#FFF3C4; border:2px solid #fff; box-shadow:0 0 0 1.2px #EBCB6A;
+           border-radius:999px; padding:1px 8px; white-space:nowrap; color:#7A5A00; flex-shrink:0;}
+  .llTags{display:flex; gap:4px; flex-wrap:wrap;}
+  .llTag{font-size:11px; font-weight:900; border-radius:999px; padding:1px 8px; background:#fff; border:1.5px solid var(--line); white-space:nowrap;}
+  .llTag.prot{background:#DDF5EA; border-color:#8FD3B4; color:#1F7A55;}
+  .llTag.out{background:#EEE; color:#888;}
+  .llTag.turn{background:#FFE3EA; border-color:#F2A3B5; color:#A8304E;}
+  .llKnown{font-size:11.5px; font-weight:900; background:#EFE8FF; color:#5B3FB0; border-radius:999px; padding:2px 9px 2px 4px;
+           border:1.5px solid #D6C8FF; display:inline-flex; gap:5px; align-items:center; align-self:flex-start;}
+  .llRowP{display:flex; align-items:flex-end; gap:8px; min-width:0;}
+  .llBacks{display:flex; gap:3px; flex-shrink:0;}
+  .llDisc{display:flex; gap:3px; flex-wrap:wrap; min-width:0; align-items:flex-end;}
+  .llDiscLbl{font-size:10.5px; font-weight:800; color:var(--muted); width:100%;}
+
+  /* ═══ البطاقة: حافّةٌ بيضاءُ بارزة، ولونٌ باستيليّ، وأيقونةٌ مرسومة ═══ */
+  .llCard{--w:104px; width:var(--w); height:calc(var(--w) * 1.4); border-radius:calc(var(--w) * .12); position:relative; flex-shrink:0;
+          background:linear-gradient(180deg,#fff 0%, var(--cb) 78%); border:calc(var(--w) * .045) solid #fff;
+          box-shadow:0 0 0 1.5px var(--ci), 0 6px 12px rgba(120,60,80,.18); display:flex; flex-direction:column; align-items:center; justify-content:center;
+          gap:calc(var(--w) * .03); color:var(--ci); text-align:center; overflow:hidden; transition:transform .18s, box-shadow .18s, opacity .2s;}
+  .llCard .num{position:absolute; top:calc(var(--w) * .04); inset-inline-start:calc(var(--w) * .08); font-weight:900; font-size:calc(var(--w) * .2); line-height:1;}
+  .llCard .ico{width:56%; aspect-ratio:1;}
+  .llCard .ico svg{width:100%; height:100%; display:block; overflow:visible;}
+  .llCard .cn{font-weight:900; font-size:calc(var(--w) * .135); line-height:1.1; color:#4A2E2B;}
+  .llCard .fx{font-size:calc(var(--w) * .088); font-weight:700; line-height:1.35; color:#6F5A55; padding:0 7%;}
+  .llCard.back{--cb:#FFE3EA; --ci:#D0566F; background:repeating-linear-gradient(45deg,#FFD6DE 0 9px,#FFE7EC 9px 18px);}
+  .llCard.back .ico{width:72%;}
+  .llCard.lg{--w:118px;}
+  .llCard.md{--w:80px;}
+  .llCard.md .fx{display:none;}
+  .llCard.sm{--w:46px;}
+  .llCard.sm .cn, .llCard.sm .fx{display:none;}
+  .llCard.sm .ico{width:64%; margin-top:calc(var(--w) * .16);}
+  .llCard.xs{--w:28px; box-shadow:0 0 0 1px var(--ci), 0 2px 3px rgba(0,0,0,.12); justify-content:flex-start;}
+  .llCard.xs .cn, .llCard.xs .fx{display:none;}
+  .llCard.xs .num{position:static; font-size:13px; margin-top:1px;}
+  .llCard.xs .ico{width:78%;}
+  .llCard.xs.back .ico{width:86%; margin-top:5px;}
+  .llCard.pick{cursor:pointer;}
+  .llCard.pick:hover{transform:translateY(-8px) rotate(-1.5deg); box-shadow:0 0 0 2.5px var(--ci), 0 14px 22px rgba(120,60,80,.25);}
+  .llCard.lock{opacity:.45; filter:grayscale(.4); cursor:not-allowed;}
+  .llCard.new{animation:llIn .6s cubic-bezier(.3,1.5,.5,1);}
+  @keyframes llIn{from{transform:translateY(-34px) scale(.55) rotate(-12deg); opacity:0}}
+  .llCard.glow{box-shadow:0 0 0 3px #F5B700, 0 0 18px rgba(245,183,0,.6);}
+  .c1{--cb:#CFE3F7; --ci:#3F6E9C;} .c2{--cb:#E3D9FF; --ci:#7A5CD0;} .c3{--cb:#FFE1C2; --ci:#C77A2E;} .c4{--cb:#D3F2E2; --ci:#2E9E73;}
+  .c5{--cb:#FFD6DE; --ci:#D0566F;} .c6{--cb:#FFEFA6; --ci:#B88A0A;} .c7{--cb:#FFCFC8; --ci:#C8433A;} .c8{--cb:#F6D0F0; --ci:#B04AA0;}
+
+  /* لوحةُ الوسط: آخرُ ما لُعب، وما ينتظر، ونتيجةُ الجولة */
+  #llCenter{padding:12px; display:flex; flex-direction:column; align-items:center; gap:9px; flex-shrink:0; min-height:118px;}
+  #llCenter .tt{font-size:clamp(16px,4.2vw,20px); font-weight:900; text-align:center; line-height:1.45;}
+  #llCenter .ss{font-size:13.5px; color:var(--muted); font-weight:800; text-align:center; line-height:1.6;}
+  .llPlay{display:flex; align-items:center; gap:12px; justify-content:center; flex-wrap:wrap;}
+  .llPlay .txt{font-weight:900; font-size:15px; line-height:1.7; max-width:360px; text-align:center;}
+  .llRes{border-radius:22px; padding:11px 22px; font-size:clamp(18px,4.4vw,22px); font-weight:900; text-align:center;
+         color:#fff; border:5px solid #fff; box-shadow:0 10px 22px rgba(0,0,0,.15); text-shadow:0 1px 2px rgba(0,0,0,.2);
+         background:linear-gradient(180deg,#FF9DB4,#E05A7A);}
+  .llRes small{display:block; font-size:13px; font-weight:800; opacity:.95; margin-top:2px;}
+  .llRes.mine{background:linear-gradient(180deg,#7DDCA9,#36A96F);}
+  .llHands{display:flex; gap:12px; flex-wrap:wrap; justify-content:center;}
+  .llHands .h1{display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px; font-weight:900; max-width:90px; text-align:center;}
+  .llHands .h1 span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:90px;}
+
+  /* مساحتي */
+  #llMine{padding:10px 12px 12px; display:flex; flex-direction:column; gap:8px; flex-shrink:0; position:relative;}
+  #llMine.turn{box-shadow:0 0 0 3px #E86A7E, 0 10px 30px rgba(120,40,60,.22);}
+  #llMine .nm{font-weight:900; font-size:15px;}
+  #llMine .lbl{font-size:12.5px; font-weight:900; color:var(--muted); text-align:center;}
+  #llHand{display:flex; gap:16px; justify-content:center; align-items:flex-end; padding:6px 0 2px; min-height:110px;}
+  #llMine .llRowP{justify-content:center;}
+
+  /* الجانب: عدّ البطاقات والسجلّ */
+  #llSide{padding:10px; display:flex; flex-direction:column; gap:8px; position:sticky; top:0;}
+  #llSide .h small{font-size:10.5px; color:var(--muted); font-weight:800;}
+  #llCount{display:flex; flex-direction:column; gap:4px;}
+  .llCnt{display:flex; align-items:center; gap:7px; padding:3px 7px 3px 4px; border-radius:12px; background:var(--soft); min-width:0;}
+  .llCnt .nm{font-weight:900; font-size:12.5px; min-width:64px; white-space:nowrap;}
+  .llPips{display:flex; gap:3px; flex:1; flex-wrap:wrap; min-width:0;}
+  .llPips i{width:12px; height:12px; border-radius:50%; border:2px solid var(--ci); background:#fff; flex-shrink:0;}
+  .llPips i.gone{background:var(--ci); opacity:.8;}
+  .llPips i.mine{background:repeating-linear-gradient(45deg,var(--ci) 0 2px,#fff 2px 4px);}
+  .llCnt .left{font-size:11.5px; font-weight:900; color:var(--muted); white-space:nowrap;}
+  .llCnt.zero .left{color:#2E9E73;}
+  #llLog{display:flex; flex-direction:column; gap:4px; max-height:280px; overflow:auto; font-size:12.5px; scrollbar-width:thin;}
+  .llL{background:#fff; border:1.5px solid var(--line); border-radius:11px; padding:5px 8px; line-height:1.6; font-weight:700;}
+  .llL b{color:var(--sd,#B04A6A);}
+  .llL.hot{border-color:#F2A3B5; background:#FFF5F7;}
+  .llL.sys{background:#FFF0F3; text-align:center; color:#B04A6A; font-weight:900;}
+  .llL .llCard{vertical-align:middle; display:inline-flex; margin:0 2px;}
+
+  /* نافذةُ اللعب: البطاقة، ثمّ الهدف، ثمّ التخمين — ولا يُرسل شيءٌ قبل التأكيد */
+  .llPm{display:flex; flex-direction:column; gap:12px; align-items:center;}
+  .llPmHd{display:flex; gap:12px; align-items:center;}
+  .llPmHd .t{font-size:19px; font-weight:900;}
+  .llPmHd .d{font-size:13.5px; color:var(--muted); font-weight:800; line-height:1.6;}
+  .llStep{font-weight:900; font-size:14px; align-self:stretch;}
+  .llPick{display:flex; flex-wrap:wrap; gap:8px; justify-content:center;}
+  .llTgt{display:flex; align-items:center; gap:7px; padding:6px 13px 6px 7px; border-radius:999px; background:#fff; border:2.5px solid var(--line);
+         font:inherit; font-weight:900; font-size:14px; cursor:pointer; color:var(--ink);}
+  .llTgt.on{border-color:#E86A7E; background:#FFF0F3; box-shadow:0 0 0 3px rgba(232,106,126,.25);}
+  .llTgt:disabled{opacity:.45; cursor:not-allowed;}
+  .llTgt small{font-size:11px; color:var(--muted);}
+  .llGuess{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; align-self:stretch;}
+  .llGuess button{border:none; background:transparent; padding:2px 0; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; font:inherit;}
+  .llGuess button small{font-size:10.5px; font-weight:900; color:var(--muted); line-height:1.35; text-align:center;}
+  .llGuess button.on .llCard{box-shadow:0 0 0 3px #E86A7E, 0 0 12px rgba(232,106,126,.5); transform:translateY(-3px);}
+  .llGuess button.zero{opacity:.45;}
+  .llWarn{background:#FFE8E6; color:#B02A20; border-radius:12px; padding:8px 12px; font-weight:900; text-align:center; font-size:14px; align-self:stretch;}
+  .llNote{background:#EFE8FF; color:#5B3FB0; border-radius:12px; padding:7px 12px; font-weight:900; text-align:center; font-size:13px; align-self:stretch;}
+  .llVs{display:flex; align-items:center; justify-content:center; gap:16px;}
+  .llVs .side{display:flex; flex-direction:column; align-items:center; gap:5px; font-weight:900; font-size:13px;}
+  .llVs .mid{font-size:28px;}
+  .llRule{display:flex; gap:10px; align-items:center;}
+  .llRule .x{flex:1; font-size:13px; line-height:1.7;}
+  .llRule .x b{display:inline; font-size:14px;}
+
+  /* ── شريطُ الدردشة تحت ── */
+  #chatBar{display:flex; gap:12px; justify-content:center; align-items:center; flex-shrink:0; padding:2px 0 4px;}
+  .barBtn{width:48px; height:48px; font-size:22px; position:relative;}
+  #unread{display:none; position:absolute; top:-6px; right:-6px; min-width:20px; height:20px; padding:0 5px; border-radius:999px;
+          background:#E5484D; color:#fff; font-size:11px; font-weight:900; line-height:17px; border:2px solid #fff; text-align:center;}
+  #unread.on{display:block;}
+  #quickPop{display:none; position:fixed; bottom:72px; left:50%; transform:translateX(-50%); width:min(94vw, 470px);
+            padding:10px; z-index:40; flex-direction:column; gap:8px;}
+  #quickPop.on{display:flex;}
+  #quickPop .phr{display:grid; grid-template-columns:repeat(2,1fr); gap:6px;}
+  #quickPop .phr button{border:2px solid var(--line); background:#fff; border-radius:999px; padding:8px 10px; font:inherit;
+                        font-weight:800; font-size:13.5px; cursor:pointer; color:var(--ink);}
+  #quickPop .emo{display:grid; grid-template-columns:repeat(8,1fr); gap:4px;}
+  #quickPop .emo button{border:none; background:transparent; font-size:25px; cursor:pointer; padding:4px 0; border-radius:10px;}
+  #chatCard{display:none; position:fixed; bottom:72px; left:50%; transform:translateX(-50%); width:min(94vw, 470px);
+            height:min(62vh, 440px); flex-direction:column; z-index:40; overflow:hidden; gap:8px; padding:10px;}
+  #chatCard.on{display:flex;}
+  .chatHead{display:flex; align-items:center; justify-content:space-between; font-weight:900;}
+  .chatHead button{border:none; background:transparent; font-size:18px; cursor:pointer; color:var(--muted);}
+  #msgs{flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:5px; min-height:90px;}
+  .msg{background:var(--soft); border-radius:9px; padding:6px 9px; font-size:13px; word-break:break-word;}
+  .msg b{color:#1668c7;}
+  .msg.system{background:#eef4fb; color:#1668c7; text-align:center; font-weight:700;}
+  #chatForm{display:flex; gap:6px; padding:8px; border-top:2px solid var(--line);}
+  #chatForm input{flex:1; min-width:0; text-align:start; font-size:14px; padding:10px 12px; border:2px solid var(--line); border-radius:10px; font-family:inherit;}
+  #chatForm button{border:none; border-radius:10px; background:#1668c7; color:#fff; font-weight:800; padding:10px 14px; cursor:pointer; font-family:inherit;}
+  .bub{position:absolute; bottom:calc(100% + 6px); inset-inline-start:6px; max-width:220px; width:max-content;
+       background:#fff; border:2px solid var(--sd,#8462D2); border-radius:14px; padding:5px 10px; font-size:13px;
+       font-weight:800; color:var(--ink); line-height:1.5; box-shadow:0 4px 12px rgba(0,0,0,.14); opacity:0;
+       transform:translateY(6px) scale(.96); transition:opacity .2s, transform .2s; pointer-events:none; z-index:20; word-break:break-word;}
+  .bub.on{opacity:1; transform:none;}
+  .bub.big{font-size:26px; padding:0 9px; line-height:1.25;}
+
+  /* النوافذ */
+  .modal{position:fixed; inset:0; background:rgba(10,20,34,.72); z-index:60; display:none; align-items:center; justify-content:center; padding:14px;}
+  .modal.on{display:flex;}
+  .sheet{background:#fff; border-radius:18px; width:100%; max-width:540px; max-height:88vh; overflow:auto;
+         padding:16px; display:flex; flex-direction:column; gap:11px;}
+  .sheet h3{margin:0; font-size:19px;}
+  .rule{background:var(--soft); border-radius:12px; padding:9px 12px; font-size:13.5px; line-height:1.8;}
+  .rule b{display:block; font-size:14.5px; margin-bottom:2px;}
+  .winBanner{border-radius:18px; padding:16px; text-align:center; font-weight:900; font-size:21px; color:#fff;
+             background:linear-gradient(180deg,#FF9DB4,#E05A7A); border:4px solid #fff; box-shadow:0 8px 20px rgba(0,0,0,.15);}
+  .winBanner small{display:block; font-size:13px; font-weight:800; opacity:.95; margin-top:4px;}
+  #endRank{display:flex; flex-direction:column; gap:6px;}
+  .rk{display:flex; align-items:center; gap:9px; padding:7px 12px; border-radius:14px; background:var(--soft); border:2px solid var(--line);
+      font-weight:900; font-size:15px;}
+  .rk.me{border-color:var(--sd); box-shadow:0 0 0 2px var(--sl);}
+  .rk .pl{font-size:20px; min-width:28px; text-align:center;}
+  .rk .nm{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .rk .x{font-size:13px; background:#fff; border-radius:999px; padding:2px 10px; border:2px solid var(--line); flex-shrink:0;}
+  #toast{position:fixed; left:50%; bottom:20px; transform:translateX(-50%) translateY(70px);
+         background:#12263c; color:#fff; padding:11px 18px; border-radius:12px; font-weight:800;
+         font-size:14px; z-index:90; opacity:0; transition:.25s; pointer-events:none; max-width:90vw; text-align:center;}
+  #toast.on{transform:translateX(-50%) translateY(0); opacity:1;}
+
+  @media (max-width: 760px){
+    body{padding:6px; gap:6px;}
+    #llMain{grid-template-columns:minmax(0,1fr);}
+    #llSide{position:static;}
+    #llCount{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px;}
+    .llCnt .nm{min-width:0; font-size:11.5px;}
+    .llPips i{width:10px; height:10px;}
+    #llLog{max-height:180px;}
+    #llTable{grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:6px;}
+    .llMat{padding:7px; border-radius:16px; gap:5px;}
+    .llCard.lg{--w:98px;}
+    .llGuess{grid-template-columns:repeat(4,1fr);}
+  }
+</style>
+<link rel="stylesheet" href="/kawaii.css">
+<script src="/theme.js" defer></script>
+</head>
+<body class="theme-kawaii">
+<div class="wrap">
+
+  <!-- ═════════ الدخول ═════════ -->
+  <div id="joinScreen">
+    <div class="logo">رسالة <span>حب!</span></div>
+    <div class="tagline">١٦ بطاقة، ورسالةٌ واحدة تصل إلى الأميرة 💌 — اسحب والعب، واستنتج ما في أيديهم، وكن آخرَ من في الجولة!</div>
+    <a class="backLink" href="/">← رجوع لاختيار الألعاب</a>
+    <div class="card">
+      <input id="pName" maxlength="20" placeholder="اكتب اسمك هنا" autocomplete="off">
+      <div id="whoLine"></div>
+      <button class="btn btn-green" id="createBtn">إنشاء غرفة جديدة ➕</button>
+      <div class="divider">— أو انضم لغرفة موجودة —</div>
+      <div class="row2">
+        <input id="pRoom" maxlength="6" placeholder="رمز الغرفة" inputmode="numeric" autocomplete="off">
+        <button class="btn btn-blue" id="joinBtn">انضمام 🚪</button>
+      </div>
+      <div id="joinErr"></div>
+    </div>
+    <div class="facts"><span>👥 ٢–٤ لاعبين</span><span>🤖 بوتات اختياريّة</span><span>⏱️ ٤٥ث للدور</span><span>⭐ ٧ / ٥ / ٤ نجوم</span></div>
+  </div>
+
+  <!-- ═════════ اللعبة ═════════ -->
+  <div id="game" style="display:none; flex-direction:column; gap:10px; flex:1; min-height:0;">
+    <div class="card" id="topBar">
+      <div id="roomChip" title="انسخ رابط الدعوة"><b id="roomCode">—</b><span>🔗 انسخ الرابط</span></div>
+      <div id="phaseInfo">في الانتظار…</div>
+      <button class="iconBtn" id="rulesBtn" title="القواعد">📖</button>
+      <button class="iconBtn" id="sndBtn" title="الصوت">🔊</button>
+      <button class="iconBtn" id="leaveBtn" type="button" title="ترك الجلسة والعودة للقائمة الرئيسيّة">🚪</button>
+    </div>
+
+    <!-- اللوبي -->
+    <div class="card" id="lobby">
+      <div class="h">👥 الطاولة <span id="plCount" style="font-size:13px; color:var(--muted); font-weight:700;"></span></div>
+      <div id="plist"></div>
+      <div id="needMore" class="sub"></div>
+      <div id="hostArea" style="display:none; flex-direction:column; gap:10px;">
+        <button class="btn btn-ghost" id="setOpen" style="width:auto;">⚙️ إعدادات الغرفة</button>
+        <div id="setBox"></div>
+        <button class="btn btn-green" id="startBtn">▶️ ابدأ اللعبة</button>
+      </div>
+      <div id="waitHost" class="sub">بانتظار مدير الغرفة يبدأ اللعبة…</div>
+      <div id="lobbySummary" class="sub"></div>
+      <div class="card howTo" id="howTo">
+        <div class="k0"><b>🃏 ١. اسحب والعب</b>في دورك تسحب بطاقةً فيصير معك اثنتان، وتلعب إحداهما مكشوفةً فتنفّذ قدرتها.</div>
+        <div class="k1"><b>🎯 ٢. استهدف</b>الحارسُ يخمّن، والكاهنُ يرى، والبارونُ يقارن، والملكُ يبادل — والخادمةُ تحميك.</div>
+        <div class="k2"><b>🧮 ٣. عُدّ البطاقات</b>كلُّ ما يُلعب مكشوف — احسب ما بقي لتعرف ما في أيديهم.</div>
+        <div class="k3"><b>⭐ ٤. الفوز</b>آخرُ من بقي، أو صاحبُ أعلى بطاقةٍ حين تنفد الكومة، يكسب نجمة.</div>
+      </div>
+    </div>
+
+    <!-- اللعب -->
+    <div id="play">
+      <div class="card" id="llHud">
+        <div class="llHudRow">
+          <div class="llStat">💌 الجولة <b id="hRound">١</b></div>
+          <div class="llStat" id="hDeck">🂠 الكومة <b>٠</b></div>
+          <div class="llStat" id="hTarget">⭐ للفوز <b>٥</b></div>
+          <div class="llStat" id="hFace" style="display:none" title="أُبعدت مكشوفةً في بداية الجولة (لعبة لاعبَين)">جانبًا <span class="llAside"></span></div>
+        </div>
+        <div id="timer"><div id="tbar"><i></i></div><span id="tsec">—</span></div>
+      </div>
+      <div id="llMain">
+        <div id="llBoard">
+          <div id="llTable"></div>
+          <div class="card" id="llCenter"></div>
+          <div class="card" id="llMine"></div>
+        </div>
+        <aside class="card" id="llSide">
+          <div class="h" style="font-size:15px">🧮 عدّ البطاقات <small>● لُعبت · ◐ معك · ○ مجهولة</small></div>
+          <div id="llCount"></div>
+          <div class="h" style="font-size:15px">📜 سجلّ الجولة</div>
+          <div id="llLog"></div>
+        </aside>
+      </div>
+      <div id="chatBar">
+        <button class="iconBtn barBtn" id="quickBtn" title="عبارات وإيموجي">😊</button>
+        <button class="iconBtn barBtn" id="chatBtn" title="الدردشة">💬<span id="unread"></span></button>
+      </div>
+    </div>
+    <div class="card" id="quickPop"></div>
+    <div class="card" id="chatCard">
+      <div class="chatHead"><span>💬 الدردشة</span><button type="button" id="chatClose" aria-label="إغلاق">✕</button></div>
+      <div id="msgs"></div>
+      <form id="chatForm" autocomplete="off">
+        <input id="chatInput" type="text" placeholder="اكتب رسالة…" maxlength="140">
+        <button type="submit">إرسال</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- لعبُ بطاقة: الهدفُ والتخمين ثمّ التأكيد -->
+<div class="modal" id="playModal"><div class="sheet">
+  <div id="pmBody"></div>
+  <div class="row2"><button class="btn btn-green" id="pmGo" type="button">العب ✓</button><button class="btn btn-ghost" data-close>إلغاء</button></div>
+</div></div>
+
+<!-- ما رأيتَه سرًّا (الكاهن، البارون) -->
+<div class="modal" id="infoModal"><div class="sheet">
+  <div id="imBody"></div>
+  <button class="btn btn-ghost" data-close>حسنًا</button>
+</div></div>
+
+<!-- القواعد -->
+<div class="modal" id="rulesModal"><div class="sheet">
+  <h3>📖 قواعد «رسالة حب»</h3>
+  <div id="rulesBody" style="display:flex; flex-direction:column; gap:8px"></div>
+  <button class="btn btn-ghost" data-close>حسنًا</button>
+</div></div>
+
+<!-- ترك الجلسة -->
+<div class="modal" id="leaveModal"><div class="sheet">
+  <h3>🚪 ترك الجلسة؟</h3>
+  <div class="sub" style="text-align:start">ستخرج إلى القائمة الرئيسيّة، ويلعب بوتٌ مكانك حتى نهاية اللعبة.</div>
+  <div class="row2"><button class="btn btn-red" id="leaveYes" type="button">نعم، اخرج</button><button class="btn btn-ghost" data-close>ابقَ</button></div>
+</div></div>
+
+<!-- النهاية -->
+<div class="modal" id="endModal"><div class="sheet">
+  <div class="winBanner" id="endBanner">—</div>
+  <div class="h" style="font-size:15px">🏁 الترتيب</div>
+  <div id="endRank"></div>
+  <button class="btn btn-green" id="endAgain" style="display:none">🔄 لعبة جديدة</button>
+  <div class="row2"><button class="btn btn-ghost" data-close>إلى الانتظار</button><button class="btn btn-ghost" id="endLeave" type="button">🚪 ترك الجلسة</button></div>
+</div></div>
+
+<!-- فُتحت اللعبةُ في مكانٍ آخر -->
+<div class="modal" id="replacedModal" data-sticky><div class="sheet">
+  <h3>📱 فتحت اللعبةَ في مكانٍ آخر</h3>
+  <div class="sub" style="text-align:start">مقعدُك انتقل إلى التبويب أو الجهاز الذي فتحتها منه الآن.</div>
+  <button class="btn btn-green" type="button" onclick="location.reload()">العب من هنا</button>
+</div></div>
+
+<div id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/love/app.js"></script>
+</body>
+</html>

@@ -25,7 +25,8 @@ const GAMES = [
   { key: "justone", icon: "🔤", title: "كلمة واحدة فقط", paths: ["/justone"] },
   { key: "decrypto", icon: "🔐", title: "فكّ الشفرة", paths: ["/decrypto"] },
   { key: "spicy", icon: "🌶️", title: "البسكويتة الحارّة", paths: ["/spicy"] },
-  { key: "wave", icon: "📡", title: "التخاطر", paths: ["/wave"] }
+  { key: "wave", icon: "📡", title: "التخاطر", paths: ["/wave"] },
+  { key: "love", icon: "💌", title: "رسالة حب", paths: ["/love", "/risala"] }
 ];
 const BY_KEY = Object.fromEntries(GAMES.map(g => [g.key, g]));
 const PATH2KEY = {};

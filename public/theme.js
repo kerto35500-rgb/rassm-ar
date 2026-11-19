@@ -65,6 +65,8 @@
     b.toggle("kw-spicy", !!document.getElementById("spTable"));
     /* التخاطر: الهيكلُ نفسه، ولونُها نعناعيٌّ سماويّ. تُميَّز بعدّادها */
     b.toggle("kw-wave", !!document.getElementById("wvGauge"));
+    /* رسالة حب: الهيكلُ نفسه، ولونُها ورديٌّ مخمليّ. تُميَّز بطاولتها */
+    b.toggle("kw-love", !!document.getElementById("llTable"));
     /* القنبلة: نسخة برتقالية */
     b.toggle("kw-bomb", !!document.getElementById("bombCircle"));
     /* قمّة الهرم: نسخة بنفسجية (تُميَّز بمشهد الهرم) */
@@ -77,7 +79,7 @@
      — دخولٌ أو حسابٌ جديد — ثمّ يرجعه إلى اللعبة نفسها (برمز الدعوة إن كان). */
   function accountHint() {
     var who = document.getElementById("whoLine");
-    if (!who || document.getElementById("kwAccLink") || document.getElementById("grid")) return;
+    if (!who || document.getElementById("kwAccLink") || document.getElementById("grid") || typeof fetch !== "function") return;
     fetch("/api/account/me", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
       if (!d || !d.guest || document.getElementById("kwAccLink")) return;
       var a = document.createElement("a");

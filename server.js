@@ -185,6 +185,16 @@ app.get("/wave", (req, res) => {
   if (admin) admin.trackVisit();
   res.sendFile(path.join(pubDir, "wave", "index.html"));
 });
+// 💌 رسالة حب: القواعد في loverules.js والغرف في lovesrv.js
+app.get(["/love", "/risala"], (req, res) => {
+  const bare = req.originalUrl.split("?")[0];
+  if (bare !== "/love/") {
+    const q = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+    return res.redirect(301, "/love/" + q);
+  }
+  if (admin) admin.trackVisit();
+  res.sendFile(path.join(pubDir, "love", "index.html"));
+});
 // 🌶️ البسكويتة الحارّة: القواعد في spicyrules.js والغرف في spicysrv.js
 app.get("/spicy", (req, res) => {
   if (!req.originalUrl.split("?")[0].endsWith("/")) {
@@ -203,7 +213,7 @@ app.get(["/barra", "/salfa"], (req, res) => {
 // نقطة إبقاء حيّة (تمنع السيرفر المجاني من النوم أثناء اللعب الطويل)
 app.get("/healthz", (req, res) => res.type("text").send("ok"));
 // حالة الألعاب المباشرة (تستعملها الصفحة الرئيسية)
-let bombApi = null, quizApi = null, salfaApi = null, ttsApi = null, ludoApi = null, justoneApi = null, decryptoApi = null, spicyApi = null, waveApi = null;
+let bombApi = null, quizApi = null, salfaApi = null, ttsApi = null, ludoApi = null, justoneApi = null, decryptoApi = null, spicyApi = null, waveApi = null, loveApi = null;
 app.get("/api/status", (req, res) => {
   const draw = getLiveStats();
   const bomb = bombApi ? bombApi.liveStats() : { online: 0, rooms: [] };
@@ -214,6 +224,7 @@ app.get("/api/status", (req, res) => {
   const decrypto = decryptoApi ? decryptoApi.liveStats() : { online: 0, rooms: [] };
   const spicy = spicyApi ? spicyApi.liveStats() : { online: 0, rooms: [] };
   const wave = waveApi ? waveApi.liveStats() : { online: 0, rooms: [] };
+  const love = loveApi ? loveApi.liveStats() : { online: 0, rooms: [] };
   res.json({
     draw: { online: draw.online, rooms: draw.rooms.length },
     bomb: { online: bomb.online, rooms: bomb.rooms.length },
@@ -224,7 +235,8 @@ app.get("/api/status", (req, res) => {
     decrypto: { online: decrypto.online, rooms: decrypto.rooms.length },
     spicy: { online: spicy.online, rooms: spicy.rooms.length },
     wave: { online: wave.online, rooms: wave.rooms.length },
-    total: draw.online + bomb.online + quiz.online + salfa.online + ludo.online + justone.online + decrypto.online + spicy.online + wave.online
+    love: { online: love.online, rooms: love.rooms.length },
+    total: draw.online + bomb.online + quiz.online + salfa.online + ludo.online + justone.online + decrypto.online + spicy.online + wave.online + love.online
   });
 });
 // حساب واحد لكل الألعاب — يُسجّل الدخول من الصفحة الرئيسية فقط
@@ -1737,6 +1749,8 @@ createStore()
     /* البسكويتة الحارّة: خداعٌ ومزايدة، ببوتاتٍ اختياريّة */
     try { spicyApi = require("./spicysrv").setupSpicyOnline(io, { store }); }
     catch (e) { console.error("spicy online:", e.message); }
+    try { loveApi = require("./lovesrv").setupLoveOnline(io, { store }); }
+    catch (e) { console.error("love online:", e.message); }
     /* التخاطر: بطاقاتُها قائمةٌ أساسٌ وفوقها تعديلاتُ الأدمن */
     try {
       const n = await require("./wavebank").load(store);
@@ -1754,7 +1768,7 @@ createStore()
     /* هويّة موحّدة لكل مساحات الأسماء: تُحلّ الجلسة قبل أن يصل الاتصال إلى
        منطق أي لعبة، فتعرف اللعبةُ صاحبَها بلا أن تسأل عن كوكي. تُركَّب بعد
        إنشاء المساحات كلّها وقبل الاستماع، فلا اتصالَ يسبقها. */
-    attachSocketAuth(io, store, ["/", "/bomb", "/quiz", "/salfa", "/uno", "/baloot", "/ludo", "/justone", "/decrypto", "/spicy", "/wave"]);
+    attachSocketAuth(io, store, ["/", "/bomb", "/quiz", "/salfa", "/uno", "/baloot", "/ludo", "/justone", "/decrypto", "/spicy", "/wave", "/love"]);
 
     server.listen(PORT, () => {
       console.log(`🎨 لعبة ارسمها! تعمل على المنفذ ${PORT}`);
