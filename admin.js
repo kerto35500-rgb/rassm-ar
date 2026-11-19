@@ -11,7 +11,10 @@ const ADMIN_PATH = process.env.ADMIN_PATH || "/lohat-tahakom-x7k2";
 // سر توقيع الجلسات
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
 
-const enabled = !!(ADMIN_USER && ADMIN_PASS);
+/* طريقان إلى اللوحة: اسمٌ وكلمةٌ من البيئة (القديم)، أو حسابُ أدمنٍ في الموقع
+   (ADMIN_ACCOUNTS — admins.js). أيُّهما ضُبط رُكّبت اللوحة. */
+const credsEnabled = !!(ADMIN_USER && ADMIN_PASS);
+const enabled = credsEnabled || require("./admins").accountsEnabled();
 
 // ====== مقارنة آمنة ضد هجمات التوقيت ======
 function safeEqual(a, b) {
@@ -108,7 +111,7 @@ function setupAdmin(app, deps) {
   };
 
   if (!enabled) {
-    console.log("⚠️  لوحة المراقبة معطلة (لم تُضبط ADMIN_USER / ADMIN_PASS)");
+    console.log("⚠️  لوحة المراقبة معطلة (لم تُضبط ADMIN_USER / ADMIN_PASS ولا ADMIN_ACCOUNTS)");
     return api;
   }
   console.log(`🔒 لوحة المراقبة مفعّلة على مسار سري`);
@@ -121,6 +124,9 @@ function setupAdmin(app, deps) {
   });
 
   app.post(ADMIN_PATH, async (req, res) => {
+    /* بلا اسمٍ وكلمةٍ في البيئة لا دخولَ بهما أصلًا — وإلا قبلت المقارنةُ
+       الآمنة خانتين فارغتين («» = «») فدخل أيُّ أحد */
+    if (!credsEnabled) return send(res, 403, loginPage("الدخول من حساب الأدمن: سجّل دخولك في الموقع ثمّ افتح /control"));
     const ip = clientIp(req);
     if (isBlocked(ip)) return send(res, 429, loginPage("محاولات كثيرة، انتظر 15 دقيقة"));
     const body = await readBody(req);
@@ -251,8 +257,13 @@ load();setInterval(load,5000);
 </script></body></html>`.replace(/LOGOUT/g, ADMIN_PATH + "/logout").replace(/DATA_URL/g, ADMIN_PATH + "/data").replace(/ADMIN_URL/g, ADMIN_PATH);
 }
 
+/** جلسةُ أدمنٍ لحسابٍ أدمن (من /control) — الكعكةُ نفسُها التي يصنعها الدخولُ بالاسم والكلمة */
+function adminCookie(req) {
+  return `adm=${signSession()}; HttpOnly; Path=${ADMIN_PATH}; Max-Age=43200; SameSite=Lax${req.headers["x-forwarded-proto"] === "https" ? "; Secure" : ""}`;
+}
+
 module.exports = {
-  setupAdmin, ADMIN_PATH, adminEnabled: enabled,
+  setupAdmin, ADMIN_PATH, adminEnabled: enabled, credsEnabled, adminCookie,
   // أدوات مشتركة لوحدات الإدارة الأخرى (مثل إدارة الأسئلة)
   verifySession, parseCookies, send, esc: s => String(s == null ? "" : s)
 };

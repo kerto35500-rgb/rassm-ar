@@ -174,6 +174,13 @@
   .g.soon .t{background:rgba(255,255,255,.1);color:#cfdcec}
   .g.soon .go{background:rgba(255,255,255,.13);color:#cfdcec}
   .badge{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:999px;background:#ffd54f;color:#5a4200}
+  /* لعبةٌ في صيانة (أو مخفيّةٌ يراها الأدمن وحده): باهتةٌ بشارة */
+  .g.maint, .g.hid{opacity:.72; filter:saturate(.55)}
+  .g.hid{outline:3px dashed rgba(255,255,255,.5)}
+  #hubToast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(80px);background:#12263c;color:#fff;
+            padding:11px 18px;border-radius:12px;font-weight:800;font-size:14px;z-index:90;opacity:0;transition:.25s;
+            pointer-events:none;max-width:90vw;text-align:center}
+  #hubToast.on{transform:translateX(-50%) translateY(0);opacity:1}
 
   footer{margin-top:32px;font-size:12.5px;opacity:.45;text-align:center;line-height:1.9}
 
@@ -224,6 +231,7 @@
         <div><b id="accGames">0</b><span>لعبة</span></div>
         <div><b id="accPts">0</b><span>نقطة</span></div>
       </div>
+      <a class="go" id="accAdmin" href="/control" style="display:none;text-align:center;text-decoration:none;margin-bottom:7px">🛠️ لوحة التحكّم</a>
       <a class="go" href="/me" style="display:block;text-align:center;text-decoration:none;margin-bottom:7px">⚙️ إدارة حسابي</a>
       <a class="go" href="/shop" style="display:block;text-align:center;text-decoration:none;margin-bottom:7px">🛍️ المتجر</a>
       <a class="go" href="/support" style="display:block;text-align:center;text-decoration:none;margin-bottom:7px">💬 الدعم والإبلاغ</a>
@@ -328,10 +336,13 @@
   ];
 
   const grid = document.getElementById("grid");
+  const escH = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-  GAMES.forEach(g => {
+  function cardOf(g) {
     const el = document.createElement(g.soon ? "div" : "a");
     if (!g.soon) el.href = g.href;
+    if (g.ext) { el.target = "_blank"; el.rel = "noopener"; }
+    if (g.key) el.dataset.key = g.key;
     el.className = "g " + g.color + (g.soon ? " soon" : "");
     el.innerHTML =
       '<div class="bar"></div>' +
@@ -352,8 +363,46 @@
       a.onclick = e => e.stopPropagation();
       el.appendChild(a);
     }
-    grid.appendChild(el);
+    return el;
+  }
+  GAMES.forEach(g => grid.appendChild(cardOf(g)));
+
+  /* ══════════════ حالةُ الألعاب من لوحة التحكّم ══════════════
+     صيانة ⇒ شارةٌ ولا دخول (إلا للأدمن)، ومخفيّة ⇒ تختفي (ويراها الأدمن
+     باهتةً)، وبطاقاتٌ مضافةٌ في آخر القائمة. */
+  let IS_ADMIN = false, GSTATE = null;
+  function hubToast(t) {
+    let el = document.getElementById("hubToast");
+    if (!el) { el = document.createElement("div"); el.id = "hubToast"; document.body.appendChild(el); }
+    el.textContent = t; el.classList.add("on");
+    clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("on"), 3200);
+  }
+  function applyGames() {
+    if (!GSTATE) return;
+    grid.querySelectorAll(".g.custom").forEach(e => e.remove());
+    grid.querySelectorAll(".g[data-key]").forEach(el => {
+      const st = (GSTATE.games || {})[el.dataset.key];
+      el.classList.remove("maint", "hid");
+      const old = el.querySelector(".gsBadge"); if (old) old.remove();
+      el.style.display = "";
+      if (!st) return;
+      if (st.status === "hidden" && !IS_ADMIN) { el.style.display = "none"; return; }
+      el.classList.add(st.status === "hidden" ? "hid" : "maint");
+      el.dataset.msg = st.msg || "";
+      el.querySelector("h2").insertAdjacentHTML("beforeend", ' <span class="badge gsBadge">' + (st.status === "hidden" ? "🙈 مخفيّة" : "🛠️ صيانة") + "</span>");
+    });
+    for (const c of GSTATE.custom || []) {
+      grid.appendChild(cardOf({ key: "", href: c.href, soon: c.soon, ext: /^https:/.test(c.href || ""),
+        color: "c-sun custom", icon: escH(c.icon), title: escH(c.title), desc: escH(c.desc), tags: [] }));
+    }
+  }
+  grid.addEventListener("click", e => {
+    const el = e.target.closest && e.target.closest(".g.maint, .g.hid");
+    if (!el || IS_ADMIN) return;
+    e.preventDefault();
+    hubToast("🛠️ " + el.querySelector("h2").childNodes[0].textContent.trim() + " تحت الصيانة" + (el.dataset.msg ? " — " + el.dataset.msg : " — ترجع قريبًا"));
   });
+  fetch("/api/games", { cache: "no-store" }).then(r => r.json()).then(d => { GSTATE = d; applyGames(); }).catch(() => {});
 
   /* ══════════════ الحساب المشترك ══════════════ */
   const $ = id => document.getElementById(id);
@@ -371,6 +420,7 @@
       $("accWins").textContent  = ACC.wins || 0;
       $("accGames").textContent = ACC.games || 0;
       $("accPts").textContent   = ACC.totalScore || 0;
+      $("accAdmin").style.display = IS_ADMIN ? "block" : "none";
     } else {
       btn.classList.add("guest");
       $("accAva").textContent = "؟";
@@ -414,21 +464,37 @@
     if (!res.ok) return $("accErr").textContent = res.error || "خطأ";
     ACC = res.stats;
     $("accPass").value = "";
-    paintAcc();
+    /* جاء من لعبةٍ (أو من لوحة التحكّم) ليسجّل: يعود إليها */
+    if (BACK) { location.href = BACK; return; }
+    await loadMe();
     setTimeout(() => $("accPop").classList.remove("on"), 550);
   };
   $("accName").onkeydown = $("accPass").onkeydown = e => { if (e.key === "Enter") $("accGo").click(); };
 
   $("accOut").onclick = async () => {
     await accPost("logout");
-    ACC = null; paintAcc();
+    ACC = null; IS_ADMIN = false; paintAcc(); applyGames();
     $("accPop").classList.remove("on");
   };
 
-  fetch("/api/account/me", { cache:"no-store" })
-    .then(r => r.json())
-    .then(d => { ACC = d && !d.guest ? d.stats : null; paintAcc(); })
-    .catch(() => paintAcc());
+  function loadMe() {
+    return fetch("/api/account/me", { cache:"no-store" })
+      .then(r => r.json())
+      .then(d => { ACC = d && !d.guest ? d.stats : null; IS_ADMIN = !!(d && d.admin); paintAcc(); applyGames(); })
+      .catch(() => paintAcc());
+  }
+  /* روابطٌ تفتح نافذةَ الحساب: ‎?acc=1‎ دخول، ‎?acc=reg‎ حسابٌ جديد، و‎back‎ مسارٌ
+     يعود إليه بعد الدخول (داخليٌّ فقط). و‎?notadmin=1‎ من /control لحسابٍ ليس أدمن. */
+  const QS = new URLSearchParams(location.search);
+  const BACK = (b => /^\/(?![\/\\])[^\s\\]*$/.test(b || "") ? b : null)(QS.get("back"));
+  loadMe().then(() => {
+    if (QS.get("notadmin")) hubToast("هذا الحسابُ ليس أدمنًا — لوحةُ التحكّم للمشرفين وحدهم");
+    if (QS.get("acc") && !ACC) {
+      setMode(QS.get("acc") === "reg" ? "reg" : "login");
+      $("accPop").classList.add("on");
+      setTimeout(() => { try { $("accName").focus(); } catch (e) {} }, 80);
+    } else if (QS.get("acc") && ACC && BACK) location.href = BACK;
+  });
 
   // ===== الإحصائيات المباشرة =====
   function refresh(){

@@ -164,7 +164,9 @@ function setupAccounts(app, deps) {
         ok: true, guest: false, stats: publicStats(u),
         login: u.name, displayName: u.displayName || u.name,
         avatar: look.avatars || null, frame: look.frames || null,
-        email: u.email || null, emailVerified: !!u.emailVerifiedAt
+        email: u.email || null, emailVerified: !!u.emailVerifiedAt,
+        /* أدمنٌ ⇒ يظهر له زرُّ «لوحة التحكّم» في الرئيسيّة */
+        admin: require("./admins").isAdmin(u)
       });
     } catch (e) { res.json({ ok: true, guest: true }); }
   });

@@ -85,6 +85,26 @@ const pageFile = (name) => {
   const inPub = path.join(pubDir, name);
   return fs.existsSync(inPub) ? inPub : path.join(__dirname, name);
 };
+// 🎮 بوّابةُ الألعاب: لعبةٌ في صيانةٍ أو مخفيّة لا تُفتح صفحتُها إلا للأدمن
+// (حالتُها من لوحة التحكّم — gamestate.js). قارئُ الحساب كسول: الحساباتُ
+// تُركَّب تحت، والبوّابةُ لا تسأل عنها إلا مع أوّل طلب.
+const GS = require("./gamestate");
+const ADMINS = require("./admins");
+app.use(GS.gate({ currentUser: req => accounts.currentUser(req), isAdmin: ADMINS.isAdmin }));
+/* حالةُ الألعاب للرئيسيّة: من في صيانة، ومن مخفيّ، والبطاقاتُ المضافة */
+app.get("/api/games", (req, res) => { res.set("Cache-Control", "no-store"); res.json({ ok: true, ...GS.publicState() }); });
+/* 🛠️ لوحة التحكّم من حساب الأدمن: يدخل من الرئيسيّة بحسابه العاديّ، فتُصنع له
+   جلسةُ الأدمن ويُحوَّل إلى اللوحة. ومن ليس أدمنًا يعود إلى الرئيسيّة. */
+app.get(["/control", "/tahakom"], async (req, res) => {
+  try {
+    const A = require("./admin");
+    const u = await accounts.currentUser(req);
+    if (!u) return res.redirect(302, "/?acc=1&back=/control");
+    if (!ADMINS.isAdmin(u) || !A.adminEnabled) return res.redirect(302, "/?notadmin=1");
+    res.setHeader("Set-Cookie", A.adminCookie(req));
+    res.redirect(302, A.ADMIN_PATH + "/p");
+  } catch (e) { res.redirect(302, "/"); }
+});
 // الصفحة الرئيسية: اختيار اللعبة
 app.get("/", (req, res) => {
   if (admin) admin.trackVisit();
@@ -1663,6 +1683,9 @@ createStore()
        القيم الافتراضيّة — الموقع يعمل، ولا يقف بسبب جدولِ إعدادات. */
     try {
       await require("./settings").load(store);
+      /* حالةُ الألعاب (صيانة/إخفاء/بطاقات) والأدمنُ المرقَّون من اللوحة */
+      await GS.load(store);
+      await ADMINS.load(store);
       /* والبذر أعاد للتوّ أسعار الملفّ، فنُعيد فوقها ما سعّرته اللوحة —
          وإلا ضاع كل تسعيرٍ إداريّ مع كل نشرة. */
       await require("./padmin").applyPriceOverrides(store);

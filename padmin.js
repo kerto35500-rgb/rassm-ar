@@ -323,6 +323,45 @@ function setupPanel(app, deps) {
     } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
   });
 
+  // ═══════════════ الألعاب: فتحٌ وصيانةٌ وإخفاء، وبطاقاتٌ مضافة، والمشرفون ═══════════════
+  const GS = require("./gamestate");
+  const ADMINS = require("./admins");
+
+  app.get(ADMIN_PATH + "/p/games", (req, res) => {
+    if (!guard(req, res)) return;
+    res.json({ ok: true, games: GS.registry(), custom: GS.publicState().custom, admins: ADMINS.list() });
+  });
+
+  app.post(ADMIN_PATH + "/p/game", json, async (req, res) => {
+    if (!guard(req, res)) return;
+    const key = String(req.body?.key || ""), status = String(req.body?.status || "");
+    try {
+      const r = await GS.setStatus(st(), key, status, req.body?.msg);
+      if (r.ok) note(req, "game-" + status, key, { msg: String(req.body?.msg || "").slice(0, 80) });
+      res.status(r.ok ? 200 : 400).json({ ...r, games: GS.registry() });
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  });
+
+  app.post(ADMIN_PATH + "/p/gamecard", json, async (req, res) => {
+    if (!guard(req, res)) return;
+    try {
+      const op = String(req.body?.op || "add");
+      const r = op === "remove" ? await GS.removeCard(st(), req.body?.id) : await GS.addCard(st(), req.body || {});
+      if (r.ok) note(req, "gamecard-" + op, String(req.body?.title || req.body?.id || "").slice(0, 60));
+      res.status(r.ok ? 200 : 400).json(r);
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  });
+
+  app.post(ADMIN_PATH + "/p/admin-acc", json, async (req, res) => {
+    if (!guard(req, res)) return;
+    try {
+      const name = String(req.body?.name || "").slice(0, 20), on = req.body?.on !== false;
+      const r = await ADMINS.set(st(), name, on);
+      if (r.ok) note(req, on ? "admin-add" : "admin-remove", name);
+      res.status(r.ok ? 200 : 400).json(r);
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  });
+
   // ═══════════════ الإعدادات ═══════════════
 
   /* صحّة الرهان: كم ذهبٍ محجوزٌ الآن، وكم صفًّا سُوّي. الرقم «المحجوز» يجب
@@ -588,6 +627,7 @@ a.dl{background:#1f6f45;color:#fff;border-radius:7px;padding:8px 14px;font-weigh
 <h1>🎛️ الإدارة <a href="ADMIN_URL" style="font-size:13px;font-weight:400">← المراقبة</a></h1>
 <div class="tabs">
   <button class="tab on" data-p="users">👥 اللاعبون</button>
+  <button class="tab" data-p="games">🎮 الألعاب والمشرفون</button>
   <button class="tab" data-p="sup">💬 الدعم <span id="supBadge"></span></button>
   <button class="tab" data-p="shop">🛍️ المتجر</button>
   <button class="tab" data-p="skins">🎨 مظاهر بالوت</button>
@@ -654,6 +694,32 @@ a.dl{background:#1f6f45;color:#fff;border-radius:7px;padding:8px 14px;font-weigh
   <div id="wcwrap"></div>
 </div>
 
+<div class="pane" id="p-games">
+  <div class="card"><h2>🎮 حالةُ الألعاب</h2>
+    <div class="h muted" style="margin-bottom:8px"><b>مفتوحة</b>: للجميع · <b>🛠️ صيانة</b>: تظهر في الرئيسيّة بشارة ولا تُفتح صفحتُها ·
+      <b>🙈 مخفيّة</b>: تختفي من الرئيسيّة ولا تُفتح. وأنت (الأدمن) تدخلها في كلّ حالٍ لتجرّبها. الطاولاتُ الجارية تكمل حتى يخرج أصحابها.</div>
+    <div id="gmList"></div>
+    <div class="msg" id="gmMsg"></div>
+  </div>
+  <div class="card"><h2>➕ بطاقةٌ في الرئيسيّة</h2>
+    <div class="h muted" style="margin-bottom:8px">لعبةٌ جديدةٌ كاملة تحتاج برمجة؛ أمّا بطاقتُها فمن هنا: رابطٌ لصفحةٍ في الموقع (/…) أو خارجه (https://…)، أو «قريبًا» بلا رابط.</div>
+    <div class="row"><input id="gcIcon" placeholder="🎮" style="width:64px;text-align:center"><input id="gcTitle" placeholder="العنوان" style="flex:1;min-width:150px">
+      <input id="gcHref" placeholder="/رابط أو https://…" style="flex:1;min-width:160px;direction:ltr"></div>
+    <div class="row"><input id="gcDesc" placeholder="وصفٌ قصير" style="flex:1;min-width:220px">
+      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="gcSoon"> قريبًا</label>
+      <button class="g" id="gcAdd">➕ أضف البطاقة</button></div>
+    <div class="msg" id="gcMsg"></div>
+    <div id="gcList"></div>
+  </div>
+  <div class="card"><h2>👑 المشرفون (حسابات الأدمن)</h2>
+    <div class="h muted" style="margin-bottom:8px">من في القائمة يرى في الرئيسيّة زرَّ «🛠️ لوحة التحكّم» ويدخل هذه اللوحة بحسابه.
+      أسماءُ <b>ADMIN_ACCOUNTS</b> (من Render) ثابتةٌ هنا؛ والبقيّةُ تُرقّى وتُنزَل من هنا.</div>
+    <div class="row"><input id="adName" placeholder="اسم الحساب (كما يدخل به)" style="flex:1;min-width:180px"><button class="g" id="adAdd">👑 اجعله أدمن</button></div>
+    <div class="msg" id="adMsg"></div>
+    <div id="adList"></div>
+  </div>
+</div>
+
 <div class="pane" id="p-sup">
   <div class="card">
     <div class="row">
@@ -695,6 +761,7 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   if(t.dataset.p==="skins") loadSkins();
   if(t.dataset.p==="jw") loadJW();
   if(t.dataset.p==="wc") loadWC();
+  if(t.dataset.p==="games") loadGames();
   if(t.dataset.p==="sup"){ loadTickets(); loadReports(); }
 });
 
@@ -926,6 +993,47 @@ async function wcBack(w){
   const r=await post("/wcard",{op:"add",card:w});
   say("#wcMsg",r,loadWC);
 }
+
+/* ── الألعاب والمشرفون ── */
+const GST={open:"✅ مفتوحة",maint:"🛠️ صيانة",hidden:"🙈 مخفيّة"};
+async function loadGames(){
+  const r=await j("/games");
+  if(!r.ok) return $("#gmList").innerHTML='<div class="msg err">'+esc(r.error||"تعذّر")+'</div>';
+  $("#gmList").innerHTML=r.games.map(g=>'<div class="row" style="align-items:center;border-bottom:1px solid #22324d;padding:6px 0">'+
+    '<b style="min-width:150px">'+esc(g.icon+" "+g.title)+'</b>'+
+    '<select data-gk="'+esc(g.key)+'">'+["open","maint","hidden"].map(x=>'<option value="'+x+'"'+(g.status===x?" selected":"")+'>'+GST[x]+'</option>').join("")+'</select>'+
+    '<input data-gm="'+esc(g.key)+'" placeholder="رسالةٌ للاعبين (اختياريّة)" value="'+esc(g.msg||"")+'" style="flex:1;min-width:180px">'+
+    '<button class="g" data-gs="'+esc(g.key)+'">حفظ</button>'+
+    '<a href="'+esc(g.path)+'" target="_blank" style="font-size:12px">فتح ↗</a></div>').join("");
+  $("#gcList").innerHTML=(r.custom||[]).map(c=>'<div class="row" style="align-items:center"><span class="pill ok">'+esc(c.icon+" "+c.title)+'</span>'+
+    '<span class="muted" style="font-size:12px;direction:ltr">'+(c.soon?"قريبًا":esc(c.href))+'</span>'+
+    '<button class="r" data-gcdel="'+esc(c.id)+'">حذف</button></div>').join("")||'<div class="muted">لا بطاقاتٍ مضافة</div>';
+  $("#adList").innerHTML=(r.admins||[]).map(a=>'<div class="row" style="align-items:center"><span class="pill '+(a.env?"ok":"")+'">👑 '+esc(a.name)+'</span>'+
+    (a.env?'<span class="muted" style="font-size:12px">من Render</span>':'<button class="r" data-addel="'+esc(a.name)+'">إنزال</button>')+'</div>').join("")||'<div class="muted">لا مشرفين بالحساب بعد</div>';
+}
+document.addEventListener("click",async e=>{
+  const t=e.target; if(!t||!t.dataset) return;
+  if(t.dataset.gs){
+    const k=t.dataset.gs;
+    const sel=document.querySelector('select[data-gk="'+k+'"]'), inp=document.querySelector('input[data-gm="'+k+'"]');
+    const r=await post("/game",{key:k,status:sel.value,msg:inp.value});
+    say("#gmMsg",r,loadGames);
+  } else if(t.dataset.gcdel){
+    if(!confirm("حذف البطاقة؟")) return;
+    say("#gcMsg",await post("/gamecard",{op:"remove",id:t.dataset.gcdel}),loadGames);
+  } else if(t.dataset.addel){
+    if(!confirm("إنزال «"+t.dataset.addel+"» من المشرفين؟")) return;
+    say("#adMsg",await post("/admin-acc",{name:t.dataset.addel,on:false}),loadGames);
+  } else if(t.id==="gcAdd"){
+    const r=await post("/gamecard",{op:"add",icon:$("#gcIcon").value,title:$("#gcTitle").value,href:$("#gcHref").value,desc:$("#gcDesc").value,soon:$("#gcSoon").checked});
+    if(r.ok){ $("#gcTitle").value="";$("#gcHref").value="";$("#gcDesc").value=""; }
+    say("#gcMsg",r,loadGames);
+  } else if(t.id==="adAdd"){
+    const r=await post("/admin-acc",{name:$("#adName").value,on:true});
+    if(r.ok) $("#adName").value="";
+    say("#adMsg",r,loadGames);
+  }
+});
 
 async function loadSkins(){
   const r=await j("/bskins");

@@ -805,6 +805,10 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sun    .ic { background-im
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-plum   .ic { background-image:url("/kw-g-decrypto.svg") !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-peach  .ic { background-image:url("/kw-g-spicy.svg") !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-mint   .ic { background-image:url("/kw-g-wave.svg") !important; }
+/* بطاقةٌ أضافها الأدمن من لوحة التحكّم: أيقونتُها إيموجي لا صورة */
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.custom .ic {
+  background-image:none !important; font-size:70px !important; width:auto; height:112px; line-height:112px;
+}
 /* العناوين: أبيض عريض كبير بستروك بني حول الحروف */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g h2 {
   font-size:27px; letter-spacing:.5px;

@@ -73,6 +73,24 @@
     doodleLayer();
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", apply);
-  else apply();
+  /* شاشةُ دخول اللعبة (فيها #whoLine): للضيف رابطٌ يفتح نافذةَ الحساب في الرئيسيّة
+     — دخولٌ أو حسابٌ جديد — ثمّ يرجعه إلى اللعبة نفسها (برمز الدعوة إن كان). */
+  function accountHint() {
+    var who = document.getElementById("whoLine");
+    if (!who || document.getElementById("kwAccLink") || document.getElementById("grid")) return;
+    fetch("/api/account/me", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || !d.guest || document.getElementById("kwAccLink")) return;
+      var a = document.createElement("a");
+      a.id = "kwAccLink";
+      a.href = "/?acc=reg&back=" + encodeURIComponent(location.pathname + location.search);
+      a.textContent = "🔑 سجّل دخولك أو أنشئ حسابًا — تُحفظ نتائجك وفوزك";
+      a.style.cssText = "display:block;text-align:center;font-size:13px;font-weight:800;margin:2px 0 8px;" +
+        "padding:7px 10px;border-radius:12px;background:rgba(255,255,255,.55);border:2px dashed rgba(122,74,56,.35);" +
+        "color:#7A4A38;text-decoration:none";
+      who.parentNode.insertBefore(a, who.nextSibling);
+    }).catch(function () {});
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { apply(); accountHint(); });
+  else { apply(); accountHint(); }
 })();
