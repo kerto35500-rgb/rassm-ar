@@ -563,7 +563,7 @@ a.dl{background:#1f6f45;color:#fff;border-radius:7px;padding:8px 14px;font-weigh
   <button class="tab" data-p="sup">💬 الدعم <span id="supBadge"></span></button>
   <button class="tab" data-p="shop">🛍️ المتجر</button>
   <button class="tab" data-p="skins">🎨 مظاهر بالوت</button>
-  <button class="tab" data-p="jw">🔤 كلمة واحدة</button>
+  <button class="tab" data-p="jw">🔤 كلمة واحدة · 🔐 الشفرة</button>
   <button class="tab" data-p="live">🂡 الطاولات الحيّة</button>
   <button class="tab" data-p="set">⚙️ الإعدادات</button>
   <button class="tab" data-p="audit">📜 السجلّ</button>
@@ -601,7 +601,8 @@ a.dl{background:#1f6f45;color:#fff;border-radius:7px;padding:8px 14px;font-weigh
   <div class="card"><h2>🔤 كلمات «كلمة واحدة فقط» السرّيّة</h2>
     <div class="h muted" style="margin-bottom:8px">كلُّ بطاقةٍ في اللعبة خمسُ كلماتٍ من هذه القائمة. أضف كلمةً واحدةً (بلا مسافات)
       يعرفها الجميع — أو عدّة كلماتٍ تفصلها فاصلة. حذفُ كلمةٍ أساسيّةٍ يُخفيها فقط، وتعود بإضافتها من جديد.
-      والمقارنةُ بعد التطبيع: «التفاحة» و«تفاحة» واحدة.</div>
+      والمقارنةُ بعد التطبيع: «التفاحة» و«تفاحة» واحدة.
+      <b>و«فكّ الشفرة» تسحب كلماتها الثماني من القائمة نفسها</b> — فالتعديلُ هنا يشمل اللعبتين.</div>
     <div class="row"><textarea id="jwNew" rows="2" placeholder="كلمة، أو كلمات مفصولة بفاصلة…" style="flex:1;min-width:220px"></textarea>
       <button class="g" onclick="jwAdd()">➕ أضف</button></div>
     <div class="row"><input id="jwq" placeholder="ابحث في الكلمات…" style="flex:1;min-width:180px" oninput="jwDraw()">

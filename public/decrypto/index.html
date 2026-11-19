@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🔐 فكّ الشفرة — فريقٌ ضدّ فريق</title>
+<style>
+  /* ═══ الأساس: هيكل «برّا السالفة» نفسه (كما في لودو و«كلمة واحدة فقط»)، فتلبسه
+     سمةُ المارشميلو — الدخولُ واللوبي والإعدادات والأزرار والدردشة. وفوقه ما
+     يخصّ اللعبة: الفريقان، وبطاقاتُ الكلمات الأربع، والتبويبتان، وورقتا التخمين،
+     وجدولا التلميحات. كلُّ صنفٍ جديدٍ يبدأ بـ‎dc‎ كي لا تلبسه السمةُ خطأً. ═══ */
+  :root{
+    --bg1:#0e1b2c; --panel:#ffffff; --ink:#3d2a26; --muted:#7d6f62;
+    --green:#2e9e5b; --green2:#25834a; --red:#e5484d; --amber:#f5a524;
+    --line:#ecdcc8; --soft:#fbf5ec;
+    /* الفريقان */
+    --bl:#DDEBFF; --blm:#A9C9F5; --bld:#3F78C9;
+    --pk:#FFE0EB; --pkm:#F7B3C9; --pkd:#D2557E;
+    /* لكلّ رقمٍ لونُه في كلّ مكان: البطاقة، والعمود، وشريحةُ الرقم */
+    --n1:#FFD9E4; --n1d:#D95C84;
+    --n2:#FFE7B3; --n2d:#C9850E;
+    --n3:#E8DEFF; --n3d:#8462D2;
+    --n4:#D2F4E5; --n4d:#2A9A70;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:"Segoe UI",Tahoma,system-ui,sans-serif; color:var(--ink);
+    background:radial-gradient(1200px 700px at 50% -10%,#1d3a5c,var(--bg1));
+    height:100vh; height:100dvh; max-height:100dvh;
+    display:flex; flex-direction:column; align-items:center;
+    padding:10px; gap:10px; overflow:hidden;
+    -webkit-user-select:none; user-select:none;
+  }
+  input,textarea{-webkit-user-select:text; user-select:text;}
+  .wrap{width:100%; max-width:1000px; display:flex; flex-direction:column; gap:10px; flex:1; min-height:0; overflow:hidden;}
+  .card{background:var(--panel); border-radius:16px; box-shadow:0 10px 30px rgba(6,14,26,.28);}
+  .n1{--cb:var(--n1); --cd:var(--n1d);} .n2{--cb:var(--n2); --cd:var(--n2d);}
+  .n3{--cb:var(--n3); --cd:var(--n3d);} .n4{--cb:var(--n4); --cd:var(--n4d);}
+  .tb{--tc:var(--bl); --tm:var(--blm); --td:var(--bld);}
+  .tp{--tc:var(--pk); --tm:var(--pkm); --td:var(--pkd);}
+
+  /* الشريط العلويّ */
+  #topBar{display:flex; align-items:center; gap:8px; padding:8px 10px; flex-wrap:nowrap;}
+  #roomChip{display:flex; flex-direction:column; align-items:center; justify-content:center;
+            background:var(--soft); border:2px solid var(--line); border-radius:12px;
+            padding:4px 12px; cursor:pointer; flex-shrink:0; min-width:92px;}
+  #roomChip b{font-size:17px; letter-spacing:1px; color:#1668c7;}
+  #roomChip span{font-size:10px; color:var(--muted);}
+  #phaseInfo{flex:1; min-width:0; text-align:center; font-weight:800; font-size:15px;
+             white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .iconBtn{width:38px; height:38px; flex-shrink:0; border:2px solid var(--line); background:#fff;
+           border-radius:11px; cursor:pointer; font-size:17px; display:flex; align-items:center; justify-content:center;
+           text-decoration:none; color:inherit;}
+
+  /* شاشة الدخول */
+  #joinScreen{position:relative; display:flex; flex-direction:column; align-items:center;
+              justify-content:center; min-height:100%; gap:16px; padding:24px 16px; overflow:auto;}
+  .logo{font-size:clamp(40px,9vw,56px); font-weight:900; color:#fff; text-shadow:0 4px 14px rgba(0,0,0,.35); letter-spacing:1px; text-align:center; line-height:1.25;}
+  .logo span{color:#FFB8CC;}
+  .tagline{color:#cfe3f7; margin-top:-10px; font-size:clamp(14px,3.5vw,17px); text-align:center; max-width:560px; line-height:1.7;}
+  #joinScreen .card{background:var(--panel); border-radius:18px; padding:20px; width:100%;
+        max-width:400px; box-shadow:0 12px 34px rgba(0,0,0,.28); display:flex; flex-direction:column; gap:10px;}
+  #joinScreen .card input{width:100%; min-width:0; padding:11px 13px; border:2px solid #e3e8ee;
+        border-radius:10px; font-size:16px; text-align:center; background:#f8fafc; font-family:inherit;}
+  .sub{color:var(--muted); font-size:14px; text-align:center; max-width:560px; line-height:1.7;}
+  .btn{border:none; border-radius:12px; padding:13px 18px; font-size:16px; font-weight:800;
+       cursor:pointer; font-family:inherit; color:#fff; width:100%;}
+  .btn-green{background:linear-gradient(180deg,var(--green),var(--green2));}
+  .btn-blue{background:linear-gradient(180deg,#3b8fe0,#1668c7);}
+  .btn-violet{background:linear-gradient(180deg,#9a6bff,#6a37e0);}
+  .btn-ghost{background:var(--soft); color:var(--ink); border:2px solid var(--line);}
+  .btn:active{transform:translateY(1px);}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .divider{text-align:center; color:#999; font-size:13px;}
+  #joinErr{color:var(--red); text-align:center; font-size:14px; min-height:16px; font-weight:700;}
+  #whoLine{display:none; text-align:center; font-size:13.5px; color:var(--green); font-weight:800; margin:-4px 0 4px;}
+  .row2{display:flex; gap:8px;}
+  .row2 > *{flex:1 1 0; min-width:0;}
+  .row2 .btn{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .backLink{display:inline-flex; align-items:center; justify-content:center; gap:6px;
+            margin:2px auto 4px; padding:9px 20px; border-radius:999px;
+            background:rgba(255,255,255,.14); border:1.5px solid rgba(255,255,255,.32);
+            color:#fff; font-size:15.5px; font-weight:900; text-decoration:none;}
+  .facts{display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
+  .facts span{background:rgba(255,255,255,.85); border:2px solid #fff; border-radius:999px; padding:5px 13px;
+              font-size:13px; font-weight:900; color:var(--ink); box-shadow:0 3px 8px rgba(0,0,0,.1);}
+
+  /* اللوبي */
+  #lobby{display:none; flex-direction:column; gap:10px; padding:14px; flex:1; min-height:0; overflow:auto;}
+  .h{font-size:18px; font-weight:900; display:flex; align-items:center; gap:8px;}
+  #setBox{display:none; flex-direction:column; gap:10px;}
+  #setBox.open{display:flex;}
+  .setRow{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+          background:var(--soft); border-radius:11px; padding:9px 11px;}
+  .setRow label{font-weight:800; font-size:14px;}
+  .setRow .hint{font-size:11px; color:var(--muted); width:100%;}
+  .seg{display:flex; gap:0; border:2px solid var(--line); border-radius:11px; overflow:hidden; flex-wrap:wrap;}
+  .seg button{border:none; background:#fff; padding:9px 12px; font-size:13px; font-weight:800; cursor:pointer;
+              font-family:inherit; color:var(--muted);}
+  .seg button.on{background:var(--green); color:#fff;}
+  #needMore{font-weight:800; color:#B5651D;}
+  .av{width:32px; height:32px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+      color:#fff; font-weight:900; font-size:15px; background:var(--td,#8462D2); border:2.5px solid #fff;
+      box-shadow:0 0 0 1.5px var(--td,#8462D2); text-shadow:0 1px 1px rgba(0,0,0,.2);}
+  /* الفريقان في اللوبي: عمودان */
+  #dcTeams{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;}
+  .dcTeamCol{border-radius:20px; padding:10px; background:var(--tc); border:4px solid #fff;
+             box-shadow:0 6px 14px rgba(80,60,120,.13), 0 0 0 1.5px var(--tm); display:flex; flex-direction:column; gap:8px; min-width:0;}
+  .dcTeamCol .hd{font-weight:900; font-size:15.5px; color:var(--td); display:flex; align-items:center; gap:6px;}
+  .dcTeamCol .hd small{font-size:12px; color:var(--muted); font-weight:800;}
+  .dcLp{position:relative; display:flex; align-items:center; gap:8px; padding:5px 10px 5px 6px; border-radius:999px;
+        background:#fff; border:2px solid var(--tm); font-weight:800; font-size:14px; min-width:0;}
+  .dcLp .nm{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:1;}
+  .dcLp small{font-size:11px; font-weight:800; color:var(--muted); flex-shrink:0;}
+  .dcLp.me{box-shadow:0 0 0 2.5px var(--td);}
+  .dcLp.gone{opacity:.45;}
+  .dcLp .crown{position:absolute; top:-12px; inset-inline-start:-2px; font-size:15px;}
+  .dcLp .kick{width:22px; height:22px; border:none; border-radius:50%; background:#ffe0e0; color:var(--red);
+              cursor:pointer; font-size:11px; flex-shrink:0;}
+  .dcJoinTeam{border:2px dashed var(--td); background:rgba(255,255,255,.6); color:var(--td); border-radius:999px;
+              padding:7px 10px; font:inherit; font-weight:900; font-size:13px; cursor:pointer;}
+  .dcEmpty{font-size:12.5px; color:var(--muted); font-weight:800; text-align:center; padding:4px;}
+  .howTo{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px; padding:10px;}
+  .howTo div{background:var(--cb); border:4px solid #fff; border-radius:16px; padding:9px 11px; font-size:13px; line-height:1.65;
+             box-shadow:0 4px 10px rgba(120,80,40,.12);}
+  .howTo b{display:block; font-size:14.5px; margin-bottom:1px;}
+
+  /* ═══ اللعب ═══ */
+  #play{display:none; flex-direction:column; gap:8px; flex:1; min-height:0; overflow:auto; position:relative;
+        scrollbar-width:thin; scrollbar-color:#D9C6F2 transparent; padding-bottom:4px;}
+  #play::-webkit-scrollbar{width:9px}
+  #play::-webkit-scrollbar-thumb{background:#D9C6F2; border-radius:999px}
+  #play::-webkit-scrollbar-track{background:transparent}
+
+  /* الشريط: الفريقان برموزهما، والجولة، والمؤقّت */
+  #dcHud{display:flex; flex-direction:column; gap:7px; padding:8px 12px; flex-shrink:0;}
+  .dcHudRow{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .dcScore{display:flex; align-items:center; gap:6px; padding:4px 10px 4px 6px; border-radius:999px; background:var(--tc);
+           border:2.5px solid #fff; box-shadow:0 0 0 1.5px var(--tm); font-weight:900; font-size:13px; color:var(--td); min-width:0;}
+  .dcScore .nm{white-space:nowrap;}
+  .dcScore.mine{box-shadow:0 0 0 2.5px var(--td);}
+  .dcToks{display:flex; gap:3px;}
+  .dcTok{width:21px; height:21px; border-radius:50%; border:2px dashed #CDBFAE; background:#fff; display:flex;
+         align-items:center; justify-content:center; font-size:11px; font-weight:900; color:#fff; flex-shrink:0;}
+  .dcTok.int.on{background:#3DBE84; border:2px solid #fff; box-shadow:0 0 0 1.5px #2A9A70;}
+  .dcTok.mis.on{background:#EE6E62; border:2px solid #fff; box-shadow:0 0 0 1.5px #C1332E;}
+  #dcRound{font-weight:900; font-size:14px; white-space:nowrap; background:var(--soft); border-radius:999px; padding:4px 12px;}
+  #timer{display:flex; align-items:center; gap:8px;}
+  #tbar{flex:1; height:12px; border-radius:99px; background:#EFE4D2; overflow:hidden; border:2px solid #fff;
+        box-shadow:inset 0 1px 2px rgba(0,0,0,.12), 0 0 0 1px #E2D3BC;}
+  #tbar i{display:block; height:100%; width:100%; border-radius:99px; background:linear-gradient(90deg,#B9A6F0,#8462D2);
+          transition:width .25s linear;}
+  #tbar.hurry i{background:linear-gradient(90deg,#FFB38A,#EE6E52);}
+  #tbar.sand i{background:linear-gradient(90deg,#FFE08A,#F2B33D);}
+  #tbar.paused i{background:repeating-linear-gradient(45deg,#D9CCB8 0 8px,#E8DDCB 8px 16px);}
+  #tbar.none i{background:#E6DCCB; width:100% !important;}
+  #tsec{font-weight:900; min-width:38px; text-align:center; font-size:14px;}
+
+  /* اللافتة: ما المطلوب الآن، ومن في كلّ فريق */
+  #dcBanner{padding:10px 12px; display:flex; flex-direction:column; align-items:center; gap:8px; flex-shrink:0;}
+  #dcBanner .tt{font-size:clamp(17px,4.4vw,21px); font-weight:900; text-align:center; line-height:1.45;}
+  #dcBanner .ss{font-size:13px; color:var(--muted); font-weight:800; text-align:center; line-height:1.6;}
+  #dcStrip{display:flex; gap:6px; flex-wrap:wrap; justify-content:center;}
+  .dcMate{position:relative; display:flex; align-items:center; gap:6px; padding:3px 10px 3px 4px; border-radius:999px;
+          background:var(--tc); border:2px solid #fff; box-shadow:0 0 0 1.5px var(--tm); font-weight:800; font-size:12.5px; max-width:190px;}
+  .dcMate .av{width:25px; height:25px; font-size:12px; border-width:2px;}
+  .dcMate .nm{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .dcMate.me{box-shadow:0 0 0 2.5px var(--td);}
+  .dcMate.off{opacity:.42; filter:grayscale(.6);}
+  .dcMate.done::after{content:"✓"; position:absolute; top:-7px; inset-inline-end:-5px; width:19px; height:19px; border-radius:50%;
+                      background:#3DBE84; color:#fff; font-size:11px; font-weight:900; display:flex; align-items:center;
+                      justify-content:center; border:2px solid #fff;}
+  .dcMate .bub{position:absolute; bottom:calc(100% + 8px); inset-inline-start:0; max-width:220px; width:max-content;
+               background:#fff; border:2px solid var(--td); border-radius:14px; padding:5px 10px; font-size:13px;
+               font-weight:800; color:var(--ink); line-height:1.5; box-shadow:0 4px 12px rgba(0,0,0,.14); opacity:0;
+               transform:translateY(6px) scale(.96); transition:opacity .2s, transform .2s; pointer-events:none; z-index:20;
+               word-break:break-word; white-space:normal;}
+  .dcMate .bub.on{opacity:1; transform:none;}
+  .dcMate .bub.big{font-size:26px; padding:0 9px; line-height:1.25;}
+  #dcNext{width:auto; padding:10px 26px;}
+
+  /* التبويبتان */
+  #dcTabs{display:flex; gap:8px; flex-shrink:0; position:sticky; top:0; z-index:10; padding:2px 0;}
+  .dcTab{flex:1; position:relative; border:3px solid #fff; border-radius:18px; padding:10px 8px; font:inherit; font-weight:900;
+         font-size:15.5px; cursor:pointer; color:var(--td); background:var(--tc); box-shadow:0 4px 10px rgba(0,0,0,.1), 0 0 0 1.5px var(--tm);
+         opacity:.62; transition:opacity .15s, transform .15s;}
+  .dcTab.on{opacity:1; transform:translateY(-1px); box-shadow:0 6px 14px rgba(0,0,0,.14), 0 0 0 2.5px var(--td);}
+  .dcTab .dot{display:none; position:absolute; top:-6px; inset-inline-end:-4px; min-width:20px; height:20px; border-radius:999px;
+              background:#E5484D; color:#fff; font-size:11px; line-height:16px; border:2px solid #fff; padding:0 5px;}
+  .dcTab .dot.on{display:block; animation:dotPulse 1.2s ease-in-out infinite;}
+  @keyframes dotPulse{50%{transform:scale(1.15)}}
+  .dcPane{display:none; flex-direction:column; gap:10px; padding:12px; flex-shrink:0;}
+  .dcPane.on{display:flex;}
+  .dcSec{font-size:13.5px; font-weight:900; color:var(--muted); display:flex; align-items:center; gap:7px; flex-wrap:wrap;}
+  .dcSec .dcToks{margin-inline-start:4px;}
+  .dcTokLbl{font-size:11.5px; font-weight:800; color:var(--muted);}
+
+  /* بطاقاتُ الكلمات الأربع */
+  .dcWords{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px;}
+  .dcWord{position:relative; border-radius:20px; border:5px solid #fff; background:var(--cb); padding:20px 6px 12px; text-align:center;
+          box-shadow:0 8px 18px rgba(120,80,40,.16), 0 0 0 1.5px rgba(0,0,0,.05); min-width:0;}
+  .dcWord .num{position:absolute; top:-13px; left:50%; transform:translateX(-50%); width:30px; height:30px; border-radius:50%;
+               background:var(--cd); color:#fff; font-weight:900; font-size:16px; display:flex; align-items:center; justify-content:center;
+               border:3px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,.18);}
+  .dcWord .w{font-size:clamp(16px,4.4vw,24px); font-weight:900; line-height:1.3; word-break:break-word; color:#3d2a26;}
+  .dcWord.q .w{color:var(--cd); opacity:.75;}
+
+  /* صندوقُ الجولة */
+  .dcBox{border-radius:20px; background:linear-gradient(180deg,#FFFEFB,#FBF6EE); border:3px solid #fff;
+         box-shadow:0 0 0 1.5px var(--line), 0 6px 14px rgba(120,80,40,.08); padding:12px; display:flex; flex-direction:column; gap:10px; align-items:center;}
+  .dcBox .tt{font-size:16.5px; font-weight:900; text-align:center; line-height:1.5;}
+  .dcBox .ss{font-size:13px; color:var(--muted); font-weight:800; text-align:center; line-height:1.65;}
+  .dcCode{display:flex; gap:8px; justify-content:center; align-items:center; direction:ltr;}
+  .dcDig{width:44px; height:52px; border-radius:14px; background:var(--cb); color:var(--cd); border:4px solid #fff; font-weight:900;
+         font-size:26px; display:flex; align-items:center; justify-content:center; box-shadow:0 5px 12px rgba(120,80,40,.18), 0 0 0 1.5px var(--cd);}
+  .dcDig.sm{width:30px; height:34px; font-size:17px; border-width:3px; border-radius:10px;}
+  .dcDig.blank{background:#fff; color:#CDBFAE; box-shadow:0 0 0 1.5px #E2D3BC;}
+  .dcCode .sep{font-weight:900; color:#CDBFAE;}
+  /* كتابةُ التلميحات */
+  .dcClueRows{display:flex; flex-direction:column; gap:8px; width:min(100%,460px);}
+  .dcClueRow{display:flex; align-items:center; gap:8px;}
+  .dcClueRow .for{font-size:12.5px; font-weight:900; color:var(--cd); min-width:60px; text-align:center; white-space:nowrap;
+                  overflow:hidden; text-overflow:ellipsis; max-width:90px;}
+  body .dcBox input.dcClueIn{flex:1; min-width:0; padding:9px 12px; font:inherit; font-size:19px; font-weight:900; text-align:center;
+         color:var(--ink); border-radius:16px; border:3px solid var(--cb); background:#fff; outline:none; box-shadow:none;}
+  body .dcBox input.dcClueIn:focus{border-color:var(--cd);}
+  body .dcBox input.dcClueIn.bad{border-color:#F08A84; background:#FFF4F3;}
+  .dcWarn{min-height:17px; font-size:13px; font-weight:800; color:#C1332E; text-align:center; line-height:1.4;}
+  /* ورقةُ التخمين: كلُّ تلميحٍ وأمامه الأرقام الأربعة */
+  .dcSheet{display:flex; flex-direction:column; gap:8px; width:min(100%,520px);}
+  .dcRow{display:flex; align-items:center; gap:8px; padding:6px; border-radius:16px; background:#fff; border:2px solid var(--line);}
+  .dcClue{flex:1; min-width:0; font-size:clamp(17px,4.4vw,21px); font-weight:900; text-align:center; padding:4px 6px;
+          word-break:break-word; line-height:1.3;}
+  .dcClue.auto{color:#BCAE9C;}
+  .dcPick{display:flex; gap:5px; direction:ltr; flex-shrink:0;}
+  .dcPick button{width:36px; height:38px; border-radius:12px; border:2.5px solid var(--cb); background:#fff; color:var(--cd);
+                 font:inherit; font-size:17px; font-weight:900; cursor:pointer; transition:transform .12s, background .12s;}
+  .dcPick button.on{background:var(--cd); border-color:#fff; color:#fff; box-shadow:0 0 0 2px var(--cd), 0 3px 6px rgba(0,0,0,.15); transform:translateY(-1px);}
+  .dcPick button:disabled{cursor:default;}
+  .dcPick.ro button:not(.on){opacity:.35;}
+  .dcRow .mark{width:26px; font-size:18px; text-align:center; flex-shrink:0;}
+  .dcAgree{display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center;}
+  .dcAgree .who{display:flex; gap:4px;}
+  .dcAgree .who .av{width:26px; height:26px; font-size:12px; border-width:2px; opacity:.4;}
+  .dcAgree .who .av.ok{opacity:1; box-shadow:0 0 0 2px #3DBE84;}
+  .dcAgree .btn{width:auto; padding:10px 22px;}
+  .dcLocked{font-weight:900; color:#1F8A5B; background:#E6F8EF; border:2px solid #9FE0C0; border-radius:999px; padding:6px 14px; font-size:14px;}
+  .dcSilent{font-weight:900; color:#8462D2; background:#F1EAFF; border:2px solid #D8C7FF; border-radius:999px; padding:6px 14px; font-size:13.5px; text-align:center;}
+  .dcRes{display:flex; flex-direction:column; gap:6px; width:min(100%,520px);}
+  .dcResLine{display:flex; align-items:center; gap:8px; justify-content:space-between; padding:7px 12px; border-radius:14px;
+             background:#fff; border:2px solid var(--line); font-weight:800; font-size:14px; flex-wrap:wrap;}
+  .dcResLine.good{background:#E9F9F1; border-color:#9FE0C0;}
+  .dcResLine.bad{background:#FFF0EE; border-color:#F5B5AE;}
+  .dcWait{font-size:46px; line-height:1; animation:bob 1.8s ease-in-out infinite;}
+  @keyframes bob{50%{transform:translateY(-6px) rotate(-4deg)}}
+
+  /* الجدولان: تلميحاتُ كلّ فريقٍ تحت أرقامها */
+  .dcGrid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px;}
+  .dcCol{border-radius:16px; background:var(--cb); border:3px solid #fff; box-shadow:0 0 0 1.5px var(--cd);
+         padding:6px 5px 8px; display:flex; flex-direction:column; gap:5px; min-width:0; min-height:110px;}
+  .dcCol .hd{display:flex; align-items:center; justify-content:center; gap:5px; font-weight:900; color:var(--cd); font-size:13px; min-width:0;}
+  .dcCol .hd .num{width:24px; height:24px; border-radius:50%; background:var(--cd); color:#fff; display:flex; align-items:center;
+                  justify-content:center; font-size:13px; border:2px solid #fff; flex-shrink:0;}
+  .dcCol .hd .wd{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;}
+  body .dcCol input.dcNote{width:100%; min-width:0; border:2px dashed var(--cd); border-radius:10px; background:rgba(255,255,255,.75);
+                padding:4px 6px; font:inherit; font-size:12.5px; font-weight:800; text-align:center; color:var(--ink); outline:none; box-shadow:none;}
+  .dcCol .lst{display:flex; flex-direction:column; gap:4px;}
+  .dcChip{background:#fff; border-radius:10px; padding:4px 6px; font-size:13.5px; font-weight:900; text-align:center;
+          word-break:break-word; line-height:1.3; box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  .dcChip small{display:block; font-size:9.5px; color:var(--muted); font-weight:800;}
+  .dcChip.auto{color:#BCAE9C;}
+  .dcChip.new{box-shadow:0 0 0 2px var(--cd); animation:chipIn .5s cubic-bezier(.3,1.5,.5,1);}
+  @keyframes chipIn{from{transform:scale(.4); opacity:0}}
+  .dcNone{font-size:11.5px; color:var(--cd); opacity:.6; text-align:center; font-weight:800; padding:6px 0;}
+
+  /* ── شريطُ الدردشة تحت ── */
+  #chatBar{display:flex; gap:12px; justify-content:center; align-items:center; flex-shrink:0; padding:2px 0 4px;}
+  .barBtn{width:48px; height:48px; font-size:22px; position:relative;}
+  #unread{display:none; position:absolute; top:-6px; right:-6px; min-width:20px; height:20px; padding:0 5px; border-radius:999px;
+          background:#E5484D; color:#fff; font-size:11px; font-weight:900; line-height:17px; border:2px solid #fff; text-align:center;}
+  #unread.on{display:block;}
+  #quickPop{display:none; position:fixed; bottom:72px; left:50%; transform:translateX(-50%); width:min(94vw, 470px);
+            padding:10px; z-index:40; flex-direction:column; gap:8px;}
+  #quickPop.on{display:flex;}
+  #quickPop .phr{display:grid; grid-template-columns:repeat(2,1fr); gap:6px;}
+  #quickPop .phr button{border:2px solid var(--line); background:#fff; border-radius:999px; padding:8px 10px; font:inherit;
+                        font-weight:800; font-size:13.5px; cursor:pointer; color:var(--ink);}
+  #quickPop .emo{display:grid; grid-template-columns:repeat(8,1fr); gap:4px;}
+  #quickPop .emo button{border:none; background:transparent; font-size:25px; cursor:pointer; padding:4px 0; border-radius:10px;}
+  #chatCard{display:none; position:fixed; bottom:72px; left:50%; transform:translateX(-50%); width:min(94vw, 470px);
+            height:min(62vh, 440px); flex-direction:column; z-index:40; overflow:hidden; gap:8px; padding:10px;}
+  #chatCard.on{display:flex;}
+  .chatHead{display:flex; align-items:center; justify-content:space-between; gap:8px; font-weight:900;}
+  .chatHead > button{border:none; background:transparent; font-size:18px; cursor:pointer; color:var(--muted);}
+  #dcChans{display:none; gap:5px;}
+  #dcChans.on{display:flex;}
+  #dcChans button{border:2px solid var(--line); background:#fff; border-radius:999px; padding:5px 12px; font:inherit; font-weight:900;
+                  font-size:13px; cursor:pointer; color:var(--muted);}
+  #dcChans button.on{background:var(--tc,#F1EAFF); color:var(--td,#6a37e0); border-color:var(--tm,#D8C7FF);}
+  #msgs{flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:5px; min-height:90px;}
+  .msg{background:var(--soft); border-radius:9px; padding:6px 9px; font-size:13px; word-break:break-word;}
+  .msg b{color:#1668c7;}
+  .msg .ch{font-size:10.5px; font-weight:900; border-radius:999px; padding:0 7px; margin-inline-end:5px; background:var(--tc); color:var(--td);}
+  .msg.system{background:#eef4fb; color:#1668c7; text-align:center; font-weight:700;}
+  #chatForm{display:flex; gap:6px; padding:8px; border-top:2px solid var(--line);}
+  #chatForm input{flex:1; min-width:0; text-align:start; font-size:14px; padding:10px 12px; border:2px solid var(--line); border-radius:10px; font-family:inherit;}
+  #chatForm button{border:none; border-radius:10px; background:#1668c7; color:#fff; font-weight:800; padding:10px 14px; cursor:pointer; font-family:inherit;}
+
+  /* النوافذ */
+  .modal{position:fixed; inset:0; background:rgba(10,20,34,.72); z-index:60; display:none; align-items:center; justify-content:center; padding:14px;}
+  .modal.on{display:flex;}
+  .sheet{background:#fff; border-radius:18px; width:100%; max-width:600px; max-height:88vh; overflow:auto;
+         padding:16px; display:flex; flex-direction:column; gap:11px;}
+  .sheet h3{margin:0; font-size:19px;}
+  .rule{background:var(--soft); border-radius:12px; padding:9px 12px; font-size:13.5px; line-height:1.8;}
+  .rule b{display:block; font-size:14.5px; margin-bottom:2px;}
+  .dcWin{text-align:center; border-radius:22px; padding:16px 12px 14px; border:5px solid #fff; background:var(--tc,#FFF6DA);
+         box-shadow:0 8px 20px rgba(80,60,120,.2), 0 0 0 2px var(--tm,#F2C46B);}
+  .dcWin .ic{font-size:56px; line-height:1.1;}
+  .dcWin .ar{font-size:25px; font-weight:900; color:var(--td,#3d2a26);}
+  .dcWin .ln{font-size:13.5px; font-weight:800; color:var(--muted); margin-top:3px;}
+  .dcEndWords{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;}
+  .dcEndTeam{border-radius:16px; background:var(--tc); border:3px solid #fff; box-shadow:0 0 0 1.5px var(--tm); padding:8px; display:flex; flex-direction:column; gap:5px;}
+  .dcEndTeam .hd{font-weight:900; color:var(--td); font-size:14px; text-align:center;}
+  .dcEndTeam .wl{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px;}
+  .dcEndTeam .wl span{background:#fff; border-radius:10px; padding:4px 6px; font-weight:900; font-size:13.5px; text-align:center;}
+  .dcEndTeam .wl span i{font-style:normal; color:var(--cd); margin-inline-end:4px;}
+  .hist{display:flex; flex-direction:column; gap:6px; max-height:34vh; overflow:auto;}
+  .hrow{display:flex; flex-direction:column; gap:3px; padding:7px 11px; border-radius:13px; background:var(--soft);
+        font-size:13px; font-weight:800; line-height:1.55;}
+  .hrow .ln2{display:flex; gap:6px; align-items:center; flex-wrap:wrap;}
+  .hrow .tag{font-size:11px; font-weight:900; border-radius:999px; padding:0 8px; background:var(--tc); color:var(--td);}
+  #toast{position:fixed; left:50%; bottom:20px; transform:translateX(-50%) translateY(70px);
+         background:#12263c; color:#fff; padding:11px 18px; border-radius:12px; font-weight:800;
+         font-size:14px; z-index:90; opacity:0; transition:.25s; pointer-events:none; max-width:90vw; text-align:center;}
+  #toast.on{transform:translateX(-50%) translateY(0); opacity:1;}
+
+  @media (max-width: 700px){
+    body{padding:6px; gap:6px;}
+    .dcWords{gap:6px;}
+    .dcWord{padding:17px 3px 9px; border-width:4px; border-radius:16px;}
+    .dcWord .num{width:26px; height:26px; font-size:14px; top:-11px;}
+    .dcPane{padding:9px;}
+    .dcPick button{width:32px; height:36px; font-size:16px; border-radius:10px;}
+    .dcPick{gap:4px;}
+    .dcClue{font-size:16px;}
+    .dcGrid{gap:5px;}
+    .dcCol{padding:5px 3px 7px; border-radius:13px;}
+    .dcChip{font-size:12.5px; padding:3px 4px;}
+    .dcScore{font-size:12px; padding:3px 8px 3px 4px;}
+    .dcScore .nm{display:none;}
+    .dcTok{width:19px; height:19px;}
+    #dcTeams{grid-template-columns:1fr;}
+  }
+</style>
+<link rel="stylesheet" href="/kawaii.css">
+<script src="/theme.js" defer></script>
+</head>
+<body class="theme-kawaii">
+<div class="wrap">
+
+  <!-- ═════════ الدخول ═════════ -->
+  <div id="joinScreen">
+    <div class="logo">فكّ <span>الشفرة!</span></div>
+    <div class="tagline">فريقٌ ضدّ فريق: لمّح لفريقك بشفرةٍ يفهمها… ولا يفهمها الخصم! 🔐</div>
+    <a class="backLink" href="/">← رجوع لاختيار الألعاب</a>
+    <div class="card">
+      <input id="pName" maxlength="20" placeholder="اكتب اسمك هنا" autocomplete="off">
+      <div id="whoLine"></div>
+      <button class="btn btn-green" id="createBtn">إنشاء غرفة جديدة ➕</button>
+      <div class="divider">— أو انضم لغرفة موجودة —</div>
+      <div class="row2">
+        <input id="pRoom" maxlength="6" placeholder="رمز الغرفة" inputmode="numeric" autocomplete="off">
+        <button class="btn btn-blue" id="joinBtn">انضمام 🚪</button>
+      </div>
+      <div id="joinErr"></div>
+    </div>
+    <div class="facts"><span>👥 ٤–٨ لاعبين</span><span>🔵 فريقان</span><span>🔐 ٨ جولات</span></div>
+  </div>
+
+  <!-- ═════════ اللعبة ═════════ -->
+  <div id="game" style="display:none; flex-direction:column; gap:10px; flex:1; min-height:0;">
+    <div class="card" id="topBar">
+      <div id="roomChip" title="انسخ رابط الدعوة"><b id="roomCode">—</b><span>🔗 انسخ الرابط</span></div>
+      <div id="phaseInfo">في الانتظار…</div>
+      <button class="iconBtn" id="rulesBtn" title="القواعد">📖</button>
+      <button class="iconBtn" id="sndBtn" title="الصوت">🔊</button>
+      <a class="iconBtn" href="/" title="الصفحة الرئيسية">🏠</a>
+    </div>
+
+    <!-- اللوبي -->
+    <div class="card" id="lobby">
+      <div class="h">👥 الفريقان <span id="plCount" style="font-size:13px; color:var(--muted); font-weight:700;"></span></div>
+      <div id="dcTeams"></div>
+      <div id="needMore" class="sub"></div>
+      <div id="hostArea" style="display:none; flex-direction:column; gap:10px;">
+        <div class="row2">
+          <button class="btn btn-ghost" id="setOpen">⚙️ الإعدادات</button>
+          <button class="btn btn-ghost" id="shuffleBtn">🔀 وزّع عشوائيًّا</button>
+        </div>
+        <div id="setBox"></div>
+        <button class="btn btn-green" id="startBtn">▶️ ابدأ اللعبة</button>
+      </div>
+      <div id="waitHost" class="sub">بانتظار مدير الغرفة يبدأ اللعبة…</div>
+      <div id="lobbySummary" class="sub"></div>
+      <div class="card howTo" id="howTo">
+        <div class="n1"><b>🔐 ١. الشفرة</b>لكلّ فريقٍ ٤ كلماتٍ سرّيّة مرقّمة. مُشفِّرُ الجولة يأخذ شفرةً مثل ٣-١-٤.</div>
+        <div class="n2"><b>✏️ ٢. التلميح</b>يكتب ٣ تلميحات — كلمةً لكلّ رقم — فتُعرض للفريقين معًا.</div>
+        <div class="n3"><b>🔍 ٣. الفكّ والاعتراض</b>فريقُه يفكّ شفرتَه، والخصمُ يحاول اعتراضها من الجولات السابقة.</div>
+        <div class="n4"><b>🏆 ٤. الفوز</b>اعتراضان ✅ فوز، وسوءا فهمٍ ❌ خسارة — وإلا فبعد ٨ جولات.</div>
+      </div>
+    </div>
+
+    <!-- اللعب -->
+    <div id="play">
+      <div class="card" id="dcHud">
+        <div class="dcHudRow">
+          <div class="dcScore tb" id="scoreA"></div>
+          <div id="dcRound">الجولة ١/٨</div>
+          <div class="dcScore tp" id="scoreB"></div>
+        </div>
+        <div id="timer"><div id="tbar"><i></i></div><span id="tsec">—</span></div>
+      </div>
+      <div class="card" id="dcBanner"></div>
+      <div id="dcTabs">
+        <button class="dcTab" id="tabMine" type="button">🛡️ فريقي<span class="dot"></span></button>
+        <button class="dcTab" id="tabEnemy" type="button">🕵️ اختراق الخصم<span class="dot"></span></button>
+      </div>
+      <div class="card dcPane" id="paneMine">
+        <div class="dcSec" id="mineToks"></div>
+        <div class="dcWords" id="mineWords"></div>
+        <div class="dcBox" id="mineRound"></div>
+        <div class="dcSec">📒 تلميحاتُنا السابقة تحت أرقامها</div>
+        <div class="dcGrid" id="mineGrid"></div>
+      </div>
+      <div class="card dcPane" id="paneEnemy">
+        <div class="dcSec" id="enemyToks"></div>
+        <div class="dcBox" id="enemyRound"></div>
+        <div class="dcSec">🗂️ تلميحاتُ الخصم مفرزةً تحت أرقامها — واكتب تخمينك لكلماتهم</div>
+        <div class="dcGrid" id="enemyGrid"></div>
+      </div>
+      <div id="chatBar">
+        <button class="iconBtn barBtn" id="quickBtn" title="عبارات وإيموجي">😊</button>
+        <button class="iconBtn barBtn" id="chatBtn" title="الدردشة">💬<span id="unread"></span></button>
+      </div>
+    </div>
+    <div class="card" id="quickPop"></div>
+    <div class="card" id="chatCard">
+      <div class="chatHead">
+        <span>💬 الدردشة</span>
+        <div id="dcChans"><button type="button" data-ch="team" class="on">👥 فريقي</button><button type="button" data-ch="all">🌐 الكلّ</button></div>
+        <button type="button" id="chatClose" aria-label="إغلاق">✕</button>
+      </div>
+      <div id="msgs"></div>
+      <form id="chatForm" autocomplete="off">
+        <input id="chatInput" type="text" placeholder="اكتب رسالة…" maxlength="140">
+        <button type="submit">إرسال</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- القواعد -->
+<div class="modal" id="rulesModal"><div class="sheet">
+  <h3>📖 قواعد «فكّ الشفرة»</h3>
+  <div id="rulesBody"></div>
+  <button class="btn btn-ghost" data-close>حسنًا</button>
+</div></div>
+
+<!-- النهاية -->
+<div class="modal" id="endModal"><div class="sheet">
+  <div id="endWin" class="dcWin">—</div>
+  <div class="h" style="font-size:15px">🔓 الكلماتُ السرّيّة</div>
+  <div id="endWords" class="dcEndWords"></div>
+  <div class="h" style="font-size:15px">📜 الجولات</div>
+  <div id="endHist" class="hist"></div>
+  <button class="btn btn-green" id="endAgain" style="display:none">🔄 لعبة جديدة بالفريقين نفسيهما</button>
+  <button class="btn btn-ghost" data-close>إلى الانتظار</button>
+</div></div>
+
+<!-- فُتحت اللعبةُ في مكانٍ آخر -->
+<div class="modal" id="replacedModal" data-sticky><div class="sheet">
+  <h3>📱 فتحت اللعبةَ في مكانٍ آخر</h3>
+  <div class="sub" style="text-align:start">مقعدُك انتقل إلى التبويب أو الجهاز الذي فتحتها منه الآن.</div>
+  <button class="btn btn-green" type="button" onclick="location.reload()">العب من هنا</button>
+</div></div>
+
+<div id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/justone/norm.js"></script>
+<script src="/decrypto/app.js"></script>
+</body>
+</html>

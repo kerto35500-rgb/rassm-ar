@@ -628,6 +628,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo { background:linear
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   { background:linear-gradient(180deg,#6ED6CC 0%,#26A69A 100%); }
 /* كلمة واحدة فقط: عبّادُ الشمس — أصفرُ صريحٌ لا برتقاليُّ القنبلة */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sun    { background:linear-gradient(180deg,#FFDC6E 0%,#F2B51F 100%); }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-plum   { background:linear-gradient(180deg,#C9B2F5 0%,#8C63D6 100%); }
 
 /* ── ومضةُ البطاقة عند مرور المؤشّر ──
  *
@@ -680,6 +681,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    .go { background:#C
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo .go { background:#3F51B5 !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   .go { background:#1F8E80 !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sun    .go { background:#C98A0A !important; }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-plum   .go { background:#6E45B8 !important; }
 /* شارة عدد اللاعبين: كبسولة بيضاء */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .now {
   background:#fff; color:#3E6E8C; padding:4px 10px; border-radius:999px;
@@ -796,6 +798,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    .ic { background-im
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo .ic { background-image:url("/kw-g-baloot.svg") !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   .ic { background-image:url("/kw-g-ludo.svg") !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sun    .ic { background-image:url("/kw-g-justone.svg") !important; }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-plum   .ic { background-image:url("/kw-g-decrypto.svg") !important; }
 /* العناوين: أبيض عريض كبير بستروك بني حول الحروف */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g h2 {
   font-size:27px; letter-spacing:.5px;
@@ -818,6 +821,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-red    .go { box-shadow: i
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #2C3A87, 0 9px 14px rgba(0,0,0,.2) !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #17695F, 0 9px 14px rgba(0,0,0,.2) !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sun    .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #8A5C04, 0 9px 14px rgba(0,0,0,.2) !important; }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-plum   .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #4A2A85, 0 9px 14px rgba(0,0,0,.2) !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .now { color:#8A5A3E; box-shadow:0 2px 0 #E3D5C2; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .badge { color:#8A5A3E; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) #accPop { color:#6B4632; }
@@ -1985,6 +1989,86 @@ body.kw-salfa.kw-justone #chatCard { background:var(--sg-white); border:2px soli
 body.kw-justone .chatHead { color:var(--sg-ink); }
 body.kw-justone .rule { background:var(--sg-soft); border-radius:14px; color:var(--sg-ink); }
 body.kw-justone .hrow { background:var(--sg-soft); color:var(--sg-ink); }
+
+/* ══════════════════════════════════════════════════════════════════
+   v52 — فكّ الشفرة: مارشميلو برقوقيّ 🔐🍡
+   ══════════════════════════════════════════════════════════════════
+   كلودو و«كلمة واحدة فقط»: هيكلُ «برّا السالفة» فتلبس kw-salfa كلَّها، وهنا
+   لونُها وحده (برقوقيٌّ بين أزرق الفريق الأوّل وورديّ الثاني). وألوانُ الفريقين
+   والأرقام الأربعة في صفحتها نفسها لأنّها هويّةُ اللعبة. الأصنافُ الجديدة تبدأ
+   بـ‎dc‎ فلا تلبسها قواعدُ السمة العامّة (‎.g‎ و‎.badge‎ و‎.live‎…). */
+body.theme-kawaii.kw-salfa.kw-decrypto {
+  --sg-line:#7E5A8E; --sg-ink:#3E2A4A; --sg-deep:#6E45B8; --sg-soft:#F6F0FF;
+  --sg-white:linear-gradient(180deg,#FFFEFF 0%,#F8F3FF 100%);
+  --sg-band:linear-gradient(180deg,#EFE6FF 0%,#DCCBFF 100%);
+  --sg-btn:linear-gradient(180deg,#E9DEFF 0%,#CDB8F5 100%);
+  --sg-strong:linear-gradient(180deg,#B996F2 0%,#8C63D6 100%);
+  --sg-shadow:0 4px 10px rgba(110,70,180,.2);
+  --kw-fab:#8C63D6; --kw-fab-line:#5E3A9E;
+  --line:#E3D7F2; --soft:#F8F3FF; --muted:#7D6A8E;
+  background:linear-gradient(165deg,#FAF6FF 0%,#EEE2FF 100%) !important;
+}
+body.kw-salfa.kw-decrypto .logo {
+  text-shadow:
+    -2px -2px 0 #5E3A9E, 2px -2px 0 #5E3A9E, -2px 2px 0 #5E3A9E, 2px 2px 0 #5E3A9E,
+    -2.5px 0 0 #5E3A9E, 2.5px 0 0 #5E3A9E, 0 -2.5px 0 #5E3A9E, 0 2.5px 0 #5E3A9E,
+    0 7px 14px rgba(94,58,158,.32);
+}
+body.kw-salfa.kw-decrypto .logo span { color:#FFB8CC; }
+body.kw-salfa.kw-decrypto .tagline { color:#6A4E86; }
+body.kw-salfa.kw-decrypto .backLink:hover { background:#F1EAFF; }
+body.kw-salfa.kw-decrypto #joinScreen .card input:focus { box-shadow:0 0 0 3px rgba(140,99,214,.35); }
+body.kw-salfa.kw-decrypto .btn-blue { background:linear-gradient(180deg,#DDEBFF 0%,#A9C9F5 100%); color:#2D5A9E; }
+body.kw-salfa.kw-decrypto .btn-violet { background:linear-gradient(180deg,#C9B2F5 0%,#8C63D6 100%); color:#fff; }
+body.kw-salfa.kw-decrypto .divider, body.kw-salfa.kw-decrypto #roomChip span { color:#8E7AA6; }
+body.kw-salfa.kw-decrypto .sub, body.kw-salfa.kw-decrypto .setRow .hint,
+body.kw-salfa.kw-decrypto .seg button { color:#7D6A8E; }
+body.theme-kawaii.kw-salfa.kw-decrypto .seg button.on {
+  color:#fff; background:linear-gradient(180deg,#A783EC 0%,#7148C2 100%);
+  text-shadow:0 1px 1px rgba(50,20,90,.35);
+}
+body.kw-salfa.kw-decrypto #lobby { overflow-x:hidden; }
+body.kw-salfa.kw-decrypto #hostArea > .btn:hover { transform:scale(1.012) translateY(-1px); }
+body.kw-salfa.kw-decrypto .msg.system { background:#F1EAFF; color:#5E3A9E; }
+body.theme-kawaii.kw-salfa.kw-decrypto #chatForm { background:linear-gradient(180deg,#FCFAFF 0%,#F1EAFF 100%); }
+body.theme-kawaii.kw-salfa.kw-decrypto .msg.system::before {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M13 18v-4a7 7 0 0 1 14 0v4' fill='none' stroke='%237148C2' stroke-width='3' stroke-linecap='round'/%3E%3Crect x='8' y='17' width='24' height='18' rx='6' fill='%23E8DEFF' stroke='%237148C2' stroke-width='2.6'/%3E%3Ccircle cx='20' cy='25' r='2.6' fill='%237148C2'/%3E%3C/svg%3E");
+}
+/* خربشاتُ الخلفية: قفلٌ ومفتاح، وفقاعةُ «؟»، ونجمة */
+body.theme-kawaii.kw-salfa.kw-decrypto .kw-doodles .kw-pencil {
+  opacity:.4;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 64'%3E%3Cg transform='rotate(-10 34 34)'%3E%3Cpath d='M22 30v-7a12 12 0 0 1 24 0v7' fill='none' stroke='%237E5A8E' stroke-width='4' stroke-linecap='round'/%3E%3Crect x='14' y='28' width='40' height='28' rx='9' fill='%23DDEBFF' stroke='%237E5A8E' stroke-width='3'/%3E%3Ccircle cx='34' cy='40' r='4' fill='%233F78C9'/%3E%3C/g%3E%3Cg transform='rotate(14 92 32)'%3E%3Ccircle cx='76' cy='32' r='9' fill='%23FFE0EB' stroke='%237E5A8E' stroke-width='3'/%3E%3Cpath d='M85 32h26M103 32v7M109 32v5' stroke='%237E5A8E' stroke-width='3.4' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E");
+}
+body.theme-kawaii.kw-salfa.kw-decrypto .kw-doodles .kw-palette {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Cpath d='M8 8h28a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H20l-8 7v-7H8a5 5 0 0 1-5-5V13a5 5 0 0 1 5-5z' fill='%23E8DEFF' stroke='%237E5A8E' stroke-width='2.4' stroke-linejoin='round'/%3E%3Cpath d='M18 16a4 4 0 1 1 5.5 3.7c-1.2.5-1.5 1.2-1.5 2.3' fill='none' stroke='%238462D2' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='26' r='1.7' fill='%238462D2'/%3E%3C/svg%3E");
+}
+body.theme-kawaii.kw-salfa.kw-decrypto .kw-doodles .kw-brush {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='16' fill='%23FFE0EB' stroke='%23D2557E' stroke-width='2.6'/%3E%3Cpath d='M20 9l3.3 7.2 7.8.8-5.9 5.3 1.7 7.7L20 26l-6.9 4 1.7-7.7-5.9-5.3 7.8-.8z' fill='%23F7B3C9' stroke='%23D2557E' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+/* اللوبي والبطاقات */
+body.kw-salfa.kw-decrypto .howTo { background:none; border:none; box-shadow:none; padding:0; }
+body.kw-decrypto .howTo div { border-color:#fff; color:var(--sg-ink); }
+body.kw-decrypto #needMore { color:#B5651D; }
+body.kw-decrypto .dcLp .nm, body.kw-decrypto .dcMate .nm { color:var(--sg-ink); }
+body.kw-salfa.kw-decrypto .dcPane, body.kw-salfa.kw-decrypto #dcBanner, body.kw-salfa.kw-decrypto #dcHud {
+  border-radius:24px; background:linear-gradient(180deg,#FFFEFF 0%,#FAF6FF 100%); }
+body.kw-decrypto #dcBanner .tt, body.kw-decrypto .dcBox .tt { color:var(--sg-ink); }
+body.kw-decrypto #dcRound { background:#F1EAFF; color:var(--sg-ink); border:2px solid #E3D7F2; }
+/* خاناتُ التلميح والملاحظات داخل بطاقة: قاعدةُ السمة ‎.card input‎ تغلب
+   لونَ الخطأ فيبقى الحدُّ بنّيًّا — فتعلو هنا (درسُ «كلمة واحدة فقط») */
+body.theme-kawaii.kw-decrypto .card input.dcClueIn { border:3px solid var(--cb); border-radius:999px; color:var(--sg-ink); background:#fff; box-shadow:none; }
+body.theme-kawaii.kw-decrypto .card input.dcClueIn:focus { border-color:var(--cd); box-shadow:0 0 0 4px rgba(140,99,214,.18); }
+body.theme-kawaii.kw-decrypto .card input.dcClueIn.bad { border-color:#E0574D; background:#FFF1EF; }
+body.theme-kawaii.kw-decrypto .card input.dcNote { border:2px dashed var(--cd); border-radius:10px; background:rgba(255,255,255,.8); color:var(--sg-ink); box-shadow:none; }
+/* الدردشة العائمة */
+body.kw-decrypto .barBtn { width:50px; height:50px; }
+body.kw-decrypto #quickPop .phr button { border-color:#C9B2E6; color:var(--sg-ink); }
+body.kw-decrypto #quickPop .phr button:hover { background:#F1EAFF; border-color:#8C63D6; }
+body.kw-salfa.kw-decrypto #chatCard { background:var(--sg-white); border:2px solid var(--sg-line);
+  box-shadow:0 12px 30px rgba(110,70,180,.25); overflow:hidden; border-radius:22px; }
+body.kw-decrypto .chatHead { color:var(--sg-ink); }
+body.kw-decrypto .rule { background:var(--sg-soft); border-radius:14px; color:var(--sg-ink); }
+body.kw-decrypto .hrow { background:var(--sg-soft); color:var(--sg-ink); }
 
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {
