@@ -116,6 +116,7 @@ console.log("⑤ الفشل والعقاب والإقصاء");
   ok(forA.some(e => e.t === "lost" && e.kind) && !forB.some(e => e.t === "lost"), "نوعُ ما خسره يعرفه هو وحده");
   ok(m.view("b").players[0].lost === 1 && m.view("b").players[0].owned === 3, "والبقيّةُ يعرفون العددَ فقط");
   ok(Array.isArray(m.view("a").players[0].lost) && m.view("a").players[0].lost[0].t, "وهو يرى ما خسر");
+  ok(m.view("a").players[0].stack.every(d => d.t), "وكومتُه تبقى مرسومةً بأنواعها حتى لو خسر منها ماكارونة (كانت تُرسم فارغة)");
 }
 {
   /* حارّتُه هو تُفشله كذلك */

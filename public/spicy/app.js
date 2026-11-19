@@ -272,7 +272,9 @@
   }
   function stackHTML(v, p, sm) {
     const n = p.stack.length;
+    /* شارةُ العدد: ماكارونتان فوق بعضهما تبدوان واحدةً بحافّةٍ أسمك */
     return '<div class="spStack" data-owner="' + p.id + '" style="--n:' + Math.max(1, n) + (sm ? "; --mac:" + (sm) + "px" : "") + '">' +
+      (n > 1 ? '<span class="spCount">×' + AR(n) + "</span>" : "") +
       p.stack.map((d, i) => {
         const k = v.round + ":" + p.id + ":" + i;
         const mine = p.id === v.me;

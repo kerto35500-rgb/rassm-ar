@@ -308,7 +308,9 @@ class SpicyMatch {
           hand: mine ? x.hand.map(d => ({ id: d, t: x.discs[d] })) : null,
           /* كومتي أعرف ما فيها؛ وكومةُ غيري مقلوبةٌ إلا ما قُلب */
           /* (ومعرّفاتُ كومة غيري لا تُرسل أصلًا — لا يُستدلّ بها على شيء) */
-          stack: x.stack.map(d => mine ? { id: d, t: x.discs[d], up: shown.has(d) }
+          /* (ماكارونةٌ في كومتي خسرتُها للتوّ لم تعد في discs: نوعُها من سجلّ الخسارة —
+             كانت تُرسم فارغة) */
+          stack: x.stack.map(d => mine ? { id: d, t: shown.get(d) || x.discs[d] || (x.lost.find(l => l.disc === d) || {}).t, up: shown.has(d) }
                                        : { t: (shown.has(d) || over) ? (shown.get(d) || x.discs[d]) : null, up: shown.has(d) }),
           lost: mine ? x.lost.map(l => ({ ...l })) : x.lost.length
         };

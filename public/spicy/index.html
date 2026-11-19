@@ -158,9 +158,12 @@
   .spHand .slot.gone{background:transparent; border:2px dashed #D6C7B4; box-shadow:none;}
   .spHandLbl{font-size:10.5px; font-weight:800; color:var(--muted); width:100%;}
   /* الكومة: ماكاروناتٌ فوق بعضها، كلُّ واحدةٍ أعلى قليلًا */
-  .spStack{position:relative; width:var(--mac); height:calc(var(--mac) + 6px * var(--n,1)); flex-shrink:0;}
-  .spStack .mac{position:absolute; left:0; bottom:calc(6px * var(--i,0));}
+  .spStack{position:relative; width:var(--mac); height:calc(var(--mac) + 9px * var(--n,1)); flex-shrink:0;}
+  .spStack .mac{position:absolute; left:0; bottom:calc(9px * var(--i,0));}
   .spStack:empty{display:none;}
+  .spCount{position:absolute; top:-6px; inset-inline-end:-10px; z-index:9; min-width:24px; height:22px; padding:0 6px; border-radius:999px;
+           background:#fff; border:2px solid var(--sd,#E0577E); color:var(--sd,#E0577E); font-size:12px; font-weight:900; line-height:18px;
+           text-align:center; box-shadow:0 2px 5px rgba(0,0,0,.15);}
 
   /* ═══ الماكارونة: وجهان، تنقلب بـ rotateY ═══ */
   .mac{width:var(--mac); height:var(--mac); perspective:600px; flex-shrink:0; position:relative;}
