@@ -56,10 +56,10 @@
   const PU_BG = { gold: "#FFE58F", jump: "#CFF2BE", bubble: "#CFE9FF", wind: "#E6DCFF", swap: "#FFD6E8" };
   const MODE_DESC = {
     classic: "أوصِل قطعك الأربع إلى المركز",
-    rush: "قطعةٌ تبدأ على الطريق، وواحدةٌ تكفي للفوز",
+    rush: "قطعةٌ تبدأ على الطريق، وواحدةٌ في المركز تُنهي سباقك",
     master: "قطعتان لك = حاجز، والمركز بالرقم المطابق",
-    missions: "مهمّةٌ سرّيّةٌ لكلّ لاعب — من ينجزها أوّلًا يفوز",
-    night: "لا ترى إلا ما حول قطعك، وقطعةٌ تكفي للفوز",
+    missions: "مهمّةٌ سرّيّةٌ لكلّ لاعب — من ينجزها يأخذ مركزه",
+    night: "لا ترى إلا ما حول قطعك، وقطعةٌ في المركز تُنهي سباقك",
     king: "ثلاثةُ حرّاسٍ يعبّدون الطريق لملكك"
   };
   const MODE_ICON = { classic: "🎲", rush: "⚡", master: "🧱", missions: "🕵️", night: "🌙", king: "👑" };
@@ -603,6 +603,12 @@
       else if (e.t === "sacrifice") { snd("cap"); toast(`🛡️ ${nm(e.seat)} ضحّى بحارسٍ لينجو ملكه`); await wait(250); }
       else if (e.t === "kingDown") { snd("cap"); toast(`👑 سقط ملك ${nm(e.seat)}!`); await wait(300); }
       else if (e.t === "out" && e.seat === mySeat) toast("سقط ملكك — خرجت من المباراة");
+      else if (e.t === "place" && e.reason !== "last") {
+        snd("fin");
+        toast("🏁 " + (e.seat === mySeat ? "أنهيت" : nm(e.seat) + " أنهى") + " — المركز " + PLACE_AR[e.place] + "!" +
+              (e.seat === mySeat ? " (يكمل الباقون على المراكز)" : ""));
+        await wait(250);
+      }
       else if (e.t === "unlock" && e.seat === mySeat) toast("🔓 فُكّ قفلُ ملكك — يخرج بستّة على مسار حرّاسه");
       else if (e.t === "finish") { snd("fin"); await wait(150); }
       else if (e.t === "again" && e.seat === mySeat)
@@ -680,6 +686,7 @@
   const CORNER = ["cBL", "cTL", "cTR", "cBR"];
   const cornerOf = s => CORNER[((s - mySeat) % 4 + 4) % 4];
   const panels = {};
+  const PLACE_AR = { 1: "الأوّل", 2: "الثاني", 3: "الثالث", 4: "الرابع" };
   function panelEl(s) {
     if (panels[s]) return panels[s];
     const d = document.createElement("div");
@@ -688,7 +695,8 @@
     d.style.setProperty("--sc", COLORS[s]); d.style.setProperty("--sd", DEEP[s]); d.style.setProperty("--sl", LIGHT[s]);
     /* صفٌّ واحد: الصورة | الاسمُ وتحته العدّادُ والبركة | النرد */
     d.innerHTML =
-      '<div class="avw"><div class="av"><span class="pie"></span><span class="ini"></span></div><span class="autoTag">AUTO</span></div>' +
+      '<div class="avw"><div class="av"><span class="pie"></span><span class="ini"></span></div><span class="autoTag">AUTO</span>' +
+      '<span class="plc"></span><span class="luck" title="خمسةُ أدوارٍ بلا ستّة: فرصةُ الستّة الآن ٥٠٪">🍀</span></div>' +
       '<div class="pinfo"><b class="nm"></b><small class="meta"></small><span class="pool"></span></div>' +
       '<div class="dieRow"><span class="hand">👇</span></div>' +
       '<span class="tmb">🤝 زميلك</span><div class="bub"></div>';
@@ -738,6 +746,15 @@
       d.classList.toggle("mate", !!mate);
       d.classList.toggle("auto", !!p.auto);
       d.classList.toggle("off", !!(v.out || {})[s]);
+      /* المركز: رقمُه عند اسمه (١ ذهبيّ، ٢ فضّيّ، ٣ برونزيّ) — ومن أنهى يقف عن اللعب */
+      const pl = (v.places || {})[s];
+      const pe = d.querySelector(".plc");
+      pe.textContent = pl ? AR_NUM(pl) : "";
+      pe.className = "plc" + (pl ? " on p" + Math.min(pl, 4) : "");
+      d.classList.toggle("placed", !!pl);
+      if (pl) d.querySelector(".meta").textContent = "🏁 المركز " + PLACE_AR[pl];
+      /* نظامُ التعويض ظاهر: 🍀 لمن فرصتُه في الستّة ٥٠٪ */
+      d.querySelector(".luck").classList.toggle("on", !pl && !!(v.pity || {})[s] && v.phase !== "over");
       d.classList.toggle("ready", s === mySeat && myRoll);
       /* البركةُ عند صاحب الدور وحده */
       paintPool(d, v.turn === s && v.phase !== "over" ? v.pool : []);
@@ -956,14 +973,15 @@
     const pu = (k, t) => '<div class="rule pu' + (allowed.includes(k) ? "" : " off") + '"><span class="ic" style="background:' + PU_BG[k] + '">' +
       (NAMES.icons[k] || "") + "</span><div><b>" + esc(NAMES.powers[k] || k) + (allowed.includes(k) ? "" : " — 🚫 ممنوعٌ في هذه الغرفة") + "</b>" + t + "</div></div>";
     const M = {
-      classic: r("🎲 الكلاسيكيّ", "أوصِل قطعك الأربع إلى المركز أوّلًا."),
-      rush: r("⚡ السريع", "تبدأ قطعةٌ لكلّ لاعبٍ على مربّع انطلاقه، وأوّلُ قطعةٍ تصل المركز تفوز."),
+      classic: r("🎲 الكلاسيكيّ", "أوصِل قطعك الأربع إلى المركز."),
+      rush: r("⚡ السريع", "تبدأ قطعةٌ لكلّ لاعبٍ على مربّع انطلاقه، وقطعةٌ واحدةٌ تصل المركز تُنهي سباقك وتأخذ بها مركزك."),
       master: r("🧱 الاحترافيّ", "قطعتان لك في مربّعٍ واحدٍ تصنعان <b style='display:inline'>حاجزًا</b> لا يتخطّاه أحدٌ ولا يأكله — حتى زميلك. ولا حاجزَ على المربّعات الآمنة. ودخولُ المركز بالرقم المطابق تمامًا، وإلا ارتدّت القطعة إلى الخلف."),
-      missions: r("🕵️ المهامّ السرّيّة", "لكلّ لاعبٍ مهمّةٌ لا يراها غيره (وفي الفرق يراها زميله). أوّلُ من ينجز مهمّته يفوز فورًا — ومن أوصل قطعه الأربع قبل ذلك يفوز كذلك."),
-      night: r("🌙 الظلام", "لا ترى من الطريق إلا ٤ مربّعاتٍ حول كلّ قطعةٍ لك؛ وما وراءها مخفيٌّ تمامًا. إذا أكلت قطعةً انكشفت لك اللوحةُ حتى نهاية دورك. في الفرق رؤيتُكما مشتركة. وأوّلُ قطعةٍ تصل المركز تفوز."),
-      king: r("👑 الملك", "لك ثلاثةُ حرّاسٍ 🛡️ وملكٌ 👑. الملكُ مقفلٌ حتى يخرج حارسٌ ويخطو خطوة. لا يمشي الملك إلا على مربّعاتٍ مشاها حرّاسُك (اضغط على ملكك لترى مساره). إذا هوجم الملك تستطيع التضحية بحارسٍ على اللوحة فيبقى الملك ويعود الحارس محظورًا ٣ أدوار. تفوز بإيصال ملكك إلى المركز أو بإسقاط ملوك الجميع. في الفرق: يمشي ملكك على ما عبّده حرّاسُ زميلك أيضًا، ويفوز الفريق بملكٍ واحد ويخسر بسقوط الملكين.")
+      missions: r("🕵️ المهامّ السرّيّة", "لكلّ لاعبٍ مهمّةٌ لا يراها غيره (وفي الفرق يراها زميله). من ينجز مهمّته يأخذ مركزه فورًا — ومن أوصل قطعه الأربع قبل ذلك كذلك."),
+      night: r("🌙 الظلام", "لا ترى من الطريق إلا ٤ مربّعاتٍ حول كلّ قطعةٍ لك؛ وما وراءها مخفيٌّ تمامًا. إذا أكلت قطعةً انكشفت لك اللوحةُ حتى نهاية دورك. في الفرق رؤيتُكما مشتركة. وقطعةٌ واحدةٌ تصل المركز تُنهي سباقك."),
+      king: r("👑 الملك", "لك ثلاثةُ حرّاسٍ 🛡️ وملكٌ 👑. الملكُ مقفلٌ حتى يخرج حارسٌ ويخطو خطوة. لا يمشي الملك إلا على مربّعاتٍ مشاها حرّاسُك (اضغط على ملكك لترى مساره). إذا هوجم الملك تستطيع التضحية بحارسٍ على اللوحة فيبقى الملك ويعود الحارس محظورًا ٣ أدوار. ملكُك في المركز يُنهي سباقك ويأخذ مركزك، ومن سقط ملكُه خرج بآخر المراكز (والأحدثُ سقوطًا أعلى) — وآخرُ ملكٍ صامد يأخذ ما بقي. في الفرق: يمشي ملكك على ما عبّده حرّاسُ زميلك أيضًا، ويفوز الفريق بملكٍ واحد ويخسر بسقوط الملكين.")
     };
     return r("القواعد الأساسيّة", "تخرج القطعةُ من القاعدة بالرقم ٦ · مربّعاتُ الانطلاق والنجوم ★ آمنة · لا تجاوزَ للمركز (إلا الارتداد في الاحترافيّ).") +
+      r("🏁 المراكز", "اللعبةُ لا تنتهي عند أوّل من يُنهي: يأخذ <b style='display:inline'>المركز الأوّل</b> ويُكتب رقمُه عند اسمه ويقف عن اللعب، ويكمل الباقون على المركز الثاني فالثالث — حتى لا يبقى إلا لاعبٌ واحد. وفي النهاية قائمةٌ بمركز كلّ لاعبٍ وعددِ القطع التي أكلها 🗡️. (في الفرق: أوّلُ فريقٍ يُنهي يفوز.)") +
       r("🧱 الزوج المحميّ", "قطعتان من لونٍ واحدٍ في مربّعٍ واحدٍ (غيرِ آمن) لا ينزل عليهما الخصم ولا يأكلهما — لكنّه يتخطّاهما. ولا تدفعهما الرياح ولا يُبدَّل معهما.") +
       r("🎲 النرد", "إذا طلعت ستّة ترمي مرّةً أخرى <b style='display:inline'>قبل</b> أن تحرّك، وتتجمّع الأرقام تحت نردك (٦ ثمّ ٤ مثلًا)، ثمّ تُنفقها رقمًا رقمًا: أيُّ قطعةٍ تمشي بأيّ رقم — وإن مشت قطعةٌ بأكثر من رقم اختر الرقمَ من الفقاعة فوقها. " +
         "إذا اجتمعت في بركتك <b style='display:inline'>ثلاثُ ستّات</b> لم تلعبها ضاع الدورُ كلُّه — ولو جاءت الثالثةُ في رمية المكافأة، أو كانت إحداها ذهبيّة. أكلُ قطعةٍ أو إدخالُها المركز يمنح رميةً جديدة، وما بقي من أرقامك يبقى لك. " +
@@ -987,13 +1005,27 @@
 
   /* ══════════ النهاية ══════════ */
   const REASON = { allHome: "أوصل القطعَ الأربع إلى المركز", first: "أوّلُ قطعةٍ في المركز", mission: "أنجز مهمّته السرّيّة",
-                   kingHome: "أوصل ملكه إلى المركز", lastKing: "آخرُ ملكٍ قائم", limit: "انتهت المباراة بلا فائز", noKings: "سقطت الملوك كلُّها" };
+                   kingHome: "أوصل ملكه إلى المركز", lastKing: "آخرُ ملكٍ قائم", limit: "انتهت المباراة (حدُّ الرميات)", noKings: "سقطت الملوك كلُّها",
+                   last: "آخرُ من بقي" };
   function onEnd(res) {
     const names = (res.names || []).join(" و");
     const iWon = res.seats && res.seats.includes(mySeat);
-    $("endBanner").innerHTML = (res.seats && res.seats.length ? (iWon ? "🏆 فزت" + (res.teams ? " مع فريقك" : "") + "!" : "🏆 الفائز: " + esc(names)) : "انتهت المباراة") +
+    /* مركزي إن لم أفز (اللعبُ الفرديّ): «مركزك الثاني — الفائز فلان» */
+    const mine = !res.teams && (res.ranking || []).find(x => x.seat === mySeat);
+    const PL = { 2: "الثاني", 3: "الثالث", 4: "الرابع" };
+    $("endBanner").innerHTML = (res.seats && res.seats.length
+      ? (iWon ? "🏆 فزت" + (res.teams ? " مع فريقك" : "") + "!"
+              : (mine && PL[mine.place] ? "🏁 مركزك " + PL[mine.place] + " — " : "") + "🏆 الفائز: " + esc(names))
+      : "انتهت المباراة") +
       "<small>" + esc(REASON[res.reason] || "") + "</small>";
     $("endBanner").style.background = iWon ? "linear-gradient(180deg,#38b06a,#22854b)" : "linear-gradient(180deg,#5b7fd6,#3a57a8)";
+    /* الترتيبُ الكامل: المركز، واللاعب، وعددُ ما أكله */
+    const MEDAL = { 1: "🥇", 2: "🥈", 3: "🥉" };
+    $("endRank").innerHTML = (res.ranking || []).map(x =>
+      '<div class="rk' + (x.seat === mySeat ? " me" : "") + '" style="--sc:' + COLORS[x.seat] + "; --sd:" + DEEP[x.seat] + '">' +
+        '<span class="pl">' + (MEDAL[x.place] || AR_NUM(x.place)) + "</span>" +
+        '<span class="dot"></span><span class="nm">' + esc(x.name || G.COLOR_AR[x.seat]) + (x.seat === mySeat ? " (أنت)" : "") + "</span>" +
+        '<span class="kills" title="القطعُ التي أكلها">🗡️ ' + AR_NUM(x.caps || 0) + "</span></div>").join("");
     const mis = res.missions || {};
     $("endMissions").innerHTML = Object.keys(mis).length
       ? '<div class="modeTag">🕵️ المهامّ كُشفت</div>' + Object.entries(mis).map(([s, m]) =>
@@ -1012,6 +1044,21 @@
   /* عبر اللوبي لا مباشرةً: إن رُفض البدء (مقاعدُ ناقصة) بقي المضيفُ في
      اللوبي يرى السبب، لا على لوحةٍ منتهيةٍ بلا مخرج */
   $("endAgain").onclick = () => { closeModal("endModal"); socket.emit("startGame"); };
+
+  /* 🚪 ترك الجلسة: خروجٌ متعمَّد (لا انقطاع) — يُزال من الغرفة (وفي المباراة
+     يلعب بوتٌ مكانه) ولا يُعاد إليها تلقائيًّا، وينتقل إلى القائمة الرئيسيّة */
+  function leaveNow() {
+    try { localStorage.removeItem("ludoResume"); } catch (e) {}
+    try { socket.emit("leaveRoom"); } catch (e) {}
+    setTimeout(() => { location.href = "/"; }, 150);
+  }
+  $("leaveBtn").onclick = () => {
+    /* في اللوبي أو بعد النهاية: فورًا. وفي مباراةٍ جارية: سؤالُ تأكيدٍ واحد */
+    if (VIEW && VIEW.phase !== "over" && !ended) openModal("leaveModal");
+    else leaveNow();
+  };
+  $("leaveYes").onclick = leaveNow;
+  $("endLeave").onclick = leaveNow;
 
   /* ══════════ الدردشة: شريطٌ تحت (كالمرجع) ══════════
      😊 عباراتٌ جاهزة وإيموجي بلمسة، 💬 دردشةٌ مكتوبة بعدّاد ما لم يُقرأ،

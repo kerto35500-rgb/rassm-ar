@@ -229,6 +229,12 @@ class LudoMatch {
     this.prompt = null;
     this.after = null;
     this.winner = null;
+    /* المراكز: من أنهى (كلَّ قطعه، أو ما يكفي في وضعه) يأخذ مركزه ويقف عن
+       اللعب، ويكمل الباقون على المراكز التالية. placed[مقعد] = رقمُ مركزه */
+    this.places = [];
+    this.placed = {};
+    /* من سقط ملكُه (الملك، فرديًّا) بترتيب سقوطه: يأخذ آخرَ المراكز */
+    this.elim = [];
     this.rolls = 0;
     this.moveNo = 0;
 
@@ -316,6 +322,7 @@ class LudoMatch {
   controlled(seat) {
     const live = s => this.pieces[s] && this.pieces[s].some(pc => pc.p >= BASE && pc.p < FINISH);
     if (this.out[seat]) return [];
+    if (!this.isTeams() && this.placed && this.placed[seat] != null) return [];
     if (live(seat)) return [seat];
     if (this.isTeams()) { const m = mateOf(seat); if (this.seats.includes(m) && live(m)) return [m]; }
     return [];
@@ -462,7 +469,7 @@ class LudoMatch {
 
   roll(seat) {
     if (this.phase !== "roll" || seat !== this.turn) throw new Error("ليس دورك في الرمي");
-    if (++this.rolls > MAX_ROLLS) return this.endGame({ seats: [], reason: "limit" });
+    if (++this.rolls > MAX_ROLLS) return this.endGame(this.finalResult("limit"));
     const golden = this.golden[seat];
     let v;
     if (golden) { v = 6; this.golden[seat] = false; }
@@ -482,6 +489,8 @@ class LudoMatch {
     if (this.rules.mode === "missions") {
       const w = this.checkWin();
       if (w) return this.endGame(w);
+      /* أنجز مهمّتَه بهذه الرمية فأخذ مركزه: يقف عن اللعب (بلا رميةٍ أخرى) */
+      if (!this.controlled(seat).length) { this.pool = []; return this.nextTurn(); }
     }
 
     if (v === 6) {
@@ -655,6 +664,7 @@ class LudoMatch {
        يبقى بحرّاسه يُعبّد الطريق لملك زميله — والفريقُ يخسر بسقوط الملكين. */
     if (!this.isTeams()) {
       this.out[seat] = true;
+      if (!this.elim.includes(seat)) this.elim.push(seat);
       for (const pc of this.pieces[seat]) pc.p = DEAD;
       this.ev({ t: "out", seat });
     }
@@ -837,6 +847,9 @@ class LudoMatch {
     const a = this.after;
     this.after = null;
     this.legal = [];
+    /* صاحبُ الدور أخذ مركزَه بهذه الحركة (أو سقط ملكُه): لا رميةَ مكافأةٍ ولا
+       بقيّةَ بركة — يقف عن اللعب، والدورُ للتالي */
+    if (!this.controlled(this.turn).length) { this.pool = []; return this.nextTurn(); }
     /* أكلٌ أو دخولُ المركز ⇒ رميةٌ جديدة، وما بقي في البركة يبقى فيها ويُنفَق
        مع ما يأتي (المرجع: status = THROW_START دون random.clear) */
     if (a && (a.extra || a.captured)) {
@@ -889,15 +902,80 @@ class LudoMatch {
     return Math.min(ms.goal, def.prog(this, s, ms.target));
   }
 
-  checkWin() {
+  /** ما أنهى به المقعدُ لعبتَه في وضعه (أو null): كلُّ قطعه في المركز، أو
+      قطعةٌ واحدة (السريع والظلام)، أو مهمّتُه (المهامّ)، أو ملكُه (الملك). */
+  finishReason(s) {
     const mode = this.rules.mode;
-    const groups = this.isTeams()
-      ? [[0, 2], [1, 3]]
-      : this.seats.filter(s => !this.out[s]).map(s => [s]);
-    /* التعادل في لحظةٍ واحدة يحسمه صاحبُ الحركة: هو من صنع اللحظة */
+    const fin = this.pieces[s].filter(pc => pc.p === FINISH).length;
+    if (mode === "king") return this.pieces[s].some(pc => pc.kind === "king" && pc.p === FINISH) ? "kingHome" : null;
+    if (mode === "rush" || mode === "night") return fin > 0 ? "first" : null;
+    if (mode === "missions" && this.missions[s] && this.missionProgress(s) >= this.missions[s].goal) return "mission";
+    return fin === 4 ? "allHome" : null;
+  }
+
+  /** يُستدعى بعد كلّ حركة (وبعد الرمي في المهامّ). في اللعب الفرديّ لا تنتهي
+      اللعبة عند أوّل من يُنهي: يأخذ المركزَ الأوّل ويُعلَّم عند اسمه، ويكمل
+      الباقون على المراكز التالية، وتنتهي حين لا يبقى إلا لاعبٌ واحد. وفي الفرق
+      أوّلُ فريقٍ يُنهي يفوز (فريقان فقط: الثاني ثانٍ بالضرورة). */
+  checkWin() {
+    if (this.isTeams()) return this.checkWinTeams();
+    /* التزامنُ في لحظةٍ واحدة يحسمه صاحبُ الحركة: هو من صنع اللحظة */
+    const active = () => this.seats.filter(s => !this.out[s] && this.placed[s] == null);
+    const order = active().sort((a, b) => (b === this.turn ? 1 : 0) - (a === this.turn ? 1 : 0));
+    for (const s of order) {
+      const why = this.finishReason(s);
+      if (why) this.place(s, why);
+    }
+    const left = active();
+    if (left.length > 1) return null;
+    if (left.length === 1) this.place(left[0], "last");
+    return this.finalResult();
+  }
+
+  place(s, reason) {
+    if (this.placed[s] != null) return;
+    this.places.push({ seat: s, reason, by: reason === "mission" ? s : undefined });
+    this.placed[s] = this.places.length;
+    this.ev({ t: "place", seat: s, place: this.places.length, reason });
+  }
+
+  /** تقدّمُ المقعد (لترتيب من لم يُنهِ إن انتهت اللعبةُ بحدّ الرميات) */
+  progress(s) {
+    return this.pieces[s].reduce((n, pc) => n + (pc.p === FINISH ? 100 : pc.p >= 0 ? pc.p + 1 : 0), 0);
+  }
+
+  /** الترتيبُ النهائيّ: من أنهى بترتيبه، ثمّ من لم يُنهِ بتقدّمه، ثمّ من
+      سقط ملكُه (الأحدثُ سقوطًا أعلى). ولكلٍّ عددُ ما أكله. */
+  ranking() {
+    const caps = s => this.stats[s] ? this.stats[s].capsTotal : 0;
+    if (this.isTeams()) {
+      const first = this.winner ? this.winner.seats : [];
+      return this.seats.map(s => ({ seat: s, place: first.length && !first.includes(s) ? 2 : 1, caps: caps(s) }))
+        .sort((a, b) => a.place - b.place);
+    }
+    const list = this.places.map(p => p.seat);
+    const rest = this.seats.filter(s => !list.includes(s) && !this.out[s]).sort((a, b) => this.progress(b) - this.progress(a));
+    list.push(...rest);
+    list.push(...this.elim.slice().reverse().filter(s => !list.includes(s)));
+    list.push(...this.seats.filter(s => !list.includes(s)));
+    return list.map((s, i) => ({ seat: s, place: i + 1, caps: caps(s) }));
+  }
+
+  /** نتيجةُ اللعب الفرديّ: الفائزُ صاحبُ المركز الأوّل */
+  finalResult(why) {
+    if (this.isTeams()) return { seats: [], reason: why || "limit" };
+    const p1 = this.places[0];
+    if (why === "limit" || !p1) return { seats: p1 ? [p1.seat] : [], reason: why || "noKings" };
+    const reason = p1.reason === "last" ? (this.rules.mode === "king" ? "lastKing" : "last") : p1.reason;
+    return { seats: [p1.seat], reason, by: p1.by };
+  }
+
+  /** الفرق: أوّلُ فريقٍ يُنهي يفوز (كما كان) */
+  checkWinTeams() {
+    const mode = this.rules.mode;
+    const groups = [[0, 2], [1, 3]];
     const mine = g => g.includes(this.turn) || g.some(s => this.allies(this.turn).includes(s));
     groups.sort((a, b) => (mine(b) ? 1 : 0) - (mine(a) ? 1 : 0));
-
     const fin = s => this.pieces[s].filter(pc => pc.p === FINISH).length;
     for (const g of groups) {
       if (mode === "king") {
@@ -929,9 +1007,11 @@ class LudoMatch {
     this.prompt = null;
     this.queue = [];
     this.legal = [];
+    /* الترتيبُ الكامل (المركز وعددُ ما أكل) يُحفظ في النتيجة نفسها */
+    this.winner.ranking = this.ranking();
     const missions = {};
     for (const s of this.seats) if (this.missions[s]) missions[s] = this.missionPublic(s);
-    this.ev({ t: "win", seats: w.seats, reason: w.reason, by: w.by, missions });
+    this.ev({ t: "win", seats: w.seats, reason: w.reason, by: w.by, missions, ranking: this.winner.ranking });
   }
 
   /* ══════════ المهامّ ══════════ */
@@ -1058,6 +1138,11 @@ class LudoMatch {
       golden: !!this.golden[seat],
       unlocked: { ...this.unlocked },
       out: { ...this.out },
+      /* المراكز: من أنهى ورقمُ مركزه (يُعرض عند اسمه) */
+      places: { ...this.placed },
+      /* نظامُ التعويض ظاهرٌ للجميع: من مرّت به خمسةُ أدوارٍ بلا ستّة (فرصتُه ٥٠٪) */
+      pity: Object.fromEntries(this.seats.map(s => [s, (this.dry[s] || 0) >= PITY_TURNS])),
+      dry: { ...this.dry },
       secured: this.rules.mode === "king" ? [...this.secured(seat)] : null,
       visible: night ? [...vis] : null,
       missions,

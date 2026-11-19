@@ -310,6 +310,55 @@ console.log("② القواعد الأساسيّة (من لعبة المرجع)"
   ok(m.winner && m.winner.seats[0] === 0 && m.winner.reason === "allHome", "الكلاسيكيّ: الفوز بالأربع", m.winner);
 }
 
+/* ═══════════ المراكز (طلبُ المستخدم): لا تنتهي عند أوّل فائز ═══════════ */
+console.log("المراكز");
+{
+  const FIN = L.G.FINISH;
+  /* يُنهي المقعدُ قطعَه: ثلاثٌ في المركز والرابعةُ على بُعد خطوة، ثمّ رميةٌ وحركة */
+  const finish = (m, s) => {
+    for (let i = 0; i < 3; i++) put(m, s, i, FIN);
+    put(m, s, 3, FIN - 1);
+    turnTo(m, s); rollAs(m, s, 1); go(m, s, s, 3);
+  };
+  const m = mk({ mode: "classic" }, [0, 1, 2, 3]);
+  for (const s of [0, 2, 3]) put(m, s, 0, 5);
+  m.stats[2].capsTotal = 3; m.stats[0].capsTotal = 1;
+  finish(m, 1);
+  ok(m.placed[1] === 1 && m.phase !== "over", "أوّلُ من يُنهي يأخذ المركز الأوّل — واللعبةُ مستمرّة", { placed: m.placed, phase: m.phase });
+  ok(m.turn !== 1, "ولا رميةَ مكافأةٍ له: الدورُ للتالي");
+  eq(m.view(0).places, { 1: 1 }, "والمركزُ في العرض (يُكتب عند اسمه)");
+  eq(m.controlled(1), [], "ومن أنهى لا يلعب بعد ذلك");
+  for (let k = 0; k < 8; k++) { if (m.turn === 1) throw new Error("دورُ من أنهى!"); turnTo(m, m.turn); rollAs(m, m.turn, 2); if (m.phase === "move") m.move(m.turn, m.legal[0].id); }
+  ok(true, "والأدوارُ تتخطّاه");
+  finish(m, 3);
+  ok(m.placed[3] === 2 && m.phase !== "over", "الثاني يأخذ المركز الثاني");
+  finish(m, 0);
+  ok(m.phase === "over", "بقي لاعبٌ واحد ⇒ انتهت");
+  eq(m.winner.seats, [1], "والفائزُ صاحبُ المركز الأوّل");
+  eq(m.winner.ranking.map(r => [r.seat, r.place]), [[1, 1], [3, 2], [0, 3], [2, 4]], "الترتيبُ الكامل: ١ ثمّ ٢ ثمّ ٣ والأخيرُ رابع");
+  eq(m.winner.ranking.map(r => r.caps), [0, 0, 1, 3], "ومع كلٍّ عددُ القطع التي أكلها");
+  ok(m.takeEvents().filter(e => e.t === "place").length >= 1, "وحدثُ «مركز» لكلّ من أنهى");
+}
+{
+  /* الملك (فرديّ): من سقط ملكُه يأخذ آخرَ المراكز، والأحدثُ سقوطًا أعلى */
+  const m = mk({ mode: "king" }, [0, 1, 2]);
+  m.killKing(0, m.pieces[0].findIndex(pc => pc.kind === "king"), 1, 5, false);
+  ok(m.checkWin() === null, "سقط ملكٌ واحد من ثلاثة ⇒ تستمرّ");
+  m.killKing(2, m.pieces[2].findIndex(pc => pc.kind === "king"), 1, 5, false);
+  const w = m.checkWin();
+  ok(w && w.seats.join() === "1" && w.reason === "lastKing", "آخرُ ملكٍ حيّ يفوز", w);
+  m.endGame(w);
+  eq(m.winner.ranking.map(r => r.seat), [1, 2, 0], "والساقطان: الأحدثُ سقوطًا ثانٍ، والأقدمُ ثالث");
+}
+{
+  /* الفرق كما كانت: أوّلُ فريقٍ يُنهي يفوز، والترتيبُ ١ و٢ */
+  const m = mk({ mode: "rush", teams: true }, [0, 1, 2, 3]);
+  turnTo(m, 2); put(m, 2, 0, 53);
+  rollAs(m, 2, 3); go(m, 2, 2, 0);
+  ok(m.phase === "over" && m.winner.seats.join() === "0,2", "الفرق: الفريقُ الأوّل يفوز وتنتهي");
+  eq(m.winner.ranking.map(r => [r.seat, r.place]), [[0, 1], [2, 1], [1, 2], [3, 2]], "والترتيبُ: الفائزان أوّلان والآخران ثانيان");
+}
+
 /* ═══════════ ٣) السريع ═══════════ */
 console.log("③ السريع");
 {
@@ -317,7 +366,13 @@ console.log("③ السريع");
   ok([0, 1, 2, 3].every(s => m.pieces[s][0].p === 0), "قطعةٌ لكلّ لاعبٍ على الطريق من البداية");
   turnTo(m, 1); put(m, 1, 0, 53);
   rollAs(m, 1, 3); go(m, 1, 1, 0);
-  ok(m.winner && m.winner.seats.join() === "1" && m.winner.reason === "first", "قطعةٌ واحدةٌ تكفي للفوز", m.winner);
+  ok(m.placed[1] === 1 && m.phase !== "over" && m.turn !== 1, "قطعةٌ واحدةٌ تكفي للمركز الأوّل — ويكمل الباقون", { placed: m.placed, phase: m.phase });
+  /* لاعبان: أوّلُ من يُنهي يفوز وتنتهي (لم يبقَ إلا واحد) */
+  const m2 = mk({ mode: "rush" }, [0, 2]);
+  turnTo(m2, 2); put(m2, 2, 0, 53);
+  rollAs(m2, 2, 3); go(m2, 2, 2, 0);
+  ok(m2.winner && m2.winner.seats.join() === "2" && m2.winner.reason === "first" && m2.phase === "over", "ومع لاعبَين تنتهي بأوّل قطعة", m2.winner);
+  eq(m2.winner.ranking.map(r => [r.seat, r.place]), [[2, 1], [0, 2]], "والترتيبُ: الفائزُ أوّل والآخرُ ثانٍ");
 }
 
 /* ═══════════ ٤) الاحترافيّ ═══════════ */

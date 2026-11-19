@@ -51,7 +51,9 @@
   const avatar = (id, name, cls) => '<span class="av ' + TCLS[teamOfId(id)] + (cls ? " " + cls : "") + '" title="' + esc(name) + '">' + esc(initial(name)) + "</span>";
   const digit = (n, sm) => n ? '<span class="dcDig n' + n + (sm ? " sm" : "") + '">' + AR(n) + "</span>" : '<span class="dcDig blank' + (sm ? " sm" : "") + '">؟</span>';
   const codeHTML = (c, sm) => '<div class="dcCode">' + [0, 1, 2].map(i => digit(c && c[i], sm)).join('<span class="sep">-</span>') + "</div>";
-  const codeText = c => (c || []).map(x => x ? AR(x) : "؟").join("-");
+  /* بمسافاتٍ حول الشَّرطة: أرقامٌ عربيّةٌ ملتصقةٌ تُعرض يسارًا إلى يمين كرقمٍ واحد
+     (٣-١-٤ تظهر ٤-١-٣ مقلوبة)، ومنفصلةً تُقرأ من اليمين كبقيّة الصفحة */
+  const codeText = c => (c || []).map(x => x ? AR(x) : "؟").join(" - ");
   const tokHTML = tk => '<span class="dcToks">' +
     [0, 1].map(i => '<span class="dcTok int' + (tk.intercept > i ? " on" : "") + '" title="اعتراض">' + (tk.intercept > i ? "✓" : "") + "</span>").join("") +
     [0, 1].map(i => '<span class="dcTok mis' + (tk.miscommunication > i ? " on" : "") + '" title="سوء فهم">' + (tk.miscommunication > i ? "✕" : "") + "</span>").join("") + "</span>";

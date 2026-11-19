@@ -223,9 +223,12 @@ function setupLudoOnline(io, deps = {}) {
     const names = w.seats.map(s => r.slots[s] ? r.slots[s].name : "?");
     const missions = {};
     for (const s of m.seats) if (m.missions[s]) missions[s] = { ...m.missionPublic(s), name: r.slots[s] && r.slots[s].name };
+    /* الترتيبُ الكامل: كلُّ لاعبٍ بمركزه وعددِ ما أكله (يُعرض في نافذة النهاية) */
+    const ranking = (w.ranking || []).map(x => ({ ...x, name: r.slots[x.seat] ? (r.slots[x.seat]._name || r.slots[x.seat].name) : "?",
+                                                  bot: !!(r.slots[x.seat] && r.slots[x.seat].bot && !r.slots[x.seat]._wasHuman) }));
     r.lastResult = {
       seats: w.seats, names, reason: w.reason, by: w.by, mode: m.rules.mode, teams: m.rules.teams,
-      missions, at: Date.now()
+      missions, ranking, at: Date.now()
     };
     /* الإحصاءاتُ للمسجَّلين — بلا ذهب (قرارُ صاحب الموقع للّودو) */
     for (const s of m.seats) {

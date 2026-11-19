@@ -829,6 +829,58 @@ function freeze(room) {
     ok(/\.tok\.leap\{/.test(HTML) && /leapArc/.test(HTML), "وقفزةُ الكنغر وثبةٌ واحدة (أنماطُها موجودة)");
   }
 
+  console.log("⑥ج المراكز، و🍀 التعويض ظاهرًا، وترك الجلسة");
+  {
+    A2.$("endModal").querySelector("[data-close]").dispatch("click");
+    B.$("endModal").querySelector("[data-close]").dispatch("click");
+    await until(() => A2.shown("lobby") && B.shown("lobby"));
+    A2.ctx._sock.emit("updateSettings", { players: 4, mode: "classic", teams: false, powerups: false, bots: true });
+    await sleep(30);
+    A2.click("startBtn");
+    ok(await until(() => A2.shown("play") && B.shown("play")), "مباراةٌ رباعيّة (لاعبان + بوتان)");
+    const room = roomOf(code), m = room.match, FIN = require("./ludorules").G.FINISH;
+    freeze(room);
+    const sa = m.seats.find(s => room.slots[s] && room.slots[s].name === "سعود");
+    const sb = m.seats.find(s => room.slots[s] && room.slots[s].name === "فهد");
+    ok(sa != null && sb != null && m.seats.length === 4, "(مقعدا A وB)", { sa, sb, seats: m.seats });
+    for (const s of m.seats) m.pieces[s].forEach(pc => { pc.p = -1; pc.shield = 0; });
+    for (let i = 0; i < 3; i++) m.pieces[sa][i].p = FIN;
+    m.pieces[sa][3].p = FIN - 1;
+    for (const s of m.seats) if (s !== sa) { m.pieces[s][0].p = 5; m.dry[s] = 5; }
+    m.stats[sa].capsTotal = 2; m.stats[sb].capsTotal = 1;
+    m.prompt = null; m.queue = []; m.turn = sa; m.phase = "roll"; m.dice = null; m.pool = []; m._loaded = [1];
+    const aSock = [...nsp.sockets.values()].find(s => room.slots[sa] && room.slots[sa].sockId === s.id);
+    aSock.fire("roll");
+    ok(await until(() => m.placed[sa] === 1, 3000), "A أوصل قطعَه الأربع ⇒ المركز الأوّل", m.placed);
+    ok(m.phase !== "over", "واللعبةُ مستمرّة للباقين");
+    const plc = (W, s) => W.doc.querySelector('.pp[data-seat="' + s + '"] .plc');
+    ok(await until(() => plc(A2, sa).classList.contains("on") && plc(A2, sa).textContent === "١"), "رقمُ «١» عند اسمه في لوحته", plc(A2, sa).textContent);
+    ok(await until(() => plc(B, sa).textContent === "١" && plc(B, sa).classList.contains("p1")), "ويراه الآخرون ذهبيًّا");
+    ok(/المركز الأوّل/.test(B.doc.querySelector('.pp[data-seat="' + sa + '"] .meta').textContent), "و«🏁 المركز الأوّل» تحت اسمه");
+    ok(/أنهيت — المركز الأوّل/.test(A2.$("toast").textContent) || seen.toasts.some(x => /المركز الأوّل/.test(x)), "وإشعارٌ بالمركز", A2.$("toast").textContent);
+    /* 🍀: خمسةُ أدوارٍ بلا ستّة ⇒ ظاهرٌ عند صاحبه ويراه الجميع */
+    const luck = (W, s) => W.doc.querySelector('.pp[data-seat="' + s + '"] .luck');
+    ok(await until(() => luck(A2, sb).classList.contains("on") && luck(B, sb).classList.contains("on")), "🍀 عند من مرّت به خمسةُ أدوارٍ بلا ستّة (فرصتُه ٥٠٪)");
+    ok(!luck(A2, sa).classList.contains("on"), "ولا 🍀 لمن أنهى");
+    /* ترك الجلسة: تأكيدٌ ثمّ القائمةُ الرئيسيّة، ويلعب بوتٌ مكانه */
+    ok(B.$("leaveBtn") && /ترك الجلسة/.test(B.$("leaveBtn").getAttribute("title")), "زرُّ 🚪 ترك الجلسة في الشريط");
+    B.click("leaveBtn");
+    ok(B.$("leaveModal").classList.contains("on"), "في مباراةٍ جارية: سؤالُ تأكيد");
+    B.click("leaveYes");
+    ok(await until(() => B.ctx.location.href === "/"), "«نعم» ⇒ إلى القائمة الرئيسيّة", B.ctx.location.href);
+    ok(!B.ctx._store.ludoResume, "ولا عودةَ تلقائيّةَ للجلسة");
+    ok(await until(() => room.slots[sb] && room.slots[sb].bot), "ومقعدُه صار بوتًا فورًا (خروجٌ متعمَّد)");
+    /* يكمل البوتات على المراكز الباقية */
+    ok(await until(() => A2.$("endModal").classList.contains("on"), 120000), "يكمل الباقون حتى لا يبقى إلا واحد");
+    const rows = A2.$("endRank").querySelectorAll(".rk");
+    ok(rows.length === 4, "قائمةُ الترتيب: اللاعبون الأربعة", rows.length);
+    ok(/🥇/.test(rows[0].textContent) && /سعود/.test(rows[0].textContent) && /أنت/.test(rows[0].textContent), "الأوّلُ 🥇 (أنا)", rows[0].textContent);
+    ok(/🗡️ ٢/.test(rows[0].textContent), "ومعه عددُ ما أكله", rows[0].textContent);
+    ok(/🥈/.test(rows[1].textContent) && /🥉/.test(rows[2].textContent) && /٤/.test(rows[3].querySelector(".pl").textContent), "ثمّ 🥈 و🥉 والرابع", rows.map(r => r.textContent));
+    ok(/فزت/.test(A2.$("endBanner").textContent), "و«فزت» للأوّل");
+    ok(A2.$("endLeave") && /ترك الجلسة/.test(A2.$("endLeave").textContent), "وفي نافذة النهاية «🚪 ترك الجلسة» أيضًا");
+  }
+
   console.log("⑦ لا استثناءَ في أيّ مسار");
   ok(!errors.length, "صفرُ أخطاءٍ في الصفحتين والخادم", errors.slice(0, 3).map(e => String(e && e.stack || e).slice(0, 400)));
   ok(!A.ctx.alerts.length && !B.ctx.alerts.length, "ولا تنبيهاتِ alert", [A.ctx.alerts, B.ctx.alerts]);

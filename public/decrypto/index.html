@@ -181,11 +181,15 @@
   #dcNext{width:auto; padding:10px 26px;}
 
   /* التبويبتان */
-  #dcTabs{display:flex; gap:8px; flex-shrink:0; position:sticky; top:0; z-index:10; padding:2px 0;}
+  /* شريطُ التبويبتين يلتصق بأعلى الصفحة عند التمرير: خلفيّةٌ مصمتة (كانت
+     شفّافةً فتمرّ بطاقاتُ الكلمات تحته ظاهرةً عبره) */
+  #dcTabs{display:flex; gap:8px; flex-shrink:0; position:sticky; top:0; z-index:10; padding:5px;
+          background:linear-gradient(180deg,#FCFAFF,#F3ECFF); border-radius:22px; box-shadow:0 4px 12px rgba(80,50,140,.12);}
   .dcTab{flex:1; position:relative; border:3px solid #fff; border-radius:18px; padding:10px 8px; font:inherit; font-weight:900;
-         font-size:15.5px; cursor:pointer; color:var(--td); background:var(--tc); box-shadow:0 4px 10px rgba(0,0,0,.1), 0 0 0 1.5px var(--tm);
-         opacity:.62; transition:opacity .15s, transform .15s;}
-  .dcTab.on{opacity:1; transform:translateY(-1px); box-shadow:0 6px 14px rgba(0,0,0,.14), 0 0 0 2.5px var(--td);}
+         font-size:15.5px; cursor:pointer; color:var(--td); background:#fff; box-shadow:0 0 0 1.5px var(--tm);
+         transition:background .15s, transform .15s;}
+  .dcTab:not(.on){color:#9A8AAE;}
+  .dcTab.on{background:var(--tc); transform:translateY(-1px); box-shadow:0 5px 12px rgba(0,0,0,.12), 0 0 0 2.5px var(--td);}
   .dcTab .dot{display:none; position:absolute; top:-6px; inset-inline-end:-4px; min-width:20px; height:20px; border-radius:999px;
               background:#E5484D; color:#fff; font-size:11px; line-height:16px; border:2px solid #fff; padding:0 5px;}
   .dcTab .dot.on{display:block; animation:dotPulse 1.2s ease-in-out infinite;}
@@ -211,7 +215,8 @@
          box-shadow:0 0 0 1.5px var(--line), 0 6px 14px rgba(120,80,40,.08); padding:12px; display:flex; flex-direction:column; gap:10px; align-items:center;}
   .dcBox .tt{font-size:16.5px; font-weight:900; text-align:center; line-height:1.5;}
   .dcBox .ss{font-size:13px; color:var(--muted); font-weight:800; text-align:center; line-height:1.65;}
-  .dcCode{display:flex; gap:8px; justify-content:center; align-items:center; direction:ltr;}
+  /* الشفرةُ تُقرأ من اليمين كالعربيّة: أوّلُ رقمٍ يمينًا (كان يسارًا فتنعكس على صفوف التلميحات) */
+  .dcCode{display:flex; gap:8px; justify-content:center; align-items:center;}
   .dcDig{width:44px; height:52px; border-radius:14px; background:var(--cb); color:var(--cd); border:4px solid #fff; font-weight:900;
          font-size:26px; display:flex; align-items:center; justify-content:center; box-shadow:0 5px 12px rgba(120,80,40,.18), 0 0 0 1.5px var(--cd);}
   .dcDig.sm{width:30px; height:34px; font-size:17px; border-width:3px; border-radius:10px;}
@@ -233,7 +238,7 @@
   .dcClue{flex:1; min-width:0; font-size:clamp(17px,4.4vw,21px); font-weight:900; text-align:center; padding:4px 6px;
           word-break:break-word; line-height:1.3;}
   .dcClue.auto{color:#BCAE9C;}
-  .dcPick{display:flex; gap:5px; direction:ltr; flex-shrink:0;}
+  .dcPick{display:flex; gap:5px; flex-shrink:0;}
   .dcPick button{width:36px; height:38px; border-radius:12px; border:2.5px solid var(--cb); background:#fff; color:var(--cd);
                  font:inherit; font-size:17px; font-weight:900; cursor:pointer; transition:transform .12s, background .12s;}
   .dcPick button.on{background:var(--cd); border-color:#fff; color:#fff; box-shadow:0 0 0 2px var(--cd), 0 3px 6px rgba(0,0,0,.15); transform:translateY(-1px);}
