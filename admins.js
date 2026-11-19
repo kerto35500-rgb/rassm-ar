@@ -22,8 +22,7 @@ const fromEnv = () => String(process.env.ADMIN_ACCOUNTS || "").split(/[,،\n]+/)
    ويأخذ اللوحة. */
 const OWNERS = [
   { name: "kerto3500", before: 1795082405776 },
-  /* حسابُ الأدمن الجديد: يُنشئه صاحبُ الموقع بنفسه وبكلمته هو خلال يومٍ من هذا السطر */
-  { name: "amas_98", before: 1795169097273 }
+  { name: "A.mas_98", before: 1795082932201 }   /* حسابُ صاحب الموقع القائم (اسمُ الدخول حرفًا بحرف) */
 ];
 const ownerOf = u => {
   if (!u || typeof u !== "object") return false;
