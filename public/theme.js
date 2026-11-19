@@ -61,6 +61,8 @@
     b.toggle("kw-justone", !!document.getElementById("joStage"));
     /* فكّ الشفرة: الهيكلُ نفسه، ولونُها برقوقيّ بين الفريقين. تُميَّز بتبويبتيها */
     b.toggle("kw-decrypto", !!document.getElementById("dcTabs"));
+    /* البسكويتة الحارّة: الهيكلُ نفسه، ولونُها خوخيٌّ فلفليّ. تُميَّز بطاولتها */
+    b.toggle("kw-spicy", !!document.getElementById("spTable"));
     /* القنبلة: نسخة برتقالية */
     b.toggle("kw-bomb", !!document.getElementById("bombCircle"));
     /* قمّة الهرم: نسخة بنفسجية (تُميَّز بمشهد الهرم) */

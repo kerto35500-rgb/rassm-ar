@@ -156,6 +156,15 @@ app.get("/decrypto", (req, res) => {
   if (admin) admin.trackVisit();
   res.sendFile(path.join(pubDir, "decrypto", "index.html"));
 });
+// 🌶️ البسكويتة الحارّة: القواعد في spicyrules.js والغرف في spicysrv.js
+app.get("/spicy", (req, res) => {
+  if (!req.originalUrl.split("?")[0].endsWith("/")) {
+    const q = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+    return res.redirect(301, "/spicy/" + q);
+  }
+  if (admin) admin.trackVisit();
+  res.sendFile(path.join(pubDir, "spicy", "index.html"));
+});
 app.get(["/barra", "/salfa"], (req, res) => {
   if (admin) admin.trackVisit();
   const f = pageFile("salfa.html");
@@ -165,7 +174,7 @@ app.get(["/barra", "/salfa"], (req, res) => {
 // نقطة إبقاء حيّة (تمنع السيرفر المجاني من النوم أثناء اللعب الطويل)
 app.get("/healthz", (req, res) => res.type("text").send("ok"));
 // حالة الألعاب المباشرة (تستعملها الصفحة الرئيسية)
-let bombApi = null, quizApi = null, salfaApi = null, ttsApi = null, ludoApi = null, justoneApi = null, decryptoApi = null;
+let bombApi = null, quizApi = null, salfaApi = null, ttsApi = null, ludoApi = null, justoneApi = null, decryptoApi = null, spicyApi = null;
 app.get("/api/status", (req, res) => {
   const draw = getLiveStats();
   const bomb = bombApi ? bombApi.liveStats() : { online: 0, rooms: [] };
@@ -174,6 +183,7 @@ app.get("/api/status", (req, res) => {
   const ludo = ludoApi ? ludoApi.liveStats() : { online: 0, rooms: [] };
   const justone = justoneApi ? justoneApi.liveStats() : { online: 0, rooms: [] };
   const decrypto = decryptoApi ? decryptoApi.liveStats() : { online: 0, rooms: [] };
+  const spicy = spicyApi ? spicyApi.liveStats() : { online: 0, rooms: [] };
   res.json({
     draw: { online: draw.online, rooms: draw.rooms.length },
     bomb: { online: bomb.online, rooms: bomb.rooms.length },
@@ -182,7 +192,8 @@ app.get("/api/status", (req, res) => {
     ludo: { online: ludo.online, rooms: ludo.rooms.length },
     justone: { online: justone.online, rooms: justone.rooms.length },
     decrypto: { online: decrypto.online, rooms: decrypto.rooms.length },
-    total: draw.online + bomb.online + quiz.online + salfa.online + ludo.online + justone.online + decrypto.online
+    spicy: { online: spicy.online, rooms: spicy.rooms.length },
+    total: draw.online + bomb.online + quiz.online + salfa.online + ludo.online + justone.online + decrypto.online + spicy.online
   });
 });
 // حساب واحد لكل الألعاب — يُسجّل الدخول من الصفحة الرئيسية فقط
@@ -1689,6 +1700,9 @@ createStore()
        (حُمِّل للتوّ فوق)، فتعديلاتُ الأدمن هناك تشمل اللعبتين */
     try { decryptoApi = require("./decryptosrv").setupDecryptoOnline(io, { store }); }
     catch (e) { console.error("decrypto online:", e.message); }
+    /* البسكويتة الحارّة: خداعٌ ومزايدة، ببوتاتٍ اختياريّة */
+    try { spicyApi = require("./spicysrv").setupSpicyOnline(io, { store }); }
+    catch (e) { console.error("spicy online:", e.message); }
 
     /* رهانٌ محجوزٌ نجا من إقلاعٍ سابق يعني غرفةً ماتت مع الخادم: يُردّ لأهله
        قبل أن يُفتح الموقع. المال المحجوز بلا غرفةٍ تُطالب به مالٌ ضائع. */
@@ -1700,7 +1714,7 @@ createStore()
     /* هويّة موحّدة لكل مساحات الأسماء: تُحلّ الجلسة قبل أن يصل الاتصال إلى
        منطق أي لعبة، فتعرف اللعبةُ صاحبَها بلا أن تسأل عن كوكي. تُركَّب بعد
        إنشاء المساحات كلّها وقبل الاستماع، فلا اتصالَ يسبقها. */
-    attachSocketAuth(io, store, ["/", "/bomb", "/quiz", "/salfa", "/uno", "/baloot", "/ludo", "/justone", "/decrypto"]);
+    attachSocketAuth(io, store, ["/", "/bomb", "/quiz", "/salfa", "/uno", "/baloot", "/ludo", "/justone", "/decrypto", "/spicy"]);
 
     server.listen(PORT, () => {
       console.log(`🎨 لعبة ارسمها! تعمل على المنفذ ${PORT}`);

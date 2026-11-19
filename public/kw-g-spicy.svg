@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- أيقونة «البسكويتة الحارّة» للصفحة الرئيسيّة بستايل المارشميلو: ثلاثُ
+       ماكاروناتٍ مكدّسةٍ من الجانب (نعناعيّةٌ تحت، ثمّ ورديّةٌ بوجهٍ مبتسم، ثمّ
+       حمراءُ حارّة) وفوقها فلفلةٌ صغيرةٌ بعودٍ أخضر وبخار — حدودٌ بيضاءُ عريضة،
+       مرسومةٌ من الصفر بلا شعارٍ ولا علامة ولا محارف. -->
+  <defs>
+    <linearGradient id="sM" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DDF7EA"/><stop offset="1" stop-color="#93DDB9"/></linearGradient>
+    <linearGradient id="sP" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE4EC"/><stop offset="1" stop-color="#FFAFC4"/></linearGradient>
+    <linearGradient id="sR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB7A2"/><stop offset="1" stop-color="#F0654A"/></linearGradient>
+    <filter id="ssh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.6" flood-color="#000" flood-opacity=".28"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#ssh)" stroke-linejoin="round">
+    <!-- السفلى: نعناعيّة -->
+    <path d="M24 95 C24 82, 104 82, 104 95 Z" fill="url(#sM)" stroke="#fff" stroke-width="4"/>
+    <rect x="27" y="95" width="74" height="6" rx="3" fill="#FFF7EC" stroke="#fff" stroke-width="2"/>
+    <path d="M24 101 L104 101 C104 113, 24 113, 24 101 Z" fill="url(#sM)" stroke="#fff" stroke-width="4"/>
+
+    <!-- الوسطى: ورديّةٌ بوجه -->
+    <path d="M26 70 C26 57, 102 57, 102 70 Z" fill="url(#sP)" stroke="#fff" stroke-width="4"/>
+    <rect x="29" y="70" width="70" height="6" rx="3" fill="#FFF7EC" stroke="#fff" stroke-width="2"/>
+    <path d="M26 76 L102 76 C102 87, 26 87, 26 76 Z" fill="url(#sP)" stroke="#fff" stroke-width="4"/>
+    <circle cx="56" cy="66" r="2.4" fill="#4A2E2B"/><circle cx="72" cy="66" r="2.4" fill="#4A2E2B"/>
+    <path d="M60 68.5 q4 3.6 8 0" stroke="#4A2E2B" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="50" cy="68.5" rx="3" ry="1.7" fill="#E0577E" opacity=".35"/><ellipse cx="78" cy="68.5" rx="3" ry="1.7" fill="#E0577E" opacity=".35"/>
+
+    <!-- العليا: حمراءُ حارّة -->
+    <path d="M30 46 C30 34, 98 34, 98 46 Z" fill="url(#sR)" stroke="#fff" stroke-width="4"/>
+    <rect x="33" y="46" width="62" height="5.5" rx="2.75" fill="#FFF7EC" stroke="#fff" stroke-width="2"/>
+    <path d="M30 51.5 L98 51.5 C98 61, 30 61, 30 51.5 Z" fill="url(#sR)" stroke="#fff" stroke-width="4"/>
+
+    <!-- الفلفلةُ فوقها -->
+    <path d="M44 36 C53 44, 78 40, 84 19 C85.6 13, 79 10.5, 76 15.5 C71.5 25, 62 28.5, 50 27.5 C44 27, 40.5 32, 44 36 Z"
+          fill="#E8302A" stroke="#fff" stroke-width="3"/>
+    <path d="M78.5 14.5 q1.6 -6.8 7.6 -7" stroke="#2E9E5B" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <circle cx="58" cy="32" r="1.9" fill="#fff"/><circle cx="66" cy="29.4" r="1.9" fill="#fff"/>
+    <ellipse cx="63.5" cy="34.4" rx="1.5" ry="1.9" fill="#7A1410"/>
+    <path d="M40 22 q-2.4 -4.4 0.8 -8 M47 18 q-2.4 -4.4 0.8 -8" stroke="#F0654A" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".7"/>
+  </g>
+</svg>

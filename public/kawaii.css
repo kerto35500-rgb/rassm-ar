@@ -629,6 +629,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   { background:linear
 /* كلمة واحدة فقط: عبّادُ الشمس — أصفرُ صريحٌ لا برتقاليُّ القنبلة */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sun    { background:linear-gradient(180deg,#FFDC6E 0%,#F2B51F 100%); }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-plum   { background:linear-gradient(180deg,#C9B2F5 0%,#8C63D6 100%); }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-peach  { background:linear-gradient(180deg,#FFC4A8 0%,#F07F68 100%); }
 
 /* ── ومضةُ البطاقة عند مرور المؤشّر ──
  *
@@ -682,6 +683,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo .go { background:#3
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   .go { background:#1F8E80 !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sun    .go { background:#C98A0A !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-plum   .go { background:#6E45B8 !important; }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-peach  .go { background:#D9553A !important; }
 /* شارة عدد اللاعبين: كبسولة بيضاء */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .now {
   background:#fff; color:#3E6E8C; padding:4px 10px; border-radius:999px;
@@ -799,6 +801,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo .ic { background-im
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   .ic { background-image:url("/kw-g-ludo.svg") !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sun    .ic { background-image:url("/kw-g-justone.svg") !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-plum   .ic { background-image:url("/kw-g-decrypto.svg") !important; }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-peach  .ic { background-image:url("/kw-g-spicy.svg") !important; }
 /* العناوين: أبيض عريض كبير بستروك بني حول الحروف */
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g h2 {
   font-size:27px; letter-spacing:.5px;
@@ -822,6 +825,7 @@ body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-indigo .go { box-shadow: i
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-teal   .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #17695F, 0 9px 14px rgba(0,0,0,.2) !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-sun    .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #8A5C04, 0 9px 14px rgba(0,0,0,.2) !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-plum   .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #4A2A85, 0 9px 14px rgba(0,0,0,.2) !important; }
+body.theme-kawaii:has(#grid):not(:has(#pyScene)) .g.c-peach  .go { box-shadow: inset 0 3px 5px rgba(255,255,255,.5), 0 5px 0 #9A3420, 0 9px 14px rgba(0,0,0,.2) !important; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .now { color:#8A5A3E; box-shadow:0 2px 0 #E3D5C2; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) .badge { color:#8A5A3E; }
 body.theme-kawaii:has(#grid):not(:has(#pyScene)) #accPop { color:#6B4632; }
@@ -2069,6 +2073,77 @@ body.kw-salfa.kw-decrypto #chatCard { background:var(--sg-white); border:2px sol
 body.kw-decrypto .chatHead { color:var(--sg-ink); }
 body.kw-decrypto .rule { background:var(--sg-soft); border-radius:14px; color:var(--sg-ink); }
 body.kw-decrypto .hrow { background:var(--sg-soft); color:var(--sg-ink); }
+
+/* ══════════════════════════════════════════════════════════════════
+   v53 — البسكويتة الحارّة: مارشميلو خوخيٌّ فلفليّ 🌶️🍡
+   ══════════════════════════════════════════════════════════════════
+   على هيكل «برّا السالفة» (تلبس kw-salfa كلَّها)، وهنا لونُها وحده؛ والماكاروناتُ
+   وألوانُ المقاعد في صفحتها نفسها لأنّها هويّةُ اللعبة. الأصنافُ الجديدة تبدأ
+   بـ‎sp‎ فلا تلبسها قواعدُ السمة العامّة. */
+body.theme-kawaii.kw-salfa.kw-spicy {
+  --sg-line:#A0584A; --sg-ink:#4A2B26; --sg-deep:#C2462C; --sg-soft:#FFF2EA;
+  --sg-white:linear-gradient(180deg,#FFFEFC 0%,#FFF5EE 100%);
+  --sg-band:linear-gradient(180deg,#FFE6DA 0%,#FFCDB8 100%);
+  --sg-btn:linear-gradient(180deg,#FFE3D6 0%,#FFC2AA 100%);
+  --sg-strong:linear-gradient(180deg,#FF9B7A 0%,#E8553A 100%);
+  --sg-shadow:0 4px 10px rgba(190,90,60,.2);
+  --kw-fab:#E8694D; --kw-fab-line:#A0402A;
+  --line:#F2DCCF; --soft:#FFF6F0; --muted:#8E6E62;
+  background:linear-gradient(165deg,#FFF8F3 0%,#FFE6DA 100%) !important;
+}
+body.kw-salfa.kw-spicy .logo {
+  text-shadow:
+    -2px -2px 0 #B5432A, 2px -2px 0 #B5432A, -2px 2px 0 #B5432A, 2px 2px 0 #B5432A,
+    -2.5px 0 0 #B5432A, 2.5px 0 0 #B5432A, 0 -2.5px 0 #B5432A, 0 2.5px 0 #B5432A,
+    0 7px 14px rgba(181,67,42,.3);
+}
+body.kw-salfa.kw-spicy .logo span { color:#FFD45E; }
+body.kw-salfa.kw-spicy .tagline { color:#8A4A36; }
+body.kw-salfa.kw-spicy .backLink:hover { background:#FFF0E8; }
+body.kw-salfa.kw-spicy #joinScreen .card input:focus { box-shadow:0 0 0 3px rgba(232,105,77,.35); }
+body.kw-salfa.kw-spicy .btn-blue { background:linear-gradient(180deg,#FFE3D6 0%,#FFC2AA 100%); color:#8A2A10; }
+body.kw-salfa.kw-spicy .divider, body.kw-salfa.kw-spicy #roomChip span { color:#A07A6A; }
+body.kw-salfa.kw-spicy .sub, body.kw-salfa.kw-spicy .setRow .hint,
+body.kw-salfa.kw-spicy .seg button { color:#8E6E62; }
+body.theme-kawaii.kw-salfa.kw-spicy .seg button.on {
+  color:#fff; background:linear-gradient(180deg,#FF9B7A 0%,#D9553A 100%);
+  text-shadow:0 1px 1px rgba(90,20,0,.35);
+}
+body.kw-salfa.kw-spicy #lobby { overflow-x:hidden; }
+body.kw-salfa.kw-spicy #hostArea > .btn:hover { transform:scale(1.012) translateY(-1px); }
+body.kw-salfa.kw-spicy .msg.system { background:#FFF0E8; color:#A0402A; }
+body.theme-kawaii.kw-salfa.kw-spicy #chatForm { background:linear-gradient(180deg,#FFFBF8 0%,#FFEDE3 100%); }
+body.theme-kawaii.kw-salfa.kw-spicy .msg.system::before {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M8 24 C8 15, 32 15, 32 24 Z' fill='%23FFC6D5' stroke='%23C2462C' stroke-width='2.2'/%3E%3Crect x='9' y='24' width='22' height='4' rx='2' fill='%23FFF7EC' stroke='%23C2462C' stroke-width='1.6'/%3E%3Cpath d='M8 28 L32 28 C32 35, 8 35, 8 28 Z' fill='%23FFC6D5' stroke='%23C2462C' stroke-width='2.2'/%3E%3C/svg%3E");
+}
+/* خربشاتُ الخلفية: ماكاروناتٌ وفلفلةٌ ونجمة */
+body.theme-kawaii.kw-salfa.kw-spicy .kw-doodles .kw-pencil {
+  opacity:.4;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 64'%3E%3Cg stroke='%23A0584A' stroke-width='2.6' stroke-linejoin='round'%3E%3Cpath d='M12 30 C12 18, 52 18, 52 30 Z' fill='%23BDEBD6'/%3E%3Crect x='14' y='30' width='36' height='5' rx='2.5' fill='%23FFF7EC'/%3E%3Cpath d='M12 35 L52 35 C52 45, 12 45, 12 35 Z' fill='%23BDEBD6'/%3E%3Cpath d='M66 40 C73 47, 96 43, 102 24 C103.4 19, 98 17, 95.6 21 C91 30, 82 33, 71 32 C66 31.6, 63 36, 66 40 Z' fill='%23FF8A70'/%3E%3C/g%3E%3Cpath d='M98 20 q1.4 -6 6.4 -6' stroke='%232E9E5B' stroke-width='3.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+body.theme-kawaii.kw-salfa.kw-spicy .kw-doodles .kw-palette {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Cpath d='M8 22 C8 11, 36 11, 36 22 Z' fill='%23FFC6D5' stroke='%23A0584A' stroke-width='2.4'/%3E%3Crect x='9' y='22' width='26' height='5' rx='2.5' fill='%23FFF7EC' stroke='%23A0584A' stroke-width='1.8'/%3E%3Cpath d='M8 27 L36 27 C36 36, 8 36, 8 27 Z' fill='%23FFC6D5' stroke='%23A0584A' stroke-width='2.4'/%3E%3Ccircle cx='18' cy='19' r='1.6' fill='%234A2E2B'/%3E%3Ccircle cx='26' cy='19' r='1.6' fill='%234A2E2B'/%3E%3C/svg%3E");
+}
+body.theme-kawaii.kw-salfa.kw-spicy .kw-doodles .kw-brush {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='16' fill='%23FFE6DA' stroke='%23E8694D' stroke-width='2.6'/%3E%3Cpath d='M20 9l3.3 7.2 7.8.8-5.9 5.3 1.7 7.7L20 26l-6.9 4 1.7-7.7-5.9-5.3 7.8-.8z' fill='%23FFC2AA' stroke='%23E8694D' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+/* اللوبي والطاولة */
+body.kw-salfa.kw-spicy .howTo { background:none; border:none; box-shadow:none; padding:0; }
+body.kw-spicy .howTo div { border-color:#fff; color:var(--sg-ink); }
+body.kw-spicy #needMore { color:#B5651D; }
+body.kw-spicy .spLp { border:2px solid #E2B8A6; }
+body.kw-spicy .spLp .nm, body.kw-spicy .spMat .nm { color:var(--sg-ink); }
+body.kw-salfa.kw-spicy #spHud, body.kw-salfa.kw-spicy #spCenter, body.kw-salfa.kw-spicy #spMine {
+  border-radius:24px; background:linear-gradient(180deg,#FFFEFC 0%,#FFF5EE 100%); }
+body.kw-spicy #spCenter .tt, body.kw-spicy #spMine .nm { color:var(--sg-ink); }
+/* الدردشة العائمة */
+body.kw-spicy .barBtn { width:50px; height:50px; }
+body.kw-spicy #quickPop .phr button { border-color:#E2B8A6; color:var(--sg-ink); }
+body.kw-spicy #quickPop .phr button:hover { background:#FFF0E8; border-color:#E8694D; }
+body.kw-salfa.kw-spicy #chatCard { background:var(--sg-white); border:2px solid var(--sg-line);
+  box-shadow:0 12px 30px rgba(190,90,60,.25); overflow:hidden; border-radius:22px; }
+body.kw-spicy .chatHead { color:var(--sg-ink); }
+body.kw-spicy .rule { background:var(--sg-soft); border-radius:14px; color:var(--sg-ink); }
 
 /* تقليل الحركة لمن يفضّل ذلك */
 @media (prefers-reduced-motion: reduce) {

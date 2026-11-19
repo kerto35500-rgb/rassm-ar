@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🌶️ البسكويتة الحارّة — خداعٌ ومزايدة مع أصحابك</title>
+<style>
+  /* ═══ الأساس: هيكل «برّا السالفة» نفسه (كلودو و«كلمة واحدة» و«فكّ الشفرة»)،
+     فتلبسه سمةُ المارشميلو — الدخولُ واللوبي والإعدادات والأزرار والدردشة.
+     وفوقه ما يخصّ اللعبة: الطاولة، ومساحاتُ اللاعبين، والماكاروناتُ التي تنقلب
+     بـ rotateY، واهتزازُ الشاشة عند الحارّة. الأصنافُ الجديدة تبدأ بـ‎sp‎. ═══ */
+  :root{
+    --bg1:#0e1b2c; --panel:#ffffff; --ink:#3d2a26; --muted:#7d6f62;
+    --green:#2e9e5b; --green2:#25834a; --red:#e5484d; --amber:#f5a524;
+    --line:#ecdcc8; --soft:#fbf5ec;
+    --mac:62px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:"Segoe UI",Tahoma,system-ui,sans-serif; color:var(--ink);
+    background:radial-gradient(1200px 700px at 50% -10%,#1d3a5c,var(--bg1));
+    height:100vh; height:100dvh; max-height:100dvh;
+    display:flex; flex-direction:column; align-items:center;
+    padding:10px; gap:10px; overflow:hidden;
+    -webkit-user-select:none; user-select:none;
+  }
+  input{-webkit-user-select:text; user-select:text;}
+  .wrap{width:100%; max-width:1000px; display:flex; flex-direction:column; gap:10px; flex:1; min-height:0; overflow:hidden;}
+  .card{background:var(--panel); border-radius:16px; box-shadow:0 10px 30px rgba(6,14,26,.28);}
+
+  /* الشريط العلويّ */
+  #topBar{display:flex; align-items:center; gap:8px; padding:8px 10px; flex-wrap:nowrap;}
+  #roomChip{display:flex; flex-direction:column; align-items:center; justify-content:center;
+            background:var(--soft); border:2px solid var(--line); border-radius:12px;
+            padding:4px 12px; cursor:pointer; flex-shrink:0; min-width:92px;}
+  #roomChip b{font-size:17px; letter-spacing:1px; color:#1668c7;}
+  #roomChip span{font-size:10px; color:var(--muted);}
+  #phaseInfo{flex:1; min-width:0; text-align:center; font-weight:800; font-size:15px;
+             white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .iconBtn{width:38px; height:38px; flex-shrink:0; border:2px solid var(--line); background:#fff;
+           border-radius:11px; cursor:pointer; font-size:17px; display:flex; align-items:center; justify-content:center;
+           text-decoration:none; color:inherit;}
+
+  /* شاشة الدخول */
+  #joinScreen{position:relative; display:flex; flex-direction:column; align-items:center;
+              justify-content:center; min-height:100%; gap:16px; padding:24px 16px; overflow:auto;}
+  .logo{font-size:clamp(38px,8.5vw,54px); font-weight:900; color:#fff; text-shadow:0 4px 14px rgba(0,0,0,.35); letter-spacing:1px; text-align:center; line-height:1.25;}
+  .logo span{color:#FF8A7A;}
+  .tagline{color:#cfe3f7; margin-top:-10px; font-size:clamp(14px,3.5vw,17px); text-align:center; max-width:560px; line-height:1.7;}
+  #joinScreen .card{background:var(--panel); border-radius:18px; padding:20px; width:100%;
+        max-width:400px; box-shadow:0 12px 34px rgba(0,0,0,.28); display:flex; flex-direction:column; gap:10px;}
+  #joinScreen .card input{width:100%; min-width:0; padding:11px 13px; border:2px solid #e3e8ee;
+        border-radius:10px; font-size:16px; text-align:center; background:#f8fafc; font-family:inherit;}
+  .sub{color:var(--muted); font-size:14px; text-align:center; max-width:560px; line-height:1.7;}
+  .btn{border:none; border-radius:12px; padding:13px 18px; font-size:16px; font-weight:800;
+       cursor:pointer; font-family:inherit; color:#fff; width:100%;}
+  .btn-green{background:linear-gradient(180deg,var(--green),var(--green2));}
+  .btn-blue{background:linear-gradient(180deg,#3b8fe0,#1668c7);}
+  .btn-red{background:linear-gradient(180deg,#f4696d,var(--red));}
+  .btn-ghost{background:var(--soft); color:var(--ink); border:2px solid var(--line);}
+  .btn:active{transform:translateY(1px);}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .divider{text-align:center; color:#999; font-size:13px;}
+  #joinErr{color:var(--red); text-align:center; font-size:14px; min-height:16px; font-weight:700;}
+  #whoLine{display:none; text-align:center; font-size:13.5px; color:var(--green); font-weight:800; margin:-4px 0 4px;}
+  .row2{display:flex; gap:8px;}
+  .row2 > *{flex:1 1 0; min-width:0;}
+  .row2 .btn{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .backLink{display:inline-flex; align-items:center; justify-content:center; gap:6px;
+            margin:2px auto 4px; padding:9px 20px; border-radius:999px;
+            background:rgba(255,255,255,.14); border:1.5px solid rgba(255,255,255,.32);
+            color:#fff; font-size:15.5px; font-weight:900; text-decoration:none;}
+  .facts{display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
+  .facts span{background:rgba(255,255,255,.85); border:2px solid #fff; border-radius:999px; padding:5px 13px;
+              font-size:13px; font-weight:900; color:var(--ink); box-shadow:0 3px 8px rgba(0,0,0,.1);}
+
+  /* اللوبي */
+  #lobby{display:none; flex-direction:column; gap:10px; padding:14px; flex:1; min-height:0; overflow:auto;}
+  .h{font-size:18px; font-weight:900; display:flex; align-items:center; gap:8px;}
+  #setBox{display:none; flex-direction:column; gap:10px;}
+  #setBox.open{display:flex;}
+  .setRow{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+          background:var(--soft); border-radius:11px; padding:9px 11px;}
+  .setRow label{font-weight:800; font-size:14px;}
+  .setRow .hint{font-size:11px; color:var(--muted); width:100%;}
+  .seg{display:flex; gap:0; border:2px solid var(--line); border-radius:11px; overflow:hidden; flex-wrap:wrap;}
+  .seg button{border:none; background:#fff; padding:9px 13px; font-size:13px; font-weight:800; cursor:pointer;
+              font-family:inherit; color:var(--muted);}
+  .seg button.on{background:var(--green); color:#fff;}
+  #plist{display:flex; flex-wrap:wrap; gap:9px;}
+  .spLp{position:relative; display:flex; align-items:center; gap:8px; padding:6px 14px 6px 7px; border-radius:999px;
+        background:#fff; border:2px solid var(--line); font-weight:800; font-size:14.5px; max-width:100%;}
+  .spLp .nm{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px;}
+  .spLp small{font-size:11px; font-weight:800; color:var(--muted);}
+  .spLp.me{box-shadow:0 0 0 2.5px #E86A7E;}
+  .spLp.gone{opacity:.45;}
+  .spLp .crown{position:absolute; top:-13px; inset-inline-start:-3px; font-size:16px;}
+  .spLp .kick{width:22px; height:22px; border:none; border-radius:50%; background:#ffe0e0; color:var(--red);
+              cursor:pointer; font-size:11px; flex-shrink:0;}
+  .spLp.botSlot{border-style:dashed; opacity:.75;}
+  .av{width:32px; height:32px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+      color:#fff; font-weight:900; font-size:15px; background:var(--sd,#8462D2); border:2.5px solid #fff;
+      box-shadow:0 0 0 1.5px var(--sd,#8462D2); text-shadow:0 1px 1px rgba(0,0,0,.2);}
+  #needMore{font-weight:800; color:#B5651D;}
+  .howTo{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px; padding:10px;}
+  .howTo div{background:var(--cb); border:4px solid #fff; border-radius:16px; padding:9px 11px; font-size:13px; line-height:1.65;
+             box-shadow:0 4px 10px rgba(120,80,40,.12);}
+  .howTo b{display:block; font-size:14.5px; margin-bottom:1px;}
+  .k0{--cb:#FFE0E8;} .k1{--cb:#FFEBD2;} .k2{--cb:#ECE3FF;} .k3{--cb:#DDF5EA;}
+
+  /* ═══ اللعب ═══ */
+  #play{display:none; flex-direction:column; gap:8px; flex:1; min-height:0; overflow:auto; position:relative;
+        scrollbar-width:thin; scrollbar-color:#F2C0B0 transparent; padding-bottom:4px;}
+  #play::-webkit-scrollbar{width:9px}
+  #play::-webkit-scrollbar-thumb{background:#F2C0B0; border-radius:999px}
+  /* الشريط: الجولة، والمزاد، وما على الطاولة، والمؤقّت */
+  #spHud{display:flex; flex-direction:column; gap:7px; padding:8px 12px; flex-shrink:0;}
+  .spHudRow{display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;}
+  .spStat{display:flex; align-items:center; gap:6px; font-weight:900; font-size:13px; background:var(--soft);
+          border-radius:999px; padding:4px 12px; white-space:nowrap; border:2px solid var(--line);}
+  .spStat b{font-size:17px;}
+  .spStat.hot{background:linear-gradient(180deg,#FFE3D6,#FFC2AA); border-color:#F49A7E; color:#8A2A10;}
+  #timer{display:flex; align-items:center; gap:8px;}
+  #tbar{flex:1; height:12px; border-radius:99px; background:#EFE4D2; overflow:hidden; border:2px solid #fff;
+        box-shadow:inset 0 1px 2px rgba(0,0,0,.12), 0 0 0 1px #E2D3BC;}
+  #tbar i{display:block; height:100%; width:100%; border-radius:99px; background:linear-gradient(90deg,#FFC2AA,#F07F68);
+          transition:width .25s linear;}
+  #tbar.hurry i{background:linear-gradient(90deg,#FF9B8A,#E5484D);}
+  #tbar.paused i{background:repeating-linear-gradient(45deg,#D9CCB8 0 8px,#E8DDCB 8px 16px);}
+  #tsec{font-weight:900; min-width:36px; text-align:center; font-size:14px;}
+
+  /* الطاولة: مساحاتُ الخصوم فوق، ولوحةُ الفعل في الوسط، ومساحتي تحت */
+  #spTable{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px; flex-shrink:0;}
+  .spMat{position:relative; border-radius:20px; padding:9px 9px 10px; background:linear-gradient(180deg,#FFFEFB,#FFF6EC);
+         border:3px solid #fff; box-shadow:0 0 0 1.5px var(--line), 0 6px 14px rgba(120,80,40,.1);
+         display:flex; flex-direction:column; gap:7px; transition:box-shadow .2s, opacity .2s, transform .2s; min-width:0;}
+  .spMat.turn{box-shadow:0 0 0 3px var(--sd), 0 8px 18px rgba(120,80,40,.16); transform:translateY(-2px);}
+  .spMat.passed{opacity:.55; filter:saturate(.5);}
+  .spMat.out{opacity:.4; filter:grayscale(.9);}
+  .spMat.can{box-shadow:0 0 0 3px #F07F68, 0 0 18px 4px rgba(240,127,104,.45); cursor:pointer; animation:matCall 1s ease-in-out infinite;}
+  @keyframes matCall{50%{transform:translateY(-3px)}}
+  .spMat .hd{display:flex; align-items:center; gap:7px; min-width:0;}
+  .spMat .hd .av{width:30px; height:30px; font-size:13px; border-width:2px;}
+  .spMat .nm{font-weight:900; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:1;}
+  .spStars{display:flex; gap:2px; flex-shrink:0;}
+  .spStars i{font-style:normal; font-size:15px; filter:grayscale(1) opacity(.3);}
+  .spStars i.on{filter:none; animation:starPop .5s cubic-bezier(.3,1.6,.5,1);}
+  @keyframes starPop{from{transform:scale(.2) rotate(-40deg)}}
+  .spTag{font-size:11px; font-weight:900; border-radius:999px; padding:1px 8px; background:#fff; border:1.5px solid var(--line); white-space:nowrap;}
+  .spTag.bid{background:#FFE3D6; border-color:#F49A7E; color:#8A2A10;}
+  .spTag.pass{color:var(--muted);}
+  .spTag.out{background:#EEE; color:#888;}
+  .spBody{display:flex; align-items:flex-end; justify-content:space-between; gap:6px; min-height:calc(var(--mac) * .8);}
+  .spHand{display:flex; gap:3px; align-items:center; flex-wrap:wrap; min-width:0;}
+  .spHand .slot{width:calc(var(--mac) * .34); height:calc(var(--mac) * .34); border-radius:50%; background:var(--sl); border:2px solid #fff;
+                box-shadow:0 0 0 1.2px var(--sd), 0 2px 3px rgba(0,0,0,.12);}
+  .spHand .slot.gone{background:transparent; border:2px dashed #D6C7B4; box-shadow:none;}
+  .spHandLbl{font-size:10.5px; font-weight:800; color:var(--muted); width:100%;}
+  /* الكومة: ماكاروناتٌ فوق بعضها، كلُّ واحدةٍ أعلى قليلًا */
+  .spStack{position:relative; width:var(--mac); height:calc(var(--mac) + 6px * var(--n,1)); flex-shrink:0;}
+  .spStack .mac{position:absolute; left:0; bottom:calc(6px * var(--i,0));}
+  .spStack:empty{display:none;}
+
+  /* ═══ الماكارونة: وجهان، تنقلب بـ rotateY ═══ */
+  .mac{width:var(--mac); height:var(--mac); perspective:600px; flex-shrink:0; position:relative;}
+  .mac .in{position:absolute; inset:0; transform-style:preserve-3d; transition:transform .6s cubic-bezier(.3,1.35,.5,1);}
+  .mac.up .in{transform:rotateY(180deg);}
+  .mac .fc{position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; border-radius:50%;}
+  .mac .fc.front{transform:rotateY(180deg);}
+  .mac svg{width:100%; height:100%; display:block; filter:drop-shadow(0 3px 3px rgba(80,40,20,.22));}
+  .mac.sm{--mac:44px;}
+  /* ماكاروناتُ يدي: وجهُها لي، وتنتفخ حين يمكن وضعُها */
+  #spHandMine{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; padding:4px 0;}
+  #spHandMine .mac{--mac:74px; cursor:default; transition:transform .18s;}
+  #spHandMine .mac.pick{cursor:pointer; animation:macCall 1.2s ease-in-out infinite;}
+  #spHandMine .mac.pick:hover{transform:translateY(-6px) scale(1.06);}
+  @keyframes macCall{50%{transform:translateY(-5px)}}
+  /* كومتي: أراها، وعليها عينٌ مغمضة (الخصمُ لا يراها) */
+  .mineDown .fc.front{opacity:.92;}
+  .peek{position:absolute; top:-4px; inset-inline-end:-4px; font-size:13px; z-index:2;}
+
+  /* لوحةُ الفعل في الوسط */
+  #spCenter{padding:12px; display:flex; flex-direction:column; align-items:center; gap:9px; flex-shrink:0;}
+  #spCenter .tt{font-size:clamp(17px,4.3vw,21px); font-weight:900; text-align:center; line-height:1.45;}
+  #spCenter .ss{font-size:13.5px; color:var(--muted); font-weight:800; text-align:center; line-height:1.6;}
+  .spBidBox{display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center;}
+  .spStep{display:flex; align-items:center; gap:6px; background:#fff; border:3px solid #FFD2C2; border-radius:999px; padding:4px;}
+  .spStep button{width:40px; height:40px; border-radius:50%; border:none; background:#FFE9E0; color:#B0402A; font:inherit;
+                 font-size:22px; font-weight:900; cursor:pointer;}
+  .spStep button:disabled{opacity:.35; cursor:default;}
+  .spStep b{min-width:46px; text-align:center; font-size:26px; font-weight:900; color:#8A2A10;}
+  .spBidBox .btn{width:auto; padding:12px 22px;}
+  .btn-hot{background:linear-gradient(180deg,#FF9B7A,#E8553A);}
+  .spRes{border-radius:22px; padding:12px 24px; font-size:clamp(19px,4.6vw,24px); font-weight:900; text-align:center;
+         color:#fff; border:5px solid #fff; box-shadow:0 10px 22px rgba(0,0,0,.15); text-shadow:0 1px 2px rgba(0,0,0,.2);}
+  .spRes small{display:block; font-size:13.5px; font-weight:800; opacity:.95; margin-top:2px;}
+  .spRes.ok{background:linear-gradient(180deg,#7DDCA9,#36A96F);}
+  .spRes.bad{background:linear-gradient(180deg,#FF9B7A,#D9442E);}
+  .spProg{display:flex; gap:5px; justify-content:center;}
+  .spProg i{width:16px; height:16px; border-radius:50%; background:#F0E4D3; border:2px solid #fff; box-shadow:0 0 0 1px #E2D3BC;}
+  .spProg i.on{background:#7DDCA9;}
+  .spProg i.bad{background:#E8553A;}
+  #spMine{padding:10px 12px 12px; display:flex; flex-direction:column; gap:8px; flex-shrink:0;}
+  #spMine .hd{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  #spMine .hd .nm{font-weight:900; font-size:15px;}
+  #spMine .lbl{font-size:12px; font-weight:900; color:var(--muted);}
+  #spMine .rowMine{display:flex; gap:14px; align-items:flex-end; justify-content:center; flex-wrap:wrap;}
+  #spMine .spStack{--mac:58px;}
+  #spMine.can .spStack{cursor:pointer; filter:drop-shadow(0 0 10px rgba(240,127,104,.8)); animation:matCall 1s ease-in-out infinite;}
+  #spMine.turn{box-shadow:0 0 0 3px #F07F68, 0 10px 30px rgba(6,14,26,.28);}
+
+  /* اهتزازُ الشاشة عند الحارّة */
+  body.shake .wrap{animation:shake .5s cubic-bezier(.36,.07,.19,.97) both;}
+  @keyframes shake{10%,90%{transform:translateX(-2px)} 20%,80%{transform:translateX(4px)} 30%,50%,70%{transform:translateX(-7px)} 40%,60%{transform:translateX(7px)}}
+  .spBurst{position:fixed; inset:0; pointer-events:none; z-index:80; background:radial-gradient(circle at 50% 50%, rgba(255,120,80,.35), transparent 60%);
+           opacity:0; transition:opacity .25s;}
+  .spBurst.on{opacity:1;}
+
+  /* ── شريطُ الدردشة تحت ── */
+  #chatBar{display:flex; gap:12px; justify-content:center; align-items:center; flex-shrink:0; padding:2px 0 4px;}
+  .barBtn{width:48px; height:48px; font-size:22px; position:relative;}
+  #unread{display:none; position:absolute; top:-6px; right:-6px; min-width:20px; height:20px; padding:0 5px; border-radius:999px;
+          background:#E5484D; color:#fff; font-size:11px; font-weight:900; line-height:17px; border:2px solid #fff; text-align:center;}
+  #unread.on{display:block;}
+  #quickPop{display:none; position:fixed; bottom:72px; left:50%; transform:translateX(-50%); width:min(94vw, 470px);
+            padding:10px; z-index:40; flex-direction:column; gap:8px;}
+  #quickPop.on{display:flex;}
+  #quickPop .phr{display:grid; grid-template-columns:repeat(2,1fr); gap:6px;}
+  #quickPop .phr button{border:2px solid var(--line); background:#fff; border-radius:999px; padding:8px 10px; font:inherit;
+                        font-weight:800; font-size:13.5px; cursor:pointer; color:var(--ink);}
+  #quickPop .emo{display:grid; grid-template-columns:repeat(8,1fr); gap:4px;}
+  #quickPop .emo button{border:none; background:transparent; font-size:25px; cursor:pointer; padding:4px 0; border-radius:10px;}
+  #chatCard{display:none; position:fixed; bottom:72px; left:50%; transform:translateX(-50%); width:min(94vw, 470px);
+            height:min(62vh, 440px); flex-direction:column; z-index:40; overflow:hidden; gap:8px; padding:10px;}
+  #chatCard.on{display:flex;}
+  .chatHead{display:flex; align-items:center; justify-content:space-between; font-weight:900;}
+  .chatHead button{border:none; background:transparent; font-size:18px; cursor:pointer; color:var(--muted);}
+  #msgs{flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:5px; min-height:90px;}
+  .msg{background:var(--soft); border-radius:9px; padding:6px 9px; font-size:13px; word-break:break-word;}
+  .msg b{color:#1668c7;}
+  .msg.system{background:#eef4fb; color:#1668c7; text-align:center; font-weight:700;}
+  #chatForm{display:flex; gap:6px; padding:8px; border-top:2px solid var(--line);}
+  #chatForm input{flex:1; min-width:0; text-align:start; font-size:14px; padding:10px 12px; border:2px solid var(--line); border-radius:10px; font-family:inherit;}
+  #chatForm button{border:none; border-radius:10px; background:#1668c7; color:#fff; font-weight:800; padding:10px 14px; cursor:pointer; font-family:inherit;}
+  .bub{position:absolute; bottom:calc(100% + 6px); inset-inline-start:6px; max-width:220px; width:max-content;
+       background:#fff; border:2px solid var(--sd,#8462D2); border-radius:14px; padding:5px 10px; font-size:13px;
+       font-weight:800; color:var(--ink); line-height:1.5; box-shadow:0 4px 12px rgba(0,0,0,.14); opacity:0;
+       transform:translateY(6px) scale(.96); transition:opacity .2s, transform .2s; pointer-events:none; z-index:20; word-break:break-word;}
+  .bub.on{opacity:1; transform:none;}
+  .bub.big{font-size:26px; padding:0 9px; line-height:1.25;}
+
+  /* النوافذ */
+  .modal{position:fixed; inset:0; background:rgba(10,20,34,.72); z-index:60; display:none; align-items:center; justify-content:center; padding:14px;}
+  .modal.on{display:flex;}
+  .sheet{background:#fff; border-radius:18px; width:100%; max-width:540px; max-height:88vh; overflow:auto;
+         padding:16px; display:flex; flex-direction:column; gap:11px;}
+  .sheet h3{margin:0; font-size:19px;}
+  .rule{background:var(--soft); border-radius:12px; padding:9px 12px; font-size:13.5px; line-height:1.8;}
+  .rule b{display:block; font-size:14.5px; margin-bottom:2px;}
+  .winBanner{border-radius:18px; padding:16px; text-align:center; font-weight:900; font-size:21px; color:#fff;
+             background:linear-gradient(180deg,#FF9B7A,#E8553A); border:4px solid #fff; box-shadow:0 8px 20px rgba(0,0,0,.15);}
+  .winBanner small{display:block; font-size:13px; font-weight:800; opacity:.95; margin-top:4px;}
+  #endRank{display:flex; flex-direction:column; gap:6px;}
+  .rk{display:flex; align-items:center; gap:9px; padding:7px 12px; border-radius:14px; background:var(--soft); border:2px solid var(--line);
+      font-weight:900; font-size:15px;}
+  .rk.me{border-color:var(--sd); box-shadow:0 0 0 2px var(--sl);}
+  .rk .pl{font-size:20px; min-width:28px; text-align:center;}
+  .rk .nm{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .rk .x{font-size:13px; background:#fff; border-radius:999px; padding:2px 10px; border:2px solid var(--line); flex-shrink:0;}
+  #toast{position:fixed; left:50%; bottom:20px; transform:translateX(-50%) translateY(70px);
+         background:#12263c; color:#fff; padding:11px 18px; border-radius:12px; font-weight:800;
+         font-size:14px; z-index:90; opacity:0; transition:.25s; pointer-events:none; max-width:90vw; text-align:center;}
+  #toast.on{transform:translateX(-50%) translateY(0); opacity:1;}
+
+  @media (max-width: 700px){
+    body{padding:6px; gap:6px;}
+    :root{--mac:48px;}
+    #spTable{grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px;}
+    .spMat{padding:7px; border-radius:16px; gap:5px;}
+    .spMat .nm{font-size:13px;}
+    #spHandMine .mac{--mac:60px;}
+    #spMine .spStack{--mac:50px;}
+    .spStep button{width:36px; height:36px;}
+  }
+</style>
+<link rel="stylesheet" href="/kawaii.css">
+<script src="/theme.js" defer></script>
+</head>
+<body class="theme-kawaii">
+<div class="wrap">
+
+  <!-- ═════════ الدخول ═════════ -->
+  <div id="joinScreen">
+    <div class="logo">البسكويتة <span>الحارّة!</span></div>
+    <div class="tagline">ماكاروناتٌ لذيذة… وواحدةٌ حارّة 🌶️ — زايد على ما تقدر تقلبه، واخدع أصحابك قبل ما يخدعوك!</div>
+    <a class="backLink" href="/">← رجوع لاختيار الألعاب</a>
+    <div class="card">
+      <input id="pName" maxlength="20" placeholder="اكتب اسمك هنا" autocomplete="off">
+      <div id="whoLine"></div>
+      <button class="btn btn-green" id="createBtn">إنشاء غرفة جديدة ➕</button>
+      <div class="divider">— أو انضم لغرفة موجودة —</div>
+      <div class="row2">
+        <input id="pRoom" maxlength="6" placeholder="رمز الغرفة" inputmode="numeric" autocomplete="off">
+        <button class="btn btn-blue" id="joinBtn">انضمام 🚪</button>
+      </div>
+      <div id="joinErr"></div>
+    </div>
+    <div class="facts"><span>👥 ٣–٦ لاعبين</span><span>🤖 بوتات اختياريّة</span><span>⭐ نجمتان للفوز</span></div>
+  </div>
+
+  <!-- ═════════ اللعبة ═════════ -->
+  <div id="game" style="display:none; flex-direction:column; gap:10px; flex:1; min-height:0;">
+    <div class="card" id="topBar">
+      <div id="roomChip" title="انسخ رابط الدعوة"><b id="roomCode">—</b><span>🔗 انسخ الرابط</span></div>
+      <div id="phaseInfo">في الانتظار…</div>
+      <button class="iconBtn" id="rulesBtn" title="القواعد">📖</button>
+      <button class="iconBtn" id="sndBtn" title="الصوت">🔊</button>
+      <button class="iconBtn" id="leaveBtn" type="button" title="ترك الجلسة والعودة للقائمة الرئيسيّة">🚪</button>
+    </div>
+
+    <!-- اللوبي -->
+    <div class="card" id="lobby">
+      <div class="h">👥 الطاولة <span id="plCount" style="font-size:13px; color:var(--muted); font-weight:700;"></span></div>
+      <div id="plist"></div>
+      <div id="needMore" class="sub"></div>
+      <div id="hostArea" style="display:none; flex-direction:column; gap:10px;">
+        <button class="btn btn-ghost" id="setOpen" style="width:auto;">⚙️ إعدادات الغرفة</button>
+        <div id="setBox"></div>
+        <button class="btn btn-green" id="startBtn">▶️ ابدأ اللعبة</button>
+      </div>
+      <div id="waitHost" class="sub">بانتظار مدير الغرفة يبدأ اللعبة…</div>
+      <div id="lobbySummary" class="sub"></div>
+      <div class="card howTo" id="howTo">
+        <div class="k0"><b>🍪 ١. ضع</b>كلٌّ يضع ماكارونةً مقلوبة: لذيذة… أو الحارّة 🌶️</div>
+        <div class="k1"><b>➕ ٢. أضف أو زايد</b>في دورك أضف أخرى فوق كومتك — أو تحدَّ: «أقلب ٣ بلا حارّة!»</div>
+        <div class="k2"><b>🔥 ٣. المزاد</b>كلٌّ يرفع أو ينسحب، وأعلى مزايدٍ يقلب: كومتُه أوّلًا ثمّ ما شاء.</div>
+        <div class="k3"><b>⭐ ٤. الفوز</b>نجحت ⇒ نجمة، ونجمتان فوز. حارّة ⇒ تخسر ماكارونةً للأبد!</div>
+      </div>
+    </div>
+
+    <!-- اللعب -->
+    <div id="play">
+      <div class="card" id="spHud">
+        <div class="spHudRow">
+          <div class="spStat">🍪 الجولة <b id="hRound">١</b></div>
+          <div class="spStat" id="hTotal">على الطاولة <b>٠</b></div>
+          <div class="spStat" id="hBid">لا مزاد بعد</div>
+        </div>
+        <div id="timer"><div id="tbar"><i></i></div><span id="tsec">—</span></div>
+      </div>
+      <div id="spTable"></div>
+      <div class="card" id="spCenter"></div>
+      <div class="card" id="spMine"></div>
+      <div id="chatBar">
+        <button class="iconBtn barBtn" id="quickBtn" title="عبارات وإيموجي">😊</button>
+        <button class="iconBtn barBtn" id="chatBtn" title="الدردشة">💬<span id="unread"></span></button>
+      </div>
+    </div>
+    <div class="card" id="quickPop"></div>
+    <div class="card" id="chatCard">
+      <div class="chatHead"><span>💬 الدردشة</span><button type="button" id="chatClose" aria-label="إغلاق">✕</button></div>
+      <div id="msgs"></div>
+      <form id="chatForm" autocomplete="off">
+        <input id="chatInput" type="text" placeholder="اكتب رسالة…" maxlength="140">
+        <button type="submit">إرسال</button>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="spBurst" id="spBurst"></div>
+
+<!-- القواعد -->
+<div class="modal" id="rulesModal"><div class="sheet">
+  <h3>📖 قواعد «البسكويتة الحارّة»</h3>
+  <div id="rulesBody"></div>
+  <button class="btn btn-ghost" data-close>حسنًا</button>
+</div></div>
+
+<!-- ترك الجلسة -->
+<div class="modal" id="leaveModal"><div class="sheet">
+  <h3>🚪 ترك الجلسة؟</h3>
+  <div class="sub" style="text-align:start">ستخرج إلى القائمة الرئيسيّة، ويلعب بوتٌ مكانك حتى نهاية اللعبة.</div>
+  <div class="row2"><button class="btn btn-red" id="leaveYes" type="button">نعم، اخرج</button><button class="btn btn-ghost" data-close>ابقَ</button></div>
+</div></div>
+
+<!-- النهاية -->
+<div class="modal" id="endModal"><div class="sheet">
+  <div class="winBanner" id="endBanner">—</div>
+  <div class="h" style="font-size:15px">🏁 الترتيب</div>
+  <div id="endRank"></div>
+  <button class="btn btn-green" id="endAgain" style="display:none">🔄 لعبة جديدة</button>
+  <div class="row2"><button class="btn btn-ghost" data-close>إلى الانتظار</button><button class="btn btn-ghost" id="endLeave" type="button">🚪 ترك الجلسة</button></div>
+</div></div>
+
+<!-- فُتحت اللعبةُ في مكانٍ آخر -->
+<div class="modal" id="replacedModal" data-sticky><div class="sheet">
+  <h3>📱 فتحت اللعبةَ في مكانٍ آخر</h3>
+  <div class="sub" style="text-align:start">مقعدُك انتقل إلى التبويب أو الجهاز الذي فتحتها منه الآن.</div>
+  <button class="btn btn-green" type="button" onclick="location.reload()">العب من هنا</button>
+</div></div>
+
+<div id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/spicy/app.js"></script>
+</body>
+</html>
